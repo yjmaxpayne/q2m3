@@ -1,0 +1,110 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "q2m3"
+version = "0.0.1"
+description = "Quantum-Classical Hybrid QM/MM Framework POC with QPE for Early Fault-Tolerant Quantum Computers"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "IHPC Quantum Computing Team"},
+]
+keywords = ["quantum computing", "quantum chemistry", "QM/MM", "QPE", "PySCF", "PennyLane"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pyscf>=2.0.0",
+    "pennylane>=0.33.0",
+    "numpy>=1.21.0,<2.0.0",
+    "scipy>=1.7.0",
+    "pyyaml>=6.0",
+    "matplotlib>=3.5.0",
+    "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+    "notebook>=6.5.0",
+]
+gpu = [
+    "pennylane-lightning[gpu]>=0.33.0",
+    "cupy-cuda11x>=11.0.0",  # Adjust based on CUDA version
+]
+viz = [
+    "py3dmol>=2.0.0",
+    "ase>=3.22.0",
+    "nglview>=3.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/quantum-qmmm/poc"
+"Documentation" = "https://github.com/quantum-qmmm/poc/docs"
+"Bug Tracker" = "https://github.com/quantum-qmmm/poc/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.json", "*.xyz"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "B904",  # raise from
+]
+
+[tool.ruff.isort]
+known-third-party = ["pyscf", "pennylane", "numpy", "scipy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--verbose",
+    "--cov=src/q2m3",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.coverage.run]
+source = ["src/q2m3"]
+omit = ["*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false

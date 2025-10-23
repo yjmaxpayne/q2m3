@@ -118,8 +118,6 @@ make clean
 ## Documentation
 
 For detailed documentation, see:
-- [Product Requirements Document](docs/key_docs/PRD/quantum_qmmm_poc_prd.md)
-- [Technical Design](docs/key_docs/design/)
 - [API Reference](docs/api/)
 
 ## Contributing
@@ -132,13 +130,20 @@ MIT License
 
 ## Citation
 
-If you use this framework in your research, please cite:
+If you use q2m3 in your research, please cite:
+
+```bibtex
+@software{q2m3_2025,
+  title = {q2m3: A Hybrid-Quantum Classical Framework for QM/MM Simulations},
+  author = {Ye Jun <yjmaxpayne@hotmail.com>},
+  year = {2025},
+  url = {https://github.com/yjmaxpayne/q2m3}
+}
 ```
-Quantum-QM/MM POC Framework (2025)
-https://github.com/quantum-qmmm/poc
+
 ```
 
 ## Contact
 
-- Repository: https://github.com/quantum-qmmm/poc
-- Issues: https://github.com/quantum-qmmm/poc/issues
+- Repository: https://github.com/yjmaxpayne/q2m3
+- Issues: https://github.com/yjmaxpayne/q2m3/issues

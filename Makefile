@@ -1,4 +1,4 @@
-.PHONY: help install install-dev install-gpu sync test test-cov format lint clean run-example
+.PHONY: help install install-dev install-gpu sync test test-fast test-cov format lint clean run-example
 
 help:
 	@echo "Available commands:"
@@ -7,6 +7,7 @@ help:
 	@echo "  make install-dev   - Install development dependencies with uv"
 	@echo "  make install-gpu   - Install GPU support with uv"
 	@echo "  make test          - Run test suite"
+	@echo "  make test-fast     - Run fast tests (skip slow H3O+ tests)"
 	@echo "  make test-cov      - Run tests with coverage"
 	@echo "  make format        - Format code with black"
 	@echo "  make lint          - Lint code with ruff"
@@ -27,6 +28,9 @@ install-gpu:
 
 test:
 	uv run pytest tests/ -v
+
+test-fast:
+	uv run pytest tests/ -v -m "not slow"
 
 test-cov:
 	uv run pytest tests/ --cov=src/q2m3 --cov-report=html --cov-report=term

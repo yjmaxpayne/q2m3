@@ -177,10 +177,17 @@ class PySCFPennyLaneConverter:
             "Cl": 17,
             "Ar": 18,
         }
-        n_electrons = sum(atomic_numbers.get(s, 0) for s in symbols) - charge
+        total_electrons = sum(atomic_numbers.get(s, 0) for s in symbols) - charge
+
+        # For active space, use active_electrons for HF state
+        # Otherwise use total electrons
+        if active_electrons is not None:
+            n_electrons_for_hf = active_electrons
+        else:
+            n_electrons_for_hf = total_electrons
 
         # Generate HF reference state
-        hf_state = qml.qchem.hf_state(n_electrons, n_qubits)
+        hf_state = qml.qchem.hf_state(n_electrons_for_hf, n_qubits)
 
         return H, n_qubits, hf_state
 

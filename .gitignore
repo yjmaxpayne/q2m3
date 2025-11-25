@@ -65,7 +65,7 @@ docs/_templates/
 
 # Others
 CLAUDE.md
-.plans/
+.plan/
 .docs/
 .templates/
 .claude/

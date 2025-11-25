@@ -157,6 +157,7 @@ class TestQuantumQMMM:
             "mapping": "jordan_wigner",
             "system_qubits": 12,
             "error_tolerance": 0.005,
+            "use_real_qpe": False,  # Use classical HF for fast test
         }
 
         qmmm = QuantumQMMM(qm_atoms=atoms, mm_waters=4, qpe_config=qpe_config)

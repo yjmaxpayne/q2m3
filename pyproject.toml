@@ -48,6 +48,10 @@ gpu = [
     "pennylane-lightning[gpu]>=0.33.0",
     "cupy-cuda11x>=11.0.0",  # Adjust based on CUDA version
 ]
+catalyst = [
+    "pennylane-catalyst>=0.5.0",
+    "pennylane-lightning>=0.33.0",
+]
 viz = [
     "py3dmol>=2.0.0",
     "ase>=3.22.0",
@@ -100,6 +104,10 @@ addopts = [
     "--cov=src/q2m3",
     "--cov-report=term-missing",
     "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "catalyst: marks tests requiring Catalyst (skip if not installed)",
 ]
 
 [tool.coverage.run]

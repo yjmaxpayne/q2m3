@@ -1,39 +1,37 @@
-# Quantum-QM/MM POC Framework
+# q2m3: Quantum-QM/MM Framework
 
-A proof-of-concept framework for hybrid quantum-classical QM/MM calculations targeting early fault-tolerant quantum computers (EFTQC) in the Context of Hybrid Quantum-Classical Computing.
+A proof-of-concept framework for hybrid quantum-classical QM/MM (Quantum Mechanics/Molecular Mechanics) calculations targeting early fault-tolerant quantum computers (EFTQC).
 
 ## Overview
 
-This POC demonstrates the feasibility of integrating Quantum Phase Estimation (QPE) algorithms with molecular mechanics environments for quantum chemistry simulations. The framework bridges PySCF classical computations with PennyLane quantum circuits to explore the potential of quantum computing in molecular systems.
+q2m3 demonstrates the integration of Quantum Phase Estimation (QPE) algorithms with molecular mechanics environments for quantum chemistry simulations. The framework bridges PySCF classical computations with PennyLane quantum circuits.
 
-## Key Features
+**Key Features:**
 
-- 🚀 Iterative QPE implementation with 5-10 iteration convergence
-- 🔄 Seamless PySCF-PennyLane integration interface
-- 💧 H3O+ in TIP3P water environment QM/MM calculations
-- 📊 Mulliken charge analysis and ground state energy computation
-- 🖥️ GPU-accelerated quantum circuit simulation (12-20 qubits)
+- Standard QPE circuit implementation with Trotter time evolution
+- PySCF to PennyLane Hamiltonian conversion
+- QM/MM system setup with TIP3P water solvation
+- GPU acceleration via `lightning.gpu` device
+- Optional Catalyst `@qjit` JIT compilation
+- Mulliken population analysis
 
 ## Quick Start
 
 ### Requirements
 
 - Python >= 3.11
-- CUDA >= 11.0 (optional for GPU acceleration)
-- 16GB+ GPU memory (recommended)
+- CUDA >= 12.0 (optional, for GPU acceleration)
 
 ### Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/quantum-qmmm/poc.git
-cd qqm_mm_poc
+git clone https://github.com/yjmaxpayne/q2m3.git
+cd q2m3
 
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate  # Windows
 
 # Install core dependencies
 pip install -e .
@@ -41,53 +39,119 @@ pip install -e .
 # Install development dependencies
 pip install -e ".[dev]"
 
-# Install GPU support (optional)
+# Install GPU support (optional, requires NVIDIA GPU)
 pip install -e ".[gpu]"
+
+# Install Catalyst JIT support (optional)
+pip install -e ".[catalyst]"
 ```
 
 ### Basic Usage
 
 ```python
+import numpy as np
 from q2m3.core import QuantumQMMM
-from q2m3.utils import load_xyz
+from q2m3.core.qmmm_system import Atom
 
-# Load H3O+ structure
-h3o_geom = load_xyz("data/h3o_plus.xyz")
+# Define H3O+ geometry (Angstrom)
+h3o_atoms = [
+    Atom("O", np.array([0.0, 0.0, 0.0]), charge=-2.0),
+    Atom("H", np.array([0.96, 0.0, 0.0]), charge=1.0),
+    Atom("H", np.array([-0.48, 0.831, 0.0]), charge=1.0),
+    Atom("H", np.array([-0.48, -0.831, 0.0]), charge=1.0),
+]
 
 # Configure QPE parameters
 qpe_config = {
-    "algorithm": "iterative",
-    "iterations": 8,
-    "mapping": "jordan_wigner",
-    "system_qubits": 12,
-    "error_tolerance": 0.005
+    "use_real_qpe": True,
+    "n_estimation_wires": 4,      # Precision bits
+    "base_time": 0.1,
+    "n_trotter_steps": 10,
+    "n_shots": 100,
+    "active_electrons": 4,        # Active space
+    "active_orbitals": 4,
+    "device_type": "auto",        # Auto-select best device
 }
 
 # Run QM/MM calculation
 qmmm = QuantumQMMM(
-    qm_atoms=h3o_geom,
+    qm_atoms=h3o_atoms,
     mm_waters=8,
-    qpe_config=qpe_config
+    qpe_config=qpe_config,
 )
 
 results = qmmm.compute_ground_state()
-print(f"Ground State Energy: {results['energy']} Hartree")
-print(f"Mulliken Charges: {results['atomic_charges']}")
+print(f"Ground State Energy: {results['energy']:.6f} Hartree")
+print(f"HF Reference Energy: {results['energy_hf']:.6f} Hartree")
 ```
+
+## Architecture
+
+```
+QuantumQMMM (main interface)
+    |
+    +-- QMMMSystem (system builder)
+    |       +-- QM region: H3O+ atoms
+    |       +-- MM region: TIP3P water molecules
+    |
+    +-- QPEEngine (quantum algorithm)
+    |       +-- Standard QPE circuit
+    |       +-- Trotter time evolution
+    |       +-- Device selection (GPU/CPU)
+    |
+    +-- PySCFPennyLaneConverter (interface layer)
+            +-- Hamiltonian conversion
+            +-- HF state generation
+```
+
+## QPE Circuit Implementation
+
+The QPE circuit follows the standard structure:
+
+1. **Initial State Preparation**: HF reference state via `qml.BasisState`
+2. **Hadamard Gates**: Superposition on estimation qubits
+3. **Controlled Time Evolution**: `qml.ctrl(qml.TrotterProduct)` for U^(2^k)
+4. **Inverse QFT**: `qml.adjoint(qml.QFT)` for phase readout
+5. **Measurement**: Sample estimation register
+
+**Quantum Resources (H3O+ with active space):**
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Active Space | 4e, 4o | 4 electrons in 4 spatial orbitals |
+| System Qubits | 8 | Spin orbitals (4 orbitals x 2 spins) |
+| Estimation Qubits | 4 | Precision bits for phase readout |
+| Total Qubits | 12 | System + estimation registers |
+
+## Device Selection
+
+The `device_type` parameter controls quantum device selection:
+
+| Value | Backend | Description |
+|-------|---------|-------------|
+| `"auto"` | Best available | GPU > lightning.qubit > default.qubit |
+| `"lightning.gpu"` | NVIDIA GPU | Fastest (requires cuQuantum) |
+| `"lightning.qubit"` | CPU (optimized) | High-performance CPU simulator |
+| `"default.qubit"` | CPU (standard) | Standard PennyLane simulator |
+
+**Note:** Catalyst `@qjit` works best with `lightning.qubit`. There are known compatibility issues when combining Catalyst with `lightning.gpu` for controlled Trotter operations.
 
 ## Project Structure
 
 ```
-qqm_mm_poc/
-├── src/
-│   └── q2m3/
-│       ├── core/           # Core algorithm implementations
-│       ├── interfaces/     # PySCF-PennyLane interfaces
-│       └── utils/          # Utility functions
-├── tests/                  # Test suite
-├── data/                   # Data files
-├── docs/                   # Documentation
-└── examples/               # Example scripts
+q2m3/
++-- src/q2m3/
+|   +-- core/
+|   |   +-- quantum_qmmm.py    # Main entry point
+|   |   +-- qpe.py             # QPE engine
+|   |   +-- qmmm_system.py     # QM/MM system builder
+|   +-- interfaces/
+|   |   +-- pyscf_pennylane.py # PySCF-PennyLane converter
+|   +-- utils/
+|       +-- io.py              # File I/O utilities
++-- tests/                     # Test suite
++-- examples/                  # Example scripts
+    +-- h3o_quantum_qpe.py     # H3O+ QPE demo
 ```
 
 ## Development
@@ -96,33 +160,52 @@ qqm_mm_poc/
 # Run tests
 make test
 
+# Run fast tests (skip slow H3O+ tests)
+make test-fast
+
+# Run tests with coverage
+make test-cov
+
 # Format code
 make format
 
 # Lint code
 make lint
 
-# Clean temporary files
-make clean
+# Run example
+make run-example
 ```
 
-## Performance Metrics
+### Test Markers
 
-| Metric | Target | Description |
-|--------|--------|-------------|
-| Energy Accuracy | < 10-15 kcal/mol | POC validation phase |
-| QPE Convergence | 5-10 iterations | Based on 2024 research |
-| Qubit Requirements | 12-20 qubits | H3O+ active space |
-| Computation Time | < 60 minutes | GPU simulator |
+```bash
+pytest -m "not slow"      # Skip slow tests
+pytest -m "not catalyst"  # Skip Catalyst tests
+pytest -m "not gpu"       # Skip GPU tests
+pytest -m "catalyst"      # Run only Catalyst tests
+pytest -m "gpu"           # Run only GPU tests
+```
 
-## Documentation
+## Dependencies
 
-For detailed documentation, see:
-- [API Reference](docs/api/)
+**Core:**
+- `pyscf>=2.0.0`
+- `pennylane>=0.33.0`
+- `numpy>=1.21.0,<2.0.0`
+- `scipy>=1.7.0`
 
-## Contributing
+**Optional:**
+- `pennylane-lightning[gpu]` - GPU acceleration
+- `pennylane-catalyst>=0.5.0` - JIT compilation
+- `cupy-cuda12x` - CUDA support
 
-Issues and pull requests are welcome. Please ensure all tests pass and code follows the project style guide.
+## Known Limitations
+
+1. **QPE Precision**: The current implementation uses a limited number of estimation qubits (4), resulting in approximate energy estimates. For production use, more precision bits would be needed.
+
+2. **Catalyst + GPU**: Combining `@qjit` with `lightning.gpu` has compatibility issues for `qml.ctrl(qml.TrotterProduct)`. Use `lightning.qubit` with Catalyst for best results.
+
+3. **Active Space**: Full H3O+ requires 16 qubits with ~2000 Pauli terms. The implementation uses active space approximation (4e, 4o = 8 qubits) to make simulation feasible.
 
 ## License
 
@@ -134,13 +217,11 @@ If you use q2m3 in your research, please cite:
 
 ```bibtex
 @software{q2m3_2025,
-  title = {q2m3: A Hybrid-Quantum Classical Framework for QM/MM Simulations},
+  title = {q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations},
   author = {Ye Jun <yjmaxpayne@hotmail.com>},
   year = {2025},
   url = {https://github.com/yjmaxpayne/q2m3}
 }
-```
-
 ```
 
 ## Contact

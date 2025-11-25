@@ -35,6 +35,25 @@ except ImportError:
     HAS_CATALYST = False
     CATALYST_VERSION = "N/A"
 
+# Check lightning devices availability
+import pennylane as qml
+
+HAS_LIGHTNING_GPU = False
+try:
+    _test_dev = qml.device("lightning.gpu", wires=1)
+    del _test_dev
+    HAS_LIGHTNING_GPU = True
+except Exception:
+    pass
+
+HAS_LIGHTNING_QUBIT = False
+try:
+    _test_dev = qml.device("lightning.qubit", wires=1)
+    del _test_dev
+    HAS_LIGHTNING_QUBIT = True
+except Exception:
+    pass
+
 
 def print_header():
     """Print demo header."""
@@ -44,6 +63,7 @@ def print_header():
     print("=" * 80)
     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Catalyst Available: {'Yes (v' + CATALYST_VERSION + ')' if HAS_CATALYST else 'No'}")
+    print(f"Lightning GPU Available: {'Yes' if HAS_LIGHTNING_GPU else 'No'}")
     print()
 
 
@@ -71,13 +91,20 @@ def create_h3o_geometry() -> list[Atom]:
     ]
 
 
-def get_qpe_config() -> dict:
+def get_qpe_config(device_type: str = "auto") -> dict:
     """
     Get standard QPE configuration for H3O+ system.
 
     Active space: 4 electrons, 4 orbitals -> 8 system qubits
     Estimation qubits: 4 (precision bits)
     Total qubits: 12
+
+    Args:
+        device_type: Device selection strategy
+            - "auto": Auto-select best (GPU > lightning.qubit > default.qubit)
+            - "lightning.gpu": Force GPU device
+            - "lightning.qubit": Force CPU lightning device
+            - "default.qubit": Force standard PennyLane device
     """
     return {
         "use_real_qpe": True,
@@ -90,6 +117,7 @@ def get_qpe_config() -> dict:
         "energy_warning_threshold": 1.0,
         "algorithm": "standard",
         "mapping": "jordan_wigner",
+        "device_type": device_type,
     }
 
 
@@ -231,31 +259,43 @@ def main():
     # Step 1: System configuration
     print_section("System Configuration", step=1)
     h3o_atoms = create_h3o_geometry()
-    qpe_config = get_qpe_config()
     mm_waters = 8
 
-    print_system_info(qpe_config, mm_waters)
+    # Auto device selection: GPU > lightning.qubit > default.qubit
+    qpe_config = get_qpe_config(device_type="auto")
 
-    # Step 2: Standard QPE execution (no Catalyst)
-    print_section("Standard QPE Execution (No Catalyst)", step=2)
+    print_system_info(qpe_config, mm_waters)
+    print()
+    print(f"Device Selection: auto -> ", end="")
+    if HAS_LIGHTNING_GPU:
+        print("lightning.gpu (GPU detected)")
+    elif HAS_LIGHTNING_QUBIT:
+        print("lightning.qubit")
+    else:
+        print("default.qubit")
+
+    # Step 2: QPE execution with best available device
+    print_section("QPE Execution (auto device selection)", step=2)
     results_standard, time_standard = run_qpe_calculation(
         h3o_atoms=h3o_atoms,
         qpe_config=qpe_config,
         mm_waters=mm_waters,
         use_catalyst=False,
-        label="Standard QPE with default.qubit device",
+        label=f"QPE with {'lightning.gpu' if HAS_LIGHTNING_GPU else 'lightning.qubit' if HAS_LIGHTNING_QUBIT else 'default.qubit'}",
     )
     print_results(results_standard, time_standard, "Standard")
 
     # Step 3: Catalyst @qjit QPE execution
+    # Note: Catalyst uses lightning.qubit (lightning.gpu has compatibility issues with some gates)
     print_section("Catalyst @qjit QPE Execution", step=3)
     if HAS_CATALYST:
+        qpe_config_catalyst = get_qpe_config(device_type="lightning.qubit")
         results_catalyst, time_catalyst = run_qpe_calculation(
             h3o_atoms=h3o_atoms,
-            qpe_config=qpe_config,
+            qpe_config=qpe_config_catalyst,
             mm_waters=mm_waters,
             use_catalyst=True,
-            label="Catalyst QPE with lightning.qubit device + @qjit",
+            label="Catalyst QPE with lightning.qubit + @qjit",
         )
         print_results(results_catalyst, time_catalyst, "Catalyst")
     else:
@@ -263,15 +303,8 @@ def main():
         print("To enable Catalyst support, install with:")
         print("  pip install pennylane-catalyst")
         print()
-        print("Running standard QPE as fallback...")
-        results_catalyst, time_catalyst = run_qpe_calculation(
-            h3o_atoms=h3o_atoms,
-            qpe_config=qpe_config,
-            mm_waters=mm_waters,
-            use_catalyst=False,
-            label="Fallback: Standard QPE (Catalyst unavailable)",
-        )
-        print_results(results_catalyst, time_catalyst, "Fallback")
+        print("Using standard execution as fallback...")
+        results_catalyst, time_catalyst = results_standard, time_standard
 
     # Step 4: Results comparison
     print_section("Results Comparison", step=4)
@@ -279,10 +312,13 @@ def main():
 
     # Step 5: Save results
     print_section("Save Results", step=5)
+    # Determine actual device used
+    actual_device = "lightning.gpu" if HAS_LIGHTNING_GPU else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
     output_data = {
         "timestamp": datetime.now().isoformat(),
         "catalyst_available": HAS_CATALYST,
         "catalyst_version": CATALYST_VERSION if HAS_CATALYST else None,
+        "lightning_gpu_available": HAS_LIGHTNING_GPU,
         "system": {
             "qm_region": "H3O+",
             "n_atoms": len(h3o_atoms),
@@ -298,12 +334,14 @@ def main():
             "total_qubits": qpe_config["active_orbitals"] * 2 + qpe_config["n_estimation_wires"],
         },
         "results_standard": {
+            "device": actual_device,
             "energy": results_standard["energy"],
             "energy_hf": results_standard.get("energy_hf"),
             "execution_time_s": time_standard,
             "atomic_charges": results_standard["atomic_charges"],
         },
         "results_catalyst": {
+            "device": actual_device,
             "energy": results_catalyst["energy"],
             "energy_hf": results_catalyst.get("energy_hf"),
             "execution_time_s": time_catalyst,
@@ -331,6 +369,10 @@ def main():
         print("  [OK] Catalyst @qjit JIT compilation")
     else:
         print("  [--] Catalyst @qjit (not installed)")
+    if HAS_LIGHTNING_GPU:
+        print("  [OK] GPU acceleration (lightning.gpu)")
+    else:
+        print("  [--] GPU acceleration (lightning.gpu not available)")
     print()
     print("=" * 80)
     print("                           Demo Completed Successfully")

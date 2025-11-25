@@ -32,6 +32,76 @@ except ImportError:
         return fn if fn else lambda f: f
 
 
+# Device availability checks
+HAS_LIGHTNING_GPU = False
+try:
+    _test_dev = qml.device("lightning.gpu", wires=1)
+    del _test_dev
+    HAS_LIGHTNING_GPU = True
+except Exception:
+    pass
+
+HAS_LIGHTNING_QUBIT = False
+try:
+    _test_dev = qml.device("lightning.qubit", wires=1)
+    del _test_dev
+    HAS_LIGHTNING_QUBIT = True
+except Exception:
+    pass
+
+
+def _select_device(device_type: str, n_wires: int, shots: int, use_catalyst: bool = False):
+    """
+    Select quantum device based on device_type parameter.
+
+    Args:
+        device_type: "auto", "default.qubit", "lightning.qubit", or "lightning.gpu"
+        n_wires: Number of qubits
+        shots: Number of measurement shots
+        use_catalyst: If True, fallback devices must be Catalyst-compatible
+                      (lightning.qubit instead of default.qubit)
+
+    Returns:
+        PennyLane device instance
+    """
+    # Determine fallback device based on Catalyst compatibility
+    # Catalyst only supports lightning.qubit and lightning.gpu, not default.qubit
+    fallback_device = "lightning.qubit" if (use_catalyst and HAS_LIGHTNING_QUBIT) else "default.qubit"
+
+    if device_type == "auto":
+        # Auto-select: GPU > lightning.qubit > default.qubit
+        if HAS_LIGHTNING_GPU:
+            return qml.device("lightning.gpu", wires=n_wires, shots=shots)
+        elif HAS_LIGHTNING_QUBIT:
+            return qml.device("lightning.qubit", wires=n_wires, shots=shots)
+        else:
+            return qml.device("default.qubit", wires=n_wires, shots=shots)
+
+    elif device_type == "lightning.gpu":
+        if not HAS_LIGHTNING_GPU:
+            warnings.warn(
+                f"lightning.gpu not available, falling back to {fallback_device}",
+                UserWarning,
+                stacklevel=3,
+            )
+            return qml.device(fallback_device, wires=n_wires, shots=shots)
+        return qml.device("lightning.gpu", wires=n_wires, shots=shots)
+
+    elif device_type == "lightning.qubit":
+        if not HAS_LIGHTNING_QUBIT:
+            warnings.warn(
+                "lightning.qubit not available, falling back to default.qubit",
+                UserWarning,
+                stacklevel=3,
+            )
+            return qml.device("default.qubit", wires=n_wires, shots=shots)
+        return qml.device("lightning.qubit", wires=n_wires, shots=shots)
+
+    else:
+        # default.qubit or any other value
+        return qml.device("default.qubit", wires=n_wires, shots=shots)
+
+
 # Constants for QPE configuration
 DEFAULT_ERROR_ESTIMATE = 0.001
 MAX_EARLY_CONVERGENCE_ITERATIONS = 5
@@ -54,6 +124,7 @@ class QPEEngine:
         n_iterations: int = 8,
         mapping: str = "jordan_wigner",
         device: str = "default.qubit",
+        device_type: str = "default.qubit",
         use_catalyst: bool = False,
         **kwargs,
     ):
@@ -64,13 +135,19 @@ class QPEEngine:
             n_qubits: Number of system qubits
             n_iterations: Number of QPE iterations (5-10 for POC)
             mapping: Fermion-to-qubit mapping ('jordan_wigner' or 'bravyi_kitaev')
-            device: PennyLane device name
+            device: PennyLane device name (deprecated, use device_type instead)
+            device_type: Device selection strategy:
+                - "auto": Auto-select best available (GPU > lightning.qubit > default.qubit)
+                - "default.qubit": Standard PennyLane simulator
+                - "lightning.qubit": High-performance CPU simulator
+                - "lightning.gpu": GPU-accelerated simulator (requires cuQuantum)
             use_catalyst: Enable Catalyst @qjit compilation (requires pennylane-catalyst)
             **kwargs: Additional device configuration
         """
         self.n_qubits = n_qubits
         self.n_iterations = n_iterations
         self.mapping = mapping
+        self.device_type = device_type
 
         # Catalyst JIT compilation support
         self.use_catalyst = use_catalyst and HAS_CATALYST
@@ -83,7 +160,7 @@ class QPEEngine:
                 stacklevel=2,
             )
 
-        # Initialize quantum device
+        # Initialize quantum device (for non-QPE operations)
         self.dev = qml.device(device, wires=n_qubits + 1)  # +1 for ancilla
 
     def estimate_ground_state_energy(
@@ -219,12 +296,17 @@ class QPEEngine:
         estimation_wires = list(range(n_system_wires, n_system_wires + n_estimation_wires))
         total_wires = n_system_wires + n_estimation_wires
 
-        # Device selection: lightning.qubit for Catalyst, default.qubit otherwise
-        if self.use_catalyst:
-            # Catalyst requires shots to be specified for sample-based measurements
-            dev = qml.device("lightning.qubit", wires=total_wires, shots=n_shots)
+        # Device selection based on device_type and use_catalyst
+        # Priority: explicit device_type > Catalyst default (lightning.qubit) > default.qubit
+        # Note: use_catalyst is passed to ensure Catalyst-compatible fallback when GPU unavailable
+        if self.device_type != "default.qubit":
+            # User specified a device type
+            dev = _select_device(self.device_type, total_wires, n_shots, self.use_catalyst)
+        elif self.use_catalyst:
+            # Catalyst default: use lightning.qubit for @qjit compatibility
+            dev = _select_device("lightning.qubit", total_wires, n_shots, self.use_catalyst)
         else:
-            dev = qml.device("default.qubit", wires=total_wires, shots=n_shots)
+            dev = _select_device("default.qubit", total_wires, n_shots, use_catalyst=False)
 
         @qml.qnode(dev)
         def qpe_circuit():

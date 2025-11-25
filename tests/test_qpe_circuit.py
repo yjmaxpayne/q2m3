@@ -563,3 +563,85 @@ class TestQPECatalyst:
         # Extract energy
         energy = engine._extract_energy_from_samples(result, base_time=config["base_time"])
         assert np.isfinite(energy), f"H3O+ Catalyst energy not finite: {energy}"
+
+
+# ============================================================================
+# GPU Tests (lightning.gpu)
+# ============================================================================
+
+
+class TestQPEGPU:
+    """GPU-accelerated QPE tests using lightning.gpu device."""
+
+    @pytest.mark.gpu
+    def test_device_type_selection_gpu(self, h2_hamiltonian):
+        """Test QPEEngine respects device_type='lightning.gpu' parameter."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        config = {
+            "n_estimation_wires": 3,
+            "base_time": 0.5,
+            "n_trotter_steps": 2,
+            "n_shots": 5,
+        }
+
+        # Create engine with GPU device
+        engine = QPEEngine(
+            n_qubits=n_qubits,
+            device_type="lightning.gpu",
+            use_catalyst=False,
+        )
+        assert engine.device_type == "lightning.gpu"
+
+        # Build and execute circuit
+        qpe_circuit = engine._build_standard_qpe_circuit(H, hf_state, **config)
+        result = qpe_circuit()
+
+        assert result is not None, "QPE with lightning.gpu failed to execute"
+
+        # Extract energy
+        energy = engine._extract_energy_from_samples(result, base_time=config["base_time"])
+        assert np.isfinite(energy), f"GPU energy not finite: {energy}"
+
+    @pytest.mark.gpu
+    def test_device_type_auto_selects_gpu(self):
+        """Test device_type='auto' selects lightning.gpu when available."""
+        from q2m3.core.qpe import HAS_LIGHTNING_GPU, _select_device
+
+        if not HAS_LIGHTNING_GPU:
+            pytest.skip("lightning.gpu not available")
+
+        dev = _select_device("auto", n_wires=4, shots=10)
+        # Check device name using the new PennyLane device API
+        assert "gpu" in str(type(dev).__name__).lower() or "gpu" in str(dev.name).lower()
+
+    @pytest.mark.gpu
+    @pytest.mark.slow
+    def test_qpe_h2_gpu_energy(self, h2_hamiltonian):
+        """H2 QPE with GPU should produce reasonable energy estimates."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        config = {
+            "n_estimation_wires": 4,
+            "base_time": 0.5,
+            "n_trotter_steps": 3,
+            "n_shots": 10,
+        }
+
+        engine = QPEEngine(
+            n_qubits=n_qubits,
+            device_type="lightning.gpu",
+            use_catalyst=False,
+        )
+
+        qpe_circuit = engine._build_standard_qpe_circuit(H, hf_state, **config)
+        samples = qpe_circuit()
+        energy = engine._extract_energy_from_samples(samples, base_time=config["base_time"])
+
+        # Energy should be finite and non-positive
+        assert np.isfinite(energy), f"GPU energy not finite: {energy}"
+        assert energy <= 0, f"GPU energy should be non-positive: {energy}"

@@ -17,16 +17,30 @@ from q2m3.interfaces import PySCFPennyLaneConverter
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip catalyst tests if pennylane-catalyst is not installed."""
+    """Skip catalyst/gpu tests if dependencies are not available."""
+    # Check Catalyst availability
     try:
         import catalyst  # noqa: F401
 
-        # Catalyst is available, run all tests
+        has_catalyst = True
     except ImportError:
-        skip_catalyst = pytest.mark.skip(reason="pennylane-catalyst not installed")
-        for item in items:
-            if "catalyst" in item.keywords:
-                item.add_marker(skip_catalyst)
+        has_catalyst = False
+
+    # Check lightning.gpu availability
+    has_lightning_gpu = False
+    try:
+        _test_dev = qml.device("lightning.gpu", wires=1)
+        del _test_dev
+        has_lightning_gpu = True
+    except Exception:
+        pass
+
+    # Apply skip markers
+    for item in items:
+        if "catalyst" in item.keywords and not has_catalyst:
+            item.add_marker(pytest.mark.skip(reason="pennylane-catalyst not installed"))
+        if "gpu" in item.keywords and not has_lightning_gpu:
+            item.add_marker(pytest.mark.skip(reason="lightning.gpu not available"))
 
 
 # ============================================================================

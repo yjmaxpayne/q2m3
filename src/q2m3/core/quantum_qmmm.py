@@ -60,6 +60,8 @@ class QuantumQMMM:
             "active_orbitals": None,
             # Energy validation threshold
             "energy_warning_threshold": 1.0,  # Warn if |E_QPE - E_HF| > 1.0 Ha
+            # Device selection: "auto", "default.qubit", "lightning.qubit", "lightning.gpu"
+            "device_type": "default.qubit",
         }
         # Merge user config with defaults
         if qpe_config:
@@ -75,6 +77,7 @@ class QuantumQMMM:
             n_qubits=self.qpe_config["system_qubits"],
             n_iterations=self.qpe_config["iterations"],
             mapping=self.qpe_config["mapping"],
+            device_type=self.qpe_config.get("device_type", "default.qubit"),
             use_catalyst=use_catalyst,
         )
 

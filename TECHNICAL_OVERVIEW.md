@@ -331,13 +331,11 @@ pip install -e ".[dev]"
 # Activate environment
 source .venv/bin/activate
 
-# Run H3O+ calculation
-python examples/h3o_basic.py
+# Run H3O+ QPE calculation
+python examples/h3o_quantum_qpe.py
 
-# Expected output:
-# Ground State Energy: -75.326464 Hartree
-# Mulliken Charges: O0: -2.0, H1: +1.0, H2: +1.0, H3: +1.0
-# Convergence: Yes (5 iterations)
+# Demonstrates: PySCF->PennyLane Hamiltonian, Standard QPE, Catalyst @qjit
+# Active space: 4e, 4o -> 8 system qubits + 4 estimation qubits = 12 total
 ```
 
 ### Run Tests
@@ -367,7 +365,7 @@ q2m3/
 │       └── io.py
 ├── tests/                 # Test suite (71.56% coverage)
 ├── examples/              # Example calculations
-│   └── h3o_basic.py       # H3O+ demonstration
+│   └── h3o_quantum_qpe.py # H3O+ QPE demonstration with Catalyst
 ├── data/                  # Input structures
 │   └── h3o_plus.xyz
 ├── docs/                  # Documentation

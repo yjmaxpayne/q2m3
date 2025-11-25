@@ -54,5 +54,5 @@ clean:
 	rm -rf *.egg-info
 
 run-example:
-	@echo "Running H3O+ example calculation..."
-	@uv run python examples/h3o_basic.py
+	@echo "Running H3O+ QPE example calculation..."
+	@uv run python examples/h3o_quantum_qpe.py

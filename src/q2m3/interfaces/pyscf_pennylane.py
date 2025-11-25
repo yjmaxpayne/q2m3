@@ -8,6 +8,7 @@ PySCF-PennyLane bidirectional conversion interface.
 from typing import Any
 
 import numpy as np
+import pennylane as qml
 
 
 class UnifiedDensityMatrix:
@@ -79,22 +80,109 @@ class PySCFPennyLaneConverter:
         self.mapping = mapping
 
     def pyscf_to_pennylane_hamiltonian(
-        self, one_electron: np.ndarray, two_electron: np.ndarray, nuclear_repulsion: float
-    ) -> Any:
+        self,
+        symbols: list[str],
+        coords: np.ndarray,
+        charge: int = 0,
+        active_electrons: int | None = None,
+        active_orbitals: int | None = None,
+    ) -> tuple[Any, int, np.ndarray]:
         """
-        Convert PySCF molecular integrals to PennyLane Hamiltonian.
+        Convert molecular structure to PennyLane qubit Hamiltonian.
 
         Args:
-            one_electron: One-electron integrals
-            two_electron: Two-electron integrals
-            nuclear_repulsion: Nuclear repulsion energy
+            symbols: List of atomic symbols ['O', 'H', 'H', 'H']
+            coords: Atomic coordinates in Angstrom, shape (n_atoms, 3) or (n_atoms*3,)
+            charge: Total molecular charge (default 0)
+            active_electrons: Number of active electrons for active space (optional)
+            active_orbitals: Number of active orbitals for active space (optional)
 
         Returns:
-            PennyLane molecular Hamiltonian
+            tuple: (hamiltonian, n_qubits, hf_state)
+                - hamiltonian: PennyLane Hamiltonian operator
+                - n_qubits: Number of qubits required
+                - hf_state: Hartree-Fock reference state as numpy array
+
+        Raises:
+            ValueError: If symbols and coords dimensions don't match
+
+        Example:
+            >>> converter = PySCFPennyLaneConverter()
+            >>> symbols = ["H", "H"]
+            >>> coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+            >>> H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(
+            ...     symbols, coords, charge=0
+            ... )
         """
-        # Placeholder for Hamiltonian conversion
-        # Will use PennyLane's qchem module
-        pass
+        # Validate input dimensions
+        coords_arr = np.asarray(coords)
+        if coords_arr.ndim == 2:
+            if coords_arr.shape[0] != len(symbols):
+                raise ValueError(
+                    f"Number of symbols ({len(symbols)}) must match "
+                    f"number of coords ({coords_arr.shape[0]})"
+                )
+            coords_flat = coords_arr.flatten()
+        else:
+            # 1D array - validate length
+            if len(coords_arr) != len(symbols) * 3:
+                raise ValueError(
+                    f"Flattened coords length ({len(coords_arr)}) must be "
+                    f"symbols * 3 = {len(symbols) * 3}"
+                )
+            coords_flat = coords_arr
+
+        # Build Hamiltonian using PennyLane qchem
+        # Note: PennyLane expects coordinates in Bohr by default
+        # We convert from Angstrom to Bohr (1 Angstrom = 1.8897259886 Bohr)
+        angstrom_to_bohr = 1.8897259886
+        coords_bohr = coords_flat * angstrom_to_bohr
+
+        # Prepare kwargs for molecular_hamiltonian
+        mol_kwargs = {
+            "symbols": symbols,
+            "coordinates": coords_bohr,
+            "charge": charge,
+            "basis": self.basis,
+            "mapping": self.mapping,
+        }
+
+        # Add active space if specified
+        if active_electrons is not None:
+            mol_kwargs["active_electrons"] = active_electrons
+        if active_orbitals is not None:
+            mol_kwargs["active_orbitals"] = active_orbitals
+
+        # Generate molecular Hamiltonian
+        H, n_qubits = qml.qchem.molecular_hamiltonian(**mol_kwargs)
+
+        # Calculate number of electrons
+        atomic_numbers = {
+            "H": 1,
+            "He": 2,
+            "Li": 3,
+            "Be": 4,
+            "B": 5,
+            "C": 6,
+            "N": 7,
+            "O": 8,
+            "F": 9,
+            "Ne": 10,
+            "Na": 11,
+            "Mg": 12,
+            "Al": 13,
+            "Si": 14,
+            "P": 15,
+            "S": 16,
+            "Cl": 17,
+            "Ar": 18,
+        }
+        n_electrons = sum(atomic_numbers.get(s, 0) for s in symbols) - charge
+
+        # Generate HF reference state
+        hf_state = qml.qchem.hf_state(n_electrons, n_qubits)
+
+        return H, n_qubits, hf_state
 
     def build_qmmm_hamiltonian(
         self, qm_mol: Any, mm_charges: np.ndarray, mm_coords: np.ndarray  # PySCF mol object

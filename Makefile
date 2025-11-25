@@ -1,10 +1,11 @@
-.PHONY: help install install-dev install-gpu test test-cov format lint clean run-example
+.PHONY: help install install-dev install-gpu sync test test-cov format lint clean run-example
 
 help:
 	@echo "Available commands:"
-	@echo "  make install       - Install core dependencies"
-	@echo "  make install-dev   - Install development dependencies"
-	@echo "  make install-gpu   - Install GPU support"
+	@echo "  make sync          - Sync all dependencies with uv (recommended)"
+	@echo "  make install       - Install core dependencies with uv"
+	@echo "  make install-dev   - Install development dependencies with uv"
+	@echo "  make install-gpu   - Install GPU support with uv"
 	@echo "  make test          - Run test suite"
 	@echo "  make test-cov      - Run tests with coverage"
 	@echo "  make format        - Format code with black"
@@ -12,29 +13,29 @@ help:
 	@echo "  make clean         - Clean temporary files"
 	@echo "  make run-example   - Run example calculation"
 
+sync:
+	uv sync
+
 install:
-	pip install --upgrade pip
-	pip install -e .
+	uv sync --no-dev
 
 install-dev:
-	pip install --upgrade pip
-	pip install -e ".[dev]"
+	uv sync --all-extras
 
 install-gpu:
-	pip install --upgrade pip
-	pip install -e ".[gpu]"
+	uv sync --extra gpu
 
 test:
-	pytest tests/ -v
+	uv run pytest tests/ -v
 
 test-cov:
-	pytest tests/ --cov=src/q2m3 --cov-report=html --cov-report=term
+	uv run pytest tests/ --cov=src/q2m3 --cov-report=html --cov-report=term
 
 format:
-	black src/ tests/ --line-length 100
+	uv run black src/ tests/ --line-length 100
 
 lint:
-	ruff check src/ tests/
+	uv run ruff check src/ tests/
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -50,4 +51,4 @@ clean:
 
 run-example:
 	@echo "Running H3O+ example calculation..."
-	@python examples/h3o_basic.py
+	@uv run python examples/h3o_basic.py

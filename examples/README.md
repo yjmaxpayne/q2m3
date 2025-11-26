@@ -294,91 +294,64 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
 }
 ```
 
-## Known Issues
+## Known Issues & Catalyst Compatibility
 
-### Catalyst @qjit + BasisState Incompatibility (Resolved)
+### Issue 1: BasisState + Controlled Operations (Resolved)
 
 **Status**: Fixed in Phase 11
 
-**Symptom**:
-When using `qml.BasisState` with `qml.ctrl(qml.adjoint(TrotterProduct))` under `@qjit`, QPE produces incorrect results (uniform distribution instead of peaked phase estimation).
+**Symptom**: QPE under `@qjit` produces incorrect results (uniform distribution instead of peaked phase estimation) when `qml.BasisState` coexists with `qml.ctrl(qml.adjoint(TrotterProduct))`.
 
-**Root Cause**:
-Catalyst's `set_basis_state_p` primitive lacks control wire support. When BasisState coexists with controlled operations in the same circuit, Catalyst's compilation produces incorrect behavior.
+**Root Cause**: Catalyst's `set_basis_state_p` primitive lacks control wire support ([jax_primitives.py](https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py)).
 
-**Evidence** ([Catalyst jax_primitives.py](https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py)):
-```python
-@set_basis_state_p.def_abstract_eval
-def _set_basis_state_abstract_eval(state, basis_state):
-    # No handling for control wires - returns unchanged shape
-    return state
-```
+**Fix** (`src/q2m3/core/qpe.py:173-177`):
 
-**Fix**: Use explicit X gates instead of `qml.BasisState` for HF state preparation:
-```python
-# Before (incompatible):
-qml.BasisState(hf_state, wires=wires)
+| Before (incompatible) | After (Catalyst-compatible) |
+|----------------------|----------------------------|
+| `qml.BasisState(hf_state, wires)` | `for w, s in zip(wires, hf_state): if s==1: qml.PauliX(w)` |
 
-# After (Catalyst-compatible):
-for wire, state in zip(wires, hf_state):
-    if state == 1:
-        qml.PauliX(wires=wire)
-```
+**Verification** (H3O+, 12 qubits):
 
-**Related Issues**:
-- [Catalyst #1631](https://github.com/PennyLaneAI/catalyst/issues/1631) - BasisState support
-- [Catalyst #1301](https://github.com/PennyLaneAI/catalyst/issues/1301) - Nested adjoint/ctrl handling
+| Configuration | Energy (Ha) | Status |
+|--------------|-------------|--------|
+| Standard QPE (lightning.gpu) | -76.503440 | ✓ |
+| Catalyst QPE (lightning.qubit) | -76.503440 | ✓ |
+
+**Note**: RDM module (`rdm.py:225`) still uses `qml.BasisState`, but is unaffected since RDM circuits don't combine BasisState with controlled operations.
+
+**Related**: [Catalyst #1631](https://github.com/PennyLaneAI/catalyst/issues/1631), [#1301](https://github.com/PennyLaneAI/catalyst/issues/1301)
 
 ---
 
-### Catalyst @qjit + lightning.gpu Incompatibility
+### Issue 2: Catalyst + lightning.gpu (Known Limitation)
 
-**Status**: Known limitation (as of PennyLane Catalyst 0.13.0)
+**Status**: Workaround in place (as of Catalyst 0.13.0)
 
-**Symptom**:
-When using `use_catalyst=True` with `device_type="lightning.gpu"`, the following error occurs:
+**Symptom**: Using `@qjit` with `lightning.gpu` triggers custatevec error:
 ```
-RuntimeError: [StateVectorCudaManaged.hpp][Line:2407][Method:applyParametricPauliGeneralGate_]:
-Error in PennyLane Lightning: custatevec invalid value
+RuntimeError: custatevec invalid value in applyParametricPauliGeneralGate_
 ```
 
-**Root Cause**:
-The controlled Trotter time evolution operation `qml.ctrl(qml.TrotterProduct(...))` used in QPE circuits (`src/q2m3/core/qpe.py:250-253`) is not compatible with the combination of:
-1. Catalyst @qjit JIT compilation
-2. lightning.gpu (cuQuantum) backend
+**Affected Operation**: `qml.ctrl(qml.TrotterProduct(...))` (`qpe.py:206-209`)
 
-Specifically:
-- lightning.gpu lacks native support for controlled TrotterProduct
-- Catalyst decomposes it into QubitUnitary operations
-- The decomposed matrices may exceed cuQuantum API parameter constraints
-- custatevec's `applyParametricPauliGeneralGate_` function fails parameter validation
-
-**Affected Operations**:
-
-| Operation | lightning.qubit | lightning.gpu | Catalyst @qjit |
-|-----------|-----------------|---------------|----------------|
-| `qml.TrotterProduct` | OK | OK | OK |
-| `qml.ctrl(TrotterProduct)` | OK | **FAIL** | **FAIL** (with GPU) |
-
-**Workaround**:
-The demo automatically uses `lightning.qubit` (CPU) for Catalyst execution:
-- **Step 2**: Uses `lightning.gpu` (no Catalyst) - ~29 seconds
-- **Step 3**: Uses `lightning.qubit` + Catalyst @qjit - ~71 seconds
+**Workaround**: Demo automatically uses `lightning.qubit` for Catalyst execution:
+```python
+# Standard: lightning.gpu (GPU) - ~42s
+# Catalyst: lightning.qubit (CPU) - ~89s (2.1x slower but correct)
+```
 
 **Recommended Configuration**:
 ```python
-# GPU without Catalyst (recommended for speed)
+# GPU without Catalyst (best performance)
 qpe_config = {"device_type": "lightning.gpu"}
 qmmm = QuantumQMMM(qm_atoms, qpe_config=qpe_config, use_catalyst=False)
 
-# Catalyst with CPU (recommended for JIT optimization)
+# Catalyst with CPU (JIT optimization)
 qpe_config = {"device_type": "lightning.qubit"}
 qmmm = QuantumQMMM(qm_atoms, qpe_config=qpe_config, use_catalyst=True)
 ```
 
-**Official Documentation**:
-> "Not all PennyLane devices currently work with Catalyst, and for those that do, their supported feature set may not necessarily match supported features when used without qjit()"
-> — [Catalyst Supported Devices](https://docs.pennylane.ai/projects/catalyst/en/latest/dev/devices.html)
+**Reference**: [Catalyst Supported Devices](https://docs.pennylane.ai/projects/catalyst/en/latest/dev/devices.html)
 
 ---
 

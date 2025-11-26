@@ -110,6 +110,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "catalyst: marks tests requiring Catalyst (skip if not installed)",
     "gpu: marks tests requiring lightning.gpu (skip if not available)",
+    "rdm: marks tests related to 1-RDM measurement functionality",
 ]
 
 [tool.coverage.run]

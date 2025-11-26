@@ -14,6 +14,7 @@ from pyscf import gto
 from ..interfaces import PySCFPennyLaneConverter
 from .qmmm_system import Atom, QMMMSystem
 from .qpe import QPEEngine
+from .rdm import RDMEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class QuantumQMMM:
         mm_waters: int = 8,
         qpe_config: dict[str, Any] = None,
         use_catalyst: bool = False,
+        rdm_config: dict[str, Any] | None = None,
     ):
         """
         Initialize Quantum-QM/MM calculator.
@@ -41,6 +43,11 @@ class QuantumQMMM:
             mm_waters: Number of water molecules in MM region
             qpe_config: Configuration for QPE algorithm
             use_catalyst: Enable Catalyst @qjit compilation for QPE circuits
+            rdm_config: Configuration for RDM measurement (default: enabled with defaults)
+                - enabled: Enable RDM measurement (default: True)
+                - n_shots: Measurement shots (default: 1000)
+                - include_off_diagonal: Measure off-diagonal elements (default: True)
+                - symmetrize: Enforce Hermitian symmetry (default: True)
         """
         # Set default QPE configuration
         default_config = {
@@ -81,6 +88,17 @@ class QuantumQMMM:
             use_catalyst=use_catalyst,
         )
 
+        # RDM configuration: default enabled
+        default_rdm_config = {
+            "enabled": True,
+            "n_shots": 1000,
+            "include_off_diagonal": True,
+            "symmetrize": True,
+        }
+        if rdm_config is not None:
+            default_rdm_config.update(rdm_config)
+        self.rdm_config = default_rdm_config
+
     def compute_ground_state(self) -> dict[str, Any]:
         """
         Compute ground state properties using QPE.
@@ -116,6 +134,7 @@ class QuantumQMMM:
         result = {
             "energy": qpe_result["energy"],
             "density_matrix": density_matrix,
+            "rdm_source": qpe_result.get("rdm_source", "hartree_fock"),
             "atomic_charges": atomic_charges,
             "convergence": qpe_result["convergence"],
         }
@@ -217,16 +236,52 @@ class QuantumQMMM:
                 f"by {energy_diff:.4f} Ha, exceeding threshold {threshold} Ha"
             )
 
+        # Determine density matrix source based on RDM config
+        if self.rdm_config.get("enabled", True):
+            # Measure RDM from Trotter-evolved state
+            n_electrons = int(np.sum(hf_state))  # Count electrons from HF state
+            rdm_estimator = RDMEstimator(
+                n_qubits=n_qubits,
+                n_electrons=n_electrons,
+                config=self.rdm_config,
+            )
+
+            # Get device type from QPE config
+            device_type = self.qpe_config.get("device_type", "default.qubit")
+            if device_type == "auto":
+                device_type = "default.qubit"  # Use default for RDM measurement
+
+            # Measure 1-RDM in spin-orbital basis
+            spin_rdm = rdm_estimator.measure_1rdm(
+                hamiltonian=H,
+                hf_state=hf_state,
+                base_time=base_time,
+                n_trotter_steps=n_trotter_steps,
+                device_type=device_type,
+            )
+
+            # Convert spin-orbital RDM to spatial-orbital RDM for Mulliken analysis
+            # PySCF expects spatial-orbital RDM
+            spatial_rdm = rdm_estimator.spin_to_spatial_rdm(spin_rdm)
+            density_matrix = spatial_rdm
+            rdm_source = "quantum_measurement"
+        else:
+            # Fallback to HF density matrix
+            density_matrix = hamiltonian_data["scf_result"].make_rdm1()
+            rdm_source = "hartree_fock"
+
         return {
             "energy": energy,
             "energy_hf": energy_hf,
             "energy_difference": energy_diff,
-            "density_matrix": hamiltonian_data["scf_result"].make_rdm1(),
+            "density_matrix": density_matrix,
+            "rdm_source": rdm_source,
             "convergence": {
                 "converged": True,
                 "method": "real_qpe",
                 "n_estimation_wires": n_estimation_wires,
                 "n_shots": n_shots,
+                "rdm_enabled": self.rdm_config.get("enabled", True),
             },
         }
 

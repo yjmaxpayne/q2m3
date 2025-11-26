@@ -192,6 +192,7 @@ def print_results(results: dict, execution_time: float, label: str):
     energy_qpe = results["energy"]
     energy_hf = results.get("energy_hf", "N/A")
     energy_diff = results.get("energy_difference", "N/A")
+    rdm_source = results.get("rdm_source", "unknown")
 
     print(f"Execution Time: {execution_time:.3f} s")
     print()
@@ -208,12 +209,14 @@ def print_results(results: dict, execution_time: float, label: str):
     print("Convergence Status:")
     print(f"  Converged: {'Yes' if conv['converged'] else 'No'}")
     print(f"  Method: {conv.get('method', 'N/A')}")
+    if conv.get("rdm_enabled"):
+        print(f"  RDM Measurement: Enabled")
 
-    # Mulliken charges
+    # Mulliken charges with RDM source indication
     charges = results["atomic_charges"]
     total_charge = sum(charges.values())
     print()
-    print("Mulliken Population Analysis:")
+    print(f"Mulliken Population Analysis (RDM source: {rdm_source}):")
     for atom_label, charge in charges.items():
         print(f"  {atom_label}: {charge:+.4f}")
     print(f"  Total Charge: {total_charge:+.4f}")
@@ -364,7 +367,8 @@ def main():
     print("  [OK] Inverse QFT (qml.adjoint(qml.QFT))")
     print("  [OK] Phase-to-energy extraction")
     print("  [OK] QM/MM system with TIP3P solvation")
-    print("  [OK] Mulliken population analysis")
+    print("  [OK] Quantum RDM measurement (Pauli expectation values)")
+    print("  [OK] Mulliken population analysis (from quantum RDM)")
     if HAS_CATALYST:
         print("  [OK] Catalyst @qjit JIT compilation")
     else:

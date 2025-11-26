@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-11-26T07:50:25.880026",
+  "catalyst_available": true,
+  "catalyst_version": "0.13.0",
+  "lightning_gpu_available": true,
+  "system": {
+    "qm_region": "H3O+",
+    "n_atoms": 4,
+    "total_charge": 1,
+    "mm_waters": 8
+  },
+  "qpe_config": {
+    "use_real_qpe": true,
+    "n_estimation_wires": 4,
+    "base_time": 0.1,
+    "n_trotter_steps": 10,
+    "n_shots": 100,
+    "active_electrons": 4,
+    "active_orbitals": 4,
+    "energy_warning_threshold": 1.0,
+    "algorithm": "standard",
+    "mapping": "jordan_wigner",
+    "device_type": "auto"
+  },
+  "quantum_resources": {
+    "active_electrons": 4,
+    "active_orbitals": 4,
+    "system_qubits": 8,
+    "estimation_qubits": 4,
+    "total_qubits": 12
+  },
+  "results_standard": {
+    "device": "lightning.gpu",
+    "energy": -27.292586178061324,
+    "energy_hf": -75.32646419098317,
+    "execution_time_s": 28.11715336600173,
+    "atomic_charges": {
+      "O0": -2.0000000000000036,
+      "H1": 1.0,
+      "H2": 1.0,
+      "H3": 1.0
+    }
+  },
+  "results_catalyst": {
+    "device": "lightning.gpu",
+    "energy": -29.1775417702152,
+    "energy_hf": -75.32646419098319,
+    "execution_time_s": 64.11833391999971,
+    "atomic_charges": {
+      "O0": -2.0,
+      "H1": 1.0,
+      "H2": 1.0,
+      "H3": 1.0
+    },
+    "catalyst_enabled": true
+  }
+}

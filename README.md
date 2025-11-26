@@ -115,7 +115,7 @@ QuantumQMMM (main interface)
 
 The QPE circuit follows the standard structure:
 
-1. **Initial State Preparation**: HF reference state via `qml.BasisState`
+1. **Initial State Preparation**: HF reference state via explicit X gates (Catalyst-compatible)
 2. **Hadamard Gates**: Superposition on estimation qubits
 3. **Controlled Time Evolution**: `qml.ctrl(qml.TrotterProduct)` for U^(2^k)
 4. **Inverse QFT**: `qml.adjoint(qml.QFT)` for phase readout
@@ -213,6 +213,8 @@ pytest -m "gpu"           # Run only GPU tests
 2. **Catalyst + GPU**: Combining `@qjit` with `lightning.gpu` has compatibility issues for `qml.ctrl(qml.TrotterProduct)`. Use `lightning.qubit` with Catalyst for best results.
 
 3. **Active Space**: Full H3O+ requires 16 qubits with ~2000 Pauli terms. The implementation uses active space approximation (4e, 4o = 8 qubits) to make simulation feasible.
+
+4. **Catalyst BasisState Compatibility** (Resolved): `qml.BasisState` combined with controlled operations under `@qjit` caused incorrect QPE results. Fixed by using explicit X gates for HF state preparation. See [Catalyst #1631](https://github.com/PennyLaneAI/catalyst/issues/1631).
 
 ## License
 

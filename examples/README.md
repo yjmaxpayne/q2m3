@@ -159,47 +159,47 @@ PennyLane Circuit (decimals=None, level=0):
 --------------------------------------------------------------------------------
 Executing: QPE with lightning.gpu...
 converged SCF energy = -75.3264641909832
-Execution Time: 28.970 s
+Execution Time: 42.290 s
 
 Energy Results:
   HF Reference Energy: -75.326464 Hartree
-  QPE Estimated Energy: -25.525440 Hartree
-  Energy Difference: 49.801024 Hartree
+  QPE Estimated Energy: -76.503440 Hartree
+  Energy Difference: 1.176976 Hartree
 
 Convergence Status:
   Converged: Yes
   Method: real_qpe
 
-Mulliken Population Analysis:
-  O0: -2.0000
-  H1: +1.0000
-  H2: +1.0000
-  H3: +1.0000
+Mulliken Population Analysis (RDM source: quantum_measurement):
+  O0: +0.8477
+  H1: -0.0538
+  H2: +0.1030
+  H3: +0.1030
   Total Charge: +1.0000
 
 [Step 4] Catalyst @qjit QPE Execution
 --------------------------------------------------------------------------------
 Executing: Catalyst QPE with lightning.qubit + @qjit...
 converged SCF energy = -75.3264641909832
-Execution Time: 70.714 s
+Execution Time: 89.479 s
 
 Energy Results:
   HF Reference Energy: -75.326464 Hartree
-  QPE Estimated Energy: -26.821347 Hartree
-  Energy Difference: 48.505117 Hartree
+  QPE Estimated Energy: -76.503440 Hartree
+  Energy Difference: 1.176976 Hartree
 
 [Step 5] Results Comparison
 --------------------------------------------------------------------------------
 Execution Time Comparison:
-  Standard QPE: 28.970 s
-  Catalyst QPE: 70.714 s
-  Ratio: 2.44x (Catalyst includes JIT compilation overhead)
+  Standard QPE (lightning.gpu): 42.290 s
+  Catalyst QPE (lightning.qubit): 89.479 s
+  Ratio: 2.12x slower with Catalyst
 
 Energy Comparison:
-  Standard QPE: -25.525440 Hartree
-  Catalyst QPE: -26.821347 Hartree
-  Difference: 1.295907 Hartree
-  Status: Results differ (stochastic QPE sampling)
+  Standard QPE: -76.503440 Hartree
+  Catalyst QPE: -76.503440 Hartree
+  Difference: 0.000000 Hartree
+  Status: Results consistent (diff < 0.01 Ha)
 
 [Step 6] Save Results
 --------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ Demo Summary
 q2m3 MVP Capabilities Demonstrated:
   [OK] PySCF -> PennyLane Hamiltonian conversion
   [OK] Standard QPE circuit implementation
-  [OK] HF state preparation (qml.BasisState)
+  [OK] HF state preparation (explicit X gates, Catalyst-compatible)
   [OK] Trotter time evolution (qml.TrotterProduct)
   [OK] Inverse QFT (qml.adjoint(qml.QFT))
   [OK] Phase-to-energy extraction
@@ -280,21 +280,56 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
   },
   "results_standard": {
     "device": "lightning.gpu",
-    "energy": -25.525440,
+    "energy": -76.503440,
     "energy_hf": -75.326464,
-    "execution_time_s": 28.970
+    "execution_time_s": 42.290
   },
   "results_catalyst": {
     "device": "lightning.qubit",
-    "energy": -26.821347,
+    "energy": -76.503440,
     "energy_hf": -75.326464,
-    "execution_time_s": 70.714,
+    "execution_time_s": 89.479,
     "catalyst_enabled": true
   }
 }
 ```
 
 ## Known Issues
+
+### Catalyst @qjit + BasisState Incompatibility (Resolved)
+
+**Status**: Fixed in Phase 11
+
+**Symptom**:
+When using `qml.BasisState` with `qml.ctrl(qml.adjoint(TrotterProduct))` under `@qjit`, QPE produces incorrect results (uniform distribution instead of peaked phase estimation).
+
+**Root Cause**:
+Catalyst's `set_basis_state_p` primitive lacks control wire support. When BasisState coexists with controlled operations in the same circuit, Catalyst's compilation produces incorrect behavior.
+
+**Evidence** ([Catalyst jax_primitives.py](https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py)):
+```python
+@set_basis_state_p.def_abstract_eval
+def _set_basis_state_abstract_eval(state, basis_state):
+    # No handling for control wires - returns unchanged shape
+    return state
+```
+
+**Fix**: Use explicit X gates instead of `qml.BasisState` for HF state preparation:
+```python
+# Before (incompatible):
+qml.BasisState(hf_state, wires=wires)
+
+# After (Catalyst-compatible):
+for wire, state in zip(wires, hf_state):
+    if state == 1:
+        qml.PauliX(wires=wire)
+```
+
+**Related Issues**:
+- [Catalyst #1631](https://github.com/PennyLaneAI/catalyst/issues/1631) - BasisState support
+- [Catalyst #1301](https://github.com/PennyLaneAI/catalyst/issues/1301) - Nested adjoint/ctrl handling
+
+---
 
 ### Catalyst @qjit + lightning.gpu Incompatibility
 

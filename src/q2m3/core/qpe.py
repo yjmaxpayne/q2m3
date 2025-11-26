@@ -32,74 +32,12 @@ except ImportError:
         return fn if fn else lambda f: f
 
 
-# Device availability checks
-HAS_LIGHTNING_GPU = False
-try:
-    _test_dev = qml.device("lightning.gpu", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_GPU = True
-except Exception:
-    pass
-
-HAS_LIGHTNING_QUBIT = False
-try:
-    _test_dev = qml.device("lightning.qubit", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_QUBIT = True
-except Exception:
-    pass
-
-
-def _select_device(device_type: str, n_wires: int, shots: int, use_catalyst: bool = False):
-    """
-    Select quantum device based on device_type parameter.
-
-    Args:
-        device_type: "auto", "default.qubit", "lightning.qubit", or "lightning.gpu"
-        n_wires: Number of qubits
-        shots: Number of measurement shots
-        use_catalyst: If True, fallback devices must be Catalyst-compatible
-                      (lightning.qubit instead of default.qubit)
-
-    Returns:
-        PennyLane device instance
-    """
-    # Determine fallback device based on Catalyst compatibility
-    # Catalyst only supports lightning.qubit and lightning.gpu, not default.qubit
-    fallback_device = "lightning.qubit" if (use_catalyst and HAS_LIGHTNING_QUBIT) else "default.qubit"
-
-    if device_type == "auto":
-        # Auto-select: GPU > lightning.qubit > default.qubit
-        if HAS_LIGHTNING_GPU:
-            return qml.device("lightning.gpu", wires=n_wires, shots=shots)
-        elif HAS_LIGHTNING_QUBIT:
-            return qml.device("lightning.qubit", wires=n_wires, shots=shots)
-        else:
-            return qml.device("default.qubit", wires=n_wires, shots=shots)
-
-    elif device_type == "lightning.gpu":
-        if not HAS_LIGHTNING_GPU:
-            warnings.warn(
-                f"lightning.gpu not available, falling back to {fallback_device}",
-                UserWarning,
-                stacklevel=3,
-            )
-            return qml.device(fallback_device, wires=n_wires, shots=shots)
-        return qml.device("lightning.gpu", wires=n_wires, shots=shots)
-
-    elif device_type == "lightning.qubit":
-        if not HAS_LIGHTNING_QUBIT:
-            warnings.warn(
-                "lightning.qubit not available, falling back to default.qubit",
-                UserWarning,
-                stacklevel=3,
-            )
-            return qml.device("default.qubit", wires=n_wires, shots=shots)
-        return qml.device("lightning.qubit", wires=n_wires, shots=shots)
-
-    else:
-        # default.qubit or any other value
-        return qml.device("default.qubit", wires=n_wires, shots=shots)
+# Import shared device selection from device_utils
+from .device_utils import (
+    HAS_LIGHTNING_GPU,
+    HAS_LIGHTNING_QUBIT,
+    select_device as _select_device,
+)
 
 
 # Constants for QPE configuration

@@ -246,18 +246,17 @@ class QuantumQMMM:
                 config=self.rdm_config,
             )
 
-            # Get device type from QPE config
+            # Get device type from QPE config - pass directly, let device_utils handle "auto"
             device_type = self.qpe_config.get("device_type", "default.qubit")
-            if device_type == "auto":
-                device_type = "default.qubit"  # Use default for RDM measurement
 
-            # Measure 1-RDM in spin-orbital basis
+            # Measure 1-RDM in spin-orbital basis (now supports GPU + batched measurement)
             spin_rdm = rdm_estimator.measure_1rdm(
                 hamiltonian=H,
                 hf_state=hf_state,
                 base_time=base_time,
                 n_trotter_steps=n_trotter_steps,
                 device_type=device_type,
+                use_catalyst=self.use_catalyst,
             )
 
             # Convert spin-orbital RDM to spatial-orbital RDM for Mulliken analysis

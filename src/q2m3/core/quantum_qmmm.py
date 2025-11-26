@@ -344,18 +344,18 @@ class QuantumQMMM:
             Dictionary of atomic charges
         """
         atomic_charges = {}
-        ao_offset = 0
+        ao_slices = mol.aoslice_by_atom()
 
         for i, atom in enumerate(mol._atom):
             symbol = atom[0]
-            nbas = mol.nao_nr(atom[0])
+            ao_start = ao_slices[i, 2]
+            ao_end = ao_slices[i, 3]
 
-            # Calculate charge for this atom
-            electron_pop = np.trace(pop_matrix[ao_offset : ao_offset + nbas, :])
+            # Mulliken: electron population = sum of diagonal elements for this atom
+            electron_pop = np.sum(np.diag(pop_matrix)[ao_start:ao_end])
             nuclear_charge = gto.charge(symbol)
             charge = nuclear_charge - electron_pop
 
             atomic_charges[f"{symbol}{i}"] = float(charge)
-            ao_offset += nbas
 
         return atomic_charges

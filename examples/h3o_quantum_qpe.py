@@ -230,15 +230,24 @@ def print_comparison(
 ):
     """Print comparison between standard and Catalyst execution."""
     print("Execution Time Comparison:")
-    print(f"  Standard QPE: {time_standard:.3f} s")
-    print(f"  Catalyst QPE: {time_catalyst:.3f} s")
+    std_device = (
+        "lightning.gpu"
+        if HAS_LIGHTNING_GPU
+        else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
+    )
+    print(f"  Standard QPE ({std_device}): {time_standard:.3f} s")
+    print(f"  Catalyst QPE (lightning.qubit): {time_catalyst:.3f} s")
 
     if time_catalyst > 0:
         speedup = time_standard / time_catalyst
         if speedup > 1:
             print(f"  Speedup: {speedup:.2f}x faster with Catalyst")
         else:
-            print(f"  Ratio: {1/speedup:.2f}x (Catalyst includes JIT compilation overhead)")
+            print(f"  Ratio: {1/speedup:.2f}x slower with Catalyst")
+            if HAS_LIGHTNING_GPU:
+                print("  Note: Catalyst cannot use lightning.gpu for qml.ctrl(TrotterProduct),")
+                print("        so it falls back to lightning.qubit (CPU). This explains the")
+                print("        performance difference when GPU is available.")
     print()
 
     print("Energy Comparison:")
@@ -289,8 +298,11 @@ def main():
     print_results(results_standard, time_standard, "Standard")
 
     # Step 3: Catalyst @qjit QPE execution
-    # Note: Catalyst uses lightning.qubit (lightning.gpu has compatibility issues with some gates)
     print_section("Catalyst @qjit QPE Execution", step=3)
+    print("NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to")
+    print("      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).")
+    print("      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'")
+    print()
     if HAS_CATALYST:
         qpe_config_catalyst = get_qpe_config(device_type="lightning.qubit")
         results_catalyst, time_catalyst = run_qpe_calculation(
@@ -316,7 +328,11 @@ def main():
     # Step 5: Save results
     print_section("Save Results", step=5)
     # Determine actual device used
-    actual_device = "lightning.gpu" if HAS_LIGHTNING_GPU else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
+    actual_device = (
+        "lightning.gpu"
+        if HAS_LIGHTNING_GPU
+        else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
+    )
     output_data = {
         "timestamp": datetime.now().isoformat(),
         "catalyst_available": HAS_CATALYST,
@@ -370,11 +386,12 @@ def main():
     print("  [OK] Quantum RDM measurement (Pauli expectation values)")
     print("  [OK] Mulliken population analysis (from quantum RDM)")
     if HAS_CATALYST:
-        print("  [OK] Catalyst @qjit JIT compilation")
+        print("  [OK] Catalyst @qjit JIT compilation (lightning.qubit only)")
+        print("       -> Note: qml.ctrl(TrotterProduct) incompatible with lightning.gpu")
     else:
         print("  [--] Catalyst @qjit (not installed)")
     if HAS_LIGHTNING_GPU:
-        print("  [OK] GPU acceleration (lightning.gpu)")
+        print("  [OK] GPU acceleration (lightning.gpu, standard QPE only)")
     else:
         print("  [--] GPU acceleration (lightning.gpu not available)")
     print()

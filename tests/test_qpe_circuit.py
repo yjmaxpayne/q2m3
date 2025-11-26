@@ -30,7 +30,7 @@ class TestInitialStatePreparation:
         n_qubits = h2_hamiltonian["n_qubits"]
 
         engine = QPEEngine(n_qubits=n_qubits, n_iterations=4)
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qml.device("lightning.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def prepare_and_measure():
@@ -52,7 +52,7 @@ class TestInitialStatePreparation:
         n_qubits = h3o_hamiltonian["n_qubits"]
 
         engine = QPEEngine(n_qubits=n_qubits, n_iterations=4)
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qml.device("lightning.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def prepare_and_measure():
@@ -71,7 +71,7 @@ class TestInitialStatePreparation:
     def test_hf_state_empty(self):
         """Test preparation with all-zero state."""
         engine = QPEEngine(n_qubits=4, n_iterations=4)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("lightning.qubit", wires=4)
         hf_state = np.array([0, 0, 0, 0])
 
         @qml.qnode(dev)
@@ -95,7 +95,7 @@ class TestInverseQFT:
     def test_inverse_qft_basic(self):
         """Test QFT followed by inverse QFT gives identity."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
         def qft_then_inverse():
@@ -116,7 +116,7 @@ class TestInverseQFT:
     def test_inverse_qft_identity(self):
         """Test QFT followed by QFT^-1 is identity on arbitrary state."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qnode(dev)
         def identity_test():
@@ -145,7 +145,7 @@ class TestInverseQFT:
     def test_inverse_qft_single_wire(self):
         """Test inverse QFT on single wire (just Hadamard)."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qnode(dev)
         def single_wire_qft():
@@ -169,7 +169,7 @@ class TestControlledUnitary:
     def test_controlled_unitary_simple_hamiltonian(self, simple_hamiltonian):
         """Test controlled evolution with simple Hamiltonian."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=3)  # 2 system + 1 control
+        dev = qml.device("lightning.qubit", wires=3)  # 2 system + 1 control
 
         @qml.qnode(dev)
         def test_circuit():
@@ -193,7 +193,7 @@ class TestControlledUnitary:
     def test_controlled_unitary_control_off(self, simple_hamiltonian):
         """Test that unitary is NOT applied when control is |0⟩."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qnode(dev)
         def with_control_off():
@@ -219,7 +219,7 @@ class TestControlledUnitary:
 
         engine = QPEEngine(n_qubits=n_qubits, n_iterations=4)
         total_wires = n_qubits + 1  # system + 1 control
-        dev = qml.device("default.qubit", wires=total_wires)
+        dev = qml.device("lightning.qubit", wires=total_wires)
 
         @qml.qnode(dev)
         def test_h2_circuit():
@@ -244,7 +244,7 @@ class TestControlledUnitary:
     def test_controlled_unitary_different_times(self, simple_hamiltonian):
         """Test that different evolution times give different results."""
         engine = QPEEngine(n_qubits=2, n_iterations=4)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=3)
 
         def evolve_with_time(t):
             @qml.qnode(dev)

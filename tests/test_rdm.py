@@ -107,7 +107,7 @@ class TestRDMPhysicalProperties:
             hf_state=hf_state,
             base_time=0.5,
             n_trotter_steps=3,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         # Check Hermiticity
@@ -126,7 +126,7 @@ class TestRDMPhysicalProperties:
             hf_state=hf_state,
             base_time=0.5,
             n_trotter_steps=3,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         trace = np.trace(rdm)
@@ -147,7 +147,7 @@ class TestRDMPhysicalProperties:
             hf_state=hf_state,
             base_time=0.5,
             n_trotter_steps=3,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         eigenvalues = np.linalg.eigvalsh(rdm)
@@ -181,7 +181,7 @@ class TestRDMHFState:
             hf_state=hf_state,
             base_time=0.0,  # No time evolution
             n_trotter_steps=1,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         # Check diagonal elements match HF occupation
@@ -302,7 +302,7 @@ class TestRDMQPEIntegration:
             hf_state=hf_state,
             base_time=0.3,
             n_trotter_steps=5,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         # Basic sanity checks
@@ -324,7 +324,7 @@ class TestRDMQPEIntegration:
             hf_state=hf_state,
             base_time=0.1,
             n_trotter_steps=3,
-            device_type="default.qubit",
+            device_type="lightning.qubit",
         )
 
         # Basic sanity checks

@@ -160,7 +160,7 @@ class TestPennyLaneHamiltonianEnergy:
         H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(symbols, coords, charge=0)
 
         # Create device and compute HF energy expectation
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qml.device("lightning.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def hf_energy():

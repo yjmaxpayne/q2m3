@@ -149,21 +149,29 @@ def h3o_hamiltonian_active_space(h3o_molecule_data):
 
 @pytest.fixture
 def qpe_config_basic():
-    """Basic QPE configuration for quick tests."""
+    """Basic QPE configuration for quick tests.
+
+    Uses lightning.qubit for faster test execution.
+    """
     return {
         "n_estimation_wires": 4,
         "n_trotter_steps": 3,
         "base_time": 0.5,
+        "device_type": "lightning.qubit",
     }
 
 
 @pytest.fixture
 def qpe_config_accurate():
-    """More accurate QPE configuration."""
+    """More accurate QPE configuration.
+
+    Uses lightning.qubit for faster test execution.
+    """
     return {
         "n_estimation_wires": 6,
         "n_trotter_steps": 5,
         "base_time": 0.3,
+        "device_type": "lightning.qubit",
     }
 
 
@@ -197,7 +205,10 @@ def pauli_z_hamiltonian():
 
 @pytest.fixture
 def h3o_qpe_config():
-    """H3O+ QPE configuration with active space via fixture."""
+    """H3O+ QPE configuration with active space via fixture.
+
+    Uses lightning.qubit for faster test execution.
+    """
     return {
         "algorithm": "standard",
         "iterations": 8,
@@ -212,12 +223,16 @@ def h3o_qpe_config():
         "active_electrons": 4,
         "active_orbitals": 4,
         "energy_warning_threshold": 5.0,  # Relaxed threshold for testing
+        "device_type": "lightning.qubit",
     }
 
 
 @pytest.fixture
 def h2_qpe_config():
-    """H2 QPE configuration for fast tests."""
+    """H2 QPE configuration for fast tests.
+
+    Uses lightning.qubit for faster test execution.
+    """
     return {
         "algorithm": "standard",
         "iterations": 4,
@@ -230,6 +245,7 @@ def h2_qpe_config():
         "n_trotter_steps": 3,
         "n_shots": 10,
         "energy_warning_threshold": 2.0,
+        "device_type": "lightning.qubit",
     }
 
 

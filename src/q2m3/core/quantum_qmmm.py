@@ -359,3 +359,51 @@ class QuantumQMMM:
             atomic_charges[f"{symbol}{i}"] = float(charge)
 
         return atomic_charges
+
+    def draw_circuits(self) -> dict[str, str]:
+        """
+        Generate text visualizations of QPE and RDM circuits.
+
+        Returns:
+            Dictionary with keys:
+                - "qpe": QPE circuit visualization
+                - "rdm": RDM measurement circuit visualization
+        """
+        # Build Hamiltonian data to get PennyLane Hamiltonian and HF state
+        hamiltonian_data = self._build_qmmm_hamiltonian()
+        H = hamiltonian_data["pennylane_hamiltonian"]
+        hf_state = hamiltonian_data["hf_state"]
+        n_qubits = hamiltonian_data["n_qubits"]
+
+        # Get QPE parameters
+        n_estimation_wires = self.qpe_config.get("n_estimation_wires", 4)
+        base_time = self.qpe_config.get("base_time", 0.1)
+        n_trotter_steps = self.qpe_config.get("n_trotter_steps", 10)
+
+        # Generate QPE circuit visualization
+        qpe_diagram = self.qpe_engine.draw_qpe_circuit(
+            hamiltonian=H,
+            hf_state=hf_state,
+            n_estimation_wires=n_estimation_wires,
+            base_time=base_time,
+            n_trotter_steps=n_trotter_steps,
+        )
+
+        # Generate RDM circuit visualization
+        n_electrons = int(np.sum(hf_state))
+        rdm_estimator = RDMEstimator(
+            n_qubits=n_qubits,
+            n_electrons=n_electrons,
+            config=self.rdm_config,
+        )
+        rdm_diagram = rdm_estimator.draw_rdm_circuit(
+            hamiltonian=H,
+            hf_state=hf_state,
+            base_time=base_time,
+            n_trotter_steps=n_trotter_steps,
+        )
+
+        return {
+            "qpe": qpe_diagram,
+            "rdm": rdm_diagram,
+        }

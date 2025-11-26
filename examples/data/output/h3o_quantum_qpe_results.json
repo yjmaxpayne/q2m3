@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-11-26T07:50:25.880026",
+  "timestamp": "2025-11-26T14:32:11.312027",
   "catalyst_available": true,
   "catalyst_version": "0.13.0",
   "lightning_gpu_available": true,
@@ -31,26 +31,26 @@
   },
   "results_standard": {
     "device": "lightning.gpu",
-    "energy": -27.292586178061324,
-    "energy_hf": -75.32646419098317,
-    "execution_time_s": 28.11715336600173,
+    "energy": -29.1775417702152,
+    "energy_hf": -75.32646419098322,
+    "execution_time_s": 33.132822055998986,
     "atomic_charges": {
-      "O0": -2.0000000000000036,
-      "H1": 1.0,
-      "H2": 1.0,
-      "H3": 1.0
+      "O0": 0.8478182151943257,
+      "H1": -0.05380719590467953,
+      "H2": 0.10299448843972503,
+      "H3": 0.1029944922706254
     }
   },
   "results_catalyst": {
     "device": "lightning.gpu",
-    "energy": -29.1775417702152,
-    "energy_hf": -75.32646419098319,
-    "execution_time_s": 64.11833391999971,
+    "energy": -30.7483380970101,
+    "energy_hf": -75.3264641909832,
+    "execution_time_s": 75.91340085800039,
     "atomic_charges": {
-      "O0": -2.0,
-      "H1": 1.0,
-      "H2": 1.0,
-      "H3": 1.0
+      "O0": 0.8478182151943336,
+      "H1": -0.05380719590468064,
+      "H2": 0.10299449139473404,
+      "H3": 0.10299448931561417
     },
     "catalyst_enabled": true
   }

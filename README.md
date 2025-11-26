@@ -13,7 +13,8 @@ q2m3 demonstrates the integration of Quantum Phase Estimation (QPE) algorithms w
 - QM/MM system setup with TIP3P water solvation
 - GPU acceleration via `lightning.gpu` device
 - Optional Catalyst `@qjit` JIT compilation
-- Mulliken population analysis
+- Quantum 1-RDM measurement for Mulliken population analysis
+- Circuit visualization via `qml.draw()`
 
 ## Quick Start
 
@@ -83,6 +84,11 @@ qmmm = QuantumQMMM(
 results = qmmm.compute_ground_state()
 print(f"Ground State Energy: {results['energy']:.6f} Hartree")
 print(f"HF Reference Energy: {results['energy_hf']:.6f} Hartree")
+
+# Visualize circuits (optional)
+circuits = qmmm.draw_circuits()
+print(circuits["qpe"])  # QPE circuit diagram
+print(circuits["rdm"])  # RDM measurement circuit
 ```
 
 ## Architecture
@@ -98,6 +104,7 @@ QuantumQMMM (main interface)
     |       +-- Standard QPE circuit
     |       +-- Trotter time evolution
     |       +-- Device selection (GPU/CPU)
+    |       +-- Circuit visualization (qml.draw)
     |
     +-- PySCFPennyLaneConverter (interface layer)
             +-- Hamiltonian conversion

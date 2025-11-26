@@ -12,7 +12,8 @@ This demo showcases the complete q2m3 workflow for molecular ground state energy
 - GPU acceleration via `lightning.gpu` device
 - QM/MM system setup with TIP3P water solvation
 - Catalyst `@qjit` compilation for JIT optimization
-- Mulliken population analysis
+- Quantum 1-RDM measurement for Mulliken population analysis
+- Circuit visualization via `qml.draw(decimals=None, level=0)`
 
 ## Pipeline
 
@@ -92,15 +93,16 @@ Geometry (Angstrom):
 | **Base Time** | 0.1 | Evolution time parameter |
 | **Shots** | 100 | Measurement statistics |
 
-## Demo Workflow (5 Steps)
+## Demo Workflow (6 Steps)
 
 | Step | Description | Output |
 |------|-------------|--------|
 | **Step 1** | System Configuration | QM/MM setup, quantum resources, device selection |
-| **Step 2** | QPE Execution (auto device) | Energy with `lightning.gpu` (if available) |
-| **Step 3** | Catalyst QPE Execution | Energy with `lightning.qubit` + `@qjit` |
-| **Step 4** | Results Comparison | Time comparison, energy consistency |
-| **Step 5** | Save Results | JSON output to `data/output/` |
+| **Step 2** | Circuit Visualization | QPE + RDM circuit diagrams via `qml.draw()` |
+| **Step 3** | QPE Execution (auto device) | Energy with `lightning.gpu` (if available) |
+| **Step 4** | Catalyst QPE Execution | Energy with `lightning.qubit` + `@qjit` |
+| **Step 5** | Results Comparison | Time comparison, energy consistency |
+| **Step 6** | Save Results | JSON output to `data/output/` |
 
 ## Sample Output (GPU Environment)
 
@@ -133,7 +135,27 @@ QPE Circuit Parameters:
 
 Device Selection: auto -> lightning.gpu (GPU detected)
 
-[Step 2] QPE Execution (auto device selection)
+[Step 2] Circuit Visualization (PennyLane)
+--------------------------------------------------------------------------------
+Generating QPE + RDM circuit diagrams...
+
+QPE Circuit (Standard Phase Estimation):
+------------------------------------------------------------
+PennyLane Circuit (decimals=None, level=0):
+ 0: ─╭|Ψ⟩─╭TrotterProduct─╭TrotterProduct───────┤
+ 1: ─├|Ψ⟩─├TrotterProduct─├TrotterProduct───────┤
+...
+ 8: ──H───╰●──────────────│───────────────╭QFT†─┤ ╭Sample
+ 9: ──H───────────────────╰●──────────────├QFT†─┤ ├Sample
+
+RDM Measurement Circuit (Pauli Expectation Values):
+------------------------------------------------------------
+PennyLane Circuit (decimals=None, level=0):
+0: ─╭|Ψ⟩─╭TrotterProduct─┤  <Z>
+1: ─├|Ψ⟩─├TrotterProduct─┤  <Z>
+...
+
+[Step 3] QPE Execution (auto device selection)
 --------------------------------------------------------------------------------
 Executing: QPE with lightning.gpu...
 converged SCF energy = -75.3264641909832
@@ -155,7 +177,7 @@ Mulliken Population Analysis:
   H3: +1.0000
   Total Charge: +1.0000
 
-[Step 3] Catalyst @qjit QPE Execution
+[Step 4] Catalyst @qjit QPE Execution
 --------------------------------------------------------------------------------
 Executing: Catalyst QPE with lightning.qubit + @qjit...
 converged SCF energy = -75.3264641909832
@@ -166,7 +188,7 @@ Energy Results:
   QPE Estimated Energy: -26.821347 Hartree
   Energy Difference: 48.505117 Hartree
 
-[Step 4] Results Comparison
+[Step 5] Results Comparison
 --------------------------------------------------------------------------------
 Execution Time Comparison:
   Standard QPE: 28.970 s
@@ -179,7 +201,7 @@ Energy Comparison:
   Difference: 1.295907 Hartree
   Status: Results differ (stochastic QPE sampling)
 
-[Step 5] Save Results
+[Step 6] Save Results
 --------------------------------------------------------------------------------
 Results saved to: data/output/h3o_quantum_qpe_results.json
 
@@ -193,7 +215,9 @@ q2m3 MVP Capabilities Demonstrated:
   [OK] Inverse QFT (qml.adjoint(qml.QFT))
   [OK] Phase-to-energy extraction
   [OK] QM/MM system with TIP3P solvation
-  [OK] Mulliken population analysis
+  [OK] Quantum RDM measurement (Pauli expectation values)
+  [OK] Mulliken population analysis (from quantum RDM)
+  [OK] Circuit visualization (qml.draw)
   [OK] Catalyst @qjit JIT compilation
   [OK] GPU acceleration (lightning.gpu)
 

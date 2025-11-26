@@ -33,12 +33,8 @@ except ImportError:
 
 
 # Import shared device selection from device_utils
-from .device_utils import (
-    HAS_LIGHTNING_GPU,
-    HAS_LIGHTNING_QUBIT,
-    select_device as _select_device,
-)
-
+from .device_utils import HAS_LIGHTNING_GPU, HAS_LIGHTNING_QUBIT
+from .device_utils import select_device as _select_device
 
 # Constants for QPE configuration
 DEFAULT_ERROR_ESTIMATE = 0.001
@@ -318,3 +314,120 @@ class QPEEngine:
             energy = -energy
 
         return energy
+
+    def draw_qpe_circuit(
+        self,
+        hamiltonian: qml.Hamiltonian,
+        hf_state: np.ndarray,
+        n_estimation_wires: int = DEFAULT_N_ESTIMATION_WIRES,
+        base_time: float = DEFAULT_BASE_TIME,
+        n_trotter_steps: int = DEFAULT_N_TROTTER_STEPS,
+        max_display_wires: int = 8,
+        use_pennylane_draw: bool = True,
+    ) -> str:
+        """
+        Generate text visualization of QPE circuit structure.
+
+        Uses qml.draw() with decimals=None and level=0 for clean output,
+        showing circuit structure without parameter clutter.
+
+        Args:
+            hamiltonian: PennyLane molecular Hamiltonian
+            hf_state: HF reference state binary array
+            n_estimation_wires: Number of estimation qubits
+            base_time: Base evolution time
+            n_trotter_steps: Trotter steps per evolution
+            max_display_wires: Max wires for full circuit display (default: 8)
+            use_pennylane_draw: Use qml.draw() for visualization (default: True)
+
+        Returns:
+            String representation of the circuit
+        """
+        n_system_wires = len(hf_state)
+        system_wires = list(range(n_system_wires))
+        estimation_wires = list(range(n_system_wires, n_system_wires + n_estimation_wires))
+        total_wires = n_system_wires + n_estimation_wires
+
+        if not use_pennylane_draw:
+            return self._generate_qpe_structure_diagram(
+                n_system_wires, n_estimation_wires, base_time, n_trotter_steps
+            )
+
+        # Create QNode for visualization with decimals=None to hide parameters
+        dev = qml.device("default.qubit", wires=total_wires)
+
+        @qml.qnode(dev)
+        def qpe_circuit_for_draw():
+            # 1. Prepare HF initial state
+            qml.BasisState(hf_state, wires=system_wires)
+
+            # 2. Hadamard on estimation qubits
+            for wire in estimation_wires:
+                qml.Hadamard(wires=wire)
+
+            # 3. Controlled time evolutions (show first 2 for clarity)
+            n_show = min(2, n_estimation_wires)
+            for k in range(n_show):
+                control_wire = estimation_wires[k]
+                time = (2**k) * base_time
+                qml.ctrl(
+                    qml.TrotterProduct(hamiltonian, time, n=n_trotter_steps, order=2),
+                    control=control_wire,
+                )
+
+            # 4. Inverse QFT
+            qml.adjoint(qml.QFT)(wires=estimation_wires)
+
+            return qml.sample(wires=estimation_wires)
+
+        # Generate clean circuit drawing with key parameters:
+        # - decimals=None: omit all parameter values for cleaner display
+        # - level=0 ("top"): show high-level circuit without decomposition
+        # - max_length=80: reasonable terminal width
+        try:
+            circuit_str = qml.draw(
+                qpe_circuit_for_draw,
+                decimals=None,  # Hide parameter values
+                level=0,  # No decomposition, show high-level ops
+                max_length=80,
+                show_matrices=False,
+            )()
+            # Add structure summary
+            summary = self._generate_qpe_structure_diagram(
+                n_system_wires, n_estimation_wires, base_time, n_trotter_steps
+            )
+            return f"PennyLane Circuit (decimals=None, level=0):\n{circuit_str}\n\n{summary}"
+        except Exception:
+            return self._generate_qpe_structure_diagram(
+                n_system_wires, n_estimation_wires, base_time, n_trotter_steps
+            )
+
+    def _generate_qpe_structure_diagram(
+        self,
+        n_system_wires: int,
+        n_estimation_wires: int,
+        base_time: float,
+        n_trotter_steps: int,
+    ) -> str:
+        """
+        Generate ASCII structure diagram for QPE circuit.
+
+        Returns:
+            ASCII art representation of QPE structure
+        """
+        lines = []
+        lines.append("QPE Circuit Structure:")
+        lines.append("")
+        lines.append("Estimation Register (phase readout):")
+        for k in range(n_estimation_wires):
+            ctrl_symbol = f"●──U^{2**k}"
+            lines.append(f"  |0⟩ ──H──{ctrl_symbol:>10}──┤QFT†├── Sample")
+        lines.append("")
+        lines.append("System Register (molecular state):")
+        lines.append(f"  |HF⟩ ({n_system_wires} qubits) ────────────────────────")
+        lines.append("")
+        lines.append("Where:")
+        lines.append(f"  U = exp(-iHt), t₀ = {base_time}")
+        lines.append(f"  Trotter steps: {n_trotter_steps}")
+        lines.append(f"  Total qubits: {n_system_wires + n_estimation_wires}")
+        return "\n".join(lines)

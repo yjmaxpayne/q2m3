@@ -298,6 +298,102 @@ class RDMEstimator:
 
         return rdm_physical.real  # 1-RDM should be real for real Hamiltonians
 
+    def draw_rdm_circuit(
+        self,
+        hamiltonian: qml.Hamiltonian,
+        hf_state: np.ndarray,
+        base_time: float,
+        n_trotter_steps: int,
+        max_observables: int = 4,
+        use_pennylane_draw: bool = True,
+    ) -> str:
+        """
+        Generate text visualization of RDM measurement circuit.
+
+        Uses qml.draw() with decimals=None and level=0 for clean output,
+        showing circuit structure without parameter clutter.
+
+        Args:
+            hamiltonian: PennyLane molecular Hamiltonian
+            hf_state: HF reference state binary array
+            base_time: Evolution time for Trotter
+            n_trotter_steps: Number of Trotter steps
+            max_observables: Max observables to show (default: 4)
+            use_pennylane_draw: Use qml.draw() for visualization (default: True)
+
+        Returns:
+            String representation of the circuit
+        """
+        all_observables = self._build_all_observables()
+        display_observables = all_observables[:max_observables]
+
+        if not use_pennylane_draw:
+            return self._generate_rdm_structure_diagram(
+                base_time, n_trotter_steps, len(all_observables)
+            )
+
+        dev = qml.device("default.qubit", wires=self.n_qubits)
+
+        @qml.qnode(dev)
+        def rdm_circuit_for_draw():
+            # 1. Prepare HF state
+            qml.BasisState(hf_state, wires=range(self.n_qubits))
+            # 2. Time evolution
+            qml.TrotterProduct(hamiltonian, base_time, n=n_trotter_steps, order=2)
+            # 3. Measure observables (show subset)
+            return tuple(qml.expval(obs) for obs in display_observables)
+
+        # Generate clean circuit drawing with key parameters:
+        # - decimals=None: omit all parameter values
+        # - level=0: show high-level circuit without decomposition
+        try:
+            circuit_str = qml.draw(
+                rdm_circuit_for_draw,
+                decimals=None,
+                level=0,
+                max_length=80,
+                show_matrices=False,
+            )()
+            summary = self._generate_rdm_structure_diagram(
+                base_time, n_trotter_steps, len(all_observables)
+            )
+            return f"PennyLane Circuit (decimals=None, level=0):\n{circuit_str}\n\n{summary}"
+        except Exception:
+            return self._generate_rdm_structure_diagram(
+                base_time, n_trotter_steps, len(all_observables)
+            )
+
+    def _generate_rdm_structure_diagram(
+        self,
+        base_time: float,
+        n_trotter_steps: int,
+        n_observables: int,
+    ) -> str:
+        """
+        Generate ASCII structure diagram for RDM circuit.
+
+        Returns:
+            ASCII art representation of RDM measurement structure
+        """
+        lines = []
+        lines.append("RDM Measurement Circuit Structure:")
+        lines.append("")
+        lines.append("┌──────────┐   ┌─────────────────┐   ┌──────────────────┐")
+        lines.append("│ |HF⟩     │ → │ TrotterProduct  │ → │ ⟨O₁⟩, ⟨O₂⟩, ...  │")
+        lines.append("│ prep     │   │ exp(-iHt)       │   │ Pauli expvals    │")
+        lines.append("└──────────┘   └─────────────────┘   └──────────────────┘")
+        lines.append("")
+        lines.append("Parameters:")
+        lines.append(f"  Qubits: {self.n_qubits}")
+        lines.append(f"  Evolution time: {base_time}")
+        lines.append(f"  Trotter steps: {n_trotter_steps}")
+        lines.append(f"  Total observables: {n_observables}")
+        lines.append("")
+        lines.append("Observable types:")
+        lines.append("  Diagonal: ⟨Z_p⟩ → γ_pp = (1 - ⟨Z_p⟩) / 2")
+        lines.append("  Off-diag: ⟨X_p Z... X_q⟩, ⟨Y_p Z... Y_q⟩, etc.")
+        return "\n".join(lines)
+
     def spin_to_spatial_rdm(self, spin_rdm: np.ndarray) -> np.ndarray:
         """
         Convert spin-orbital 1-RDM to spatial-orbital 1-RDM.

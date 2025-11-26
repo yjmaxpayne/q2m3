@@ -286,8 +286,33 @@ def main():
     else:
         print("default.qubit")
 
-    # Step 2: QPE execution with best available device
-    print_section("QPE Execution (auto device selection)", step=2)
+    # Step 2: Circuit visualization
+    print_section("Circuit Visualization (PennyLane)", step=2)
+    print("Generating QPE + RDM circuit diagrams...")
+    print()
+
+    # Create a temporary QuantumQMMM instance for visualization
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        viz_qmmm = QuantumQMMM(
+            qm_atoms=h3o_atoms,
+            mm_waters=mm_waters,
+            qpe_config=qpe_config,
+            use_catalyst=False,
+        )
+        circuits = viz_qmmm.draw_circuits()
+
+    print("QPE Circuit (Standard Phase Estimation):")
+    print("-" * 60)
+    print(circuits["qpe"])
+    print()
+    print("RDM Measurement Circuit (Pauli Expectation Values):")
+    print("-" * 60)
+    print(circuits["rdm"])
+    print()
+
+    # Step 3: QPE execution with best available device
+    print_section("QPE Execution (auto device selection)", step=3)
     results_standard, time_standard = run_qpe_calculation(
         h3o_atoms=h3o_atoms,
         qpe_config=qpe_config,
@@ -297,8 +322,8 @@ def main():
     )
     print_results(results_standard, time_standard, "Standard")
 
-    # Step 3: Catalyst @qjit QPE execution
-    print_section("Catalyst @qjit QPE Execution", step=3)
+    # Step 4: Catalyst @qjit QPE execution
+    print_section("Catalyst @qjit QPE Execution", step=4)
     print("NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to")
     print("      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).")
     print("      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'")
@@ -321,12 +346,12 @@ def main():
         print("Using standard execution as fallback...")
         results_catalyst, time_catalyst = results_standard, time_standard
 
-    # Step 4: Results comparison
-    print_section("Results Comparison", step=4)
+    # Step 5: Results comparison
+    print_section("Results Comparison", step=5)
     print_comparison(results_standard, time_standard, results_catalyst, time_catalyst)
 
-    # Step 5: Save results
-    print_section("Save Results", step=5)
+    # Step 6: Save results
+    print_section("Save Results", step=6)
     # Determine actual device used
     actual_device = (
         "lightning.gpu"
@@ -385,6 +410,7 @@ def main():
     print("  [OK] QM/MM system with TIP3P solvation")
     print("  [OK] Quantum RDM measurement (Pauli expectation values)")
     print("  [OK] Mulliken population analysis (from quantum RDM)")
+    print("  [OK] Circuit visualization (qml.draw)")
     if HAS_CATALYST:
         print("  [OK] Catalyst @qjit JIT compilation (lightning.qubit only)")
         print("       -> Note: qml.ctrl(TrotterProduct) incompatible with lightning.gpu")

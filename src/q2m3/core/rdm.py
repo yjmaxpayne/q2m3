@@ -103,15 +103,11 @@ class RDMEstimator:
                 for q in range(p + 1, self.n_qubits):
                     # Jordan-Wigner Z-string between p and q
                     z_string_wires = list(range(p + 1, q))
-                    observables.extend(
-                        self._build_offdiag_observables(p, q, z_string_wires)
-                    )
+                    observables.extend(self._build_offdiag_observables(p, q, z_string_wires))
 
         return observables
 
-    def _build_offdiag_observables(
-        self, p: int, q: int, z_string_wires: list[int]
-    ) -> list:
+    def _build_offdiag_observables(self, p: int, q: int, z_string_wires: list[int]) -> list:
         """
         Build 4 Pauli observables for off-diagonal 1-RDM element γ_pq.
 
@@ -326,6 +322,54 @@ class RDMEstimator:
         spatial_rdm = alpha_rdm + beta_rdm
 
         return spatial_rdm.real
+
+    def active_mo_to_ao_rdm(
+        self,
+        active_spatial_rdm: np.ndarray,
+        mo_coeff: np.ndarray,
+        mo_occ: np.ndarray,
+        active_electrons: int,
+        active_orbitals: int,
+    ) -> np.ndarray:
+        """
+        Convert active space spatial-orbital 1-RDM to AO basis.
+
+        Steps:
+        1. Embed active space RDM into full MO RDM
+        2. Transform from MO to AO basis: P_AO = C @ P_MO @ C^T
+
+        Args:
+            active_spatial_rdm: 1-RDM in active MO basis, shape (active_orbitals, active_orbitals)
+            mo_coeff: MO coefficient matrix from HF, shape (n_ao, n_mo)
+            mo_occ: MO occupation numbers from HF, shape (n_mo,)
+            active_electrons: Number of active electrons
+            active_orbitals: Number of active orbitals
+
+        Returns:
+            1-RDM in AO basis, shape (n_ao, n_ao)
+        """
+        n_mo = mo_coeff.shape[1]
+
+        # Determine active space orbital indices
+        # PennyLane uses CASCI-like active space centered around HOMO-LUMO
+        n_occ = int(np.sum(mo_occ > 0))  # Number of occupied orbitals
+        active_start = n_occ - active_electrons // 2  # First active orbital (0-indexed)
+
+        # Build full MO RDM
+        full_mo_rdm = np.zeros((n_mo, n_mo))
+
+        # Fill frozen occupied orbitals (doubly occupied)
+        for i in range(active_start):
+            full_mo_rdm[i, i] = 2.0
+
+        # Embed active space RDM
+        active_end = active_start + active_orbitals
+        full_mo_rdm[active_start:active_end, active_start:active_end] = active_spatial_rdm
+
+        # Transform MO RDM to AO basis: P_AO = C @ P_MO @ C^T
+        ao_rdm = mo_coeff @ full_mo_rdm @ mo_coeff.T
+
+        return ao_rdm.real
 
 
 def measure_rdm_from_qpe_state(

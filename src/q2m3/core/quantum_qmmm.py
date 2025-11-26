@@ -259,10 +259,27 @@ class QuantumQMMM:
                 use_catalyst=self.use_catalyst,
             )
 
-            # Convert spin-orbital RDM to spatial-orbital RDM for Mulliken analysis
-            # PySCF expects spatial-orbital RDM
+            # Convert spin-orbital RDM to spatial-orbital RDM
             spatial_rdm = rdm_estimator.spin_to_spatial_rdm(spin_rdm)
-            density_matrix = spatial_rdm
+
+            # Check if active space was used - need to convert to AO basis
+            active_electrons = self.qpe_config.get("active_electrons")
+            active_orbitals = self.qpe_config.get("active_orbitals")
+
+            if active_electrons is not None and active_orbitals is not None:
+                # Active space used: convert from active MO basis to AO basis
+                mo_coeff = hamiltonian_data["mo_coeff"]
+                mo_occ = hamiltonian_data["mo_occ"]
+                density_matrix = rdm_estimator.active_mo_to_ao_rdm(
+                    active_spatial_rdm=spatial_rdm,
+                    mo_coeff=mo_coeff,
+                    mo_occ=mo_occ,
+                    active_electrons=active_electrons,
+                    active_orbitals=active_orbitals,
+                )
+            else:
+                # Full space: spatial RDM is already in MO basis matching AO dimensions
+                density_matrix = spatial_rdm
             rdm_source = "quantum_measurement"
         else:
             # Fallback to HF density matrix

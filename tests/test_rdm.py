@@ -17,7 +17,6 @@ import pytest
 
 from q2m3.core import RDMEstimator
 
-
 # ============================================================================
 # RDM Configuration Fixtures
 # ============================================================================
@@ -131,9 +130,9 @@ class TestRDMPhysicalProperties:
         )
 
         trace = np.trace(rdm)
-        assert np.isclose(trace, n_electrons, atol=0.1), (
-            f"Trace ({trace}) should equal n_electrons ({n_electrons})"
-        )
+        assert np.isclose(
+            trace, n_electrons, atol=0.1
+        ), f"Trace ({trace}) should equal n_electrons ({n_electrons})"
 
     def test_rdm_eigenvalues_bounded(self, h2_hamiltonian, rdm_config_basic):
         """RDM eigenvalues should be in [0, 1] after physical constraints."""
@@ -187,9 +186,9 @@ class TestRDMHFState:
 
         # Check diagonal elements match HF occupation
         for i, occ in enumerate(hf_state):
-            assert np.isclose(rdm[i, i], occ, atol=0.1), (
-                f"RDM[{i},{i}] = {rdm[i, i]:.3f}, expected {occ}"
-            )
+            assert np.isclose(
+                rdm[i, i], occ, atol=0.1
+            ), f"RDM[{i},{i}] = {rdm[i, i]:.3f}, expected {occ}"
 
 
 # ============================================================================
@@ -214,12 +213,14 @@ class TestSpinToSpatialConversion:
         """Spatial RDM should be real for real Hamiltonians."""
         n_spin = 4
         # Create a simple Hermitian spin RDM
-        spin_rdm = np.array([
-            [0.9, 0.1, 0.0, 0.0],
-            [0.1, 0.9, 0.0, 0.0],
-            [0.0, 0.0, 0.1, 0.05],
-            [0.0, 0.0, 0.05, 0.1],
-        ])
+        spin_rdm = np.array(
+            [
+                [0.9, 0.1, 0.0, 0.0],
+                [0.1, 0.9, 0.0, 0.0],
+                [0.0, 0.0, 0.1, 0.05],
+                [0.0, 0.0, 0.05, 0.1],
+            ]
+        )
 
         estimator = RDMEstimator(n_qubits=n_spin, n_electrons=2)
         spatial_rdm = estimator.spin_to_spatial_rdm(spin_rdm)
@@ -274,9 +275,9 @@ class TestPhysicalConstraints:
         physical_rdm = estimator.enforce_physical_constraints(raw_rdm)
 
         trace = np.trace(physical_rdm)
-        assert np.isclose(trace, n_electrons, atol=1e-8), (
-            f"Trace ({trace}) should equal n_electrons ({n_electrons})"
-        )
+        assert np.isclose(
+            trace, n_electrons, atol=1e-8
+        ), f"Trace ({trace}) should equal n_electrons ({n_electrons})"
 
 
 # ============================================================================
@@ -329,3 +330,118 @@ class TestRDMQPEIntegration:
         # Basic sanity checks
         assert rdm.shape == (n_qubits, n_qubits)
         assert np.isclose(np.trace(rdm), active_electrons, atol=0.3)
+
+
+# ============================================================================
+# Test Active MO to AO RDM Conversion
+# ============================================================================
+
+
+class TestActiveMOToAORDM:
+    """Test conversion from active space MO RDM to AO basis."""
+
+    def test_ao_rdm_shape(self):
+        """AO RDM shape should match MO coefficient dimensions."""
+        n_ao = 8  # e.g., STO-3G H3O+
+        n_mo = 8
+        active_electrons = 4
+        active_orbitals = 4
+
+        # Create mock MO coefficients and occupations
+        mo_coeff = np.eye(n_ao, n_mo)  # Simplified: AO = MO
+        mo_occ = np.array([2.0, 2.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0])  # 5 occupied orbitals
+
+        # Create active space RDM (4x4)
+        active_rdm = np.diag([1.8, 1.8, 0.2, 0.2])  # Sum = 4 electrons
+
+        estimator = RDMEstimator(n_qubits=8, n_electrons=active_electrons)
+        ao_rdm = estimator.active_mo_to_ao_rdm(
+            active_spatial_rdm=active_rdm,
+            mo_coeff=mo_coeff,
+            mo_occ=mo_occ,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+        )
+
+        assert ao_rdm.shape == (n_ao, n_ao), f"Expected ({n_ao}, {n_ao}), got {ao_rdm.shape}"
+
+    def test_ao_rdm_preserves_total_electrons(self):
+        """Total electrons should be preserved after transformation."""
+        n_ao = 8
+        n_mo = 8
+        active_electrons = 4
+        active_orbitals = 4
+
+        # H3O+ like: 10 total electrons, 5 occupied, active space = 4e, 4o
+        mo_coeff = np.eye(n_ao, n_mo)
+        mo_occ = np.array([2.0, 2.0, 2.0, 2.0, 2.0, 0.0, 0.0, 0.0])
+
+        # Active space: orbitals 3,4,5,6 (0-indexed), 4 electrons
+        active_rdm = np.diag([1.8, 1.8, 0.2, 0.2])
+
+        estimator = RDMEstimator(n_qubits=8, n_electrons=active_electrons)
+        ao_rdm = estimator.active_mo_to_ao_rdm(
+            active_spatial_rdm=active_rdm,
+            mo_coeff=mo_coeff,
+            mo_occ=mo_occ,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+        )
+
+        # Frozen core contributes 3*2 = 6 electrons, active contributes 4
+        expected_total = 10
+        actual_trace = np.trace(ao_rdm)
+        assert np.isclose(
+            actual_trace, expected_total, atol=0.1
+        ), f"Trace ({actual_trace}) should equal total electrons ({expected_total})"
+
+    def test_ao_rdm_frozen_core_contribution(self):
+        """Frozen core orbitals should contribute 2 electrons each."""
+        n_ao = 6
+        n_mo = 6
+        active_electrons = 2
+        active_orbitals = 2
+
+        # 4 total electrons: 2 frozen + 2 active
+        mo_coeff = np.eye(n_ao, n_mo)
+        mo_occ = np.array([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])  # 2 occupied orbitals
+
+        # Active space starts at orbital 1 (frozen: orbital 0)
+        active_rdm = np.diag([1.0, 1.0])  # 2 electrons in active space
+
+        estimator = RDMEstimator(n_qubits=4, n_electrons=active_electrons)
+        ao_rdm = estimator.active_mo_to_ao_rdm(
+            active_spatial_rdm=active_rdm,
+            mo_coeff=mo_coeff,
+            mo_occ=mo_occ,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+        )
+
+        # Frozen orbital (0) should have occupation 2.0
+        assert np.isclose(
+            ao_rdm[0, 0], 2.0, atol=0.1
+        ), f"Frozen orbital occupation should be 2.0, got {ao_rdm[0, 0]}"
+
+    def test_ao_rdm_is_real(self):
+        """AO RDM should be real for real systems."""
+        n_ao = 4
+        n_mo = 4
+        active_electrons = 2
+        active_orbitals = 2
+
+        mo_coeff = np.eye(n_ao, n_mo)
+        mo_occ = np.array([2.0, 2.0, 0.0, 0.0])
+
+        active_rdm = np.array([[0.9, 0.1], [0.1, 0.9]])  # Hermitian
+
+        estimator = RDMEstimator(n_qubits=4, n_electrons=active_electrons)
+        ao_rdm = estimator.active_mo_to_ao_rdm(
+            active_spatial_rdm=active_rdm,
+            mo_coeff=mo_coeff,
+            mo_occ=mo_occ,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+        )
+
+        assert np.allclose(ao_rdm.imag, 0), "AO RDM should be real"

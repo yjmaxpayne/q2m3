@@ -385,7 +385,8 @@ def main():
             "atomic_charges": results_standard["atomic_charges"],
         },
         "results_catalyst": {
-            "device": actual_device,
+            # Catalyst always uses lightning.qubit due to qml.ctrl(TrotterProduct) incompatibility
+            "device": "lightning.qubit" if HAS_CATALYST else actual_device,
             "energy": results_catalyst["energy"],
             "energy_hf": results_catalyst.get("energy_hf"),
             "execution_time_s": time_catalyst,

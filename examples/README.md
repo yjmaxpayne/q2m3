@@ -296,28 +296,45 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
 
 ## Known Issues & Catalyst Compatibility
 
-### Issue 1: BasisState + Controlled Operations (Resolved)
+### Issue 1: BasisState + Controlled Operations under @qjit (Workaround Applied)
 
-**Status**: Fixed in Phase 11
+**Status**: Workaround in place (as of PennyLane 0.43.1, Catalyst 0.13.0)
 
-**Symptom**: QPE under `@qjit` produces incorrect results (uniform distribution instead of peaked phase estimation) when `qml.BasisState` coexists with `qml.ctrl(qml.adjoint(TrotterProduct))`.
+**Symptom**: QPE under `@qjit` produces incorrect quantum states when `qml.BasisState` coexists with `qml.ctrl()` operations in the same circuit.
 
-**Root Cause**: Catalyst's `set_basis_state_p` primitive lacks control wire support ([jax_primitives.py](https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py)).
+**Precise Diagnosis** (verified via state vector comparison):
 
-**Fix** (`src/q2m3/core/qpe.py:173-177`):
+```python
+# Test circuit: BasisState + Hadamard + ctrl(TrotterProduct)
+# Expected: superposition state [(4, 0.7071), (5, 0.7071)]
 
-| Before (incompatible) | After (Catalyst-compatible) |
-|----------------------|----------------------------|
-| `qml.BasisState(hf_state, wires)` | `for w, s in zip(wires, hf_state): if s==1: qml.PauliX(w)` |
+@qjit + BasisState:  [(4, 1.0)]           # ✗ Wrong (collapsed state)
+@qjit + X gates:     [(4, 0.7071), (5, 0.7071)]  # ✓ Correct
+No @qjit + BasisState: [(4, 0.7071), (5, 0.7071)]  # ✓ Correct
+```
+
+**Root Cause**: Under `@qjit`, when `qml.BasisState` and `qml.ctrl()` coexist in the same circuit, Catalyst's compilation produces incorrect quantum state evolution. Individual operations work correctly; only the combination fails.
+
+**Workaround** (`src/q2m3/core/qpe.py:173-177`): Use explicit X gates instead of BasisState:
+
+```python
+# Before (incompatible with @qjit + ctrl):
+qml.BasisState(hf_state, wires=wires)
+
+# After (Catalyst-compatible):
+for wire, state in zip(wires, hf_state):
+    if state == 1:
+        qml.PauliX(wires=wire)
+```
 
 **Verification** (H3O+, 12 qubits):
 
-| Configuration | Energy (Ha) | Status |
-|--------------|-------------|--------|
-| Standard QPE (lightning.gpu) | -76.503440 | ✓ |
-| Catalyst QPE (lightning.qubit) | -76.503440 | ✓ |
+| Configuration | Energy (Ha) | Success Rate |
+|--------------|-------------|--------------|
+| @qjit + BasisState | varies | ~28% |
+| @qjit + X gates | -76.503440 | 100% |
 
-**Note**: RDM module (`rdm.py:225`) still uses `qml.BasisState`, but is unaffected since RDM circuits don't combine BasisState with controlled operations.
+**Note**: RDM module (`rdm.py:225`) still uses `qml.BasisState` safely, as RDM circuits don't use `qml.ctrl()`.
 
 **Related**: [Catalyst #1631](https://github.com/PennyLaneAI/catalyst/issues/1631), [#1301](https://github.com/PennyLaneAI/catalyst/issues/1301)
 

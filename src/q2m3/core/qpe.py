@@ -156,22 +156,26 @@ class QPEEngine:
         For H3O+ (10 electrons, Jordan-Wigner): |1111111111000000>
 
         WORKAROUND: Uses explicit X gates instead of qml.BasisState due to
-        Catalyst @qjit compatibility issue. When qml.BasisState is used with
-        qml.ctrl(qml.adjoint(TrotterProduct)), Catalyst produces incorrect
-        results (uniform distribution instead of peaked phase estimation).
+        Catalyst @qjit compatibility issue (verified with PennyLane 0.43.1,
+        Catalyst 0.13.0).
 
-        Root cause: Catalyst's set_basis_state_p primitive lacks control wire
-        support, causing circuit compilation errors when combined with controlled
-        operations in the same circuit.
+        Problem: When qml.BasisState coexists with qml.ctrl() in the same
+        circuit under @qjit, Catalyst produces incorrect quantum states.
+        Individual operations work correctly; only the combination fails.
 
-        See: https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py
+        Evidence (state vector comparison):
+            @qjit + BasisState:    [(4, 1.0)]           # Wrong (collapsed)
+            @qjit + X gates:       [(4, 0.7071), (5, 0.7071)]  # Correct
+            No @qjit + BasisState: [(4, 0.7071), (5, 0.7071)]  # Correct
+
+        Related: https://github.com/PennyLaneAI/catalyst/issues/1631
 
         Args:
             hf_state: Binary array from qml.qchem.hf_state(), e.g., [1,1,0,0] for H2
             wires: System qubit indices to prepare the state on
         """
         # Apply X gates for occupied orbitals (state=1)
-        # This is equivalent to BasisState but compatible with Catalyst @qjit
+        # Equivalent to BasisState but compatible with @qjit + ctrl() combination
         for wire, state in zip(wires, hf_state):
             if state == 1:
                 qml.PauliX(wires=wire)

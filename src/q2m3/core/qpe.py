@@ -61,7 +61,7 @@ class QPEEngine:
         n_iterations: int = 8,
         mapping: str = "jordan_wigner",
         device: str = "default.qubit",
-        device_type: str = "default.qubit",
+        device_type: str = "lightning.qubit",
         use_catalyst: bool = False,
         **kwargs,
     ):
@@ -76,7 +76,7 @@ class QPEEngine:
             device_type: Device selection strategy:
                 - "auto": Auto-select best available (GPU > lightning.qubit > default.qubit)
                 - "default.qubit": Standard PennyLane simulator
-                - "lightning.qubit": High-performance CPU simulator
+                - "lightning.qubit": High-performance CPU simulator (default)
                 - "lightning.gpu": GPU-accelerated simulator (requires cuQuantum)
             use_catalyst: Enable Catalyst @qjit compilation (requires pennylane-catalyst)
             **kwargs: Additional device configuration
@@ -155,11 +155,26 @@ class QPEEngine:
 
         For H3O+ (10 electrons, Jordan-Wigner): |1111111111000000>
 
+        WORKAROUND: Uses explicit X gates instead of qml.BasisState due to
+        Catalyst @qjit compatibility issue. When qml.BasisState is used with
+        qml.ctrl(qml.adjoint(TrotterProduct)), Catalyst produces incorrect
+        results (uniform distribution instead of peaked phase estimation).
+
+        Root cause: Catalyst's set_basis_state_p primitive lacks control wire
+        support, causing circuit compilation errors when combined with controlled
+        operations in the same circuit.
+
+        See: https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/jax_primitives.py
+
         Args:
             hf_state: Binary array from qml.qchem.hf_state(), e.g., [1,1,0,0] for H2
             wires: System qubit indices to prepare the state on
         """
-        qml.BasisState(hf_state, wires=wires)
+        # Apply X gates for occupied orbitals (state=1)
+        # This is equivalent to BasisState but compatible with Catalyst @qjit
+        for wire, state in zip(wires, hf_state):
+            if state == 1:
+                qml.PauliX(wires=wire)
 
     def _apply_controlled_unitary(
         self,

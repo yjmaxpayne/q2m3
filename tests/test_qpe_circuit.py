@@ -613,7 +613,8 @@ class TestQPEGPU:
         if not HAS_LIGHTNING_GPU:
             pytest.skip("lightning.gpu not available")
 
-        dev = _select_device("auto", n_wires=4, shots=10)
+        # PennyLane v0.43+: shots are set via qml.set_shots() on QNode, not device
+        dev = _select_device("auto", n_wires=4)
         # Check device name using the new PennyLane device API
         assert "gpu" in str(type(dev).__name__).lower() or "gpu" in str(dev.name).lower()
 

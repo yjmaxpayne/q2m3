@@ -255,15 +255,17 @@ class QPEEngine:
         # Device selection based on device_type and use_catalyst
         # Priority: explicit device_type > Catalyst default (lightning.qubit) > default.qubit
         # Note: use_catalyst is passed to ensure Catalyst-compatible fallback when GPU unavailable
+        # NOTE: As of PennyLane v0.43, shots are set via qml.set_shots() on QNode, not device
         if self.device_type != "default.qubit":
             # User specified a device type
-            dev = _select_device(self.device_type, total_wires, n_shots, self.use_catalyst)
+            dev = _select_device(self.device_type, total_wires, self.use_catalyst)
         elif self.use_catalyst:
             # Catalyst default: use lightning.qubit for @qjit compatibility
-            dev = _select_device("lightning.qubit", total_wires, n_shots, self.use_catalyst)
+            dev = _select_device("lightning.qubit", total_wires, self.use_catalyst)
         else:
-            dev = _select_device("default.qubit", total_wires, n_shots, use_catalyst=False)
+            dev = _select_device("default.qubit", total_wires, use_catalyst=False)
 
+        @qml.set_shots(n_shots)
         @qml.qnode(dev)
         def qpe_circuit():
             # 1. Prepare HF initial state on system register

@@ -54,11 +54,13 @@ def get_best_available_device() -> str:
 def select_device(
     device_type: str,
     n_wires: int,
-    shots: int | None = None,
     use_catalyst: bool = False,
 ):
     """
     Select quantum device based on device_type parameter.
+
+    NOTE: As of PennyLane v0.43, setting shots on device is deprecated.
+    Use qml.set_shots() transform on QNode instead.
 
     Args:
         device_type: Device selection strategy:
@@ -67,7 +69,6 @@ def select_device(
             - "lightning.qubit": High-performance CPU simulator
             - "lightning.gpu": GPU-accelerated simulator (requires cuQuantum)
         n_wires: Number of qubits
-        shots: Number of measurement shots (None for analytic mode)
         use_catalyst: If True, ensure Catalyst-compatible fallback
                       (lightning.qubit instead of default.qubit)
 
@@ -83,11 +84,11 @@ def select_device(
     if device_type == "auto":
         # Auto-select: GPU > lightning.qubit > default.qubit
         if HAS_LIGHTNING_GPU:
-            return qml.device("lightning.gpu", wires=n_wires, shots=shots)
+            return qml.device("lightning.gpu", wires=n_wires)
         elif HAS_LIGHTNING_QUBIT:
-            return qml.device("lightning.qubit", wires=n_wires, shots=shots)
+            return qml.device("lightning.qubit", wires=n_wires)
         else:
-            return qml.device("default.qubit", wires=n_wires, shots=shots)
+            return qml.device("default.qubit", wires=n_wires)
 
     elif device_type == "lightning.gpu":
         if not HAS_LIGHTNING_GPU:
@@ -96,8 +97,8 @@ def select_device(
                 UserWarning,
                 stacklevel=3,
             )
-            return qml.device(fallback_device, wires=n_wires, shots=shots)
-        return qml.device("lightning.gpu", wires=n_wires, shots=shots)
+            return qml.device(fallback_device, wires=n_wires)
+        return qml.device("lightning.gpu", wires=n_wires)
 
     elif device_type == "lightning.qubit":
         if not HAS_LIGHTNING_QUBIT:
@@ -106,9 +107,9 @@ def select_device(
                 UserWarning,
                 stacklevel=3,
             )
-            return qml.device("default.qubit", wires=n_wires, shots=shots)
-        return qml.device("lightning.qubit", wires=n_wires, shots=shots)
+            return qml.device("default.qubit", wires=n_wires)
+        return qml.device("lightning.qubit", wires=n_wires)
 
     else:
         # default.qubit or any unrecognized value
-        return qml.device("default.qubit", wires=n_wires, shots=shots)
+        return qml.device("default.qubit", wires=n_wires)

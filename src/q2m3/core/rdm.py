@@ -214,9 +214,9 @@ class RDMEstimator:
         actual_use_catalyst = use_catalyst and HAS_CATALYST
 
         # Select device using shared device_utils
-        dev = select_device(
-            device_type, n_wires=self.n_qubits, shots=None, use_catalyst=actual_use_catalyst
-        )
+        # NOTE: As of PennyLane v0.43, shots are set via qml.set_shots() on QNode, not device
+        # For analytic mode (expval), no shots setting is needed (default behavior)
+        dev = select_device(device_type, n_wires=self.n_qubits, use_catalyst=actual_use_catalyst)
 
         # Build batched measurement QNode (single circuit, multiple returns)
         @qml.qnode(dev)

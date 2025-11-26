@@ -26,13 +26,23 @@ class TestSelectDevice:
         # PennyLane new API uses wires property
         assert len(dev.wires) == 4
 
-    def test_default_qubit_with_shots(self):
-        """default.qubit with explicit shots."""
+    def test_default_qubit_with_set_shots(self):
+        """default.qubit with shots set via qml.set_shots (PennyLane v0.43+ API)."""
         from q2m3.core.device_utils import select_device
 
-        dev = select_device("default.qubit", n_wires=4, shots=100)
+        dev = select_device("default.qubit", n_wires=4)
         assert dev is not None
-        assert dev.shots.total_shots == 100
+
+        # PennyLane v0.43+: shots are set via qml.set_shots() on QNode
+        @qml.set_shots(100)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.sample(qml.PauliZ(0))
+
+        result = circuit()
+        assert result is not None
+        assert len(result) == 100  # Should return 100 samples
 
     def test_auto_selects_available_device(self):
         """auto mode should select an available device."""

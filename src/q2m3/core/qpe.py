@@ -43,6 +43,9 @@ DEFAULT_N_ESTIMATION_WIRES = 4
 DEFAULT_BASE_TIME = 0.3
 DEFAULT_N_TROTTER_STEPS = 5
 
+# Phase overflow safety margin (use 80% of max allowed time to avoid edge cases)
+PHASE_SAFETY_MARGIN = 0.8
+
 
 class QPEEngine:
     """
@@ -172,6 +175,10 @@ class QPEEngine:
         In standard QPE, each estimation qubit k controls U^(2^k).
         Uses Trotter decomposition for molecular Hamiltonians.
 
+        IMPORTANT: PennyLane's TrotterProduct implements exp(+iHt), not exp(-iHt).
+        We use qml.adjoint() to get the correct sign convention for QPE:
+            adjoint(TrotterProduct) = exp(-iHt)
+
         Args:
             hamiltonian: PennyLane molecular Hamiltonian
             time: Evolution time (typically 2^k * base_time)
@@ -179,10 +186,10 @@ class QPEEngine:
             target_wires: System qubit indices
             n_trotter_steps: Number of Trotter steps for decomposition
         """
-        # Use TrotterProduct for time evolution (user's choice)
-        # TrotterProduct applies exp(-i * H * time) with specified order
+        # TrotterProduct implements exp(+iHt), but QPE needs exp(-iHt)
+        # Use adjoint to flip the sign: adjoint(exp(+iHt)) = exp(-iHt)
         qml.ctrl(
-            qml.TrotterProduct(hamiltonian, time, n=n_trotter_steps, order=2),
+            qml.adjoint(qml.TrotterProduct(hamiltonian, time, n=n_trotter_steps, order=2)),
             control=control_wire,
         )
 
@@ -251,9 +258,12 @@ class QPEEngine:
             for wire in estimation_wires:
                 qml.Hadamard(wires=wire)
 
-            # 3. Controlled time evolutions: U^(2^k) for k-th estimation qubit
+            # 3. Controlled time evolutions
+            # PennyLane QFT convention: qubit k should have phase 2^(n-1-k) * phi
+            # This means qubit 0 (first estimation wire) controls U^(2^(n-1))
+            # and qubit n-1 (last estimation wire) controls U^(2^0)
             for k, control_wire in enumerate(estimation_wires):
-                time = (2**k) * base_time
+                time = (2 ** (n_estimation_wires - 1 - k)) * base_time
                 self._apply_controlled_unitary(
                     hamiltonian, time, control_wire, system_wires, n_trotter_steps
                 )
@@ -269,6 +279,32 @@ class QPEEngine:
             return qjit(qpe_circuit)
         return qpe_circuit
 
+    @staticmethod
+    def compute_optimal_base_time(energy_estimate: float, safety_margin: float = None) -> float:
+        """
+        Compute optimal base_time to avoid phase overflow in QPE.
+
+        For QPE, the relationship is: phi = |E| * t / (2*pi)
+        To avoid overflow, we need phi < 1, i.e., t < 2*pi / |E|
+
+        Args:
+            energy_estimate: Estimated ground state energy (e.g., HF energy)
+            safety_margin: Safety factor (default: PHASE_SAFETY_MARGIN = 0.8)
+
+        Returns:
+            Optimal base_time that avoids phase overflow
+        """
+        if safety_margin is None:
+            safety_margin = PHASE_SAFETY_MARGIN
+
+        if abs(energy_estimate) < 1e-10:
+            # Avoid division by zero for near-zero energies
+            return DEFAULT_BASE_TIME
+
+        # t_max = 2*pi / |E|, apply safety margin
+        t_max = 2 * np.pi / abs(energy_estimate)
+        return t_max * safety_margin
+
     def _extract_energy_from_samples(
         self,
         samples: np.ndarray,
@@ -277,7 +313,18 @@ class QPEEngine:
         """
         Extract energy estimate from QPE measurement samples.
 
-        The measured phase phi relates to energy: E = 2*pi*phi / base_time
+        Physics derivation:
+        - QPE measures eigenphase of U = exp(-iHt)
+        - If H|ψ> = E|ψ>, then U|ψ> = exp(-iEt)|ψ> = exp(i*2π*φ)|ψ>
+        - Therefore: -Et = 2πφ (mod 2π), which gives φ = -Et/(2π) mod 1
+        - Inverting: E = -2πφ/t
+
+        For molecular systems with negative energies (E < 0):
+        - φ = -Et/(2π) = |E|t/(2π) > 0 (positive phase)
+        - E = -2πφ/t (gives negative energy as expected)
+
+        Note: QPE uses MODE (most frequent sample) not average, because
+        the eigenphase should appear most frequently in repeated measurements.
 
         Args:
             samples: Binary samples from estimation register, shape (n_estimation,)
@@ -291,27 +338,40 @@ class QPEEngine:
         if samples.ndim == 1:
             samples = samples.reshape(1, -1)
 
-        # Convert binary samples to phase values
-        # Phase phi = sum_k (b_k / 2^(k+1)) where b_k is the k-th bit
-        phases = []
+        # Convert to numpy array to handle both regular arrays and JAX arrays
+        # (Catalyst @qjit returns JAX arrays which need special handling)
+        samples = np.asarray(samples, dtype=np.int64)
+
+        # Convert binary samples to integer phase indices for mode calculation
+        # In _build_standard_qpe_circuit:
+        #   estimation_wires[0] controls U^(2^(n-1)) → MSB
+        #   estimation_wires[n-1] controls U^(2^0) → LSB
+        # qml.sample returns samples in wire order, so:
+        #   sample[0] = MSB (2^(n-1)), sample[n-1] = LSB (2^0)
+        n_bits = samples.shape[1]
+        phase_indices = []
         for sample in samples:
-            phase = 0.0
-            for k, bit in enumerate(sample):
-                phase += bit / (2 ** (k + 1))
-            phases.append(phase)
+            # Convert binary to integer with MSB-first ordering:
+            # [1,1,0,1] -> 1*8 + 1*4 + 0*2 + 1*1 = 13
+            idx = sum(int(bit) * (2 ** (n_bits - 1 - k)) for k, bit in enumerate(sample))
+            phase_indices.append(idx)
 
-        # Average phase from all shots
-        avg_phase = np.mean(phases)
+        # Find the mode (most frequent phase index)
+        from collections import Counter
 
-        # Convert phase to energy: E = 2*pi*phi / t
-        # Note: The actual relationship depends on how time is encoded
-        # For standard QPE: phi = E*t / (2*pi), so E = 2*pi*phi / t
-        energy = 2 * np.pi * avg_phase / base_time
+        counter = Counter(phase_indices)
+        mode_idx, mode_count = counter.most_common(1)[0]
 
-        # QPE measures positive phase, but molecular energies are negative
-        # Apply sign correction based on expected range
-        if energy > 0:
-            energy = -energy
+        # Convert mode index to phase: phi = m / 2^n
+        # This is the standard QPE formula where m is the measured integer
+        # and 2^n is the number of estimation qubits.
+        mode_phase = mode_idx / (2**n_bits)
+
+        # Convert phase to energy: E = -2*pi*phi/t
+        # Physics: U|psi> = exp(-iEt)|psi> = exp(2*pi*i*phi)|psi>
+        # So -Et = 2*pi*phi => phi = -Et/(2*pi) => E = -2*pi*phi/t
+        # For bound states (E < 0), phi > 0
+        energy = -2 * np.pi * mode_phase / base_time
 
         return energy
 
@@ -366,12 +426,13 @@ class QPEEngine:
                 qml.Hadamard(wires=wire)
 
             # 3. Controlled time evolutions (show first 2 for clarity)
+            # Use adjoint(TrotterProduct) for exp(-iHt) as in actual QPE circuit
             n_show = min(2, n_estimation_wires)
             for k in range(n_show):
                 control_wire = estimation_wires[k]
                 time = (2**k) * base_time
                 qml.ctrl(
-                    qml.TrotterProduct(hamiltonian, time, n=n_trotter_steps, order=2),
+                    qml.adjoint(qml.TrotterProduct(hamiltonian, time, n=n_trotter_steps, order=2)),
                     control=control_wire,
                 )
 

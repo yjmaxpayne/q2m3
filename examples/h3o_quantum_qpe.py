@@ -109,7 +109,7 @@ def get_qpe_config(device_type: str = "auto") -> dict:
     return {
         "use_real_qpe": True,
         "n_estimation_wires": 4,
-        "base_time": 0.1,
+        "base_time": "auto",  # Auto-compute to avoid phase overflow
         "n_trotter_steps": 10,
         "n_shots": 100,
         "active_electrons": 4,

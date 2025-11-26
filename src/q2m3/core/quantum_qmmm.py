@@ -207,9 +207,30 @@ class QuantumQMMM:
 
         # Get QPE parameters from config
         n_estimation_wires = self.qpe_config.get("n_estimation_wires", 4)
-        base_time = self.qpe_config.get("base_time", 0.1)
         n_trotter_steps = self.qpe_config.get("n_trotter_steps", 10)
         n_shots = self.qpe_config.get("n_shots", 100)
+
+        # HF energy as reference (used for auto base_time calculation)
+        energy_hf = hamiltonian_data.get("energy_hf", 0.0)
+
+        # Auto-compute optimal base_time to avoid phase overflow
+        # If base_time="auto" or not specified, compute from HF energy estimate
+        base_time_config = self.qpe_config.get("base_time", "auto")
+        if base_time_config == "auto" or base_time_config is None:
+            base_time = QPEEngine.compute_optimal_base_time(energy_hf)
+            logger.info(
+                f"Auto-computed base_time={base_time:.4f} from HF energy={energy_hf:.4f} Ha"
+            )
+        else:
+            base_time = float(base_time_config)
+            # Warn if configured base_time might cause phase overflow
+            phase_estimate = abs(energy_hf) * base_time / (2 * np.pi)
+            if phase_estimate > 1.0:
+                logger.warning(
+                    f"Configured base_time={base_time} may cause phase overflow "
+                    f"(estimated phase={phase_estimate:.2f} > 1). Consider using "
+                    f"base_time='auto' or a smaller value."
+                )
 
         # Build and execute QPE circuit
         qpe_circuit = self.qpe_engine._build_standard_qpe_circuit(

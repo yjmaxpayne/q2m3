@@ -33,6 +33,7 @@ def pytest_collection_modifyitems(config, items):
         del _test_dev
         has_lightning_gpu = True
     except Exception:
+        # Any exception means lightning.gpu is not available; safe to ignore for test skipping.
         pass
 
     # Apply skip markers

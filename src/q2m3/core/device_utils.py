@@ -21,7 +21,7 @@ try:
     HAS_LIGHTNING_GPU = True
 except Exception as e:
     # Device "lightning.gpu" not available or failed to initialize; ignore and continue.
-    warnings.warn(f'Could not initialize "lightning.gpu" device: {e}')
+    warnings.warn(f'Could not initialize "lightning.gpu" device: {e}', stacklevel=2)
 
 HAS_LIGHTNING_QUBIT = False
 try:
@@ -30,7 +30,7 @@ try:
     HAS_LIGHTNING_QUBIT = True
 except Exception as e:
     # Device "lightning.qubit" not available or failed to initialize; ignore and continue.
-    warnings.warn(f'Could not initialize "lightning.qubit" device: {e}')
+    warnings.warn(f'Could not initialize "lightning.qubit" device: {e}', stacklevel=2)
 
 # Type alias for supported device types
 DeviceType = Literal["auto", "default.qubit", "lightning.qubit", "lightning.gpu"]

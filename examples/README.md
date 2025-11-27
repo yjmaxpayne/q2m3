@@ -1,10 +1,10 @@
-# H3O+ Quantum Phase Estimation Demo
+# q2m3 Examples
 
 > **q2m3 MVP** - Hybrid Quantum-Classical QM/MM for Early Fault-Tolerant Quantum Computers (EFTQC)
 
 ## Overview
 
-This demo showcases the complete q2m3 workflow for molecular ground state energy estimation using Quantum Phase Estimation (QPE), with GPU acceleration and optional PennyLane Catalyst JIT compilation support.
+This directory contains examples demonstrating the q2m3 workflow for molecular ground state energy estimation using Quantum Phase Estimation (QPE), with GPU acceleration and optional PennyLane Catalyst JIT compilation support.
 
 **Key Capabilities Demonstrated:**
 - PySCF to PennyLane molecular Hamiltonian conversion
@@ -16,7 +16,105 @@ This demo showcases the complete q2m3 workflow for molecular ground state energy
 - Quantum 1-RDM measurement for Mulliken population analysis
 - Circuit visualization via `qml.draw(decimals=None, level=0)`
 
-## Pipeline
+## Quick Start
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install GPU support (optional but recommended)
+uv pip install -e ".[gpu]"
+
+# Run minimal example (H2 + 2 TIP3P waters, fast validation)
+python examples/h2_qpe_h2o_mm_minimal.py
+
+# Run full demo (H3O+ + 8 TIP3P waters, comprehensive analysis)
+python examples/h3op_qpe_h2o_mm_full.py
+```
+
+## Installation
+
+```bash
+# Core dependencies
+uv pip install -e "."
+
+# GPU support (NVIDIA GPU required)
+uv pip install -e ".[gpu]"
+
+# Catalyst JIT support
+uv pip install -e ".[catalyst]"
+
+# All optional dependencies
+uv pip install -e ".[gpu,catalyst]"
+```
+
+## Device Selection
+
+The examples support flexible device selection via the `device_type` parameter:
+
+| Device Type | Backend | Performance | Use Case |
+|-------------|---------|-------------|----------|
+| `auto` | Best available | Optimal | **Recommended** |
+| `lightning.gpu` | NVIDIA GPU | Fastest | Large circuits, GPU available |
+| `lightning.qubit` | CPU (optimized) | Fast | CPU-only, Catalyst JIT |
+| `default.qubit` | CPU (standard) | Baseline | Development, debugging |
+
+**Note:** Catalyst `@qjit` currently works best with `lightning.qubit`. The `lightning.gpu` device has compatibility issues with some quantum gates when used with Catalyst.
+
+---
+
+## Example 1: H2 + MM Water (Minimal Validation)
+
+`h2_qpe_h2o_mm_minimal.py` provides a minimal validation of QPE + explicit MM solvation using H2 molecule with 2 TIP3P water molecules.
+
+```bash
+python examples/h2_qpe_h2o_mm_minimal.py
+```
+
+### Test System: H2 (Hydrogen Molecule)
+
+```
+H ─────── H          Total charge: 0
+
+Geometry (Angstrom):
+  H1: ( 0.000,  0.000,  0.000)
+  H2: ( 0.740,  0.000,  0.000)
+```
+
+### Quantum Resource Configuration (H2)
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| **Active Space** | 2e, 2o | 2 electrons in 2 spatial orbitals |
+| **System Qubits** | 4 | 2 orbitals x 2 spin = 4 spin orbitals |
+| **Trotter Steps** | 100 | Time evolution accuracy |
+
+### Validation Strategy
+
+1. Compare vacuum HF vs vacuum QPE (verify QPE correctness)
+2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
+3. Compare stabilization effects (HF vs QPE should agree on sign/magnitude)
+
+### Results (lightning.gpu, 4 qubits, 100 Trotter steps)
+
+| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization (kcal/mol) |
+|--------|-------------|---------------|--------------------------|
+| PySCF HF | -1.116759 | -1.116674 | -0.054 |
+| QPE | -1.134209 | -1.134122 | -0.054 |
+
+All validation checks passed: PL↔PySCF agreement < 0.001 kcal/mol, QPE↔HF diff ~0.017 Ha, stabilization sign consistent.
+
+---
+
+## Example 2: H3O+ QPE Full Demo
+
+`h3op_qpe_h2o_mm_full.py` demonstrates the complete q2m3 workflow with comprehensive solvation effect analysis and Catalyst JIT comparison.
+
+```bash
+python examples/h3op_qpe_h2o_mm_full.py
+```
+
+### Pipeline
 
 ```mermaid
 flowchart LR
@@ -49,20 +147,7 @@ flowchart LR
     style G fill:#c8e6c9
 ```
 
-## Quick Start
-
-```bash
-# Activate virtual environment
-source .venv/bin/activate
-
-# Install GPU support (optional but recommended)
-uv pip install -e ".[gpu]"
-
-# Run the full demo (H3O+ with solvation effect analysis)
-python examples/h3op_qpe_h2o_mm_full.py
-```
-
-## Test System: H3O+ (Hydronium Ion)
+### Test System: H3O+ (Hydronium Ion)
 
 ```
         H (+1.0)
@@ -78,7 +163,7 @@ Geometry (Angstrom):
   H:  (-0.480, -0.831,  0.000)
 ```
 
-## Quantum Resource Configuration
+### Quantum Resource Configuration (H3O+)
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
@@ -91,7 +176,7 @@ Geometry (Angstrom):
 | **Base Time** | auto | Auto-computed to avoid phase overflow |
 | **Shots** | 100 | Measurement statistics |
 
-## Demo Workflow (7 Steps)
+### Demo Workflow (7 Steps)
 
 | Step | Description | Output |
 |------|-------------|--------|
@@ -103,7 +188,7 @@ Geometry (Angstrom):
 | **Step 6** | Results Comparison | Time comparison, energy consistency |
 | **Step 7** | Save Results | JSON output to `data/output/` |
 
-## Sample Output (GPU Environment)
+### Sample Output (GPU Environment)
 
 ```
 ================================================================================
@@ -276,36 +361,7 @@ q2m3 MVP Capabilities Demonstrated:
 ================================================================================
 ```
 
-## Device Selection
-
-The demo supports flexible device selection via the `device_type` parameter:
-
-| Device Type | Backend | Performance | Use Case |
-|-------------|---------|-------------|----------|
-| `auto` | Best available | Optimal | **Recommended** |
-| `lightning.gpu` | NVIDIA GPU | Fastest | Large circuits, GPU available |
-| `lightning.qubit` | CPU (optimized) | Fast | CPU-only, Catalyst JIT |
-| `default.qubit` | CPU (standard) | Baseline | Development, debugging |
-
-**Note:** Catalyst `@qjit` currently works best with `lightning.qubit`. The `lightning.gpu` device has compatibility issues with some quantum gates when used with Catalyst.
-
-## Installation
-
-```bash
-# Core dependencies
-uv pip install -e "."
-
-# GPU support (NVIDIA GPU required)
-uv pip install -e ".[gpu]"
-
-# Catalyst JIT support
-uv pip install -e ".[catalyst]"
-
-# All optional dependencies
-uv pip install -e ".[gpu,catalyst]"
-```
-
-## Output Files
+### Output Files
 
 Results are saved to `data/output/h3o_quantum_qpe_results.json`:
 
@@ -343,6 +399,34 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
   }
 }
 ```
+
+### Design Notes: Why Two QPE Calculations Are Required
+
+The demo compares vacuum and solvated QPE energies to demonstrate MM embedding effects at the quantum level. This requires **two independent QPE calculations**.
+
+**Fundamental Reason**: QPE performs time evolution `exp(-iHt)` on a Hamiltonian. Since vacuum and solvated environments use different Hamiltonians, separate QPE circuits are necessary:
+
+| Environment | Hamiltonian | Time Evolution |
+|-------------|-------------|----------------|
+| Vacuum | `H_vacuum` | `exp(-i * H_vacuum * t)` |
+| Solvated | `H_solvated = H_vacuum + H_MM` | `exp(-i * H_solvated * t)` |
+
+**Architectural Implication**:
+```python
+# Two QuantumQMMM instances are required
+qmmm_vacuum = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, ...)
+qmmm_solvated = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=8, ...)
+
+result_vacuum = qmmm_vacuum.compute_ground_state()
+result_solvated = qmmm_solvated.compute_ground_state()
+
+# Compare QPE energies
+stabilization = result_vacuum["energy"] - result_solvated["energy"]
+```
+
+This is not a code inefficiency but a fundamental requirement of the QPE algorithm when comparing different physical systems.
+
+---
 
 ## Known Issues & Catalyst Compatibility
 
@@ -470,62 +554,6 @@ H_solvated = qml.sum(*all_operands)  # Maintains Sum type
 |--------|-------------|---------------|---------------|
 | PySCF HF | -1.116759 | -1.116674 | -0.054 kcal/mol |
 | QPE (lightning.gpu) | -1.134209 | -1.134122 | -0.054 kcal/mol |
-
----
-
-## Additional Examples
-
-### H2 + MM Water Minimal Example
-
-`h2_qpe_h2o_mm_minimal.py` provides a minimal validation of QPE + explicit MM solvation using H2 molecule with 2 TIP3P water molecules:
-
-```bash
-python examples/h2_qpe_h2o_mm_minimal.py
-```
-
-**Validation Strategy**:
-1. Compare vacuum HF vs vacuum QPE (verify QPE correctness)
-2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
-3. Compare stabilization effects (HF vs QPE should agree on sign/magnitude)
-
-**Results** (lightning.gpu, 4 qubits, 100 Trotter steps):
-
-| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization (kcal/mol) |
-|--------|-------------|---------------|--------------------------|
-| PySCF HF | -1.116759 | -1.116674 | -0.054 |
-| QPE | -1.134209 | -1.134122 | -0.054 |
-
-All validation checks passed: PL↔PySCF agreement < 0.001 kcal/mol, QPE↔HF diff ~0.017 Ha, stabilization sign consistent.
-
----
-
-## Design Notes: QPE Solvation Effect Analysis
-
-### Why Two QPE Calculations Are Required
-
-The `h3op_qpe_h2o_mm_full.py` demo compares vacuum and solvated QPE energies to demonstrate MM embedding effects at the quantum level. This requires **two independent QPE calculations**.
-
-**Fundamental Reason**: QPE performs time evolution `exp(-iHt)` on a Hamiltonian. Since vacuum and solvated environments use different Hamiltonians, separate QPE circuits are necessary:
-
-| Environment | Hamiltonian | Time Evolution |
-|-------------|-------------|----------------|
-| Vacuum | `H_vacuum` | `exp(-i * H_vacuum * t)` |
-| Solvated | `H_solvated = H_vacuum + H_MM` | `exp(-i * H_solvated * t)` |
-
-**Architectural Implication**:
-```python
-# Two QuantumQMMM instances are required
-qmmm_vacuum = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, ...)
-qmmm_solvated = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=8, ...)
-
-result_vacuum = qmmm_vacuum.compute_ground_state()
-result_solvated = qmmm_solvated.compute_ground_state()
-
-# Compare QPE energies
-stabilization = result_vacuum["energy"] - result_solvated["energy"]
-```
-
-This is not a code inefficiency but a fundamental requirement of the QPE algorithm when comparing different physical systems.
 
 ---
 

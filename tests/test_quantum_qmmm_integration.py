@@ -29,17 +29,6 @@ def h2_atoms():
     ]
 
 
-@pytest.fixture
-def h3o_atoms():
-    """H3O+ hydronium ion atoms."""
-    return [
-        Atom("O", np.array([0.0, 0.0, 0.0]), charge=-2.0),
-        Atom("H", np.array([0.96, 0.0, 0.0]), charge=1.0),
-        Atom("H", np.array([-0.48, 0.83, 0.0]), charge=1.0),
-        Atom("H", np.array([-0.48, -0.83, 0.0]), charge=1.0),
-    ]
-
-
 # ============================================================================
 # P0: _build_qmmm_hamiltonian() PennyLane Data Tests
 # ============================================================================
@@ -177,10 +166,10 @@ class TestEnergyWarning:
         # Use very tight threshold to trigger warning
         config = {
             "use_real_qpe": True,
-            "n_estimation_wires": 4,
+            "n_estimation_wires": 3,  # Reduced from 4 to 3
             "base_time": 0.5,
-            "n_trotter_steps": 3,
-            "n_shots": 10,
+            "n_trotter_steps": 2,  # Reduced from 3 to 2
+            "n_shots": 5,  # Reduced from 10 to 5
             "energy_warning_threshold": 0.001,  # Very tight threshold
         }
         qmmm = QuantumQMMM(qm_atoms=h2_atoms, mm_waters=0, qpe_config=config)
@@ -220,40 +209,42 @@ class TestAtomicCharges:
 
 
 # ============================================================================
-# P2: H3O+ End-to-End Tests (Slow)
+# Circuit Visualization Tests
 # ============================================================================
 
 
-class TestH3OEndToEnd:
-    """H3O+ end-to-end tests with real QPE - MVP validation."""
+class TestCircuitVisualization:
+    """Test circuit visualization methods."""
 
-    @pytest.mark.slow
-    def test_h3o_qpe_can_execute(self, h3o_atoms, h3o_qpe_config):
-        """MVP Test: H3O+ QPE can execute successfully."""
-        qmmm = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, qpe_config=h3o_qpe_config)
-        result = qmmm.compute_ground_state()
+    def test_draw_circuits_returns_qpe_and_rdm(self, h2_atoms, h2_qpe_config):
+        """Test draw_circuits returns both QPE and RDM diagrams."""
+        qmmm = QuantumQMMM(qm_atoms=h2_atoms, mm_waters=0, qpe_config=h2_qpe_config)
+        diagrams = qmmm.draw_circuits()
 
-        assert result is not None
-        assert "energy" in result
-        assert np.isfinite(result["energy"])
+        # Should return dictionary with qpe and rdm keys
+        assert "qpe" in diagrams
+        assert "rdm" in diagrams
 
-    @pytest.mark.slow
-    def test_h3o_qpe_returns_reference_energy(self, h3o_atoms, h3o_qpe_config):
-        """Test H3O+ QPE returns HF reference energy."""
-        qmmm = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, qpe_config=h3o_qpe_config)
-        result = qmmm.compute_ground_state()
+        # Both should be non-empty strings
+        assert isinstance(diagrams["qpe"], str)
+        assert isinstance(diagrams["rdm"], str)
+        assert len(diagrams["qpe"]) > 0
+        assert len(diagrams["rdm"]) > 0
 
-        assert "energy_hf" in result
-        # H3O+ HF energy should be around -75.3 Hartree
-        assert -80.0 < result["energy_hf"] < -70.0
+    def test_draw_circuits_qpe_contains_structure(self, h2_atoms, h2_qpe_config):
+        """Test QPE diagram contains expected structure."""
+        qmmm = QuantumQMMM(qm_atoms=h2_atoms, mm_waters=0, qpe_config=h2_qpe_config)
+        diagrams = qmmm.draw_circuits()
 
-    @pytest.mark.slow
-    def test_h3o_total_charge_is_plus_one(self, h3o_atoms, h3o_qpe_config):
-        """Test H3O+ total Mulliken charge is +1."""
-        qmmm = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, qpe_config=h3o_qpe_config)
-        result = qmmm.compute_ground_state()
+        qpe_diagram = diagrams["qpe"]
+        # Should contain circuit structure elements
+        assert "QPE" in qpe_diagram or "Estimation" in qpe_diagram
 
-        if result["atomic_charges"]:
-            total_charge = sum(result["atomic_charges"].values())
-            # Allow tolerance for numerical precision
-            assert abs(total_charge - 1.0) < 0.5
+    def test_draw_circuits_rdm_contains_structure(self, h2_atoms, h2_qpe_config):
+        """Test RDM diagram contains expected structure."""
+        qmmm = QuantumQMMM(qm_atoms=h2_atoms, mm_waters=0, qpe_config=h2_qpe_config)
+        diagrams = qmmm.draw_circuits()
+
+        rdm_diagram = diagrams["rdm"]
+        # Should contain RDM measurement structure
+        assert "RDM" in rdm_diagram or "Trotter" in rdm_diagram

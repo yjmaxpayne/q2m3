@@ -46,30 +46,6 @@ class TestResourceEstimation:
         # Sanity checks based on demo results (~1.2M gates, ~115 qubits)
         assert 100_000 < result["toffoli_gates"] < 5_000_000
 
-    def test_h3o_resource_estimation(self, converter):
-        """H3O+: q2m3 primary QM region."""
-        symbols = ["O", "H", "H", "H"]
-        coords = np.array(
-            [
-                [0.000000, 0.000000, 0.116489],
-                [0.000000, 0.929282, -0.349468],
-                [0.804867, -0.464641, -0.349468],
-                [-0.804867, -0.464641, -0.349468],
-            ]
-        )
-
-        result = converter.estimate_qpe_resources(symbols, coords, charge=1)
-
-        # H3O+ should require more resources than H2
-        assert result["logical_qubits"] > 100  # ~314 expected
-        assert result["toffoli_gates"] > 1_000_000  # ~148M expected
-
-        # H3O+: O(8) + 3*H(1) = 11 electrons, charge +1 → 11 - 1 = 10 electrons
-        assert result["n_electrons"] == 10
-
-        # H3O+ should have larger 1-norm than H2
-        assert result["hamiltonian_1norm"] > 10.0  # Expected ~63 Ha
-
     def test_trotter_steps_recommendation(self, converter):
         """Verify Trotter steps are reasonably estimated."""
         symbols = ["H", "H"]

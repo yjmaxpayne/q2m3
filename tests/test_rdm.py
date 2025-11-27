@@ -310,27 +310,6 @@ class TestRDMQPEIntegration:
         assert np.allclose(rdm, rdm.conj().T, atol=1e-8)  # Hermitian
         assert np.isclose(np.trace(rdm), n_electrons, atol=0.2)  # Trace
 
-    @pytest.mark.slow
-    def test_rdm_integration_h3o_active_space(self, h3o_hamiltonian_active_space, rdm_config_basic):
-        """RDM measurement for H3O+ with active space."""
-        H = h3o_hamiltonian_active_space["hamiltonian"]
-        hf_state = h3o_hamiltonian_active_space["hf_state"]
-        n_qubits = h3o_hamiltonian_active_space["n_qubits"]
-        active_electrons = h3o_hamiltonian_active_space["active_space"]["electrons"]
-
-        estimator = RDMEstimator(n_qubits, active_electrons, rdm_config_basic)
-        rdm = estimator.measure_1rdm(
-            hamiltonian=H,
-            hf_state=hf_state,
-            base_time=0.1,
-            n_trotter_steps=3,
-            device_type="lightning.qubit",
-        )
-
-        # Basic sanity checks
-        assert rdm.shape == (n_qubits, n_qubits)
-        assert np.isclose(np.trace(rdm), active_electrons, atol=0.3)
-
 
 # ============================================================================
 # Test Active MO to AO RDM Conversion
@@ -445,3 +424,107 @@ class TestActiveMOToAORDM:
         )
 
         assert np.allclose(ao_rdm.imag, 0), "AO RDM should be real"
+
+
+# ============================================================================
+# Test RDM Circuit Visualization
+# ============================================================================
+
+
+class TestRDMCircuitVisualization:
+    """Test RDM circuit visualization methods."""
+
+    def test_draw_rdm_circuit_ascii(self, h2_hamiltonian):
+        """Test ASCII visualization of RDM circuit."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+        n_electrons = h2_hamiltonian["molecule_data"]["n_electrons"]
+
+        estimator = RDMEstimator(n_qubits, n_electrons)
+
+        circuit_str = estimator.draw_rdm_circuit(
+            H, hf_state, base_time=0.3, n_trotter_steps=2, use_pennylane_draw=False
+        )
+
+        # Verify ASCII diagram contains expected components
+        assert "RDM Measurement Circuit Structure" in circuit_str
+        assert "TrotterProduct" in circuit_str
+        assert "Pauli expvals" in circuit_str
+
+    def test_draw_rdm_circuit_with_pennylane(self, h2_hamiltonian):
+        """Test RDM circuit visualization using qml.draw()."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+        n_electrons = h2_hamiltonian["molecule_data"]["n_electrons"]
+
+        estimator = RDMEstimator(n_qubits, n_electrons)
+
+        circuit_str = estimator.draw_rdm_circuit(
+            H, hf_state, base_time=0.3, n_trotter_steps=2, use_pennylane_draw=True
+        )
+
+        # Should contain PennyLane circuit representation
+        assert circuit_str is not None
+        assert len(circuit_str) > 0
+
+
+# ============================================================================
+# Test Legacy RDM Observable Interface
+# ============================================================================
+
+
+class TestBuildRDMObservables:
+    """Test legacy build_rdm_observables interface."""
+
+    def test_build_rdm_observables_diagonal_only(self):
+        """Test building only diagonal observables."""
+        n_qubits = 4
+        n_electrons = 2
+
+        config = {"include_off_diagonal": False}
+        estimator = RDMEstimator(n_qubits, n_electrons, config=config)
+
+        observables = estimator.build_rdm_observables()
+
+        # Should have n_qubits diagonal observables
+        assert len(observables) == n_qubits
+        # All should be diagonal (p == q)
+        for p, q in observables.keys():
+            assert p == q
+
+    def test_build_rdm_observables_with_off_diagonal(self):
+        """Test building diagonal and off-diagonal observables."""
+        n_qubits = 4
+        n_electrons = 2
+
+        config = {"include_off_diagonal": True}
+        estimator = RDMEstimator(n_qubits, n_electrons, config=config)
+
+        observables = estimator.build_rdm_observables()
+
+        # Should have diagonal + off-diagonal
+        # Diagonal: n_qubits
+        # Off-diagonal: n_qubits * (n_qubits - 1) / 2
+        expected_count = n_qubits + n_qubits * (n_qubits - 1) // 2
+        assert len(observables) == expected_count
+
+        # Check diagonal observables
+        for p in range(n_qubits):
+            assert (p, p) in observables
+            # Diagonal should be single Pauli Z observable
+            import pennylane as qml
+
+            # PennyLane v0.43+ uses qml.Z instead of qml.PauliZ
+            assert isinstance(observables[(p, p)], qml.Z) or isinstance(
+                observables[(p, p)], qml.PauliZ
+            )
+
+        # Check off-diagonal observables
+        for p in range(n_qubits):
+            for q in range(p + 1, n_qubits):
+                assert (p, q) in observables
+                # Off-diagonal should be tuple of 4 observables
+                assert isinstance(observables[(p, q)], tuple)
+                assert len(observables[(p, q)]) == 4

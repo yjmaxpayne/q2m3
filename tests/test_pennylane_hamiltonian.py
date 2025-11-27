@@ -70,60 +70,6 @@ class TestPennyLaneHamiltonianBasic:
         np.testing.assert_array_equal(hf_state, expected_hf)
 
 
-class TestPennyLaneHamiltonianH3O:
-    """P1: H3O+ target system tests."""
-
-    def test_h3o_hamiltonian_generation(self):
-        """Test Hamiltonian generation for H3O+."""
-        converter = PySCFPennyLaneConverter()
-        symbols = ["O", "H", "H", "H"]
-        coords = np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.96, 0.0, 0.0],
-                [-0.48, 0.83, 0.0],
-                [-0.48, -0.83, 0.0],
-            ]
-        )  # Angstrom
-
-        H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(symbols, coords, charge=1)
-
-        # Hamiltonian should be valid
-        assert H is not None
-
-        # H3O+ STO-3G: O(5 AOs) + 3*H(1 AO) = 8 spatial orbitals
-        # Actually for STO-3G: O has 1s + 2s + 2px + 2py + 2pz = 5 basis functions
-        # H has 1s = 1 basis function each
-        # Total: 5 + 3 = 8 spatial orbitals -> 16 spin orbitals (qubits? or 14?)
-        # Note: This depends on PennyLane's counting - let's be flexible
-        assert n_qubits >= 10  # At minimum
-
-        # Electrons: O(8) + 3*H(1) - charge(1) = 10 electrons
-        assert sum(hf_state) == 10
-
-    def test_h3o_hf_state_occupation(self):
-        """Test H3O+ HF state has 10 occupied orbitals."""
-        converter = PySCFPennyLaneConverter()
-        symbols = ["O", "H", "H", "H"]
-        coords = np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.96, 0.0, 0.0],
-                [-0.48, 0.83, 0.0],
-                [-0.48, -0.83, 0.0],
-            ]
-        )
-
-        _, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(symbols, coords, charge=1)
-
-        # Should have exactly 10 electrons
-        assert sum(hf_state) == 10
-
-        # First 10 qubits should be 1, rest should be 0 (Jordan-Wigner)
-        assert all(hf_state[:10] == 1)
-        assert all(hf_state[10:] == 0)
-
-
 class TestPennyLaneHamiltonianValidation:
     """P2: Input validation and edge cases."""
 

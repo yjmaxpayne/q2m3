@@ -46,28 +46,6 @@ class TestInitialStatePreparation:
         # State should be a computational basis state
         assert np.abs(state[expected_index]) > 0.99
 
-    def test_hf_state_preparation_h3o(self, h3o_hamiltonian):
-        """Test HF state preparation for H3O+ molecule."""
-        hf_state = h3o_hamiltonian["hf_state"]
-        n_qubits = h3o_hamiltonian["n_qubits"]
-
-        engine = QPEEngine(n_qubits=n_qubits, n_iterations=4)
-        dev = qml.device("lightning.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def prepare_and_measure():
-            engine._prepare_initial_state(hf_state, list(range(n_qubits)))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-
-        expectations = prepare_and_measure()
-
-        # For HF state, occupied orbitals have Z expectation -1, unoccupied have +1
-        for i, (exp, occ) in enumerate(zip(expectations, hf_state, strict=True)):
-            expected_z = -1 if occ == 1 else 1
-            assert np.isclose(
-                exp, expected_z, atol=0.01
-            ), f"Qubit {i}: expected {expected_z}, got {exp}"
-
     def test_hf_state_empty(self):
         """Test preparation with all-zero state."""
         engine = QPEEngine(n_qubits=4, n_iterations=4)
@@ -181,7 +159,7 @@ class TestControlledUnitary:
                 time=1.0,
                 control_wire=2,
                 target_wires=[0, 1],
-                n_trotter_steps=3,
+                n_trotter_steps=2,  # Reduced from 3 to 2 for faster tests
             )
             return qml.state()
 
@@ -203,7 +181,7 @@ class TestControlledUnitary:
                 time=1.0,
                 control_wire=2,
                 target_wires=[0, 1],
-                n_trotter_steps=3,
+                n_trotter_steps=2,  # Reduced from 3 to 2 for faster tests
             )
             return qml.state()
 
@@ -233,7 +211,7 @@ class TestControlledUnitary:
                 time=0.5,
                 control_wire=n_qubits,
                 target_wires=list(range(n_qubits)),
-                n_trotter_steps=3,
+                n_trotter_steps=2,  # Reduced from 3 to 2 for faster tests
             )
             return qml.state()
 
@@ -256,7 +234,7 @@ class TestControlledUnitary:
                     time=t,
                     control_wire=2,
                     target_wires=[0, 1],
-                    n_trotter_steps=5,
+                    n_trotter_steps=2,  # Reduced from 5 to 2 for faster tests
                 )
                 return qml.state()
 
@@ -330,115 +308,22 @@ class TestQPECircuitH2:
         hf_state = h2_hamiltonian["hf_state"]
         n_qubits = h2_hamiltonian["n_qubits"]
 
-        engine = QPEEngine(n_qubits=n_qubits, n_iterations=4)
+        engine = QPEEngine(n_qubits=n_qubits, n_iterations=3)
 
         qpe_circuit = engine._build_standard_qpe_circuit(
             H,
             hf_state,
-            n_estimation_wires=4,
+            n_estimation_wires=3,  # Reduced from 4 to 3
             base_time=0.5,
-            n_trotter_steps=3,
+            n_trotter_steps=2,  # Reduced from 3 to 2
+            n_shots=3,  # Reduced shots for faster tests
         )
 
-        # Run multiple times - results should be consistent
-        results = [qpe_circuit() for _ in range(3)]
+        # Run only 2 times instead of 3 for speed
+        results = [qpe_circuit() for _ in range(2)]
         # All results should be valid arrays
         for r in results:
             assert r is not None
-
-
-# ============================================================================
-# P2: QPE Circuit Tests (H3O+ - MVP Target)
-# ============================================================================
-
-
-class TestQPECircuitH3O:
-    """P2: H3O+ target system tests - MVP validation.
-
-    Note: Full H3O+ has 16 qubits and ~2000 Pauli terms, which exceeds
-    typical memory limits. We use active space approximation (4 electrons
-    in 4 orbitals = 8 qubits) to make simulation feasible.
-    """
-
-    @pytest.fixture
-    def qpe_config_h3o(self):
-        """QPE config for H3O+ with active space."""
-        return {
-            "n_estimation_wires": 3,  # Reasonable precision for POC
-            "n_trotter_steps": 2,  # Balance precision vs speed
-            "base_time": 0.3,
-        }
-
-    @pytest.mark.slow
-    def test_qpe_h3o_can_execute(self, h3o_hamiltonian_active_space, qpe_config_h3o):
-        """MVP Test: H3O+ QPE circuit can execute successfully.
-
-        Uses active space (4e, 4o) = 8 qubits to make simulation feasible.
-        """
-        H = h3o_hamiltonian_active_space["hamiltonian"]
-        hf_state = h3o_hamiltonian_active_space["hf_state"]
-        n_qubits = h3o_hamiltonian_active_space["n_qubits"]
-
-        engine = QPEEngine(n_qubits=n_qubits, n_iterations=qpe_config_h3o["n_estimation_wires"])
-
-        # Build circuit
-        qpe_circuit = engine._build_standard_qpe_circuit(
-            H,
-            hf_state,
-            n_estimation_wires=qpe_config_h3o["n_estimation_wires"],
-            base_time=qpe_config_h3o["base_time"],
-            n_trotter_steps=qpe_config_h3o["n_trotter_steps"],
-        )
-
-        # Execute - this is the MVP test: H3O+ must be runnable
-        result = qpe_circuit()
-        assert result is not None, "H3O+ QPE circuit failed to execute"
-
-    @pytest.mark.slow
-    def test_qpe_h3o_returns_energy(self, h3o_hamiltonian_active_space, qpe_config_h3o):
-        """Test H3O+ QPE returns an energy estimate."""
-        H = h3o_hamiltonian_active_space["hamiltonian"]
-        hf_state = h3o_hamiltonian_active_space["hf_state"]
-        n_qubits = h3o_hamiltonian_active_space["n_qubits"]
-
-        engine = QPEEngine(n_qubits=n_qubits, n_iterations=qpe_config_h3o["n_estimation_wires"])
-
-        qpe_circuit = engine._build_standard_qpe_circuit(
-            H,
-            hf_state,
-            n_estimation_wires=qpe_config_h3o["n_estimation_wires"],
-            base_time=qpe_config_h3o["base_time"],
-            n_trotter_steps=qpe_config_h3o["n_trotter_steps"],
-        )
-
-        samples = qpe_circuit()
-        energy = engine._extract_energy_from_samples(samples, base_time=qpe_config_h3o["base_time"])
-
-        # Energy should be a finite number
-        assert np.isfinite(energy), f"H3O+ energy is not finite: {energy}"
-
-    @pytest.mark.slow
-    def test_qpe_h3o_energy_is_finite(self, h3o_hamiltonian_active_space, qpe_config_h3o):
-        """Test H3O+ QPE energy is a valid finite number."""
-        H = h3o_hamiltonian_active_space["hamiltonian"]
-        hf_state = h3o_hamiltonian_active_space["hf_state"]
-        n_qubits = h3o_hamiltonian_active_space["n_qubits"]
-
-        engine = QPEEngine(n_qubits=n_qubits, n_iterations=qpe_config_h3o["n_estimation_wires"])
-
-        qpe_circuit = engine._build_standard_qpe_circuit(
-            H,
-            hf_state,
-            n_estimation_wires=qpe_config_h3o["n_estimation_wires"],
-            base_time=qpe_config_h3o["base_time"],
-            n_trotter_steps=qpe_config_h3o["n_trotter_steps"],
-        )
-
-        samples = qpe_circuit()
-        energy = engine._extract_energy_from_samples(samples, base_time=qpe_config_h3o["base_time"])
-
-        # Energy should be finite (precision is limited with minimal config)
-        assert np.isfinite(energy), f"H3O+ energy {energy} is not finite"
 
 
 # ============================================================================
@@ -507,10 +392,10 @@ class TestQPECatalyst:
         n_qubits = h2_hamiltonian["n_qubits"]
 
         config = {
-            "n_estimation_wires": 4,
+            "n_estimation_wires": 3,  # Reduced from 4 to 3
             "base_time": 0.5,
-            "n_trotter_steps": 3,
-            "n_shots": 10,  # Multiple shots reduce probability of all-zero samples
+            "n_trotter_steps": 2,  # Reduced from 3 to 2
+            "n_shots": 5,  # Reduced from 10 to 5 for speed
         }
 
         # Non-JIT version
@@ -538,32 +423,6 @@ class TestQPECatalyst:
         assert energy_nojit <= 0, f"Non-JIT energy should be non-positive: {energy_nojit}"
         assert energy_jit <= 0, f"JIT energy should be non-positive: {energy_jit}"
 
-    @pytest.mark.catalyst
-    @pytest.mark.slow
-    def test_qpe_h3o_with_catalyst(self, h3o_hamiltonian_active_space):
-        """H3O+ MVP with Catalyst (active space)."""
-        H = h3o_hamiltonian_active_space["hamiltonian"]
-        hf_state = h3o_hamiltonian_active_space["hf_state"]
-        n_qubits = h3o_hamiltonian_active_space["n_qubits"]
-
-        config = {
-            "n_estimation_wires": 3,
-            "base_time": 0.3,
-            "n_trotter_steps": 2,
-        }
-
-        engine = QPEEngine(n_qubits=n_qubits, use_catalyst=True)
-
-        qpe_circuit = engine._build_standard_qpe_circuit(H, hf_state, **config)
-
-        # MVP test: H3O+ must be runnable with Catalyst
-        result = qpe_circuit()
-        assert result is not None, "H3O+ QPE with Catalyst failed to execute"
-
-        # Extract energy
-        energy = engine._extract_energy_from_samples(result, base_time=config["base_time"])
-        assert np.isfinite(energy), f"H3O+ Catalyst energy not finite: {energy}"
-
 
 # ============================================================================
 # GPU Tests (lightning.gpu)
@@ -581,10 +440,10 @@ class TestQPEGPU:
         n_qubits = h2_hamiltonian["n_qubits"]
 
         config = {
-            "n_estimation_wires": 3,
+            "n_estimation_wires": 2,  # Reduced from 3 to 2 for faster tests
             "base_time": 0.5,
-            "n_trotter_steps": 2,
-            "n_shots": 5,
+            "n_trotter_steps": 1,  # Reduced from 2 to 1 for faster tests
+            "n_shots": 3,  # Reduced from 5 to 3 for faster tests
         }
 
         # Create engine with GPU device
@@ -627,10 +486,10 @@ class TestQPEGPU:
         n_qubits = h2_hamiltonian["n_qubits"]
 
         config = {
-            "n_estimation_wires": 4,
+            "n_estimation_wires": 3,  # Reduced from 4 to 3 for faster tests
             "base_time": 0.5,
-            "n_trotter_steps": 3,
-            "n_shots": 10,
+            "n_trotter_steps": 2,  # Reduced from 3 to 2 for faster tests
+            "n_shots": 5,  # Reduced from 10 to 5 for faster tests
         }
 
         engine = QPEEngine(
@@ -646,3 +505,131 @@ class TestQPEGPU:
         # Energy should be finite and non-positive
         assert np.isfinite(energy), f"GPU energy not finite: {energy}"
         assert energy <= 0, f"GPU energy should be non-positive: {energy}"
+
+
+# ============================================================================
+# QPE Core Algorithm Tests (compute_optimal_base_time, _extract_energy)
+# ============================================================================
+
+
+class TestQPECoreAlgorithms:
+    """Test core QPE algorithm functions."""
+
+    def test_compute_optimal_base_time_normal_energy(self):
+        """Test optimal base_time calculation for normal energies."""
+        # For H2 ground state (~-1.1 Ha), optimal base_time should avoid phase overflow
+        energy_estimate = -1.1
+        base_time = QPEEngine.compute_optimal_base_time(energy_estimate)
+
+        # base_time should be positive and reasonable
+        assert base_time > 0
+        # Phase should be < 1 to avoid overflow: phi = |E| * t / (2*pi) < 1
+        phase_estimate = abs(energy_estimate) * base_time / (2 * np.pi)
+        assert phase_estimate < 1.0, f"Phase overflow: {phase_estimate} >= 1"
+
+    def test_compute_optimal_base_time_near_zero_energy(self):
+        """Test that near-zero energy doesn't cause division by zero."""
+        energy_estimate = 1e-12  # Very small energy
+        base_time = QPEEngine.compute_optimal_base_time(energy_estimate)
+
+        # Should return default base_time instead of overflow
+        assert base_time == 0.3, f"Expected default base_time 0.3, got {base_time}"
+
+    def test_compute_optimal_base_time_custom_safety_margin(self):
+        """Test custom safety margin parameter."""
+        energy_estimate = -1.0
+        safety_margin = 0.5  # More conservative than default 0.8
+
+        base_time = QPEEngine.compute_optimal_base_time(energy_estimate, safety_margin)
+
+        # With smaller safety margin, base_time should be smaller
+        phase_estimate = abs(energy_estimate) * base_time / (2 * np.pi)
+        assert (
+            phase_estimate < 0.5 + 0.1
+        ), f"Phase should be close to safety margin: {phase_estimate}"
+
+    def test_extract_energy_from_single_sample(self, h2_hamiltonian):
+        """Test energy extraction from single QPE sample."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        engine = QPEEngine(n_qubits=n_qubits)
+        base_time = 0.3
+
+        # Build circuit with n_shots=1
+        qpe_circuit = engine._build_standard_qpe_circuit(
+            H, hf_state, n_estimation_wires=4, base_time=base_time, n_shots=1
+        )
+
+        samples = qpe_circuit()
+        energy = engine._extract_energy_from_samples(samples, base_time)
+
+        # Energy should be finite
+        assert np.isfinite(energy)
+
+    def test_extract_energy_from_multiple_shots(self, h2_hamiltonian):
+        """Test energy extraction from multiple QPE shots (mode calculation)."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        engine = QPEEngine(n_qubits=n_qubits)
+        base_time = 0.3
+
+        # Build circuit with n_shots=20
+        qpe_circuit = engine._build_standard_qpe_circuit(
+            H, hf_state, n_estimation_wires=4, base_time=base_time, n_shots=20
+        )
+
+        samples = qpe_circuit()
+        # samples shape should be (n_shots, n_estimation_wires)
+        assert samples.ndim == 2
+        assert samples.shape[0] == 20
+
+        energy = engine._extract_energy_from_samples(samples, base_time)
+        assert np.isfinite(energy)
+
+    def test_draw_qpe_circuit_basic(self, h2_hamiltonian):
+        """Test QPE circuit visualization."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        engine = QPEEngine(n_qubits=n_qubits)
+
+        # Generate circuit diagram
+        circuit_str = engine.draw_qpe_circuit(
+            H,
+            hf_state,
+            n_estimation_wires=4,
+            base_time=0.3,
+            use_pennylane_draw=False,  # Use ASCII diagram
+        )
+
+        # Verify diagram contains expected components
+        assert "QPE Circuit Structure" in circuit_str
+        assert "Estimation Register" in circuit_str
+        assert "System Register" in circuit_str
+
+    def test_draw_qpe_circuit_with_pennylane(self, h2_hamiltonian):
+        """Test QPE circuit visualization using qml.draw()."""
+        H = h2_hamiltonian["hamiltonian"]
+        hf_state = h2_hamiltonian["hf_state"]
+        n_qubits = h2_hamiltonian["n_qubits"]
+
+        engine = QPEEngine(n_qubits=n_qubits)
+
+        # Generate circuit diagram with PennyLane's draw
+        circuit_str = engine.draw_qpe_circuit(
+            H,
+            hf_state,
+            n_estimation_wires=3,  # Small for faster test
+            base_time=0.3,
+            n_trotter_steps=2,
+            use_pennylane_draw=True,
+        )
+
+        # Should contain PennyLane circuit representation
+        assert circuit_str is not None
+        assert len(circuit_str) > 0

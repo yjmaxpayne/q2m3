@@ -192,3 +192,28 @@ class TestSelectDeviceIntegration:
 
         result = circuit()
         assert result is not None
+
+
+class TestDeviceFallbackPaths:
+    """Test device fallback warning paths."""
+
+    def test_unrecognized_device_type_fallback(self):
+        """Unrecognized device_type should fallback to default.qubit."""
+        from q2m3.core.device_utils import select_device
+
+        dev = select_device("unknown_device", n_wires=4)
+        assert dev is not None
+        assert "qubit" in dev.name.lower()
+
+    def test_catalyst_fallback_without_lightning(self):
+        """Test Catalyst fallback when lightning.qubit unavailable."""
+        from q2m3.core.device_utils import HAS_LIGHTNING_QUBIT, select_device
+
+        # This path is hard to test deterministically since it depends on installed packages
+        # We can only test the expected behavior when lightning is NOT available
+        if HAS_LIGHTNING_QUBIT:
+            pytest.skip("lightning.qubit available, cannot test unavailable path")
+
+        # When Catalyst requested but lightning unavailable, should still return valid device
+        dev = select_device("auto", n_wires=4, use_catalyst=True)
+        assert dev is not None

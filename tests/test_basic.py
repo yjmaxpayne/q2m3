@@ -359,3 +359,182 @@ class TestPySCFPennyLaneConverter:
         print(f"  Vacuum Hamiltonian terms: {n_terms_vacuum}")
         print(f"  MM Hamiltonian terms: {n_terms_mm}")
         print(f"  Qubits: {n_qubits_mm}")
+
+
+class TestIOUtilities:
+    """Test input/output utilities."""
+
+    def test_load_xyz_valid_file(self, tmp_path):
+        """Test loading valid XYZ file."""
+        from q2m3.utils.io import load_xyz
+
+        # Create a temporary XYZ file for H3O+
+        xyz_content = """4
+H3O+ hydronium ion
+O  0.0000  0.0000  0.0000
+H  0.9600  0.0000  0.0000
+H -0.4800  0.8300  0.0000
+H -0.4800 -0.8300  0.0000
+"""
+        xyz_file = tmp_path / "h3o.xyz"
+        xyz_file.write_text(xyz_content)
+
+        # Load atoms
+        atoms = load_xyz(str(xyz_file))
+
+        # Verify correct parsing
+        assert len(atoms) == 4
+        assert atoms[0].symbol == "O"
+        assert atoms[1].symbol == "H"
+        # Check oxygen position
+        np.testing.assert_allclose(atoms[0].position, [0.0, 0.0, 0.0])
+        # Check first hydrogen position
+        np.testing.assert_allclose(atoms[1].position, [0.96, 0.0, 0.0])
+        # Verify all atoms are QM
+        assert all(atom.is_qm for atom in atoms)
+
+    def test_load_xyz_file_not_found(self):
+        """Test that FileNotFoundError is raised for missing file."""
+        from q2m3.utils.io import load_xyz
+
+        with pytest.raises(FileNotFoundError, match="not found"):
+            load_xyz("/nonexistent/path/file.xyz")
+
+    def test_load_xyz_invalid_format_too_short(self, tmp_path):
+        """Test that ValueError is raised for invalid XYZ format."""
+        from q2m3.utils.io import load_xyz
+
+        # File with only 1 line (invalid)
+        xyz_file = tmp_path / "invalid.xyz"
+        xyz_file.write_text("1\n")
+
+        with pytest.raises(ValueError, match="Invalid XYZ file format"):
+            load_xyz(str(xyz_file))
+
+    def test_load_xyz_invalid_atom_count(self, tmp_path):
+        """Test that ValueError is raised for non-integer atom count."""
+        from q2m3.utils.io import load_xyz
+
+        xyz_file = tmp_path / "invalid.xyz"
+        xyz_file.write_text("abc\nComment\nO 0 0 0\n")
+
+        with pytest.raises(ValueError, match="must contain number of atoms"):
+            load_xyz(str(xyz_file))
+
+    def test_save_json_results_basic(self, tmp_path):
+        """Test saving results to JSON file."""
+        from q2m3.utils.io import save_json_results
+
+        results = {
+            "energy": -75.123,
+            "atomic_charges": {"O0": -0.5, "H1": 0.25},
+            "convergence": {"converged": True, "iterations": 5},
+        }
+
+        json_file = tmp_path / "results.json"
+        save_json_results(results, str(json_file))
+
+        # Verify file was created
+        assert json_file.exists()
+
+        # Verify content is valid JSON
+        import json
+
+        with open(json_file) as f:
+            loaded = json.load(f)
+
+        assert loaded["energy"] == -75.123
+        assert loaded["atomic_charges"]["O0"] == -0.5
+        assert loaded["convergence"]["converged"] is True
+
+    def test_save_json_results_with_numpy_types(self, tmp_path):
+        """Test saving results with NumPy types."""
+        from q2m3.utils.io import save_json_results
+
+        results = {
+            "energy": np.float64(-75.123),
+            "iterations": np.int32(5),
+            "converged": np.bool_(True),
+            "density_matrix": np.array([[1.0, 0.5], [0.5, 0.0]]),
+            "complex_value": complex(1.0, 2.0),
+        }
+
+        json_file = tmp_path / "numpy_results.json"
+        save_json_results(results, str(json_file))
+
+        # Verify JSON is valid and types are converted
+        import json
+
+        with open(json_file) as f:
+            loaded = json.load(f)
+
+        assert isinstance(loaded["energy"], float)
+        assert isinstance(loaded["iterations"], int)
+        assert isinstance(loaded["converged"], bool)
+        assert isinstance(loaded["density_matrix"], list)
+        assert isinstance(loaded["complex_value"], dict)
+        assert loaded["complex_value"]["real"] == 1.0
+        assert loaded["complex_value"]["imag"] == 2.0
+
+    def test_save_json_results_creates_directory(self, tmp_path):
+        """Test that parent directories are created automatically."""
+        from q2m3.utils.io import save_json_results
+
+        nested_path = tmp_path / "output" / "nested" / "results.json"
+        results = {"energy": -75.0}
+
+        save_json_results(results, str(nested_path))
+
+        assert nested_path.exists()
+
+    def test_load_config_yaml(self, tmp_path):
+        """Test loading configuration from YAML file."""
+        from q2m3.utils.io import load_config
+
+        yaml_content = """
+qpe_config:
+  iterations: 8
+  system_qubits: 12
+  mapping: jordan_wigner
+"""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text(yaml_content)
+
+        config = load_config(str(yaml_file))
+
+        assert "qpe_config" in config
+        assert config["qpe_config"]["iterations"] == 8
+        assert config["qpe_config"]["mapping"] == "jordan_wigner"
+
+    def test_load_config_json(self, tmp_path):
+        """Test loading configuration from JSON file."""
+        from q2m3.utils.io import load_config
+
+        config_data = {"qpe_config": {"iterations": 10, "system_qubits": 16}}
+
+        json_file = tmp_path / "config.json"
+        import json
+
+        with open(json_file, "w") as f:
+            json.dump(config_data, f)
+
+        config = load_config(str(json_file))
+
+        assert config["qpe_config"]["iterations"] == 10
+
+    def test_load_config_file_not_found(self):
+        """Test that FileNotFoundError is raised for missing config."""
+        from q2m3.utils.io import load_config
+
+        with pytest.raises(FileNotFoundError, match="not found"):
+            load_config("/nonexistent/config.yaml")
+
+    def test_load_config_unsupported_format(self, tmp_path):
+        """Test that ValueError is raised for unsupported format."""
+        from q2m3.utils.io import load_config
+
+        txt_file = tmp_path / "config.txt"
+        txt_file.write_text("not a valid format")
+
+        with pytest.raises(ValueError, match="Unsupported config format"):
+            load_config(str(txt_file))

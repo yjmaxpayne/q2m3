@@ -1,0 +1,23 @@
+# Reference docs at https://docs.codecov.com/docs/codecovyml-reference
+
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: no
+
+github_checks:
+  annotations: false

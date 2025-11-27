@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, mvp]
+  pull_request:
+    branches: [main, mvp]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run linting (ruff)
+        run: uv run ruff check src/ tests/
+
+      - name: Check formatting (black)
+        run: uv run black --check src/ tests/ --line-length 100
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest tests/ \
+            --cov=src/q2m3 \
+            --cov-report=xml \
+            --cov-report=term \
+            -m "not slow and not gpu"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

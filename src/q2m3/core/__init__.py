@@ -7,12 +7,26 @@ Core module for Quantum-QM/MM calculations.
 Contains the main computational engines and system builders.
 """
 
+from .device_utils import (
+    HAS_LIGHTNING_GPU,
+    HAS_LIGHTNING_QUBIT,
+    get_best_available_device,
+    select_device,
+)
 from .qmmm_system import QMMMSystem
 from .qpe import QPEEngine
 from .quantum_qmmm import QuantumQMMM
+from .rdm import RDMEstimator, measure_rdm_from_qpe_state
 
 __all__ = [
     "QPEEngine",
     "QMMMSystem",
     "QuantumQMMM",
+    "RDMEstimator",
+    "measure_rdm_from_qpe_state",
+    # Device utilities
+    "select_device",
+    "get_best_available_device",
+    "HAS_LIGHTNING_GPU",
+    "HAS_LIGHTNING_QUBIT",
 ]

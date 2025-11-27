@@ -12,6 +12,7 @@ This directory contains examples demonstrating the q2m3 workflow for molecular g
 - GPU acceleration via `lightning.gpu` device
 - QM/MM system setup with TIP3P water solvation
 - Solvation effect analysis (vacuum vs explicit MM embedding)
+- EFTQC resource estimation (Toffoli gates, logical qubits, 1-norm analysis)
 - Catalyst `@qjit` compilation for JIT optimization
 - Quantum 1-RDM measurement for Mulliken population analysis
 - Circuit visualization via `qml.draw(decimals=None, level=0)`
@@ -78,7 +79,7 @@ H ─────── H          Total charge: 0
 
 Geometry (Angstrom):
   H1: ( 0.000,  0.000,  0.000)
-  H2: ( 0.740,  0.000,  0.000)
+  H2: ( 0.000,  0.000,  0.740)
 ```
 
 ### Quantum Resource Configuration (H2)
@@ -87,7 +88,10 @@ Geometry (Angstrom):
 |-----------|-------|-------------|
 | **Active Space** | 2e, 2o | 2 electrons in 2 spatial orbitals |
 | **System Qubits** | 4 | 2 orbitals x 2 spin = 4 spin orbitals |
-| **Trotter Steps** | 100 | Time evolution accuracy |
+| **Estimation Qubits** | 4 | Precision bits for phase readout |
+| **Total Qubits** | 8 | System + estimation registers |
+| **Trotter Steps** | 20 | Time evolution accuracy |
+| **Shots** | 100 | Measurement statistics |
 
 ### Validation Strategy
 
@@ -95,7 +99,7 @@ Geometry (Angstrom):
 2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
 3. Compare stabilization effects (HF vs QPE should agree on sign/magnitude)
 
-### Results (lightning.gpu, 4 qubits, 100 Trotter steps)
+### Results (lightning.gpu, 8 qubits, 20 Trotter steps)
 
 | Method | Vacuum (Ha) | Solvated (Ha) | Stabilization (kcal/mol) |
 |--------|-------------|---------------|--------------------------|
@@ -176,15 +180,16 @@ Geometry (Angstrom):
 | **Base Time** | auto | Auto-computed to avoid phase overflow |
 | **Shots** | 100 | Measurement statistics |
 
-### Demo Workflow (7 Steps)
+### Demo Workflow (8 Steps)
 
 | Step | Description | Output |
 |------|-------------|--------|
 | **Step 1** | System Configuration | QM/MM setup, quantum resources, device selection |
-| **Step 2** | Classical HF Solvation Analysis | Vacuum vs solvated HF energies, MM embedding validation |
-| **Step 3** | Standard QPE Solvation Analysis | Vacuum vs solvated QPE energies, charge redistribution |
-| **Step 4** | Circuit Visualization | QPE + RDM circuit diagrams via `qml.draw()` |
-| **Step 5** | Catalyst QPE Solvation Analysis | Same as Step 3 with `@qjit` compilation |
+| **Step 1.5** | Circuit Visualization | QPE + RDM circuit diagrams via `qml.draw()` |
+| **Step 2** | EFTQC Resource Estimation | Toffoli gates, logical qubits, 1-norm analysis |
+| **Step 3** | Classical HF Solvation Analysis | Vacuum vs solvated HF energies, MM embedding validation |
+| **Step 4** | Standard QPE Solvation Analysis | Vacuum vs solvated QPE energies, charge redistribution |
+| **Step 5** | Catalyst QPE Solvation Analysis | Same as Step 4 with `@qjit` compilation |
 | **Step 6** | Results Comparison | Time comparison, energy consistency |
 | **Step 7** | Save Results | JSON output to `data/output/` |
 
@@ -219,7 +224,44 @@ QPE Circuit Parameters:
 
 Device Selection: auto -> lightning.gpu (GPU detected)
 
-[Step 2] Solvation Effect Analysis (Classical HF)
+[Step 1.5] Circuit Visualization (PennyLane)
+--------------------------------------------------------------------------------
+Generating QPE + RDM circuit diagrams...
+
+QPE Circuit (Standard Phase Estimation):
+------------------------------------------------------------
+PennyLane Circuit (decimals=None, level=0):
+ 0: ─╭|Ψ⟩─╭TrotterProduct†─╭TrotterProduct†───────┤
+ 1: ─├|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
+...
+ 8: ──H───╰●───────────────│────────────────╭QFT†─┤ ╭Sample
+ 9: ──H────────────────────╰●───────────────├QFT†─┤ ├Sample
+
+RDM Measurement Circuit (Pauli Expectation Values):
+------------------------------------------------------------
+PennyLane Circuit (decimals=None, level=0):
+0: ─╭|Ψ⟩─╭TrotterProduct─┤  <Z>
+1: ─├|Ψ⟩─├TrotterProduct─┤  <Z>
+...
+
+[Step 2] EFTQC Resource Estimation (Vacuum vs Solvated)
+--------------------------------------------------------------------------------
+Resource Comparison (H3O+ with 8 TIP3P waters, 24 MM charges)
+
+  ----------------------------------------------------------------------
+  Configuration                 1-norm (Ha)     Toffoli Gates      Qubits
+  ----------------------------------------------------------------------
+  Vacuum (chemical)             34.21           148,284,000        314
+  Vacuum (relaxed)              34.21           14,828,400         314
+  Solvated (chemical)           34.66           150,234,000        314
+  Solvated (relaxed)            34.66           15,023,400         314
+  ----------------------------------------------------------------------
+
+  Analysis:
+    MM embedding effect: Δλ = +1.3% (1-norm increase)
+    Error relaxation:    90.0% fewer gates (10× error tolerance)
+
+[Step 3] Solvation Effect Analysis (Classical HF)
 --------------------------------------------------------------------------------
 Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...
 This validates that MM embedding correctly polarizes the QM electron density.
@@ -236,7 +278,7 @@ Solvation Stabilization:
 
   [OK] MM embedding is working: explicit solvent stabilizes H3O+
 
-[Step 3] Standard QPE Solvation Effect Analysis (Quantum Level)
+[Step 4] Standard QPE Solvation Effect Analysis (Quantum Level)
 --------------------------------------------------------------------------------
 Comparing QPE energies: vacuum vs. explicit TIP3P solvation...
 This validates MM embedding is correctly included in the quantum Hamiltonian.
@@ -271,26 +313,6 @@ Mulliken Charge Redistribution (Vacuum -> Solvated):
   H1: -0.0538 -> +0.3133 (Δq = +0.3671)
   H2: +0.1030 -> -0.2462 (Δq = -0.3493)
   H3: +0.1030 -> +0.0849 (Δq = -0.0182)
-
-[Step 4] Circuit Visualization (PennyLane)
---------------------------------------------------------------------------------
-Generating QPE + RDM circuit diagrams...
-
-QPE Circuit (Standard Phase Estimation):
-------------------------------------------------------------
-PennyLane Circuit (decimals=None, level=0):
- 0: ─╭|Ψ⟩─╭TrotterProduct†─╭TrotterProduct†───────┤
- 1: ─├|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
-...
- 8: ──H───╰●───────────────│────────────────╭QFT†─┤ ╭Sample
- 9: ──H────────────────────╰●───────────────├QFT†─┤ ├Sample
-
-RDM Measurement Circuit (Pauli Expectation Values):
-------------------------------------------------------------
-PennyLane Circuit (decimals=None, level=0):
-0: ─╭|Ψ⟩─╭TrotterProduct─┤  <Z>
-1: ─├|Ψ⟩─├TrotterProduct─┤  <Z>
-...
 
 [Step 5] Catalyst @qjit QPE Solvation Effect Analysis
 --------------------------------------------------------------------------------
@@ -346,6 +368,7 @@ q2m3 MVP Capabilities Demonstrated:
   [OK] Inverse QFT (qml.adjoint(qml.QFT))
   [OK] Phase-to-energy extraction
   [OK] QM/MM system with TIP3P solvation
+  [OK] EFTQC resource estimation (Toffoli gates, logical qubits)
   [OK] HF MM embedding (ΔE = 3.6 kcal/mol)
   [OK] Standard QPE MM embedding (ΔE = 3.6 kcal/mol)
   [OK] Catalyst QPE MM embedding (ΔE = 3.6 kcal/mol)

@@ -16,6 +16,7 @@ q2m3 demonstrates the integration of QPE algorithms with molecular mechanics env
 - GPU acceleration via `lightning.gpu` device (4.3x speedup)
 - Catalyst `@qjit` JIT compilation support
 - Quantum 1-RDM measurement for Mulliken population analysis
+- EFTQC resource estimation (Toffoli gates, logical qubits, 1-norm)
 - Circuit visualization via `qml.draw(decimals=None, level=0)`
 - Solvation effect analysis (vacuum vs explicit MM embedding)
 
@@ -174,15 +175,53 @@ The `device_type` parameter controls quantum device selection:
 | `"lightning.qubit"` | CPU (optimized) | Fast (2.7x) | CPU-only, Catalyst JIT |
 | `"default.qubit"` | CPU (standard) | Baseline | Development, debugging |
 
-**Performance Benchmark** (H3O+ + 8 waters, 12 qubits, 100 Trotter steps):
+**Performance Benchmark** (H3O+ + 8 waters, 12 qubits, 10 Trotter steps):
 
 | Configuration | Device | Time | Energy (Ha) |
 |---------------|--------|------|-------------|
-| Standard QPE | lightning.gpu | 28.7s | -76.509220 |
-| Catalyst QPE | lightning.qubit | 78.5s | -76.509220 |
+| Standard QPE | lightning.gpu | ~28s | -76.509220 |
+| Catalyst QPE | lightning.qubit | ~78s | -76.509220 |
 | Standard QPE | default.qubit | ~120s | -76.509220 |
 
 **Note:** Catalyst `@qjit` currently works best with `lightning.qubit`. There are known compatibility issues when combining Catalyst with `lightning.gpu` for `qml.ctrl(qml.TrotterProduct)`. See [Known Issues](#known-issues).
+
+## EFTQC Resource Estimation
+
+q2m3 provides quantum resource estimation using PennyLane's `DoubleFactorization` API to assess feasibility for Early Fault-Tolerant Quantum Computers (EFTQC).
+
+```bash
+# Run resource estimation demo
+python examples/resource_estimation_demo.py
+```
+
+**Key Results (Chemical Accuracy = 0.0016 Ha):**
+
+| System | Basis | Toffoli Gates | Logical Qubits |
+|--------|-------|---------------|----------------|
+| H2 | STO-3G | ~1.2M | ~115 |
+| H3O+ | STO-3G | ~148M | ~314 |
+| H3O+ | 6-31G | ~494M | ~778 |
+
+**Quick Start:**
+
+```python
+import pennylane as qml
+import numpy as np
+from pennylane.resource import DoubleFactorization
+
+# Define molecule
+mol = qml.qchem.Molecule(['O', 'H', 'H', 'H'], coords, charge=1, basis_name='sto-3g')
+_, one, two = qml.qchem.electron_integrals(mol)()
+
+# Estimate resources
+algo = DoubleFactorization(one, two, error=0.0016)
+print(f"Toffoli gates: {algo.gates:,}")
+print(f"Logical qubits: {algo.qubits}")
+```
+
+**Documentation:**
+- Complete API guide: [docs/resource_estimation_api_research.md](docs/resource_estimation_api_research.md)
+- Quick reference: [docs/resource_estimation_quickstart.md](docs/resource_estimation_quickstart.md)
 
 ## Examples
 
@@ -194,7 +233,7 @@ The `device_type` parameter controls quantum device selection:
 python examples/h2_qpe_h2o_mm_minimal.py
 ```
 
-**Test System**: H2 molecule + 2 TIP3P waters (4 qubits)
+**Test System**: H2 molecule + 2 TIP3P waters (8 qubits: 4 system + 4 estimation)
 
 | Method | Vacuum (Ha) | Solvated (Ha) | Stabilization |
 |--------|-------------|---------------|---------------|
@@ -213,12 +252,27 @@ python examples/h3op_qpe_h2o_mm_full.py
 
 **Demo Steps:**
 1. System Configuration (QM/MM setup, device selection)
-2. Classical HF Solvation Analysis
-3. Standard QPE Solvation Analysis
-4. Circuit Visualization
+1.5. Circuit Visualization
+2. EFTQC Resource Estimation
+3. Classical HF Solvation Analysis
+4. Standard QPE Solvation Analysis
 5. Catalyst QPE Solvation Analysis
 6. Results Comparison
 7. Save Results (JSON output)
+
+### Example 3: EFTQC Resource Estimation
+
+`examples/resource_estimation_demo.py` - Quantum resource requirements analysis (~10s)
+
+```bash
+python examples/resource_estimation_demo.py
+```
+
+**Analysis:**
+- H2 and H3O+ resource estimates (STO-3G, 6-31G)
+- Error tolerance scaling (1×, 10×, 100× chemical accuracy)
+- EFTQC feasibility assessment
+- Resource-error trade-off analysis
 
 See [examples/README.md](examples/README.md) for detailed documentation.
 
@@ -237,10 +291,14 @@ q2m3/
 |   |   +-- pyscf_pennylane.py # PySCF-PennyLane converter + MM embedding
 |   +-- utils/
 |       +-- io.py              # File I/O utilities
++-- docs/
+|   +-- resource_estimation_api_research.md  # Complete API documentation
+|   +-- resource_estimation_quickstart.md    # Quick reference guide
 +-- tests/                     # Test suite
 +-- examples/                  # Example scripts
-|   +-- h2_qpe_h2o_mm_minimal.py   # H2 minimal validation
-|   +-- h3op_qpe_h2o_mm_full.py    # H3O+ full demo
+|   +-- h2_qpe_h2o_mm_minimal.py     # H2 minimal validation
+|   +-- h3op_qpe_h2o_mm_full.py      # H3O+ full demo
+|   +-- resource_estimation_demo.py  # EFTQC resource analysis
 +-- data/output/               # Output files (JSON results)
 ```
 

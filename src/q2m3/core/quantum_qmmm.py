@@ -99,9 +99,14 @@ class QuantumQMMM:
             default_rdm_config.update(rdm_config)
         self.rdm_config = default_rdm_config
 
-    def compute_ground_state(self) -> dict[str, Any]:
+    def compute_ground_state(self, include_resource_estimation: bool = False) -> dict[str, Any]:
         """
         Compute ground state properties using QPE.
+
+        Args:
+            include_resource_estimation: If True, include EFTQC resource estimation
+                in the output. Uses PennyLane's DoubleFactorization to estimate
+                logical qubits, Toffoli gates, and QPE iterations. Default: False.
 
         Returns:
             Dictionary containing:
@@ -111,6 +116,7 @@ class QuantumQMMM:
                 - density_matrix: Electronic density matrix
                 - atomic_charges: Mulliken charges
                 - convergence: Convergence information
+                - eftqc_resources: (optional) EFTQC resource estimation if requested
         """
         # Build QM/MM Hamiltonian (includes PennyLane Hamiltonian)
         hamiltonian_data = self._build_qmmm_hamiltonian()
@@ -144,6 +150,20 @@ class QuantumQMMM:
             result["energy_hf"] = qpe_result["energy_hf"]
         if "energy_difference" in qpe_result:
             result["energy_difference"] = qpe_result["energy_difference"]
+
+        # Optional: EFTQC resource estimation
+        if include_resource_estimation:
+            symbols = [atom.symbol for atom in self.qmmm_system.qm_atoms]
+            coords = self.qmmm_system.get_qm_coords()
+            charge = int(self.qmmm_system.get_total_charge())
+            target_error = self.qpe_config.get("target_error", 0.0016)
+
+            result["eftqc_resources"] = self.converter.estimate_qpe_resources(
+                symbols=symbols,
+                coords=coords,
+                charge=charge,
+                target_error=target_error,
+            )
 
         return result
 
@@ -268,8 +288,11 @@ class QuantumQMMM:
         energy_diff = abs(energy - energy_hf)
         threshold = self.qpe_config.get("energy_warning_threshold", 1.0)
         if energy_diff > threshold:
+            # Add environment label for distinguishing vacuum vs solvated
+            n_mm_waters = self.qmmm_system.num_waters
+            env_label = "vacuum" if n_mm_waters == 0 else f"solvated ({n_mm_waters} waters)"
             logger.warning(
-                f"QPE energy ({energy:.4f} Ha) differs from HF ({energy_hf:.4f} Ha) "
+                f"[{env_label}] QPE energy ({energy:.4f} Ha) differs from HF ({energy_hf:.4f} Ha) "
                 f"by {energy_diff:.4f} Ha, exceeding threshold {threshold} Ha"
             )
 

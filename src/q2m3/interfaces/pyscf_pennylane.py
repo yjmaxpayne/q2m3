@@ -418,3 +418,172 @@ class PySCFPennyLaneConverter:
             Overlap matrix
         """
         return mol.intor("int1e_ovlp")
+
+    def estimate_qpe_resources(
+        self,
+        symbols: list[str],
+        coords: np.ndarray,
+        charge: int = 0,
+        mm_charges: np.ndarray | None = None,
+        mm_coords: np.ndarray | None = None,
+        active_electrons: int | None = None,
+        active_orbitals: int | None = None,
+        target_error: float = 0.0016,
+    ) -> dict[str, Any]:
+        """
+        Estimate EFTQC resources for QPE algorithm using PennyLane.
+
+        Uses PennyLane's qml.resource.DoubleFactorization to estimate quantum
+        computing resources (Toffoli gates and logical qubits) required for
+        Quantum Phase Estimation on molecular systems.
+
+        Supports both vacuum Hamiltonian and MM-embedded (solvated) Hamiltonian.
+        When mm_charges/mm_coords are provided, the single-electron integrals
+        include QM-MM electrostatic interaction terms.
+
+        Args:
+            symbols: List of atomic symbols (e.g., ['O', 'H', 'H', 'H'])
+            coords: Atomic coordinates in Angstrom, shape (n_atoms, 3)
+            charge: Total molecular charge (default: 0 for neutral)
+            mm_charges: MM point charges array (optional, for solvated Hamiltonian)
+            mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3)
+            active_electrons: Number of electrons in active space (optional, for future)
+            active_orbitals: Number of spatial orbitals in active space (optional, for future)
+            target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)
+
+        Returns:
+            Dictionary containing:
+                - logical_qubits: Number of logical qubits for EFTQC
+                - toffoli_gates: Toffoli gate count (non-Clifford gates)
+                - hamiltonian_1norm: Lambda (1-norm of Hamiltonian) in Hartree
+                - qpe_iterations: Estimated QPE iterations (= ceil(λ/ε))
+                - trotter_steps: Recommended Trotter steps (heuristic: 10 × n_orbitals)
+                - target_error: Target error in Hartree
+                - n_electrons: Number of electrons in the system
+                - n_orbitals: Number of spatial orbitals
+                - basis: Basis set used
+                - mm_embedded: Whether MM embedding was applied
+                - n_mm_charges: Number of MM point charges (0 if vacuum)
+
+        Raises:
+            ValueError: If coords shape does not match number of symbols
+
+        Example:
+            >>> converter = PySCFPennyLaneConverter()
+            >>> symbols = ['H', 'H']
+            >>> coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+            >>> # Vacuum Hamiltonian
+            >>> result = converter.estimate_qpe_resources(symbols, coords)
+            >>> # Solvated Hamiltonian with MM charges
+            >>> mm_charges = np.array([-0.834, 0.417, 0.417])
+            >>> mm_coords = np.array([[3.0, 0.0, 0.0], [3.5, 0.8, 0.0], [3.5, -0.8, 0.0]])
+            >>> result_mm = converter.estimate_qpe_resources(
+            ...     symbols, coords, mm_charges=mm_charges, mm_coords=mm_coords
+            ... )
+        """
+        from pennylane.resource import DoubleFactorization
+
+        ANGSTROM_TO_BOHR = 1.8897259886
+
+        # Validate and prepare coordinates
+        coords_arr = np.asarray(coords)
+        if coords_arr.ndim == 1:
+            if len(coords_arr) != len(symbols) * 3:
+                raise ValueError(
+                    f"Flattened coords length ({len(coords_arr)}) must be "
+                    f"symbols * 3 = {len(symbols) * 3}"
+                )
+            coords_arr = coords_arr.reshape(-1, 3)
+        elif coords_arr.ndim == 2:
+            if coords_arr.shape[0] != len(symbols):
+                raise ValueError(
+                    f"Number of symbols ({len(symbols)}) must match "
+                    f"number of coords ({coords_arr.shape[0]})"
+                )
+        else:
+            raise ValueError(f"coords must be 1D or 2D array, got {coords_arr.ndim}D")
+
+        # Check if MM embedding is requested
+        mm_embedded = mm_charges is not None and len(mm_charges) > 0
+
+        # Build molecular object using PennyLane qchem
+        mol = qml.qchem.Molecule(
+            symbols=symbols, coordinates=coords_arr, charge=charge, basis_name=self.basis
+        )
+
+        # Compute electron integrals (vacuum)
+        core, one_electron, two_electron = qml.qchem.electron_integrals(mol)()
+
+        # Convert to numpy for potential modification
+        one_electron = np.asarray(one_electron)
+        two_electron = np.asarray(two_electron)
+
+        n_mm = 0
+        if mm_embedded:
+            # Add MM contribution to single-electron integrals using PySCF
+            from pyscf import gto, qmmm, scf
+
+            # Build PySCF molecule
+            atom_str = "\n".join(
+                f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}" for s, c in zip(symbols, coords_arr)
+            )
+            pyscf_mol = gto.M(atom=atom_str, basis=self.basis, charge=charge, unit="Angstrom")
+
+            # Compute vacuum h1e (AO basis)
+            mf_vac = scf.RHF(pyscf_mol)
+            mf_vac.verbose = 0
+            h1e_vac_ao = mf_vac.get_hcore()
+
+            # Compute solvated h1e with MM embedding (AO basis)
+            mf_sol = scf.RHF(pyscf_mol)
+            mf_sol.verbose = 0
+            mm_coords_arr = np.asarray(mm_coords)
+            mm_coords_bohr = mm_coords_arr * ANGSTROM_TO_BOHR
+            mf_sol = qmmm.mm_charge(mf_sol, mm_coords_bohr, np.asarray(mm_charges))
+            h1e_sol_ao = mf_sol.get_hcore()
+
+            # Compute MM correction in AO basis
+            delta_h1e_ao = h1e_sol_ao - h1e_vac_ao
+
+            # Transform to MO basis using canonical HF orbitals
+            mf_vac.run()
+            mo_coeff = mf_vac.mo_coeff
+            delta_h1e_mo = mo_coeff.T @ delta_h1e_ao @ mo_coeff
+
+            # Add MM correction to one-electron integrals
+            one_electron = one_electron + delta_h1e_mo
+
+            n_mm = len(mm_charges)
+
+        # Estimate resources using Double Factorization
+        algo = DoubleFactorization(
+            one_electron=one_electron,
+            two_electron=two_electron,
+            error=target_error,
+            tol_factor=1e-5,
+            tol_eigval=1e-5,
+        )
+
+        # Extract Hamiltonian 1-norm (Lambda)
+        hamiltonian_1norm = float(np.asarray(algo.lamb).item())
+
+        # Calculate QPE iterations: ceil(Lambda / error)
+        qpe_iterations = int(np.ceil(hamiltonian_1norm / target_error))
+
+        # Heuristic Trotter step recommendation: 10 × n_orbitals
+        n_orbitals = one_electron.shape[0]
+        trotter_steps = 10 * n_orbitals
+
+        return {
+            "logical_qubits": algo.qubits,
+            "toffoli_gates": algo.gates,
+            "hamiltonian_1norm": hamiltonian_1norm,
+            "qpe_iterations": qpe_iterations,
+            "trotter_steps": trotter_steps,
+            "target_error": target_error,
+            "n_electrons": mol.n_electrons,
+            "n_orbitals": n_orbitals,
+            "basis": self.basis,
+            "mm_embedded": mm_embedded,
+            "n_mm_charges": n_mm,
+        }

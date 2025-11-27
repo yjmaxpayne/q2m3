@@ -20,9 +20,11 @@ import warnings
 from datetime import datetime
 
 import numpy as np
+from pyscf import gto
 
 from q2m3.core import QuantumQMMM
-from q2m3.core.qmmm_system import Atom
+from q2m3.core.qmmm_system import Atom, QMMMSystem
+from q2m3.interfaces import PySCFPennyLaneConverter
 from q2m3.utils import save_json_results
 
 # Check Catalyst availability
@@ -37,6 +39,15 @@ except ImportError:
 
 # Check lightning devices availability
 import pennylane as qml
+
+# Physical constants and thresholds
+HARTREE_TO_KCAL_MOL = 627.5094
+MM_STABILIZATION_THRESHOLD = (
+    0.001  # Hartree - minimum stabilization to consider MM embedding active
+)
+ENERGY_CONSISTENCY_THRESHOLD = 0.01  # Hartree - acceptable difference between methods
+CHEMICAL_ACCURACY_ERROR = 0.0016  # Hartree (~1 kcal/mol)
+RELAXED_ACCURACY_ERROR = 0.016  # Hartree (~10 kcal/mol)
 
 HAS_LIGHTNING_GPU = False
 try:
@@ -55,6 +66,18 @@ except Exception:
     pass
 
 
+def get_best_available_device() -> str:
+    """Return the best available PennyLane device name.
+
+    Priority: lightning.gpu > lightning.qubit > default.qubit
+    """
+    if HAS_LIGHTNING_GPU:
+        return "lightning.gpu"
+    elif HAS_LIGHTNING_QUBIT:
+        return "lightning.qubit"
+    return "default.qubit"
+
+
 def analyze_solvation_effect(h3o_atoms: list[Atom], mm_waters: int) -> dict:
     """
     Analyze the solvation effect on H3O+ energy at the classical HF level.
@@ -68,11 +91,6 @@ def analyze_solvation_effect(h3o_atoms: list[Atom], mm_waters: int) -> dict:
     Returns:
         Dictionary with vacuum energy, solvated energy, and stabilization energy
     """
-    from pyscf import gto
-
-    from q2m3.core.qmmm_system import QMMMSystem
-    from q2m3.interfaces import PySCFPennyLaneConverter
-
     # Build QM/MM system (MM environment set up automatically in __init__)
     qmmm_system = QMMMSystem(qm_atoms=h3o_atoms, num_waters=mm_waters)
     mol_dict = qmmm_system.to_pyscf_mol()
@@ -95,7 +113,7 @@ def analyze_solvation_effect(h3o_atoms: list[Atom], mm_waters: int) -> dict:
 
     # Stabilization energy (positive = MM stabilizes the system)
     stabilization = energy_vacuum - energy_solvated
-    stabilization_kcal = stabilization * 627.5094  # Hartree to kcal/mol
+    stabilization_kcal = stabilization * HARTREE_TO_KCAL_MOL
 
     return {
         "energy_vacuum": energy_vacuum,
@@ -149,7 +167,7 @@ def analyze_qpe_solvation_effect(
 
     # Compute stabilization
     stabilization = result_vacuum["energy"] - result_solvated["energy"]
-    stabilization_kcal = stabilization * 627.5094
+    stabilization_kcal = stabilization * HARTREE_TO_KCAL_MOL
 
     return {
         "energy_vacuum": result_vacuum["energy"],
@@ -180,9 +198,9 @@ def print_header():
     print()
 
 
-def print_section(title: str, step: int = None):
+def print_section(title: str, step: int | float | None = None) -> None:
     """Print section header."""
-    if step:
+    if step is not None:
         print(f"\n[Step {step}] {title}")
     else:
         print(f"\n{title}")
@@ -242,7 +260,7 @@ def print_system_info(qpe_config: dict, mm_waters: int):
     estimation_qubits = qpe_config["n_estimation_wires"]
     total_qubits = system_qubits + estimation_qubits
 
-    print(f"QM Region: H3O+ (4 atoms, total charge +1)")
+    print("QM Region: H3O+ (4 atoms, total charge +1)")
     print(f"MM Region: {mm_waters} TIP3P water molecules")
     print()
     print("Quantum Resource Requirements:")
@@ -272,7 +290,7 @@ def print_qpe_solvation_effect(
         label: Label for the QPE method (e.g., "Standard QPE", "Catalyst QPE")
     """
     # Execution time
-    print(f"Execution Time:")
+    print("Execution Time:")
     print(f"  Vacuum QPE:   {qpe_solvation_data['time_vacuum_s']:.3f} s")
     print(f"  Solvated QPE: {qpe_solvation_data['time_solvated_s']:.3f} s")
     print(f"  Total:        {qpe_solvation_data['time_total_s']:.3f} s")
@@ -308,7 +326,7 @@ def print_qpe_solvation_effect(
     print(f"  Difference: {diff_kcal:.2f} kcal/mol")
     print()
 
-    if qpe_solvation_data["stabilization_hartree"] > 0.001:
+    if qpe_solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD:
         print(f"  [OK] {label} correctly captures MM solvation effect")
     else:
         print(f"  [WARNING] {label} solvation effect not detected")
@@ -323,16 +341,165 @@ def print_qpe_solvation_effect(
         print(f"  {atom}: {q_vac:+.4f} -> {q_sol:+.4f} (Δq = {delta_q:+.4f})")
 
 
+def run_resource_estimation(h3o_atoms: list[Atom], mm_waters: int) -> dict:
+    """Run EFTQC resource estimation for vacuum and solvated systems.
+
+    Returns:
+        Dictionary containing vacuum and solvated resource estimates,
+        and derived analysis metrics (delta_lambda, gate_reduction).
+    """
+    h3o_symbols = [atom.symbol for atom in h3o_atoms]
+    h3o_coords = np.array([atom.position for atom in h3o_atoms])
+
+    qmmm_system = QMMMSystem(qm_atoms=h3o_atoms, num_waters=mm_waters)
+    mm_charges, mm_coords = qmmm_system.get_embedding_potential()
+
+    converter = PySCFPennyLaneConverter(basis="sto-3g", mapping="jordan_wigner")
+
+    eftqc_vac_chem = converter.estimate_qpe_resources(
+        symbols=h3o_symbols, coords=h3o_coords, charge=1, target_error=CHEMICAL_ACCURACY_ERROR
+    )
+    eftqc_vac_relax = converter.estimate_qpe_resources(
+        symbols=h3o_symbols, coords=h3o_coords, charge=1, target_error=RELAXED_ACCURACY_ERROR
+    )
+    eftqc_sol_chem = converter.estimate_qpe_resources(
+        symbols=h3o_symbols,
+        coords=h3o_coords,
+        charge=1,
+        mm_charges=mm_charges,
+        mm_coords=mm_coords,
+        target_error=CHEMICAL_ACCURACY_ERROR,
+    )
+    eftqc_sol_relax = converter.estimate_qpe_resources(
+        symbols=h3o_symbols,
+        coords=h3o_coords,
+        charge=1,
+        mm_charges=mm_charges,
+        mm_coords=mm_coords,
+        target_error=RELAXED_ACCURACY_ERROR,
+    )
+
+    delta_lambda = (
+        (eftqc_sol_chem["hamiltonian_1norm"] - eftqc_vac_chem["hamiltonian_1norm"])
+        / eftqc_vac_chem["hamiltonian_1norm"]
+        * 100
+    )
+    gate_reduction = (1 - eftqc_vac_relax["toffoli_gates"] / eftqc_vac_chem["toffoli_gates"]) * 100
+
+    return {
+        "vacuum_chemical": eftqc_vac_chem,
+        "vacuum_relaxed": eftqc_vac_relax,
+        "solvated_chemical": eftqc_sol_chem,
+        "solvated_relaxed": eftqc_sol_relax,
+        "delta_lambda": delta_lambda,
+        "gate_reduction": gate_reduction,
+        "n_mm_charges": len(mm_charges),
+    }
+
+
+def print_resource_estimation(eftqc_data: dict, mm_waters: int) -> None:
+    """Print EFTQC resource estimation results."""
+    n_mm_charges = eftqc_data["n_mm_charges"]
+    eftqc_vac_chem = eftqc_data["vacuum_chemical"]
+    eftqc_vac_relax = eftqc_data["vacuum_relaxed"]
+    eftqc_sol_chem = eftqc_data["solvated_chemical"]
+    eftqc_sol_relax = eftqc_data["solvated_relaxed"]
+
+    print(f"Resource Comparison (H3O+ with {mm_waters} TIP3P waters, {n_mm_charges} MM charges)")
+    print()
+    print("  " + "-" * 70)
+    print(f"  {'Configuration':<25} {'1-norm (Ha)':<15} {'Toffoli Gates':<18} {'Qubits':<10}")
+    print("  " + "-" * 70)
+    print(
+        f"  {'Vacuum (chemical)':<25} {eftqc_vac_chem['hamiltonian_1norm']:<15.2f} {eftqc_vac_chem['toffoli_gates']:<18,} {eftqc_vac_chem['logical_qubits']:<10}"
+    )
+    print(
+        f"  {'Vacuum (relaxed)':<25} {eftqc_vac_relax['hamiltonian_1norm']:<15.2f} {eftqc_vac_relax['toffoli_gates']:<18,} {eftqc_vac_relax['logical_qubits']:<10}"
+    )
+    print(
+        f"  {'Solvated (chemical)':<25} {eftqc_sol_chem['hamiltonian_1norm']:<15.2f} {eftqc_sol_chem['toffoli_gates']:<18,} {eftqc_sol_chem['logical_qubits']:<10}"
+    )
+    print(
+        f"  {'Solvated (relaxed)':<25} {eftqc_sol_relax['hamiltonian_1norm']:<15.2f} {eftqc_sol_relax['toffoli_gates']:<18,} {eftqc_sol_relax['logical_qubits']:<10}"
+    )
+    print("  " + "-" * 70)
+    print()
+
+    print("  Analysis:")
+    print(f"    MM embedding effect: Δλ = {eftqc_data['delta_lambda']:+.1f}% (1-norm increase)")
+    print(
+        f"    Error relaxation:    {eftqc_data['gate_reduction']:.1f}% fewer gates (10× error tolerance)"
+    )
+    print()
+    print("  Note: MM embedding only modifies 1-electron integrals (QM-MM electrostatics).")
+    print("        Resource estimates are dominated by 2-electron integrals, which remain")
+    print("        unchanged. Thus, vacuum vs solvated show similar resource requirements.")
+
+
+def print_hf_solvation_effect(solvation_data: dict) -> None:
+    """Print HF solvation effect analysis results."""
+    print(
+        f"MM Environment: {solvation_data['n_mm_waters']} TIP3P waters "
+        f"({solvation_data['n_mm_atoms']} point charges)"
+    )
+    print()
+    print("Hartree-Fock Energy Comparison:")
+    print(f"  Vacuum (no MM):     {solvation_data['energy_vacuum']:.6f} Hartree")
+    print(f"  Solvated (with MM): {solvation_data['energy_solvated']:.6f} Hartree")
+    print()
+    print("Solvation Stabilization:")
+    print(f"  ΔE = {solvation_data['stabilization_hartree']:.6f} Hartree")
+    print(f"     = {solvation_data['stabilization_kcal_mol']:.2f} kcal/mol")
+    print()
+    if solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD:
+        print("  [OK] MM embedding is working: explicit solvent stabilizes H3O+")
+    else:
+        print("  [WARNING] Unexpected: no significant stabilization detected")
+
+
+def run_catalyst_analysis(
+    h3o_atoms: list[Atom], mm_waters: int, solvation_data: dict
+) -> dict | None:
+    """Run Catalyst @qjit QPE solvation effect analysis.
+
+    Returns:
+        Catalyst solvation data dict if Catalyst is available, None otherwise.
+    """
+    print("NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to")
+    print("      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).")
+    print("      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'")
+    print()
+
+    if not HAS_CATALYST:
+        print("WARNING: pennylane-catalyst is not installed.")
+        print("To enable Catalyst support, install with:")
+        print("  pip install pennylane-catalyst")
+        print()
+        print("Skipping Catalyst solvation effect analysis...")
+        return None
+
+    print("Comparing Catalyst QPE energies: vacuum vs. explicit TIP3P solvation...")
+    print("This validates MM embedding works correctly with Catalyst JIT compilation.")
+    print()
+
+    qpe_config_catalyst = get_qpe_config(device_type="lightning.qubit")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        catalyst_solvation_data = analyze_qpe_solvation_effect(
+            h3o_atoms, mm_waters, qpe_config_catalyst, use_catalyst=True
+        )
+
+    print_qpe_solvation_effect(catalyst_solvation_data, solvation_data, label="Catalyst QPE")
+    return catalyst_solvation_data
+
+
 def print_comparison(
     standard_solvation_data: dict,
     catalyst_solvation_data: dict | None,
 ):
     """Print comparison between standard and Catalyst execution."""
-    std_device = (
-        "lightning.gpu"
-        if HAS_LIGHTNING_GPU
-        else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
-    )
+    std_device = get_best_available_device()
 
     # Use solvated QPE time for comparison (more representative with MM embedding)
     time_standard = standard_solvation_data["time_solvated_s"]
@@ -365,147 +532,34 @@ def print_comparison(
         print(f"  Catalyst QPE: {e_cat:.6f} Hartree")
         print(f"  Difference: {e_diff:.6f} Hartree")
 
-        if e_diff < 0.01:
+        if e_diff < ENERGY_CONSISTENCY_THRESHOLD:
             print("  Status: Results consistent (diff < 0.01 Ha)")
         else:
             print("  Status: Results differ (stochastic QPE sampling)")
     else:
-        print(f"  Catalyst QPE: Not available")
+        print("  Catalyst QPE: Not available")
         print()
         print("Energy (Solvated):")
         print(f"  Standard QPE: {e_std:.6f} Hartree")
 
 
-def main():
-    """Main demo execution."""
-    print_header()
+def build_output_data(
+    h3o_atoms: list[Atom],
+    mm_waters: int,
+    qpe_config: dict,
+    solvation_data: dict,
+    qpe_solvation_data: dict,
+    catalyst_solvation_data: dict | None,
+    eftqc_data: dict,
+) -> dict:
+    """Build output data dictionary for JSON export."""
+    actual_device = get_best_available_device()
+    eftqc_vac_chem = eftqc_data["vacuum_chemical"]
+    eftqc_vac_relax = eftqc_data["vacuum_relaxed"]
+    eftqc_sol_chem = eftqc_data["solvated_chemical"]
+    eftqc_sol_relax = eftqc_data["solvated_relaxed"]
 
-    # Step 1: System configuration
-    print_section("System Configuration", step=1)
-    h3o_atoms = create_h3o_geometry()
-    mm_waters = 8
-
-    # Auto device selection: GPU > lightning.qubit > default.qubit
-    qpe_config = get_qpe_config(device_type="auto")
-
-    print_system_info(qpe_config, mm_waters)
-    print()
-    print(f"Device Selection: auto -> ", end="")
-    if HAS_LIGHTNING_GPU:
-        print("lightning.gpu (GPU detected)")
-    elif HAS_LIGHTNING_QUBIT:
-        print("lightning.qubit")
-    else:
-        print("default.qubit")
-
-    # Step 2: Solvation effect analysis (classical HF level)
-    print_section("Solvation Effect Analysis (Classical HF)", step=2)
-    print("Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...")
-    print("This validates that MM embedding correctly polarizes the QM electron density.")
-    print()
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        solvation_data = analyze_solvation_effect(h3o_atoms, mm_waters)
-
-    print(
-        f"MM Environment: {solvation_data['n_mm_waters']} TIP3P waters "
-        f"({solvation_data['n_mm_atoms']} point charges)"
-    )
-    print()
-    print("Hartree-Fock Energy Comparison:")
-    print(f"  Vacuum (no MM):     {solvation_data['energy_vacuum']:.6f} Hartree")
-    print(f"  Solvated (with MM): {solvation_data['energy_solvated']:.6f} Hartree")
-    print()
-    print("Solvation Stabilization:")
-    print(f"  ΔE = {solvation_data['stabilization_hartree']:.6f} Hartree")
-    print(f"     = {solvation_data['stabilization_kcal_mol']:.2f} kcal/mol")
-    print()
-    if solvation_data["stabilization_hartree"] > 0.001:
-        print("  [OK] MM embedding is working: explicit solvent stabilizes H3O+")
-    else:
-        print("  [WARNING] Unexpected: no significant stabilization detected")
-
-    # Step 3: QPE solvation effect analysis (Standard QPE)
-    print_section("Standard QPE Solvation Effect Analysis (Quantum Level)", step=3)
-    print("Comparing QPE energies: vacuum vs. explicit TIP3P solvation...")
-    print("This validates MM embedding is correctly included in the quantum Hamiltonian.")
-    print()
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        qpe_solvation_data = analyze_qpe_solvation_effect(
-            h3o_atoms, mm_waters, qpe_config, use_catalyst=False
-        )
-
-    print_qpe_solvation_effect(qpe_solvation_data, solvation_data, label="Standard QPE")
-
-    # Step 4: Circuit visualization
-    print_section("Circuit Visualization (PennyLane)", step=4)
-    print("Generating QPE + RDM circuit diagrams...")
-    print()
-
-    # Create a temporary QuantumQMMM instance for visualization
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        viz_qmmm = QuantumQMMM(
-            qm_atoms=h3o_atoms,
-            mm_waters=mm_waters,
-            qpe_config=qpe_config,
-            use_catalyst=False,
-        )
-        circuits = viz_qmmm.draw_circuits()
-
-    print("QPE Circuit (Standard Phase Estimation):")
-    print("-" * 60)
-    print(circuits["qpe"])
-    print()
-    print("RDM Measurement Circuit (Pauli Expectation Values):")
-    print("-" * 60)
-    print(circuits["rdm"])
-    print()
-
-    # Step 5: Catalyst @qjit QPE Solvation Effect Analysis
-    print_section("Catalyst @qjit QPE Solvation Effect Analysis", step=5)
-    print("NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to")
-    print("      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).")
-    print("      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'")
-    print()
-    if HAS_CATALYST:
-        print("Comparing Catalyst QPE energies: vacuum vs. explicit TIP3P solvation...")
-        print("This validates MM embedding works correctly with Catalyst JIT compilation.")
-        print()
-
-        qpe_config_catalyst = get_qpe_config(device_type="lightning.qubit")
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            catalyst_solvation_data = analyze_qpe_solvation_effect(
-                h3o_atoms, mm_waters, qpe_config_catalyst, use_catalyst=True
-            )
-
-        print_qpe_solvation_effect(catalyst_solvation_data, solvation_data, label="Catalyst QPE")
-    else:
-        print("WARNING: pennylane-catalyst is not installed.")
-        print("To enable Catalyst support, install with:")
-        print("  pip install pennylane-catalyst")
-        print()
-        print("Skipping Catalyst solvation effect analysis...")
-        catalyst_solvation_data = None
-
-    # Step 6: Results comparison
-    print_section("Results Comparison", step=6)
-    print_comparison(qpe_solvation_data, catalyst_solvation_data)
-
-    # Step 7: Save results
-    print_section("Save Results", step=7)
-    # Determine actual device used
-    actual_device = (
-        "lightning.gpu"
-        if HAS_LIGHTNING_GPU
-        else "lightning.qubit" if HAS_LIGHTNING_QUBIT else "default.qubit"
-    )
-    output_data = {
+    return {
         "timestamp": datetime.now().isoformat(),
         "catalyst_available": HAS_CATALYST,
         "catalyst_version": CATALYST_VERSION if HAS_CATALYST else None,
@@ -529,7 +583,9 @@ def main():
             "energy_solvated_hartree": solvation_data["energy_solvated"],
             "stabilization_hartree": solvation_data["stabilization_hartree"],
             "stabilization_kcal_mol": solvation_data["stabilization_kcal_mol"],
-            "mm_embedding_active": bool(solvation_data["stabilization_hartree"] > 0.001),
+            "mm_embedding_active": bool(
+                solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD
+            ),
         },
         "solvation_effect_standard_qpe": {
             "device": actual_device,
@@ -538,7 +594,9 @@ def main():
             "energy_hf_solvated": qpe_solvation_data["energy_hf_solvated"],
             "stabilization_hartree": qpe_solvation_data["stabilization_hartree"],
             "stabilization_kcal_mol": qpe_solvation_data["stabilization_kcal_mol"],
-            "mm_embedding_active": bool(qpe_solvation_data["stabilization_hartree"] > 0.001),
+            "mm_embedding_active": bool(
+                qpe_solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD
+            ),
             "charges_vacuum": qpe_solvation_data["charges_vacuum"],
             "charges_solvated": qpe_solvation_data["charges_solvated"],
             "execution_time_vacuum_s": qpe_solvation_data["time_vacuum_s"],
@@ -554,7 +612,7 @@ def main():
                 "stabilization_hartree": catalyst_solvation_data["stabilization_hartree"],
                 "stabilization_kcal_mol": catalyst_solvation_data["stabilization_kcal_mol"],
                 "mm_embedding_active": bool(
-                    catalyst_solvation_data["stabilization_hartree"] > 0.001
+                    catalyst_solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD
                 ),
                 "charges_vacuum": catalyst_solvation_data["charges_vacuum"],
                 "charges_solvated": catalyst_solvation_data["charges_solvated"],
@@ -565,14 +623,62 @@ def main():
             if catalyst_solvation_data is not None
             else None
         ),
+        "eftqc_resources": {
+            "vacuum": {
+                "chemical_accuracy": {
+                    "target_error_hartree": eftqc_vac_chem["target_error"],
+                    "hamiltonian_1norm": eftqc_vac_chem["hamiltonian_1norm"],
+                    "logical_qubits": eftqc_vac_chem["logical_qubits"],
+                    "toffoli_gates": eftqc_vac_chem["toffoli_gates"],
+                    "qpe_iterations": eftqc_vac_chem["qpe_iterations"],
+                    "trotter_steps": eftqc_vac_chem["trotter_steps"],
+                },
+                "relaxed_accuracy": {
+                    "target_error_hartree": eftqc_vac_relax["target_error"],
+                    "hamiltonian_1norm": eftqc_vac_relax["hamiltonian_1norm"],
+                    "logical_qubits": eftqc_vac_relax["logical_qubits"],
+                    "toffoli_gates": eftqc_vac_relax["toffoli_gates"],
+                    "qpe_iterations": eftqc_vac_relax["qpe_iterations"],
+                    "trotter_steps": eftqc_vac_relax["trotter_steps"],
+                },
+            },
+            "solvated": {
+                "n_mm_charges": eftqc_sol_chem["n_mm_charges"],
+                "chemical_accuracy": {
+                    "target_error_hartree": eftqc_sol_chem["target_error"],
+                    "hamiltonian_1norm": eftqc_sol_chem["hamiltonian_1norm"],
+                    "logical_qubits": eftqc_sol_chem["logical_qubits"],
+                    "toffoli_gates": eftqc_sol_chem["toffoli_gates"],
+                    "qpe_iterations": eftqc_sol_chem["qpe_iterations"],
+                    "trotter_steps": eftqc_sol_chem["trotter_steps"],
+                },
+                "relaxed_accuracy": {
+                    "target_error_hartree": eftqc_sol_relax["target_error"],
+                    "hamiltonian_1norm": eftqc_sol_relax["hamiltonian_1norm"],
+                    "logical_qubits": eftqc_sol_relax["logical_qubits"],
+                    "toffoli_gates": eftqc_sol_relax["toffoli_gates"],
+                    "qpe_iterations": eftqc_sol_relax["qpe_iterations"],
+                    "trotter_steps": eftqc_sol_relax["trotter_steps"],
+                },
+            },
+            "analysis": {
+                "mm_embedding_1norm_increase_percent": eftqc_data["delta_lambda"],
+                "error_relaxation_gate_reduction_percent": eftqc_data["gate_reduction"],
+            },
+        },
     }
 
-    output_file = "data/output/h3o_quantum_qpe_results.json"
-    save_json_results(output_data, output_file)
-    print(f"Results saved to: {output_file}")
 
-    # Summary
-    print_section("Demo Summary")
+def print_summary(
+    solvation_data: dict,
+    qpe_solvation_data: dict,
+    catalyst_solvation_data: dict | None,
+    eftqc_data: dict,
+) -> None:
+    """Print demo summary."""
+    eftqc_vac_chem = eftqc_data["vacuum_chemical"]
+    eftqc_sol_chem = eftqc_data["solvated_chemical"]
+
     print("q2m3 MVP Capabilities Demonstrated:")
     print("  [OK] PySCF -> PennyLane Hamiltonian conversion")
     print("  [OK] Standard QPE circuit implementation")
@@ -581,43 +687,154 @@ def main():
     print("  [OK] Inverse QFT (qml.adjoint(qml.QFT))")
     print("  [OK] Phase-to-energy extraction")
     print("  [OK] QM/MM system with TIP3P solvation")
-    if solvation_data["stabilization_hartree"] > 0.001:
+    print(
+        f"  [OK] EFTQC resource estimation (vacuum: {eftqc_vac_chem['toffoli_gates']:,}, "
+        f"solvated: {eftqc_sol_chem['toffoli_gates']:,} Toffoli)"
+    )
+
+    if solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD:
         print(
             f"  [OK] HF MM embedding (ΔE = {solvation_data['stabilization_kcal_mol']:.1f} kcal/mol)"
         )
     else:
         print("  [--] HF MM embedding (no stabilization detected)")
-    if qpe_solvation_data["stabilization_hartree"] > 0.001:
+
+    if qpe_solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD:
         print(
             f"  [OK] Standard QPE MM embedding "
             f"(ΔE = {qpe_solvation_data['stabilization_kcal_mol']:.1f} kcal/mol)"
         )
     else:
         print("  [--] Standard QPE MM embedding (no stabilization detected)")
+
     if catalyst_solvation_data is not None:
-        if catalyst_solvation_data["stabilization_hartree"] > 0.001:
+        if catalyst_solvation_data["stabilization_hartree"] > MM_STABILIZATION_THRESHOLD:
             print(
                 f"  [OK] Catalyst QPE MM embedding "
                 f"(ΔE = {catalyst_solvation_data['stabilization_kcal_mol']:.1f} kcal/mol)"
             )
         else:
             print("  [--] Catalyst QPE MM embedding (no stabilization detected)")
+
     print("  [OK] Quantum RDM measurement (Pauli expectation values)")
     print("  [OK] Mulliken population analysis (from quantum RDM)")
     print("  [OK] Circuit visualization (qml.draw)")
+
     if HAS_CATALYST:
         print("  [OK] Catalyst @qjit JIT compilation (lightning.qubit only)")
         print("       -> Note: qml.ctrl(TrotterProduct) incompatible with lightning.gpu")
     else:
         print("  [--] Catalyst @qjit (not installed)")
+
     if HAS_LIGHTNING_GPU:
         print("  [OK] GPU acceleration (lightning.gpu, standard QPE only)")
     else:
         print("  [--] GPU acceleration (lightning.gpu not available)")
+
     print()
     print("=" * 80)
     print("                           Demo Completed Successfully")
     print("=" * 80)
+
+
+def main():
+    """Main demo execution."""
+    print_header()
+
+    # Step 1: System configuration
+    print_section("System Configuration", step=1)
+    h3o_atoms = create_h3o_geometry()
+    mm_waters = 8
+    qpe_config = get_qpe_config(device_type="auto")
+
+    print_system_info(qpe_config, mm_waters)
+    print()
+    selected_device = get_best_available_device()
+    device_note = " (GPU detected)" if HAS_LIGHTNING_GPU else ""
+    print(f"Device Selection: auto -> {selected_device}{device_note}")
+
+    # Step 1.5: Circuit visualization (show circuit structure before calculations)
+    print_section("Circuit Visualization (PennyLane)", step=1.5)
+    print("Generating QPE + RDM circuit diagrams...")
+    print()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        viz_qmmm = QuantumQMMM(
+            qm_atoms=h3o_atoms,
+            mm_waters=mm_waters,
+            qpe_config=qpe_config,
+            use_catalyst=False,
+        )
+        circuits = viz_qmmm.draw_circuits()
+
+    print("QPE Circuit (Standard Phase Estimation):")
+    print("-" * 60)
+    print(circuits["qpe"])
+    print()
+    print("RDM Measurement Circuit (Pauli Expectation Values):")
+    print("-" * 60)
+    print(circuits["rdm"])
+    print()
+
+    # Step 2: EFTQC Resource Estimation
+    print_section("EFTQC Resource Estimation (Vacuum vs Solvated)", step=2)
+    eftqc_data = run_resource_estimation(h3o_atoms, mm_waters)
+    print_resource_estimation(eftqc_data, mm_waters)
+
+    # Step 3: Solvation effect analysis (classical HF level)
+    print_section("Solvation Effect Analysis (Classical HF)", step=3)
+    print("Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...")
+    print("This validates that MM embedding correctly polarizes the QM electron density.")
+    print()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        solvation_data = analyze_solvation_effect(h3o_atoms, mm_waters)
+
+    print_hf_solvation_effect(solvation_data)
+
+    # Step 4: QPE solvation effect analysis (Standard QPE)
+    print_section("Standard QPE Solvation Effect Analysis (Quantum Level)", step=4)
+    print("Comparing QPE energies: vacuum vs. explicit TIP3P solvation...")
+    print("This validates MM embedding is correctly included in the quantum Hamiltonian.")
+    print()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        qpe_solvation_data = analyze_qpe_solvation_effect(
+            h3o_atoms, mm_waters, qpe_config, use_catalyst=False
+        )
+
+    print_qpe_solvation_effect(qpe_solvation_data, solvation_data, label="Standard QPE")
+
+    # Step 5: Catalyst @qjit QPE Solvation Effect Analysis
+    print_section("Catalyst @qjit QPE Solvation Effect Analysis", step=5)
+    catalyst_solvation_data = run_catalyst_analysis(h3o_atoms, mm_waters, solvation_data)
+
+    # Step 6: Results comparison
+    print_section("Results Comparison", step=6)
+    print_comparison(qpe_solvation_data, catalyst_solvation_data)
+
+    # Step 7: Save results
+    print_section("Save Results", step=7)
+    output_data = build_output_data(
+        h3o_atoms,
+        mm_waters,
+        qpe_config,
+        solvation_data,
+        qpe_solvation_data,
+        catalyst_solvation_data,
+        eftqc_data,
+    )
+
+    output_file = "data/output/h3o_quantum_qpe_results.json"
+    save_json_results(output_data, output_file)
+    print(f"Results saved to: {output_file}")
+
+    # Summary
+    print_section("Demo Summary")
+    print_summary(solvation_data, qpe_solvation_data, catalyst_solvation_data, eftqc_data)
 
 
 if __name__ == "__main__":

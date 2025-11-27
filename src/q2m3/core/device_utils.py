@@ -19,16 +19,18 @@ try:
     _test_dev = qml.device("lightning.gpu", wires=1)
     del _test_dev
     HAS_LIGHTNING_GPU = True
-except Exception:
-    pass
+except Exception as e:
+    # Device "lightning.gpu" not available or failed to initialize; ignore and continue.
+    warnings.warn(f'Could not initialize "lightning.gpu" device: {e}')
 
 HAS_LIGHTNING_QUBIT = False
 try:
     _test_dev = qml.device("lightning.qubit", wires=1)
     del _test_dev
     HAS_LIGHTNING_QUBIT = True
-except Exception:
-    pass
+except Exception as e:
+    # Device "lightning.qubit" not available or failed to initialize; ignore and continue.
+    warnings.warn(f'Could not initialize "lightning.qubit" device: {e}')
 
 # Type alias for supported device types
 DeviceType = Literal["auto", "default.qubit", "lightning.qubit", "lightning.gpu"]

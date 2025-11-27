@@ -62,10 +62,11 @@ try:
     _test_dev = qml.device("lightning.qubit", wires=1)
     del _test_dev
     HAS_LIGHTNING_QUBIT = True
-except Exception:
-    pass
-
-
+except Exception as e:
+    warnings.warn(
+        f"Could not initialize PennyLane 'lightning.qubit' device: {e}. Falling back to other devices.",
+        RuntimeWarning
+    )
 def get_best_available_device() -> str:
     """Return the best available PennyLane device name.
 

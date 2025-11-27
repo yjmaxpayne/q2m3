@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-11-26T19:46:11.679830",
+  "timestamp": "2025-11-27T08:53:02.059382",
   "catalyst_available": true,
   "catalyst_version": "0.13.0",
   "lightning_gpu_available": true,
@@ -29,29 +29,59 @@
     "estimation_qubits": 4,
     "total_qubits": 12
   },
-  "results_standard": {
-    "device": "lightning.gpu",
-    "energy": -76.5034401939673,
-    "energy_hf": -75.32646419098317,
-    "execution_time_s": 35.96054747399967,
-    "atomic_charges": {
-      "O0": 0.847694630221234,
-      "H1": -0.05377016858279893,
-      "H2": 0.10303776700137046,
-      "H3": 0.10303777136019443
-    }
+  "solvation_effect_hf": {
+    "energy_vacuum_hartree": -75.32646419098317,
+    "energy_solvated_hartree": -75.33215481688737,
+    "stabilization_hartree": 0.00569062590419378,
+    "stabilization_kcal_mol": 3.5709212467650966,
+    "mm_embedding_active": true
   },
-  "results_catalyst": {
-    "device": "lightning.qubit",
-    "energy": -76.50344019396734,
-    "energy_hf": -75.32646419098322,
-    "execution_time_s": 102.87734619999992,
-    "atomic_charges": {
-      "O0": 0.847694630221226,
-      "H1": -0.05377016858279715,
-      "H2": 0.10303777017648397,
-      "H3": 0.10303776818508414
+  "solvation_effect_standard_qpe": {
+    "device": "lightning.gpu",
+    "energy_vacuum_hartree": -76.50344019396724,
+    "energy_solvated_hartree": -76.50921973590125,
+    "energy_hf_solvated": -75.33215481688738,
+    "stabilization_hartree": 0.005779541934018084,
+    "stabilization_kcal_mol": 3.6267168912905277,
+    "mm_embedding_active": true,
+    "charges_vacuum": {
+      "O0": 0.8476946302212358,
+      "H1": -0.05377016858279737,
+      "H2": 0.10303777151724913,
+      "H3": 0.10303776684431509
     },
-    "catalyst_enabled": true
+    "charges_solvated": {
+      "O0": 0.8480638329976724,
+      "H1": 0.31329709465054656,
+      "H2": -0.2462308731475773,
+      "H3": 0.08486994549935956
+    },
+    "execution_time_vacuum_s": 27.6892366280008,
+    "execution_time_solvated_s": 28.716970626002876,
+    "execution_time_total_s": 56.406207254003675
+  },
+  "solvation_effect_catalyst_qpe": {
+    "device": "lightning.qubit",
+    "energy_vacuum_hartree": -76.5034401939673,
+    "energy_solvated_hartree": -76.50921973590124,
+    "energy_hf_solvated": -75.33215481688737,
+    "stabilization_hartree": 0.00577954193394703,
+    "stabilization_kcal_mol": 3.6267168912459407,
+    "mm_embedding_active": true,
+    "charges_vacuum": {
+      "O0": 0.8476946302212394,
+      "H1": -0.053770168582797595,
+      "H2": 0.10303776987004465,
+      "H3": 0.10303776849151969
+    },
+    "charges_solvated": {
+      "O0": 0.8480638329976742,
+      "H1": 0.3132970946504142,
+      "H2": -0.2462308731474958,
+      "H3": 0.08486994549940874
+    },
+    "execution_time_vacuum_s": 68.60250656800054,
+    "execution_time_solvated_s": 78.47297052499925,
+    "execution_time_total_s": 147.0754770929998
   }
 }

@@ -191,6 +191,167 @@ class PySCFPennyLaneConverter:
 
         return H, n_qubits, hf_state
 
+    def pyscf_to_pennylane_hamiltonian_with_mm(
+        self,
+        symbols: list[str],
+        coords: np.ndarray,
+        charge: int = 0,
+        mm_charges: np.ndarray | None = None,
+        mm_coords: np.ndarray | None = None,
+        active_electrons: int | None = None,
+        active_orbitals: int | None = None,
+    ) -> tuple[Any, int, np.ndarray]:
+        """
+        Build PennyLane Hamiltonian with MM point charge embedding.
+
+        Uses a perturbative approach:
+        1. Get vacuum Hamiltonian from molecular_hamiltonian (correct eigenspectrum)
+        2. Compute MM corrections to single-electron integrals
+        3. Add MM correction as Pauli operators to the vacuum Hamiltonian
+
+        This approach preserves the correct eigenspectrum structure from
+        molecular_hamiltonian while adding MM electrostatic effects.
+
+        Args:
+            symbols: List of atomic symbols ['O', 'H', 'H', 'H']
+            coords: Atomic coordinates in Angstrom, shape (n_atoms, 3)
+            charge: Total molecular charge
+            mm_charges: MM point charges array
+            mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3)
+            active_electrons: Number of active electrons
+            active_orbitals: Number of active orbitals
+
+        Returns:
+            tuple: (hamiltonian, n_qubits, hf_state)
+        """
+        from pyscf import gto, qmmm, scf
+
+        ANGSTROM_TO_BOHR = 1.8897259886
+
+        # Prepare coordinates in Bohr for PennyLane
+        coords_arr = np.asarray(coords).reshape(-1, 3)
+        coords_bohr = (coords_arr * ANGSTROM_TO_BOHR).flatten()
+
+        # Step 1: Get vacuum Hamiltonian from molecular_hamiltonian
+        # This ensures correct eigenspectrum structure
+        mol_kwargs = {
+            "symbols": symbols,
+            "coordinates": coords_bohr,
+            "charge": charge,
+            "basis": self.basis,
+            "mapping": self.mapping,
+        }
+        if active_electrons is not None:
+            mol_kwargs["active_electrons"] = active_electrons
+        if active_orbitals is not None:
+            mol_kwargs["active_orbitals"] = active_orbitals
+
+        H_vacuum, n_qubits = qml.qchem.molecular_hamiltonian(**mol_kwargs)
+
+        # If no MM charges, return vacuum Hamiltonian
+        if mm_charges is None or len(mm_charges) == 0:
+            hf_state = qml.qchem.hf_state(
+                (
+                    active_electrons
+                    if active_electrons
+                    else sum(self._get_atomic_numbers(symbols)) - charge
+                ),
+                n_qubits,
+            )
+            return H_vacuum, n_qubits, hf_state
+
+        # Step 2: Compute MM corrections using PySCF
+        atom_str = "\n".join(
+            f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}" for s, c in zip(symbols, coords_arr)
+        )
+        mol = gto.M(atom=atom_str, basis=self.basis, charge=charge, unit="Angstrom")
+
+        # Vacuum SCF (for MO coefficients)
+        mf_vac = scf.RHF(mol)
+        mf_vac.verbose = 0
+        mf_vac.run()
+
+        # Solvated SCF (for MM-modified integrals)
+        mf_sol = scf.RHF(mol)
+        mf_sol.verbose = 0
+        mm_coords_bohr = np.asarray(mm_coords) * ANGSTROM_TO_BOHR
+        mf_sol = qmmm.mm_charge(mf_sol, mm_coords_bohr, mm_charges)
+        mf_sol.run()
+
+        # Determine active space
+        n_electrons = mol.nelectron
+        n_orbitals = mf_vac.mo_coeff.shape[1]
+        if active_electrons is None:
+            active_electrons = n_electrons
+        if active_orbitals is None:
+            active_orbitals = n_orbitals
+
+        n_core = (n_electrons - active_electrons) // 2
+        active_idx = list(range(n_core, n_core + active_orbitals))
+
+        # MM effect on single-electron integrals (transform to MO basis)
+        mo_coeff_active = mf_vac.mo_coeff[:, active_idx]
+        delta_h1e_ao = mf_sol.get_hcore() - mf_vac.get_hcore()
+        delta_h1e_mo = mo_coeff_active.T @ delta_h1e_ao @ mo_coeff_active
+
+        # MM effect on nuclear energy
+        delta_nuc = mf_sol.energy_nuc() - mol.energy_nuc()
+
+        # Step 3: Build MM correction using qml.s_prod for lightning device compatibility
+        # H_mm = delta_nuc + sum_p delta_h1e[p,p] * n_p
+        # where n_p = (1 - Z_p)/2 for each spin orbital
+        #
+        # IMPORTANT: Use qml.s_prod instead of qml.Hamiltonian to maintain Sum type.
+        # qml.Hamiltonian returns LinearCombination which breaks TrotterProduct
+        # decomposition on lightning devices.
+
+        # Identity term (nuclear + diagonal h1e contribution)
+        identity_coeff = delta_nuc
+        for p in range(active_orbitals):
+            identity_coeff += delta_h1e_mo[p, p]  # 2 * (1/2) for alpha + beta
+
+        # Use multi-wire Identity to match H_vacuum structure
+        mm_terms = [qml.s_prod(identity_coeff, qml.Identity(wires=list(range(n_qubits))))]
+
+        # Z terms from diagonal h1e
+        for p in range(active_orbitals):
+            for spin in [0, 1]:  # alpha, beta
+                wire = 2 * p + spin
+                mm_terms.append(qml.s_prod(-delta_h1e_mo[p, p] / 2, qml.Z(wire)))
+
+        # Step 4: Combine using qml.sum to preserve Sum type for lightning compatibility
+        all_operands = list(H_vacuum.operands) + mm_terms
+        H_solvated = qml.sum(*all_operands)
+
+        # Generate HF reference state
+        hf_state = qml.qchem.hf_state(active_electrons, n_qubits)
+
+        return H_solvated, n_qubits, hf_state
+
+    def _get_atomic_numbers(self, symbols: list[str]) -> list[int]:
+        """Get atomic numbers for a list of element symbols."""
+        atomic_numbers = {
+            "H": 1,
+            "He": 2,
+            "Li": 3,
+            "Be": 4,
+            "B": 5,
+            "C": 6,
+            "N": 7,
+            "O": 8,
+            "F": 9,
+            "Ne": 10,
+            "Na": 11,
+            "Mg": 12,
+            "Al": 13,
+            "Si": 14,
+            "P": 15,
+            "S": 16,
+            "Cl": 17,
+            "Ar": 18,
+        }
+        return [atomic_numbers.get(s, 0) for s in symbols]
+
     def build_qmmm_hamiltonian(
         self, qm_mol: Any, mm_charges: np.ndarray, mm_coords: np.ndarray  # PySCF mol object
     ) -> dict[str, Any]:
@@ -205,17 +366,23 @@ class PySCFPennyLaneConverter:
         Returns:
             Dictionary containing molecular data for QPE simulation
         """
-        from pyscf import scf
+        from pyscf import qmmm, scf
 
         # Run Hartree-Fock calculation
         mf = scf.RHF(qm_mol)
+        mf.verbose = 0  # Suppress SCF output
 
         # Add MM charges as background charges if provided
         if len(mm_charges) > 0 and len(mm_coords) > 0:
-            # Simple point charge embedding
-            mf = scf.RHF(qm_mol).run()
-        else:
-            mf = mf.run()
+            # Convert MM coords from Angstrom to Bohr (PySCF internal unit)
+            ANGSTROM_TO_BOHR = 1.8897259886
+            mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR
+
+            # Add MM point charges to modify single-electron Hamiltonian
+            mf = qmmm.mm_charge(mf, mm_coords_bohr, mm_charges)
+
+        # Run SCF calculation
+        mf = mf.run()
 
         return {
             "mol": qm_mol,

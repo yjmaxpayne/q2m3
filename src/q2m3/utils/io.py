@@ -127,6 +127,19 @@ def _make_json_serializable(obj: Any) -> Any:
     """
     if isinstance(obj, np.ndarray):
         return obj.tolist()
+    # Handle numpy boolean types (compatible with NumPy 1.x and 2.x)
+    # Note: np.bool_ is the scalar type, check it first before generic bool
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, bool):
+        return obj
+    # Handle numpy integer types
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    # Handle numpy floating point types
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    # Handle other numpy number types
     elif isinstance(obj, np.number):
         return float(obj)
     elif isinstance(obj, complex):

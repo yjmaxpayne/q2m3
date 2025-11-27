@@ -173,13 +173,29 @@ class QuantumQMMM:
         active_electrons = self.qpe_config.get("active_electrons")
         active_orbitals = self.qpe_config.get("active_orbitals")
 
-        pl_hamiltonian, n_qubits, hf_state = self.converter.pyscf_to_pennylane_hamiltonian(
-            symbols,
-            coords,
-            charge,
-            active_electrons=active_electrons,
-            active_orbitals=active_orbitals,
-        )
+        # Choose Hamiltonian builder based on MM presence
+        if len(mm_charges) > 0 and len(mm_coords) > 0:
+            # Use new MM-embedded version for solvent effects in QPE
+            pl_hamiltonian, n_qubits, hf_state = (
+                self.converter.pyscf_to_pennylane_hamiltonian_with_mm(
+                    symbols,
+                    coords,
+                    charge,
+                    mm_charges=mm_charges,
+                    mm_coords=mm_coords,
+                    active_electrons=active_electrons,
+                    active_orbitals=active_orbitals,
+                )
+            )
+        else:
+            # Use original version for vacuum (no MM) calculations
+            pl_hamiltonian, n_qubits, hf_state = self.converter.pyscf_to_pennylane_hamiltonian(
+                symbols,
+                coords,
+                charge,
+                active_electrons=active_electrons,
+                active_orbitals=active_orbitals,
+            )
 
         # Add PennyLane data to result
         result["pennylane_hamiltonian"] = pl_hamiltonian

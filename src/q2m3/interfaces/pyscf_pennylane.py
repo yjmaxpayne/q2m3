@@ -262,7 +262,8 @@ class PySCFPennyLaneConverter:
 
         # Step 2: Compute MM corrections using PySCF
         atom_str = "\n".join(
-            f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}" for s, c in zip(symbols, coords_arr)
+            f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}"
+            for s, c in zip(symbols, coords_arr, strict=True)
         )
         mol = gto.M(atom=atom_str, basis=self.basis, charge=charge, unit="Angstrom")
 
@@ -525,7 +526,8 @@ class PySCFPennyLaneConverter:
 
             # Build PySCF molecule
             atom_str = "\n".join(
-                f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}" for s, c in zip(symbols, coords_arr)
+                f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}"
+                for s, c in zip(symbols, coords_arr, strict=True)
             )
             pyscf_mol = gto.M(atom=atom_str, basis=self.basis, charge=charge, unit="Angstrom")
 

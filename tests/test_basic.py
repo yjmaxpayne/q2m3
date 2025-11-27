@@ -266,7 +266,7 @@ class TestPySCFPennyLaneConverter:
         energy_diff = energy_no_mm - energy_with_mm
 
         # Print diagnostic info
-        print(f"\nMM embedding effect verification:")
+        print("\nMM embedding effect verification:")
         print(f"  Vacuum energy:    {energy_no_mm:.6f} Ha")
         print(f"  With MM energy:   {energy_with_mm:.6f} Ha")
         print(f"  Stabilization:    {energy_diff:.4f} Ha ({energy_diff * 627.5:.1f} kcal/mol)")
@@ -355,7 +355,7 @@ class TestPySCFPennyLaneConverter:
         n_terms_vacuum = len(H_vacuum.operands) if hasattr(H_vacuum, "operands") else 1
         n_terms_mm = len(H_mm.operands) if hasattr(H_mm, "operands") else 1
 
-        print(f"\nPennyLane Hamiltonian with MM test:")
+        print("\nPennyLane Hamiltonian with MM test:")
         print(f"  Vacuum Hamiltonian terms: {n_terms_vacuum}")
         print(f"  MM Hamiltonian terms: {n_terms_mm}")
         print(f"  Qubits: {n_qubits_mm}")

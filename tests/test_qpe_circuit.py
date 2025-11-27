@@ -467,7 +467,8 @@ class TestQPEGPU:
     @pytest.mark.gpu
     def test_device_type_auto_selects_gpu(self):
         """Test device_type='auto' selects lightning.gpu when available."""
-        from q2m3.core.qpe import HAS_LIGHTNING_GPU, _select_device
+        from q2m3.core.device_utils import HAS_LIGHTNING_GPU
+        from q2m3.core.device_utils import select_device as _select_device
 
         if not HAS_LIGHTNING_GPU:
             pytest.skip("lightning.gpu not available")

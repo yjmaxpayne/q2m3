@@ -33,7 +33,6 @@ except ImportError:
 
 
 # Import shared device selection from device_utils
-from .device_utils import HAS_LIGHTNING_GPU, HAS_LIGHTNING_QUBIT
 from .device_utils import select_device as _select_device
 
 # Constants for QPE configuration
@@ -176,7 +175,7 @@ class QPEEngine:
         """
         # Apply X gates for occupied orbitals (state=1)
         # Equivalent to BasisState but compatible with @qjit + ctrl() combination
-        for wire, state in zip(wires, hf_state):
+        for wire, state in zip(wires, hf_state, strict=True):
             if state == 1:
                 qml.PauliX(wires=wire)
 

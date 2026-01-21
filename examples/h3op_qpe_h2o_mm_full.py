@@ -13,6 +13,24 @@ Key features demonstrated:
 2. Standard QPE circuit (HF state prep -> Trotter evolution -> inverse QFT)
 3. Catalyst @qjit JIT compilation for circuit optimization
 4. QM/MM system setup with TIP3P water solvation
+
+IMPORTANT: GPU Support Architecture
+------------------------------------
+q2m3 has TWO separate GPU support systems:
+
+1. PennyLane Lightning GPU (for standard QPE):
+   - Device: lightning.gpu
+   - Requirements: pennylane-lightning[gpu], cuQuantum, CUDA
+   - Status checked by: HAS_LIGHTNING_GPU
+
+2. JAX/Catalyst GPU (for @qjit compiled circuits):
+   - Backend: JAX with CUDA support
+   - Requirements: jax[cuda12] or jax[cuda11]
+   - Status checked by: HAS_JAX_CUDA
+
+When Catalyst @qjit is enabled, execution backend is determined by JAX,
+NOT PennyLane device selection. If JAX lacks CUDA support, Catalyst
+runs on CPU regardless of lightning.gpu availability.
 """
 
 import time
@@ -49,6 +67,9 @@ ENERGY_CONSISTENCY_THRESHOLD = 0.01  # Hartree - acceptable difference between m
 CHEMICAL_ACCURACY_ERROR = 0.0016  # Hartree (~1 kcal/mol)
 RELAXED_ACCURACY_ERROR = 0.016  # Hartree (~10 kcal/mol)
 
+# =============================================================================
+# Device Detection: PennyLane Lightning (for standard QPE)
+# =============================================================================
 HAS_LIGHTNING_GPU = False
 try:
     _test_dev = qml.device("lightning.gpu", wires=1)
@@ -65,8 +86,27 @@ try:
 except Exception as e:
     warnings.warn(
         f"Could not initialize PennyLane 'lightning.qubit' device: {e}. Falling back to other devices.",
-        RuntimeWarning
+        RuntimeWarning,
+        stacklevel=2,
     )
+
+# =============================================================================
+# Device Detection: JAX/Catalyst GPU (for @qjit compiled circuits)
+# IMPORTANT: This is SEPARATE from PennyLane Lightning GPU!
+# =============================================================================
+HAS_JAX_CUDA = False
+JAX_DEFAULT_BACKEND = "cpu"
+try:
+    import jax
+
+    JAX_DEFAULT_BACKEND = jax.default_backend()
+    HAS_JAX_CUDA = JAX_DEFAULT_BACKEND in ("cuda", "gpu")
+except ImportError:
+    pass
+except Exception:
+    pass
+
+
 def get_best_available_device() -> str:
     """Return the best available PennyLane device name.
 
@@ -77,6 +117,21 @@ def get_best_available_device() -> str:
     elif HAS_LIGHTNING_QUBIT:
         return "lightning.qubit"
     return "default.qubit"
+
+
+def get_catalyst_effective_backend() -> str:
+    """Get the actual execution backend for Catalyst @qjit.
+
+    IMPORTANT: Catalyst uses JAX as its backend, which is SEPARATE from
+    PennyLane device selection. Even with lightning.gpu device, Catalyst
+    runs on CPU if JAX lacks CUDA support.
+
+    Returns:
+        Human-readable backend string like "GPU (JAX CUDA)" or "CPU (JAX)"
+    """
+    if HAS_JAX_CUDA:
+        return "GPU (JAX CUDA)"
+    return "CPU (JAX)"
 
 
 def analyze_solvation_effect(h3o_atoms: list[Atom], mm_waters: int) -> dict:
@@ -196,6 +251,14 @@ def print_header():
     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Catalyst Available: {'Yes (v' + CATALYST_VERSION + ')' if HAS_CATALYST else 'No'}")
     print(f"Lightning GPU Available: {'Yes' if HAS_LIGHTNING_GPU else 'No'}")
+
+    # Show JAX/Catalyst backend info (IMPORTANT for understanding performance)
+    if HAS_CATALYST:
+        jax_backend_display = get_catalyst_effective_backend()
+        print(f"Catalyst Execution Backend: {jax_backend_display}")
+        if not HAS_JAX_CUDA and HAS_LIGHTNING_GPU:
+            print("  WARNING: Catalyst @qjit runs on CPU (JAX lacks CUDA support)")
+            print("  To enable Catalyst GPU: pip install 'jax[cuda12]'")
     print()
 
 
@@ -466,11 +529,6 @@ def run_catalyst_analysis(
     Returns:
         Catalyst solvation data dict if Catalyst is available, None otherwise.
     """
-    print("NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to")
-    print("      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).")
-    print("      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'")
-    print()
-
     if not HAS_CATALYST:
         print("WARNING: pennylane-catalyst is not installed.")
         print("To enable Catalyst support, install with:")
@@ -483,7 +541,8 @@ def run_catalyst_analysis(
     print("This validates MM embedding works correctly with Catalyst JIT compilation.")
     print()
 
-    qpe_config_catalyst = get_qpe_config(device_type="lightning.qubit")
+    # Use auto device selection (now supports lightning.gpu as of PennyLane 0.44.0)
+    qpe_config_catalyst = get_qpe_config(device_type="auto")
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -501,6 +560,8 @@ def print_comparison(
 ):
     """Print comparison between standard and Catalyst execution."""
     std_device = get_best_available_device()
+    # IMPORTANT: Catalyst backend is determined by JAX, not PennyLane device
+    catalyst_backend = get_catalyst_effective_backend()
 
     # Use solvated QPE time for comparison (more representative with MM embedding)
     time_standard = standard_solvation_data["time_solvated_s"]
@@ -513,18 +574,21 @@ def print_comparison(
         time_catalyst = catalyst_solvation_data["time_solvated_s"]
         e_cat = catalyst_solvation_data["energy_solvated"]
 
-        print(f"  Catalyst QPE (lightning.qubit): {time_catalyst:.3f} s")
+        # Show Catalyst with ACTUAL execution backend, not device name
+        print(f"  Catalyst QPE ({catalyst_backend}): {time_catalyst:.3f} s")
 
         if time_catalyst > 0:
             speedup = time_standard / time_catalyst
             if speedup > 1:
                 print(f"  Speedup: {speedup:.2f}x faster with Catalyst")
             else:
-                print(f"  Ratio: {1/speedup:.2f}x slower with Catalyst")
-                if HAS_LIGHTNING_GPU:
-                    print("  Note: Catalyst cannot use lightning.gpu for qml.ctrl(TrotterProduct),")
-                    print("        so it falls back to lightning.qubit (CPU). This explains the")
-                    print("        performance difference when GPU is available.")
+                print(f"  Ratio: {1 / speedup:.2f}x slower with Catalyst")
+                # Show accurate performance analysis based on actual backend
+                if not HAS_JAX_CUDA:
+                    print("  Note: Catalyst is running on CPU (JAX lacks CUDA support)")
+                    print("        To enable Catalyst GPU: pip install 'jax[cuda12]'")
+                    if HAS_LIGHTNING_GPU:
+                        print("        (Standard QPE already uses GPU via lightning.gpu)")
         print()
 
         print("Energy Comparison (Solvated):")
@@ -565,6 +629,8 @@ def build_output_data(
         "catalyst_available": HAS_CATALYST,
         "catalyst_version": CATALYST_VERSION if HAS_CATALYST else None,
         "lightning_gpu_available": HAS_LIGHTNING_GPU,
+        "jax_cuda_available": HAS_JAX_CUDA,  # Separate from Lightning GPU!
+        "jax_backend": JAX_DEFAULT_BACKEND,  # Actual JAX execution backend
         "system": {
             "qm_region": "H3O+",
             "n_atoms": len(h3o_atoms),
@@ -606,7 +672,10 @@ def build_output_data(
         },
         "solvation_effect_catalyst_qpe": (
             {
-                "device": "lightning.qubit",
+                "pennylane_device": get_best_available_device(),  # PennyLane device name
+                "jax_backend": JAX_DEFAULT_BACKEND,  # Actual JAX execution backend
+                "effective_backend": get_catalyst_effective_backend(),  # Human-readable
+                "has_jax_cuda": HAS_JAX_CUDA,  # Whether Catalyst uses GPU
                 "energy_vacuum_hartree": catalyst_solvation_data["energy_vacuum"],
                 "energy_solvated_hartree": catalyst_solvation_data["energy_solvated"],
                 "energy_hf_solvated": catalyst_solvation_data["energy_hf_solvated"],
@@ -721,14 +790,22 @@ def print_summary(
     print("  [OK] Mulliken population analysis (from quantum RDM)")
     print("  [OK] Circuit visualization (qml.draw)")
 
+    # Accurately report Catalyst status with actual execution backend
     if HAS_CATALYST:
-        print("  [OK] Catalyst @qjit JIT compilation (lightning.qubit only)")
-        print("       -> Note: qml.ctrl(TrotterProduct) incompatible with lightning.gpu")
+        catalyst_backend = get_catalyst_effective_backend()
+        if HAS_JAX_CUDA:
+            print(f"  [OK] Catalyst @qjit JIT compilation ({catalyst_backend})")
+        else:
+            print(f"  [OK] Catalyst @qjit JIT compilation ({catalyst_backend})")
+            if HAS_LIGHTNING_GPU:
+                print("       -> Note: JAX lacks CUDA support, Catalyst runs on CPU")
+                print("       -> To enable Catalyst GPU: pip install 'jax[cuda12]'")
     else:
         print("  [--] Catalyst @qjit (not installed)")
 
+    # GPU acceleration status for standard QPE (separate from Catalyst)
     if HAS_LIGHTNING_GPU:
-        print("  [OK] GPU acceleration (lightning.gpu, standard QPE only)")
+        print("  [OK] GPU acceleration for standard QPE (lightning.gpu)")
     else:
         print("  [--] GPU acceleration (lightning.gpu not available)")
 

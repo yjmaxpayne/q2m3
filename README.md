@@ -212,7 +212,7 @@ python examples/resource_estimation_demo.py
 ```python
 import pennylane as qml
 import numpy as np
-from pennylane.resource import DoubleFactorization
+from pennylane.estimator import DoubleFactorization
 
 # Define molecule
 mol = qml.qchem.Molecule(['O', 'H', 'H', 'H'], coords, charge=1, basis_name='sto-3g')

@@ -434,7 +434,7 @@ class PySCFPennyLaneConverter:
         """
         Estimate EFTQC resources for QPE algorithm using PennyLane.
 
-        Uses PennyLane's qml.resource.DoubleFactorization to estimate quantum
+        Uses PennyLane's qml.estimator.DoubleFactorization to estimate quantum
         computing resources (Toffoli gates and logical qubits) required for
         Quantum Phase Estimation on molecular systems.
 
@@ -482,7 +482,7 @@ class PySCFPennyLaneConverter:
             ...     symbols, coords, mm_charges=mm_charges, mm_coords=mm_coords
             ... )
         """
-        from pennylane.resource import DoubleFactorization
+        from pennylane.estimator import DoubleFactorization
 
         ANGSTROM_TO_BOHR = 1.8897259886
 

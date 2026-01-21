@@ -6,6 +6,22 @@ Quantum device selection and management utilities.
 
 Provides unified device selection logic for QPE and RDM modules,
 with GPU acceleration support and Catalyst compatibility.
+
+IMPORTANT: There are TWO separate GPU support systems in q2m3:
+
+1. PennyLane Lightning GPU (cuQuantum/CUDA):
+   - Used by standard QPE circuits (without @qjit)
+   - Detected by HAS_LIGHTNING_GPU flag
+   - Requires: pennylane-lightning[gpu], cuQuantum, CUDA
+
+2. JAX/Catalyst GPU (jaxlib[cuda]):
+   - Used by Catalyst @qjit compiled circuits
+   - Detected by HAS_JAX_CUDA flag
+   - Requires: jax[cuda11_pip] or jax[cuda12_pip]
+
+When Catalyst @qjit is enabled, even with lightning.gpu device,
+the actual execution backend is determined by JAX, NOT PennyLane.
+If JAX lacks CUDA support, Catalyst runs on CPU regardless of device name.
 """
 
 import warnings
@@ -13,7 +29,11 @@ from typing import Literal
 
 import pennylane as qml
 
-# Device availability detection (executed once at module import)
+# =============================================================================
+# Device Availability Detection (executed once at module import)
+# =============================================================================
+
+# 1. PennyLane Lightning GPU availability (for standard QPE)
 HAS_LIGHTNING_GPU = False
 try:
     _test_dev = qml.device("lightning.gpu", wires=1)
@@ -31,6 +51,23 @@ try:
 except Exception as e:
     # Device "lightning.qubit" not available or failed to initialize; ignore and continue.
     warnings.warn(f'Could not initialize "lightning.qubit" device: {e}', stacklevel=2)
+
+# 2. JAX/Catalyst GPU availability (for @qjit compiled circuits)
+# This is SEPARATE from PennyLane Lightning GPU!
+HAS_JAX_CUDA = False
+JAX_DEFAULT_BACKEND = "cpu"
+try:
+    import jax
+
+    JAX_DEFAULT_BACKEND = jax.default_backend()
+    # JAX backend is "cuda" or "gpu" when GPU is available
+    HAS_JAX_CUDA = JAX_DEFAULT_BACKEND in ("cuda", "gpu")
+except ImportError:
+    # JAX not installed, which is fine for non-Catalyst usage
+    pass
+except Exception:
+    # Other JAX initialization errors
+    pass
 
 # Type alias for supported device types
 DeviceType = Literal["auto", "default.qubit", "lightning.qubit", "lightning.gpu"]
@@ -51,6 +88,54 @@ def get_best_available_device() -> str:
         return "lightning.qubit"
     else:
         return "default.qubit"
+
+
+def get_catalyst_backend_info() -> dict:
+    """
+    Get detailed information about Catalyst execution backend.
+
+    IMPORTANT: Catalyst @qjit uses JAX as its execution backend, which is
+    SEPARATE from PennyLane device selection. Even if device="lightning.gpu",
+    Catalyst will run on CPU if JAX lacks CUDA support.
+
+    Returns:
+        Dictionary with:
+            - jax_backend: JAX default backend ("cpu", "cuda", "gpu")
+            - has_jax_cuda: Whether JAX has CUDA support
+            - effective_device: Actual execution device for Catalyst
+            - warning: Optional warning message if GPU expected but unavailable
+    """
+    result = {
+        "jax_backend": JAX_DEFAULT_BACKEND,
+        "has_jax_cuda": HAS_JAX_CUDA,
+        "effective_device": "GPU" if HAS_JAX_CUDA else "CPU",
+        "warning": None,
+    }
+
+    # Add warning if Lightning GPU is available but JAX GPU is not
+    if HAS_LIGHTNING_GPU and not HAS_JAX_CUDA:
+        result["warning"] = (
+            "PennyLane lightning.gpu is available, but Catalyst @qjit will run on CPU "
+            "because JAX lacks CUDA support. To enable Catalyst GPU, install: "
+            "pip install 'jax[cuda12]' (or cuda11 for older CUDA versions)"
+        )
+
+    return result
+
+
+def get_effective_catalyst_device_label() -> str:
+    """
+    Get the effective device label for Catalyst execution.
+
+    Unlike get_best_available_device() which returns the PennyLane device name,
+    this returns what Catalyst actually runs on (CPU/GPU based on JAX backend).
+
+    Returns:
+        Human-readable label like "lightning.gpu (JAX: CPU)" or "lightning.gpu (JAX: GPU)"
+    """
+    pennylane_device = get_best_available_device()
+    jax_backend = "GPU" if HAS_JAX_CUDA else "CPU"
+    return f"{pennylane_device} (JAX: {jax_backend})"
 
 
 def select_device(

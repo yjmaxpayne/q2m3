@@ -53,7 +53,11 @@ from examples.h3op_demo.output import (
     print_summary,
     print_system_info,
 )
-from examples.h3op_demo.profiling import profile_function, profile_section
+from examples.h3op_demo.profiling import (
+    ProfilingStats,
+    profile_function,
+    profile_section,
+)
 
 __all__ = [
     # Constants
@@ -94,4 +98,5 @@ __all__ = [
     # Profiling
     "profile_section",
     "profile_function",
+    "ProfilingStats",
 ]

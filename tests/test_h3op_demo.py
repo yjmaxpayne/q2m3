@@ -497,8 +497,14 @@ class TestMainFunction:
         }
 
         with (
-            patch("examples.h3op_qpe_h2o_mm_full.QuantumQMMM") as mock_qmmm_class,
-            patch("examples.h3op_qpe_h2o_mm_full.PySCFPennyLaneConverter") as mock_converter_class,
+            patch("examples.h3op_demo.analysis.QuantumQMMM") as mock_qmmm_class,
+            patch(
+                "examples.h3op_demo.analysis.PySCFPennyLaneConverter"
+            ) as mock_converter_class_analysis,
+            patch(
+                "examples.h3op_demo.computation.PySCFPennyLaneConverter"
+            ) as mock_converter_class_comp,
+            patch("examples.h3op_qpe_h2o_mm_full.QuantumQMMM") as mock_qmmm_class_main,
             patch("examples.h3op_qpe_h2o_mm_full.save_json_results") as mock_save,
         ):
             # Setup mock QuantumQMMM
@@ -506,15 +512,17 @@ class TestMainFunction:
             mock_qmmm.compute_ground_state.return_value = mock_qmmm_result
             mock_qmmm.draw_circuits.return_value = mock_circuits
             mock_qmmm_class.return_value = mock_qmmm
+            mock_qmmm_class_main.return_value = mock_qmmm
 
-            # Setup mock converter
+            # Setup mock converter (for both analysis and computation modules)
             mock_converter = MagicMock()
             mock_converter.build_qmmm_hamiltonian.return_value = {
                 "energy_hf": -75.2,
                 "mol": MagicMock(),
             }
             mock_converter.estimate_qpe_resources.return_value = mock_eftqc
-            mock_converter_class.return_value = mock_converter
+            mock_converter_class_analysis.return_value = mock_converter
+            mock_converter_class_comp.return_value = mock_converter
 
             # Import and call main
             from examples.h3op_qpe_h2o_mm_full import main

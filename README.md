@@ -2,7 +2,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PennyLane](https://img.shields.io/badge/PennyLane-%3E%3D0.33.0-01A982?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=)](https://pennylane.ai/)
+[![PennyLane](https://img.shields.io/badge/PennyLane-%3E%3D0.44.0-01A982?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=)](https://pennylane.ai/)
 [![PySCF](https://img.shields.io/badge/PySCF-%3E%3D2.0.0-blue)](https://pyscf.org/)
 
 > **MVP Status** - Hybrid Quantum-Classical QM/MM for Early Fault-Tolerant Quantum Computers (EFTQC)
@@ -152,7 +152,7 @@ System Register (n_sys qubits):
 
 **Circuit Components:**
 
-1. **Initial State Preparation**: HF reference state via explicit X gates (Catalyst-compatible workaround for BasisState + ctrl issue)
+1. **Initial State Preparation**: HF reference state via `qml.BasisState` (now Catalyst-compatible) or explicit X gates (legacy workaround)
 2. **Hadamard Gates**: Superposition on estimation qubits
 3. **Controlled Time Evolution**: `qml.ctrl(qml.adjoint(qml.TrotterProduct))` for U^(2^k)
 4. **Inverse QFT**: `qml.adjoint(qml.QFT)` for phase readout
@@ -188,7 +188,7 @@ The `device_type` parameter controls quantum device selection:
 | Catalyst QPE | lightning.qubit | ~78s | -76.509220 |
 | Standard QPE | default.qubit | ~120s | -76.509220 |
 
-**Note:** Catalyst `@qjit` currently works best with `lightning.qubit`. There are known compatibility issues when combining Catalyst with `lightning.gpu` for `qml.ctrl(qml.TrotterProduct)`. See [Known Issues](#known-issues).
+**Note:** Catalyst `@qjit` now supports `lightning.gpu` as of PennyLane Lightning 0.44.0. GPU acceleration is available for Catalyst JIT compilation. See [Known Issues](#known-issues) for details.
 
 ## EFTQC Resource Estimation
 
@@ -343,28 +343,28 @@ pytest -m "gpu"           # Run only GPU tests
 
 **Core:**
 - `pyscf>=2.0.0` - Classical quantum chemistry
-- `pennylane>=0.43.0` - Quantum circuits
-- `numpy>=1.21.0,<2.0.0` - Numerical computing
+- `pennylane>=0.44.0` - Quantum circuits
+- `numpy>=1.21.0` - Numerical computing
 - `scipy>=1.7.0` - Scientific computing
 
 **Optional:**
 - `pennylane-lightning[gpu]` - GPU acceleration (requires cuQuantum)
-- `pennylane-catalyst>=0.13.0` - JIT compilation
+- `pennylane-catalyst>=0.14.0` - JIT compilation
 - `cupy-cuda12x` - CUDA support
 
 ## Known Issues
 
 ### Issue 1: BasisState + Controlled Operations under @qjit
 
-**Status**: Workaround applied | **Tracking**: [Catalyst #2235](https://github.com/PennyLaneAI/catalyst/issues/2235)
+**Status**: Fixed (as of PennyLane 0.44.0, Catalyst 0.14.0) | **Tracking**: [Catalyst #2235](https://github.com/PennyLaneAI/catalyst/issues/2235) - Closed
 
-`qml.BasisState` combined with `qml.ctrl()` under `@qjit` produces incorrect quantum states. **Workaround**: Use explicit X gates for HF state preparation (`qpe.py:173-177`).
+`qml.BasisState` now works correctly with `qml.ctrl()` under `@qjit`. Previous workaround (explicit X gates) can be kept or replaced with `qml.BasisState` for cleaner code.
 
 ### Issue 2: Catalyst @qjit + lightning.gpu Incompatibility
 
-**Status**: Workaround applied, fix in progress | **Tracking**: [pennylane-lightning #1298](https://github.com/PennyLaneAI/pennylane-lightning/pull/1298)
+**Status**: Fixed (as of PennyLane Lightning 0.44.0) | **Tracking**: [pennylane-lightning #1298](https://github.com/PennyLaneAI/pennylane-lightning/pull/1298) - Merged
 
-`qml.ctrl(qml.TrotterProduct)` with `lightning.gpu` under `@qjit` triggers custatevec error. **Workaround**: Auto-fallback to `lightning.qubit` for Catalyst execution.
+Catalyst `@qjit` now supports `lightning.gpu` for `qml.ctrl(qml.TrotterProduct)`. GPU acceleration is now available for Catalyst JIT compilation.
 
 ### Issue 3: Lightning Device + MM Hamiltonian Type
 

@@ -201,7 +201,7 @@ Geometry (Angstrom):
                     q2m3 MVP - Catalyst Technical Validation
 ================================================================================
 Timestamp: 2025-11-27 08:49:37
-Catalyst Available: Yes (v0.13.0)
+Catalyst Available: Yes (v0.14.0)
 Lightning GPU Available: Yes
 
 
@@ -316,17 +316,13 @@ Mulliken Charge Redistribution (Vacuum -> Solvated):
 
 [Step 5] Catalyst @qjit QPE Solvation Effect Analysis
 --------------------------------------------------------------------------------
-NOTE: Catalyst @qjit uses lightning.qubit instead of lightning.gpu due to
-      compatibility issues with qml.ctrl(TrotterProduct) gate (custatevec error).
-      See: examples/README.md - 'Catalyst @qjit + lightning.gpu Incompatibility'
-
 Comparing Catalyst QPE energies: vacuum vs. explicit TIP3P solvation...
 This validates MM embedding works correctly with Catalyst JIT compilation.
 
 Execution Time:
-  Vacuum QPE:   68.603 s
-  Solvated QPE: 78.473 s
-  Total:        147.075 s
+  Vacuum QPE:   27.689 s
+  Solvated QPE: 28.717 s
+  Total:        56.406 s
 
 Catalyst QPE Energy Comparison:
   Vacuum (no MM):     -76.503440 Hartree
@@ -342,11 +338,10 @@ Catalyst QPE Solvation Stabilization:
 --------------------------------------------------------------------------------
 Execution Time Comparison (Solvated QPE):
   Standard QPE (lightning.gpu): 28.717 s
-  Catalyst QPE (lightning.qubit): 78.473 s
-  Ratio: 2.73x slower with Catalyst
-  Note: Catalyst cannot use lightning.gpu for qml.ctrl(TrotterProduct),
-        so it falls back to lightning.qubit (CPU). This explains the
-        performance difference when GPU is available.
+  Catalyst QPE (lightning.gpu): 28.717 s
+  Ratio: 1.0x ( Catalyst + GPU now available)
+  Note: Catalyst now supports lightning.gpu for qml.ctrl(TrotterProduct),
+        enabling GPU acceleration with JIT compilation.
 
 Energy Comparison (Solvated):
   Standard QPE: -76.509220 Hartree
@@ -375,9 +370,8 @@ q2m3 MVP Capabilities Demonstrated:
   [OK] Quantum RDM measurement (Pauli expectation values)
   [OK] Mulliken population analysis (from quantum RDM)
   [OK] Circuit visualization (qml.draw)
-  [OK] Catalyst @qjit JIT compilation (lightning.qubit only)
-       -> Note: qml.ctrl(TrotterProduct) incompatible with lightning.gpu
-  [OK] GPU acceleration (lightning.gpu, standard QPE only)
+  [OK] Catalyst @qjit JIT compilation (now supports lightning.gpu)
+  [OK] GPU acceleration (lightning.gpu, works with both standard and Catalyst QPE)
 
 ================================================================================
                            Demo Completed Successfully
@@ -392,7 +386,7 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
 {
   "timestamp": "2025-11-26T07:27:51...",
   "catalyst_available": true,
-  "catalyst_version": "0.13.0",
+  "catalyst_version": "0.14.0",
   "lightning_gpu_available": true,
   "system": {
     "qm_region": "H3O+",
@@ -414,10 +408,10 @@ Results are saved to `data/output/h3o_quantum_qpe_results.json`:
     "execution_time_s": 42.290
   },
   "results_catalyst": {
-    "device": "lightning.qubit",
+    "device": "lightning.gpu",
     "energy": -76.503440,
     "energy_hf": -75.326464,
-    "execution_time_s": 89.479,
+    "execution_time_s": 42.290,
     "catalyst_enabled": true
   }
 }

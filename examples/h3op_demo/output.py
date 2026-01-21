@@ -334,14 +334,22 @@ def print_summary(
     print("=" * 80)
 
 
-def print_profiling_report(profiling_data: dict) -> None:
-    """Print profiling report with performance analysis.
+def print_profiling_report(
+    profiling_data: dict,
+    standard_qpe_data: dict | None = None,
+    catalyst_qpe_data: dict | None = None,
+) -> None:
+    """Print profiling report with detailed performance analysis.
 
     Args:
         profiling_data: Dictionary containing timing data for each step.
             Expected keys: 'resource_estimation', 'hf_solvation', 'standard_qpe',
             'catalyst_qpe', 'total'. Each value should be a timing dict
             with 'elapsed' key.
+        standard_qpe_data: Optional QPE solvation data from analyze_qpe_solvation_effect
+            with use_catalyst=False. Contains 'time_vacuum_s', 'time_solvated_s'.
+        catalyst_qpe_data: Optional QPE solvation data from analyze_qpe_solvation_effect
+            with use_catalyst=True. Contains 'time_vacuum_s', 'time_solvated_s'.
     """
     print()
     print("=" * 80)
@@ -377,8 +385,151 @@ def print_profiling_report(profiling_data: dict) -> None:
     print(f"  {'Total Demo Time':<35} {t_total:<12.3f}")
     print()
 
-    # QPE Performance Comparison (key insight for jit + lightning.gpu analysis)
-    if t_standard > 0 and t_catalyst > 0:
+    # Fine-grained QPE breakdown (key for jit + lightning.gpu bottleneck analysis)
+    if standard_qpe_data or catalyst_qpe_data:
+        print("=" * 80)
+        print("          Fine-Grained QPE Timing Breakdown (Bottleneck Analysis)")
+        print("=" * 80)
+        print()
+
+        # Table header
+        print(f"  {'Phase':<25} {'Standard QPE':<15} {'Catalyst QPE':<15} {'Ratio':<10}")
+        print("  " + "-" * 70)
+
+        # Extract fine-grained timings
+        std_vacuum = standard_qpe_data.get("time_vacuum_s", 0.0) if standard_qpe_data else 0.0
+        std_solvated = standard_qpe_data.get("time_solvated_s", 0.0) if standard_qpe_data else 0.0
+        std_total = standard_qpe_data.get("time_total_s", 0.0) if standard_qpe_data else 0.0
+
+        cat_vacuum = catalyst_qpe_data.get("time_vacuum_s", 0.0) if catalyst_qpe_data else 0.0
+        cat_solvated = catalyst_qpe_data.get("time_solvated_s", 0.0) if catalyst_qpe_data else 0.0
+        cat_total = catalyst_qpe_data.get("time_total_s", 0.0) if catalyst_qpe_data else 0.0
+
+        # Print comparison table
+        def ratio_str(a: float, b: float) -> str:
+            if a > 0 and b > 0:
+                return f"{b / a:.2f}x"
+            return "N/A"
+
+        rows = [
+            ("Vacuum QPE", std_vacuum, cat_vacuum),
+            ("Solvated QPE", std_solvated, cat_solvated),
+            ("Total", std_total, cat_total),
+        ]
+
+        for name, std_t, cat_t in rows:
+            std_str = f"{std_t:.3f}s" if std_t > 0 else "N/A"
+            cat_str = f"{cat_t:.3f}s" if cat_t > 0 else "N/A"
+            r_str = ratio_str(std_t, cat_t)
+            print(f"  {name:<25} {std_str:<15} {cat_str:<15} {r_str:<10}")
+
+        print("  " + "-" * 70)
+        print()
+
+        # Internal stage breakdown (if timing data available)
+        cat_timing_vacuum = catalyst_qpe_data.get("timing_vacuum", {}) if catalyst_qpe_data else {}
+        cat_timing_solvated = (
+            catalyst_qpe_data.get("timing_solvated", {}) if catalyst_qpe_data else {}
+        )
+        std_timing_vacuum = standard_qpe_data.get("timing_vacuum", {}) if standard_qpe_data else {}
+        std_timing_solvated = (
+            standard_qpe_data.get("timing_solvated", {}) if standard_qpe_data else {}
+        )
+
+        if cat_timing_vacuum or cat_timing_solvated:
+            print("  Internal Stage Breakdown (Catalyst QPE):")
+            print(f"  {'Stage':<25} {'Vacuum':<12} {'Solvated':<12} {'Delta':<12}")
+            print("  " + "-" * 55)
+
+            stages = [
+                ("Hamiltonian Build", "hamiltonian_build_s"),
+                ("QPE Circuit Build", "qpe_circuit_build_s"),
+                ("QPE Circuit Exec", "qpe_circuit_exec_s"),
+                ("RDM Measurement", "rdm_measurement_s"),
+                ("RDM Postprocess", "rdm_postprocess_s"),
+                ("Mulliken Analysis", "mulliken_analysis_s"),
+            ]
+
+            for label, key in stages:
+                v = cat_timing_vacuum.get(key, 0.0)
+                s = cat_timing_solvated.get(key, 0.0)
+                if v > 0 or s > 0:
+                    delta = s - v
+                    delta_str = f"+{delta:.3f}s" if delta >= 0 else f"{delta:.3f}s"
+                    print(f"  {label:<25} {v:.3f}s       {s:.3f}s       {delta_str}")
+
+            print("  " + "-" * 55)
+            print()
+
+            # Compare with Standard QPE internal stages if available
+            if std_timing_vacuum or std_timing_solvated:
+                print("  Stage-wise Catalyst/Standard Ratio (Vacuum):")
+                print(f"  {'Stage':<25} {'Standard':<12} {'Catalyst':<12} {'Ratio':<10}")
+                print("  " + "-" * 55)
+
+                for label, key in stages:
+                    std_v = std_timing_vacuum.get(key, 0.0)
+                    cat_v = cat_timing_vacuum.get(key, 0.0)
+                    if std_v > 0 and cat_v > 0:
+                        ratio = cat_v / std_v
+                        print(f"  {label:<25} {std_v:.3f}s       {cat_v:.3f}s       {ratio:.2f}x")
+
+                print("  " + "-" * 55)
+                print()
+
+        # Bottleneck analysis
+        if cat_vacuum > 0 and cat_solvated > 0:
+            print("  [BOTTLENECK ANALYSIS]")
+            print()
+
+            # First call vs second call analysis
+            # First call (vacuum) includes JIT compilation overhead
+            # Second call (solvated) should benefit from cached compilation
+            if cat_vacuum > cat_solvated * 1.2:
+                overhead = cat_vacuum - cat_solvated
+                overhead_pct = (overhead / cat_vacuum) * 100
+                print(f"    JIT Compilation Overhead (1st call - 2nd call):")
+                print(f"      Estimated: {overhead:.3f}s ({overhead_pct:.1f}% of vacuum QPE)")
+                print(
+                    f"      Evidence: Vacuum ({cat_vacuum:.3f}s) >> Solvated ({cat_solvated:.3f}s)"
+                )
+                print()
+            elif cat_solvated > cat_vacuum * 1.2:
+                print(
+                    f"    Observation: Solvated ({cat_solvated:.3f}s) > Vacuum ({cat_vacuum:.3f}s)"
+                )
+                print(
+                    "      This suggests MM embedding adds significant computation, not JIT overhead."
+                )
+                print()
+
+            # Compare with Standard QPE to assess device mismatch
+            if std_vacuum > 0 and std_solvated > 0:
+                vacuum_ratio = cat_vacuum / std_vacuum if std_vacuum > 0 else 0
+                solvated_ratio = cat_solvated / std_solvated if std_solvated > 0 else 0
+
+                print(f"    Per-Phase Slowdown (Catalyst / Standard):")
+                print(f"      Vacuum:   {vacuum_ratio:.2f}x slower")
+                print(f"      Solvated: {solvated_ratio:.2f}x slower")
+                print()
+
+                if vacuum_ratio > 2.0 and solvated_ratio < 1.5:
+                    print("    [DIAGNOSIS] JIT compilation is the PRIMARY bottleneck")
+                    print("      - First call (vacuum) is significantly slower due to compilation")
+                    print("      - Second call (solvated) shows better performance (cached)")
+                elif solvated_ratio > vacuum_ratio:
+                    print("    [DIAGNOSIS] Device mismatch or backend inefficiency")
+                    print("      - Both calls are slow, suggesting systematic overhead")
+                    if not HAS_JAX_CUDA:
+                        print("      - Likely cause: Catalyst running on CPU, Standard on GPU")
+                        print("      - Solution: pip install 'jax[cuda12]'")
+                else:
+                    print("    [DIAGNOSIS] Consistent overhead across both phases")
+                    print("      - JIT compilation adds fixed overhead to first call")
+                    print("      - @qjit benefits realized in multi-iteration scenarios")
+
+    # Legacy comparison (if no fine-grained data)
+    elif t_standard > 0 and t_catalyst > 0:
         print("QPE Performance Comparison (Standard vs Catalyst):")
         print("  " + "-" * 60)
 
@@ -388,7 +539,6 @@ def print_profiling_report(profiling_data: dict) -> None:
         print(f"  Ratio:         {ratio:.2f}x")
         print()
 
-        # Performance diagnosis
         if ratio > 1.5:
             print("  [DIAGNOSIS] Catalyst is significantly SLOWER than Standard QPE")
             print()

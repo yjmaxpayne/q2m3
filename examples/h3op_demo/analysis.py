@@ -109,6 +109,10 @@ def analyze_qpe_solvation_effect(
     stabilization = result_vacuum["energy"] - result_solvated["energy"]
     stabilization_kcal = stabilization * HARTREE_TO_KCAL_MOL
 
+    # Extract fine-grained timing from compute_ground_state results
+    timing_vacuum = result_vacuum.get("timing", {})
+    timing_solvated = result_solvated.get("timing", {})
+
     return {
         "energy_vacuum": result_vacuum["energy"],
         "energy_solvated": result_solvated["energy"],
@@ -123,4 +127,7 @@ def analyze_qpe_solvation_effect(
         "time_vacuum_s": time_vacuum,
         "time_solvated_s": time_solvated,
         "time_total_s": time_vacuum + time_solvated,
+        # Fine-grained timing breakdown for bottleneck analysis
+        "timing_vacuum": timing_vacuum,
+        "timing_solvated": timing_solvated,
     }

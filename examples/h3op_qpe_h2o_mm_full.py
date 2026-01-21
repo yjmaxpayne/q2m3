@@ -226,6 +226,7 @@ def main():
                     h3o_atoms, mm_waters, qpe_config, use_catalyst=False
                 )
         profiling_data["standard_qpe"] = standard_timing
+        profiling_data["standard_qpe_data"] = qpe_solvation_data  # Store for fine-grained analysis
         print_qpe_solvation_effect(qpe_solvation_data, solvation_data, label="Standard QPE")
 
         # Step 5: Catalyst @qjit QPE Solvation Effect Analysis (with profiling)
@@ -233,6 +234,9 @@ def main():
         with profile_section("Catalyst QPE (total)") as catalyst_timing:
             catalyst_solvation_data = run_catalyst_analysis(h3o_atoms, mm_waters, solvation_data)
         profiling_data["catalyst_qpe"] = catalyst_timing
+        profiling_data["catalyst_qpe_data"] = (
+            catalyst_solvation_data  # Store for fine-grained analysis
+        )
 
         # Step 6: Results comparison
         print_section("Results Comparison", step=6)
@@ -262,7 +266,11 @@ def main():
     profiling_data["total"] = total_timing
 
     # Print profiling report (key insight for jit + lightning.gpu bottleneck analysis)
-    print_profiling_report(profiling_data)
+    print_profiling_report(
+        profiling_data,
+        standard_qpe_data=profiling_data.get("standard_qpe_data"),
+        catalyst_qpe_data=profiling_data.get("catalyst_qpe_data"),
+    )
 
 
 if __name__ == "__main__":

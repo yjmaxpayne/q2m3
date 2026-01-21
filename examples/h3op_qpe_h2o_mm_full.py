@@ -2,6 +2,14 @@
 # Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 
+# Ensure project root is in sys.path for running from examples/ directory
+import sys
+from pathlib import Path
+
+_project_root = Path(__file__).resolve().parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
 """
 H3O+ Quantum Phase Estimation (QPE) Demo
 
@@ -74,6 +82,7 @@ from examples.h3op_demo.output import (
     print_comparison,
     print_header,
     print_hf_solvation_effect,
+    print_profiling_report,
     print_qpe_solvation_effect,
     print_resource_estimation,
     print_section,
@@ -123,6 +132,7 @@ __all__ = [
     "print_qpe_solvation_effect",
     "print_comparison",
     "print_summary",
+    "print_profiling_report",
     # Analysis functions
     "analyze_solvation_effect",
     "analyze_qpe_solvation_effect",
@@ -140,103 +150,119 @@ __all__ = [
 
 
 def main():
-    """Main demo execution."""
-    print_header()
+    """Main demo execution with performance profiling."""
+    # Initialize profiling data collection
+    profiling_data = {}
 
-    # Step 1: System configuration
-    print_section("System Configuration", step=1)
-    h3o_atoms = create_h3o_geometry()
-    mm_waters = 8
-    qpe_config = get_qpe_config(device_type="auto")
+    with profile_section("Total Demo Execution", verbose=False) as total_timing:
+        print_header()
 
-    print_system_info(qpe_config, mm_waters)
-    print()
-    selected_device = get_best_available_device()
-    device_note = " (GPU detected)" if HAS_LIGHTNING_GPU else ""
-    print(f"Device Selection: auto -> {selected_device}{device_note}")
+        # Step 1: System configuration
+        print_section("System Configuration", step=1)
+        h3o_atoms = create_h3o_geometry()
+        mm_waters = 8
+        qpe_config = get_qpe_config(device_type="auto")
 
-    # Step 1.5: Circuit visualization (show circuit structure before calculations)
-    print_section("Circuit Visualization (PennyLane)", step=1.5)
-    print("Generating QPE + RDM circuit diagrams...")
-    print()
+        print_system_info(qpe_config, mm_waters)
+        print()
+        selected_device = get_best_available_device()
+        device_note = " (GPU detected)" if HAS_LIGHTNING_GPU else ""
+        print(f"Device Selection: auto -> {selected_device}{device_note}")
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        viz_qmmm = QuantumQMMM(
-            qm_atoms=h3o_atoms,
-            mm_waters=mm_waters,
-            qpe_config=qpe_config,
-            use_catalyst=False,
+        # Step 1.5: Circuit visualization (show circuit structure before calculations)
+        print_section("Circuit Visualization (PennyLane)", step=1.5)
+        print("Generating QPE + RDM circuit diagrams...")
+        print()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            viz_qmmm = QuantumQMMM(
+                qm_atoms=h3o_atoms,
+                mm_waters=mm_waters,
+                qpe_config=qpe_config,
+                use_catalyst=False,
+            )
+            circuits = viz_qmmm.draw_circuits()
+
+        print("QPE Circuit (Standard Phase Estimation):")
+        print("-" * 60)
+        print(circuits["qpe"])
+        print()
+        print("RDM Measurement Circuit (Pauli Expectation Values):")
+        print("-" * 60)
+        print(circuits["rdm"])
+        print()
+
+        # Step 2: EFTQC Resource Estimation (with profiling)
+        print_section("EFTQC Resource Estimation (Vacuum vs Solvated)", step=2)
+        with profile_section("Resource Estimation") as resource_timing:
+            eftqc_data = run_resource_estimation(h3o_atoms, mm_waters)
+        profiling_data["resource_estimation"] = resource_timing
+        print_resource_estimation(eftqc_data, mm_waters)
+
+        # Step 3: Solvation effect analysis (classical HF level, with profiling)
+        print_section("Solvation Effect Analysis (Classical HF)", step=3)
+        print("Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...")
+        print("This validates that MM embedding correctly polarizes the QM electron density.")
+        print()
+
+        with profile_section("HF Solvation Analysis") as hf_timing:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                solvation_data = analyze_solvation_effect(h3o_atoms, mm_waters)
+        profiling_data["hf_solvation"] = hf_timing
+        print_hf_solvation_effect(solvation_data)
+
+        # Step 4: QPE solvation effect analysis (Standard QPE, with profiling)
+        print_section("Standard QPE Solvation Effect Analysis (Quantum Level)", step=4)
+        print("Comparing QPE energies: vacuum vs. explicit TIP3P solvation...")
+        print("This validates MM embedding is correctly included in the quantum Hamiltonian.")
+        print()
+
+        with profile_section("Standard QPE (total)") as standard_timing:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                qpe_solvation_data = analyze_qpe_solvation_effect(
+                    h3o_atoms, mm_waters, qpe_config, use_catalyst=False
+                )
+        profiling_data["standard_qpe"] = standard_timing
+        print_qpe_solvation_effect(qpe_solvation_data, solvation_data, label="Standard QPE")
+
+        # Step 5: Catalyst @qjit QPE Solvation Effect Analysis (with profiling)
+        print_section("Catalyst @qjit QPE Solvation Effect Analysis", step=5)
+        with profile_section("Catalyst QPE (total)") as catalyst_timing:
+            catalyst_solvation_data = run_catalyst_analysis(h3o_atoms, mm_waters, solvation_data)
+        profiling_data["catalyst_qpe"] = catalyst_timing
+
+        # Step 6: Results comparison
+        print_section("Results Comparison", step=6)
+        print_comparison(qpe_solvation_data, catalyst_solvation_data)
+
+        # Step 7: Save results
+        print_section("Save Results", step=7)
+        output_data = build_output_data(
+            h3o_atoms,
+            mm_waters,
+            qpe_config,
+            solvation_data,
+            qpe_solvation_data,
+            catalyst_solvation_data,
+            eftqc_data,
         )
-        circuits = viz_qmmm.draw_circuits()
 
-    print("QPE Circuit (Standard Phase Estimation):")
-    print("-" * 60)
-    print(circuits["qpe"])
-    print()
-    print("RDM Measurement Circuit (Pauli Expectation Values):")
-    print("-" * 60)
-    print(circuits["rdm"])
-    print()
+        output_file = "data/output/h3o_quantum_qpe_results.json"
+        save_json_results(output_data, output_file)
+        print(f"Results saved to: {output_file}")
 
-    # Step 2: EFTQC Resource Estimation
-    print_section("EFTQC Resource Estimation (Vacuum vs Solvated)", step=2)
-    eftqc_data = run_resource_estimation(h3o_atoms, mm_waters)
-    print_resource_estimation(eftqc_data, mm_waters)
+        # Summary
+        print_section("Demo Summary")
+        print_summary(solvation_data, qpe_solvation_data, catalyst_solvation_data, eftqc_data)
 
-    # Step 3: Solvation effect analysis (classical HF level)
-    print_section("Solvation Effect Analysis (Classical HF)", step=3)
-    print("Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...")
-    print("This validates that MM embedding correctly polarizes the QM electron density.")
-    print()
+    # Store total timing
+    profiling_data["total"] = total_timing
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        solvation_data = analyze_solvation_effect(h3o_atoms, mm_waters)
-
-    print_hf_solvation_effect(solvation_data)
-
-    # Step 4: QPE solvation effect analysis (Standard QPE)
-    print_section("Standard QPE Solvation Effect Analysis (Quantum Level)", step=4)
-    print("Comparing QPE energies: vacuum vs. explicit TIP3P solvation...")
-    print("This validates MM embedding is correctly included in the quantum Hamiltonian.")
-    print()
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        qpe_solvation_data = analyze_qpe_solvation_effect(
-            h3o_atoms, mm_waters, qpe_config, use_catalyst=False
-        )
-
-    print_qpe_solvation_effect(qpe_solvation_data, solvation_data, label="Standard QPE")
-
-    # Step 5: Catalyst @qjit QPE Solvation Effect Analysis
-    print_section("Catalyst @qjit QPE Solvation Effect Analysis", step=5)
-    catalyst_solvation_data = run_catalyst_analysis(h3o_atoms, mm_waters, solvation_data)
-
-    # Step 6: Results comparison
-    print_section("Results Comparison", step=6)
-    print_comparison(qpe_solvation_data, catalyst_solvation_data)
-
-    # Step 7: Save results
-    print_section("Save Results", step=7)
-    output_data = build_output_data(
-        h3o_atoms,
-        mm_waters,
-        qpe_config,
-        solvation_data,
-        qpe_solvation_data,
-        catalyst_solvation_data,
-        eftqc_data,
-    )
-
-    output_file = "data/output/h3o_quantum_qpe_results.json"
-    save_json_results(output_data, output_file)
-    print(f"Results saved to: {output_file}")
-
-    # Summary
-    print_section("Demo Summary")
-    print_summary(solvation_data, qpe_solvation_data, catalyst_solvation_data, eftqc_data)
+    # Print profiling report (key insight for jit + lightning.gpu bottleneck analysis)
+    print_profiling_report(profiling_data)
 
 
 if __name__ == "__main__":

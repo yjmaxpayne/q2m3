@@ -47,6 +47,7 @@ from examples.h3op_demo.output import (
     print_comparison,
     print_header,
     print_hf_solvation_effect,
+    print_profiling_report,
     print_qpe_solvation_effect,
     print_resource_estimation,
     print_section,
@@ -87,6 +88,7 @@ __all__ = [
     "print_qpe_solvation_effect",
     "print_comparison",
     "print_summary",
+    "print_profiling_report",
     # Analysis functions
     "analyze_solvation_effect",
     "analyze_qpe_solvation_effect",

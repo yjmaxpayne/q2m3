@@ -588,3 +588,67 @@ class TestAnalysisFunctions:
         assert "hamiltonian_1norm" in result["vacuum_chemical"]
         assert "toffoli_gates" in result["vacuum_chemical"]
         assert "logical_qubits" in result["vacuum_chemical"]
+
+
+# =============================================================================
+# Profiling Report Tests
+# =============================================================================
+
+
+class TestProfilingReport:
+    """Test print_profiling_report function."""
+
+    def test_import_profiling_report_function(self):
+        """print_profiling_report should be importable."""
+        from examples.h3op_demo import print_profiling_report
+
+        assert callable(print_profiling_report)
+
+    def test_profiling_report_with_all_data(self, capsys):
+        """Should print profiling report with all timing data."""
+        from examples.h3op_demo import print_profiling_report
+
+        profiling_data = {
+            "resource_estimation": {"elapsed": 1.5},
+            "hf_solvation": {"elapsed": 0.8},
+            "standard_qpe": {"elapsed": 5.0},
+            "catalyst_qpe": {"elapsed": 12.0},
+            "total": {"elapsed": 20.0},
+        }
+
+        print_profiling_report(profiling_data)
+
+        captured = capsys.readouterr()
+        assert "Performance Profiling Report" in captured.out
+        assert "Standard QPE" in captured.out
+        assert "Catalyst QPE" in captured.out
+        assert "DIAGNOSIS" in captured.out  # Should show diagnosis for 2.4x ratio
+
+    def test_profiling_report_without_catalyst(self, capsys):
+        """Should handle missing Catalyst data gracefully."""
+        from examples.h3op_demo import print_profiling_report
+
+        profiling_data = {
+            "resource_estimation": {"elapsed": 1.5},
+            "hf_solvation": {"elapsed": 0.8},
+            "standard_qpe": {"elapsed": 5.0},
+            "catalyst_qpe": {"elapsed": 0.0},  # Catalyst not run
+            "total": {"elapsed": 8.0},
+        }
+
+        print_profiling_report(profiling_data)
+
+        captured = capsys.readouterr()
+        assert "Performance Profiling Report" in captured.out
+        assert "Standard only" in captured.out
+
+    def test_profiling_report_empty_data(self, capsys):
+        """Should handle empty profiling data."""
+        from examples.h3op_demo import print_profiling_report
+
+        profiling_data = {}
+
+        print_profiling_report(profiling_data)
+
+        captured = capsys.readouterr()
+        assert "Performance Profiling Report" in captured.out

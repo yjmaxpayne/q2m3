@@ -332,3 +332,86 @@ def print_summary(
     print("=" * 80)
     print("                           Demo Completed Successfully")
     print("=" * 80)
+
+
+def print_profiling_report(profiling_data: dict) -> None:
+    """Print profiling report with performance analysis.
+
+    Args:
+        profiling_data: Dictionary containing timing data for each step.
+            Expected keys: 'resource_estimation', 'hf_solvation', 'standard_qpe',
+            'catalyst_qpe', 'total'. Each value should be a timing dict
+            with 'elapsed' key.
+    """
+    print()
+    print("=" * 80)
+    print("                         Performance Profiling Report")
+    print("=" * 80)
+    print()
+
+    # Extract timing values
+    t_resource = profiling_data.get("resource_estimation", {}).get("elapsed", 0.0)
+    t_hf = profiling_data.get("hf_solvation", {}).get("elapsed", 0.0)
+    t_standard = profiling_data.get("standard_qpe", {}).get("elapsed", 0.0)
+    t_catalyst = profiling_data.get("catalyst_qpe", {}).get("elapsed", 0.0)
+    t_total = profiling_data.get("total", {}).get("elapsed", 0.0)
+
+    # Detailed timing breakdown
+    print("Detailed Timing Breakdown:")
+    print(f"  {'Step':<35} {'Time (s)':<12} {'Percentage':<10}")
+    print("  " + "-" * 60)
+
+    steps = [
+        ("Resource Estimation (EFTQC)", t_resource),
+        ("HF Solvation Analysis", t_hf),
+        ("Standard QPE (vacuum + solvated)", t_standard),
+        ("Catalyst QPE (vacuum + solvated)", t_catalyst),
+    ]
+
+    for name, t in steps:
+        if t > 0:
+            pct = (t / t_total * 100) if t_total > 0 else 0
+            print(f"  {name:<35} {t:<12.3f} {pct:.1f}%")
+
+    print("  " + "-" * 60)
+    print(f"  {'Total Demo Time':<35} {t_total:<12.3f}")
+    print()
+
+    # QPE Performance Comparison (key insight for jit + lightning.gpu analysis)
+    if t_standard > 0 and t_catalyst > 0:
+        print("QPE Performance Comparison (Standard vs Catalyst):")
+        print("  " + "-" * 60)
+
+        ratio = t_catalyst / t_standard if t_standard > 0 else 0
+        print(f"  Standard QPE:  {t_standard:.3f}s")
+        print(f"  Catalyst QPE:  {t_catalyst:.3f}s")
+        print(f"  Ratio:         {ratio:.2f}x")
+        print()
+
+        # Performance diagnosis
+        if ratio > 1.5:
+            print("  [DIAGNOSIS] Catalyst is significantly SLOWER than Standard QPE")
+            print()
+            print("  Potential bottlenecks:")
+            print("    1. JIT Compilation Overhead: First execution compiles the circuit")
+            print("    2. Device Mismatch: Catalyst may be running on CPU while")
+            print("       Standard QPE uses lightning.gpu")
+            print("    3. Single Execution: @qjit benefits are realized in multi-run")
+            print("       scenarios (VQE loops), not single QPE calls")
+            print()
+            if not HAS_JAX_CUDA:
+                print("  [ACTION] Enable JAX CUDA for Catalyst GPU support:")
+                print("           pip install 'jax[cuda12]'")
+        elif ratio < 0.8:
+            print("  [DIAGNOSIS] Catalyst shows speedup over Standard QPE")
+            print("  JIT compilation benefits are being realized.")
+        else:
+            print("  [DIAGNOSIS] Similar performance between Standard and Catalyst QPE")
+            print("  This is expected for single-run scenarios.")
+
+    elif t_standard > 0 and t_catalyst == 0:
+        print("QPE Performance (Standard only - Catalyst not available):")
+        print(f"  Standard QPE: {t_standard:.3f}s")
+
+    print()
+    print("=" * 80)

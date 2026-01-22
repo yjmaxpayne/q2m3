@@ -724,6 +724,57 @@ class TestProfilingReport:
         assert "Catalyst QPE" in captured.out
         assert "DIAGNOSIS" in captured.out  # Should show diagnosis for 2.4x ratio
 
+    def test_profiling_report_catalyst_performance_summary(self, capsys):
+        """Should display Catalyst Performance Summary with aggregated timing."""
+        from examples.h3op_demo import print_profiling_report
+
+        profiling_data = {
+            "resource_estimation": {"elapsed": 1.5},
+            "hf_solvation": {"elapsed": 0.8},
+            "standard_qpe": {"elapsed": 5.0},
+            "catalyst_qpe": {"elapsed": 120.0},
+            "total": {"elapsed": 130.0},
+        }
+
+        # Catalyst QPE data with timing breakdown and aggregated totals
+        catalyst_qpe_data = {
+            "time_vacuum_s": 55.0,
+            "time_solvated_s": 58.0,
+            "time_total_s": 113.0,
+            "timing_vacuum": {
+                "qpe_circuit_build_s": 55.0,
+                "qpe_circuit_exec_s": 0.5,
+            },
+            "timing_solvated": {
+                "qpe_circuit_build_s": 58.0,
+                "qpe_circuit_exec_s": 0.6,
+            },
+            "total_precompile_s": 113.0,  # 55 + 58
+            "total_execution_s": 1.1,  # 0.5 + 0.6
+        }
+
+        standard_qpe_data = {
+            "time_vacuum_s": 2.0,
+            "time_solvated_s": 2.5,
+            "time_total_s": 4.5,
+        }
+
+        print_profiling_report(
+            profiling_data,
+            standard_qpe_data=standard_qpe_data,
+            catalyst_qpe_data=catalyst_qpe_data,
+        )
+
+        captured = capsys.readouterr()
+        # Should display Catalyst Performance Summary
+        assert "Catalyst Performance Summary" in captured.out
+        assert "Total JIT Compilation" in captured.out
+        assert "Total Circuit Execution" in captured.out
+        assert "Compilation Overhead Ratio" in captured.out
+        # Verify approximate values displayed
+        assert "113" in captured.out  # Total precompile ~113s
+        assert "1.1" in captured.out  # Total execution ~1.1s
+
     def test_profiling_report_without_catalyst(self, capsys):
         """Should handle missing Catalyst data gracefully."""
         from examples.h3op_demo import print_profiling_report

@@ -477,6 +477,43 @@ def print_profiling_report(
                 print("  " + "-" * 55)
                 print()
 
+        # Catalyst Performance Summary (using aggregated precompile/execution times)
+        total_precompile = (
+            catalyst_qpe_data.get("total_precompile_s", 0.0) if catalyst_qpe_data else 0.0
+        )
+        total_execution = (
+            catalyst_qpe_data.get("total_execution_s", 0.0) if catalyst_qpe_data else 0.0
+        )
+
+        if total_precompile > 0 or total_execution > 0:
+            print("  " + "=" * 70)
+            print("  Catalyst Performance Summary")
+            print("  " + "=" * 70)
+            print()
+
+            # Extract individual times for display
+            precompile_vacuum = cat_timing_vacuum.get("qpe_circuit_build_s", 0.0)
+            precompile_solvated = cat_timing_solvated.get("qpe_circuit_build_s", 0.0)
+            exec_vacuum = cat_timing_vacuum.get("qpe_circuit_exec_s", 0.0)
+            exec_solvated = cat_timing_solvated.get("qpe_circuit_exec_s", 0.0)
+
+            print(f"    Total JIT Compilation: {total_precompile:.1f}s", end="")
+            if precompile_vacuum > 0 and precompile_solvated > 0:
+                print(f" ({precompile_vacuum:.1f}s vacuum + {precompile_solvated:.1f}s solvated)")
+            else:
+                print()
+
+            print(f"    Total Circuit Execution: {total_execution:.1f}s", end="")
+            if exec_vacuum > 0 and exec_solvated > 0:
+                print(f" ({exec_vacuum:.1f}s vacuum + {exec_solvated:.1f}s solvated)")
+            else:
+                print()
+
+            if total_execution > 0:
+                overhead_ratio = total_precompile / total_execution
+                print(f"    Compilation Overhead Ratio: {overhead_ratio:.1f}x")
+            print()
+
         # Bottleneck analysis
         if cat_vacuum > 0 and cat_solvated > 0:
             print("  [BOTTLENECK ANALYSIS]")
@@ -488,7 +525,7 @@ def print_profiling_report(
             if cat_vacuum > cat_solvated * 1.2:
                 overhead = cat_vacuum - cat_solvated
                 overhead_pct = (overhead / cat_vacuum) * 100
-                print(f"    JIT Compilation Overhead (1st call - 2nd call):")
+                print("    JIT Compilation Overhead (1st call - 2nd call):")
                 print(f"      Estimated: {overhead:.3f}s ({overhead_pct:.1f}% of vacuum QPE)")
                 print(
                     f"      Evidence: Vacuum ({cat_vacuum:.3f}s) >> Solvated ({cat_solvated:.3f}s)"
@@ -508,7 +545,7 @@ def print_profiling_report(
                 vacuum_ratio = cat_vacuum / std_vacuum if std_vacuum > 0 else 0
                 solvated_ratio = cat_solvated / std_solvated if std_solvated > 0 else 0
 
-                print(f"    Per-Phase Slowdown (Catalyst / Standard):")
+                print("    Per-Phase Slowdown (Catalyst / Standard):")
                 print(f"      Vacuum:   {vacuum_ratio:.2f}x slower")
                 print(f"      Solvated: {solvated_ratio:.2f}x slower")
                 print()

@@ -325,6 +325,86 @@ class QPEEngine:
         t_max = 2 * np.pi / abs(energy_estimate)
         return t_max * safety_margin
 
+    @staticmethod
+    def compute_shifted_qpe_params(
+        target_resolution: float = 0.001,
+        energy_range: float = 0.2,
+        safety_margin: float = None,
+    ) -> dict:
+        """
+        Compute optimal QPE parameters for energy-shifted QPE.
+
+        In energy-shifted QPE, the Hamiltonian is transformed as H' = H - E_ref * I,
+        where E_ref is typically the HF energy. This allows QPE to measure ΔE = E - E_ref
+        instead of the absolute energy E, enabling higher precision for detecting small
+        energy changes like MM embedding effects.
+
+        Physics:
+        - QPE measures phase: φ = |ΔE| * t / (2π)
+        - For n-bit precision: resolution = 2π / (2^n * t)
+        - Energy range: ΔE_max = 2π / t (to avoid phase overflow)
+
+        This method calculates the optimal n_estimation_wires and base_time to achieve
+        the target resolution while covering the expected energy range.
+
+        Args:
+            target_resolution: Target energy resolution in Hartree (default: 0.001 Ha ≈ 0.63 kcal/mol)
+            energy_range: Expected energy range around E_ref in Hartree (default: ±0.1 Ha)
+            safety_margin: Safety factor for phase overflow (default: PHASE_SAFETY_MARGIN)
+
+        Returns:
+            Dictionary containing:
+                - n_estimation_wires: Number of estimation qubits for target precision
+                - base_time: Optimal base evolution time
+                - resolution: Actual energy resolution achieved
+                - max_energy_range: Maximum measurable energy range
+                - phase_cycles: Number of phase cycles for ΔE at edge of range
+
+        Example:
+            >>> params = QPEEngine.compute_shifted_qpe_params(
+            ...     target_resolution=0.001,  # 0.63 kcal/mol
+            ...     energy_range=0.2,         # ±0.1 Ha range
+            ... )
+            >>> print(f"Use {params['n_estimation_wires']} estimation qubits")
+            >>> print(f"base_time = {params['base_time']:.4f}")
+        """
+        if safety_margin is None:
+            safety_margin = PHASE_SAFETY_MARGIN
+
+        # Ensure symmetric range: if given ±0.1 Ha, actual range is 0.2 Ha
+        max_delta_e = energy_range / 2
+
+        # To avoid phase overflow: |ΔE| * t < 2π
+        # With safety margin: t < 2π * safety_margin / |ΔE_max|
+        t_max = 2 * np.pi * safety_margin / max_delta_e
+
+        # For target resolution: resolution = 2π / (2^n * t)
+        # Solving for n: 2^n = 2π / (resolution * t)
+        # We want the smallest n such that resolution ≤ target_resolution
+        # Using t_max: n = ceil(log2(2π / (target_resolution * t_max)))
+        n_bits_float = np.log2(2 * np.pi / (target_resolution * t_max))
+        n_estimation_wires = max(4, int(np.ceil(n_bits_float)))  # At least 4 bits
+
+        # Recalculate base_time for integer n_bits
+        # resolution = 2π / (2^n * t), so t = 2π / (2^n * resolution)
+        base_time = 2 * np.pi / (2**n_estimation_wires * target_resolution)
+
+        # Verify we don't overflow
+        # Actual max energy that can be measured: |ΔE_max| = 2π / t
+        actual_max_range = 2 * np.pi / base_time
+        actual_resolution = 2 * np.pi / (2**n_estimation_wires * base_time)
+
+        # Number of phase cycles at max range
+        phase_cycles = max_delta_e * base_time / (2 * np.pi)
+
+        return {
+            "n_estimation_wires": n_estimation_wires,
+            "base_time": base_time,
+            "resolution": actual_resolution,
+            "max_energy_range": actual_max_range,
+            "phase_cycles": phase_cycles,
+        }
+
     def _extract_energy_from_samples(
         self,
         samples: np.ndarray,

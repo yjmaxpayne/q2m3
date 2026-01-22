@@ -371,7 +371,7 @@ q2m3/
 |   +-- h2_qpe_h2o_mm_minimal.py     # H2 minimal validation
 |   +-- h3op_qpe_h2o_mm_full.py      # H3O+ full demo
 |   +-- h2_mc_solvation_qjit.py      # MC solvation with QJIT pre-compilation
-|   +-- resource_estimation_demo.py  # EFTQC resource analysis
+|   +-- h3op_demo                    # Sub-modules supporting the h3op_qpe_h2o_mm_full.y
 +-- data/output/               # Output files (JSON results)
 ```
 

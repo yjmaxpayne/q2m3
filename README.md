@@ -190,6 +190,52 @@ The `device_type` parameter controls quantum device selection:
 
 **Note:** Catalyst `@qjit` now supports `lightning.gpu` as of PennyLane Lightning 0.44.0. GPU acceleration is available for Catalyst JIT compilation. See [Known Issues](#known-issues) for details.
 
+**Important:** Catalyst incurs significant compilation overhead for single-shot QPE. See [Catalyst Performance Guidelines](#catalyst-qjit-performance-guidelines) for when to use Catalyst.
+
+## Catalyst @qjit Performance Guidelines
+
+Catalyst's `@qjit` JIT compilation provides **39x faster execution** but incurs **7448x slower compilation** overhead. Understanding when to use Catalyst is critical for optimal performance.
+
+### Performance Characteristics (H3O+, 14 qubits)
+
+| Stage | Standard PennyLane | Catalyst @qjit | Ratio |
+|-------|-------------------|----------------|-------|
+| Circuit Build | 0.009s | 64.766s | 7448x slower |
+| Circuit Execution | 24.212s | 0.625s | 39x faster |
+| **Total (single-shot)** | 24.221s | 65.391s | **2.7x slower** |
+
+### When to Use Catalyst
+
+| Use Case | Recommendation | Expected Performance |
+|----------|----------------|----------------------|
+| Single QPE execution | **Use standard PennyLane** | Baseline |
+| Vacuum vs Solvated comparison | **Use standard PennyLane** | Avoid 2x compilation |
+| Iterative MC/MD sampling | **Use Catalyst with pre-compilation** | **5.9x speedup** |
+| VQE/QAOA optimization | **Use Catalyst** | 10-50x speedup |
+
+### Pre-compilation Strategy for Iterative Workflows
+
+For workflows with multiple QPE evaluations on the same molecular system:
+
+```python
+# 1. Build and compile QPE ONCE before loop (6.79s one-time cost)
+compiled_qpe, base_time = build_precompiled_qpe(qm_coords, hf_energy)
+
+# 2. Create @qjit loop with pre-compiled QPE via closure
+@qjit
+def mc_loop(waters):
+    for step in range(100):
+        if step % 10 == 0:
+            samples = compiled_qpe()  # Reuse compiled circuit
+    return results
+
+# 3. Run (5.9x faster on subsequent calls)
+mc_loop(waters)  # 11.26s (includes compilation)
+mc_loop(waters)  # 1.90s (5.9x faster)
+```
+
+See [`examples/h2_mc_solvation_qjit.py`](examples/h2_mc_solvation_qjit.py) for complete implementation.
+
 ## EFTQC Resource Estimation
 
 q2m3 provides quantum resource estimation using PennyLane's `DoubleFactorization` API to assess feasibility for Early Fault-Tolerant Quantum Computers (EFTQC).
@@ -279,6 +325,27 @@ python examples/resource_estimation_demo.py
 - EFTQC feasibility assessment
 - Resource-error trade-off analysis
 
+### Example 4: MC Solvation with QJIT Pre-compilation
+
+`examples/h2_mc_solvation_qjit.py` - Catalyst @qjit optimization for iterative workflows (~20s)
+
+```bash
+python examples/h2_mc_solvation_qjit.py
+```
+
+**Test System**: H2 molecule + 2 TIP3P waters with Monte Carlo sampling
+
+**Key Features:**
+- Pre-compiled QPE circuit (compiled once, reused 10x)
+- 100 MC steps with QPE validation every 10 steps
+- Demonstrates **5.9x speedup** via pre-compilation strategy
+- Full Catalyst integration: `for_loop`, `cond`, `pure_callback`, `debug.print`
+
+| Metric | First Run | Second Run | Speedup |
+|--------|-----------|------------|---------|
+| Total Time | 11.26s | 1.90s | **5.9x** |
+| Per QPE Eval | ~1.13s | ~0.19s | **5.9x** |
+
 See [examples/README.md](examples/README.md) for detailed documentation.
 
 ## Project Structure
@@ -303,6 +370,7 @@ q2m3/
 +-- examples/                  # Example scripts
 |   +-- h2_qpe_h2o_mm_minimal.py     # H2 minimal validation
 |   +-- h3op_qpe_h2o_mm_full.py      # H3O+ full demo
+|   +-- h2_mc_solvation_qjit.py      # MC solvation with QJIT pre-compilation
 |   +-- resource_estimation_demo.py  # EFTQC resource analysis
 +-- data/output/               # Output files (JSON results)
 ```

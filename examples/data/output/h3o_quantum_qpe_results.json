@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-22T08:54:13.012569",
+  "timestamp": "2026-01-22T13:25:57.619434",
   "catalyst_available": true,
   "catalyst_version": "0.14.0",
   "lightning_gpu_available": true,
@@ -32,62 +32,62 @@
     "total_qubits": 12
   },
   "solvation_effect_hf": {
-    "energy_vacuum_hartree": -75.32646419098315,
-    "energy_solvated_hartree": -75.33215481688737,
-    "stabilization_hartree": 0.005690625904222202,
-    "stabilization_kcal_mol": 3.5709212467829317,
+    "energy_vacuum_hartree": -75.32646419098317,
+    "energy_solvated_hartree": -75.33215481688738,
+    "stabilization_hartree": 0.005690625904207991,
+    "stabilization_kcal_mol": 3.570921246774014,
     "mm_embedding_active": true
   },
   "solvation_effect_standard_qpe": {
     "device": "lightning.gpu",
     "energy_vacuum_hartree": -76.5034401939673,
-    "energy_solvated_hartree": -76.50921973590127,
-    "energy_hf_solvated": -75.3321548168874,
-    "stabilization_hartree": 0.005779541933975452,
-    "stabilization_kcal_mol": 3.6267168912637753,
+    "energy_solvated_hartree": -76.50921973590124,
+    "energy_hf_solvated": -75.33215481688737,
+    "stabilization_hartree": 0.00577954193394703,
+    "stabilization_kcal_mol": 3.6267168912459407,
     "mm_embedding_active": true,
     "charges_vacuum": {
-      "O0": 0.8476946302212323,
-      "H1": -0.05377016858279826,
-      "H2": 0.10303776822760013,
-      "H3": 0.10303777013396631
+      "O0": 0.8476946302212314,
+      "H1": -0.05377016858279715,
+      "H2": 0.10303777466233477,
+      "H3": 0.10303776369923179
     },
     "charges_solvated": {
-      "O0": 0.8480638329976768,
-      "H1": 0.31329709465074296,
-      "H2": -0.24623087314728642,
-      "H3": 0.08486994549886961
+      "O0": 0.8480638329976724,
+      "H1": 0.31329709465061606,
+      "H2": -0.24623087314733372,
+      "H3": 0.08486994549904492
     },
-    "execution_time_vacuum_s": 29.11195105400111,
-    "execution_time_solvated_s": 29.56966173800174,
-    "execution_time_total_s": 58.68161279200285
+    "execution_time_vacuum_s": 31.532119163995958,
+    "execution_time_solvated_s": 31.646105997999257,
+    "execution_time_total_s": 63.178225161995215
   },
   "solvation_effect_catalyst_qpe": {
     "pennylane_device": "lightning.gpu",
     "jax_backend": "gpu",
     "effective_backend": "GPU (JAX CUDA)",
     "has_jax_cuda": true,
-    "energy_vacuum_hartree": -76.50344019396728,
+    "energy_vacuum_hartree": -76.50344019396731,
     "energy_solvated_hartree": -76.5092197359012,
     "energy_hf_solvated": -75.33215481688734,
-    "stabilization_hartree": 0.005779541933918608,
-    "stabilization_kcal_mol": 3.6267168912281056,
+    "stabilization_hartree": 0.0057795419338901866,
+    "stabilization_kcal_mol": 3.626716891210271,
     "mm_embedding_active": true,
     "charges_vacuum": {
-      "O0": 0.8476946302212331,
-      "H1": -0.05377016858279693,
-      "H2": 0.10303777218606658,
-      "H3": 0.10303776617549731
+      "O0": 0.8476946302212296,
+      "H1": -0.05377016858279626,
+      "H2": 0.10303776838932699,
+      "H3": 0.10303776997224201
     },
     "charges_solvated": {
-      "O0": 0.848063832997676,
-      "H1": 0.31329709465105526,
-      "H2": -0.2462308731472156,
-      "H3": 0.08486994549848548
+      "O0": 0.8480638329976768,
+      "H1": 0.31329709465080113,
+      "H2": -0.24623087314752046,
+      "H3": 0.08486994549904692
     },
-    "execution_time_vacuum_s": 76.32070493500214,
-    "execution_time_solvated_s": 88.33398188499996,
-    "execution_time_total_s": 164.6546868200021
+    "execution_time_vacuum_s": 78.68064558199694,
+    "execution_time_solvated_s": 89.12002610499621,
+    "execution_time_total_s": 167.80067168699316
   },
   "eftqc_resources": {
     "vacuum": {
@@ -112,7 +112,7 @@
       "n_mm_charges": 24,
       "chemical_accuracy": {
         "target_error_hartree": 0.0016,
-        "hamiltonian_1norm": 63.00193875542308,
+        "hamiltonian_1norm": 63.00193875542307,
         "logical_qubits": 314,
         "toffoli_gates": 142447459,
         "qpe_iterations": 39377,
@@ -120,7 +120,7 @@
       },
       "relaxed_accuracy": {
         "target_error_hartree": 0.016,
-        "hamiltonian_1norm": 63.00193875542307,
+        "hamiltonian_1norm": 63.00193875542308,
         "logical_qubits": 308,
         "toffoli_gates": 14246358,
         "qpe_iterations": 3938,
@@ -128,7 +128,7 @@
       }
     },
     "analysis": {
-      "mm_embedding_1norm_increase_percent": -0.08377633497464464,
+      "mm_embedding_1norm_increase_percent": -0.08377633497466717,
       "error_relaxation_gate_reduction_percent": 89.99903075730163
     }
   }

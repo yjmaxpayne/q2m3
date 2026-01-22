@@ -50,6 +50,7 @@ import time
 import warnings
 from dataclasses import dataclass
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 from catalyst import cond, debug, for_loop, pure_callback, qjit
@@ -81,8 +82,8 @@ COULOMB_CONSTANT = 332.0637  # kcal/mol * Angstrom / e^2
 KCAL_TO_HARTREE = 1.0 / 627.5094
 
 # MC parameters (Python constants)
-N_WATERS = 2
-N_MC_STEPS = 100
+N_WATERS = 10
+N_MC_STEPS = 1000
 TEMPERATURE = 300.0  # Kelvin
 TRANSLATION_STEP = 0.3  # Angstrom
 ROTATION_STEP = 0.2618  # ~15 degrees in radians
@@ -266,6 +267,21 @@ def _compute_total_energy_impl(qm_coords_flat, water_states):
     return np.float64(e_qm + e_mm)
 
 
+def _get_timestamp_impl():
+    """Get current timestamp for timing measurements inside @qjit."""
+    return np.float64(time.perf_counter())
+
+
+def _compute_total_energy_with_timing_impl(qm_coords_flat, water_states):
+    """Combined energy callback with timing for @qjit."""
+    start_time = time.perf_counter()
+    mm_coords_flat, mm_charges = _get_mm_from_water_states_impl(water_states)
+    e_qm = _compute_hf_energy_impl(qm_coords_flat, mm_coords_flat, mm_charges)
+    e_mm = _compute_mm_energy_impl(water_states)
+    elapsed = time.perf_counter() - start_time
+    return np.array([e_qm + e_mm, elapsed], dtype=np.float64)
+
+
 # =============================================================================
 # Pre-compiled QPE Circuit Builder (Outside @qjit)
 # =============================================================================
@@ -410,13 +426,27 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
             rng_seed: Random seed (integer)
 
         Returns:
-            Dictionary with final results including QPE energies
+            Dictionary with final results including QPE energies and timing data
         """
 
-        # Define pure_callbacks INSIDE the qjit function (for PySCF energy only)
+        # Define pure_callbacks INSIDE the qjit function
+        # Use jax.ShapeDtypeStruct for array return types
+        energy_timing_struct = jax.ShapeDtypeStruct((2,), jnp.float64)
+
         @pure_callback
-        def compute_total_energy(qc, ws) -> float:
-            return _compute_total_energy_impl(qc, ws)
+        def compute_total_energy_with_timing(qc, ws) -> energy_timing_struct:  # type: ignore
+            """Compute energy and return [energy, elapsed_time]."""
+            return _compute_total_energy_with_timing_impl(qc, ws)
+
+        @pure_callback
+        def get_timestamp() -> float:
+            """Get current timestamp for QPE timing."""
+            return _get_timestamp_impl()
+
+        @pure_callback
+        def extract_qpe_energy(samples) -> float:
+            """Extract energy from QPE samples (pure callback for Counter)."""
+            return _extract_qpe_energy_from_samples(samples, base_time)
 
         # LCG constants (Numerical Recipes)
         a = 1664525
@@ -426,12 +456,17 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
         # Initialize RNG state
         rng = rng_seed
 
-        # Compute initial energy
-        initial_energy = compute_total_energy(qm_coords_flat, initial_water_states)
+        # Compute initial energy (with timing)
+        init_result = compute_total_energy_with_timing(qm_coords_flat, initial_water_states)
+        initial_energy = init_result[0]
 
-        # Array to store QPE energies (10 evaluations for 100 MC steps)
+        # Arrays to store QPE energies and timing data
         qpe_energies = jnp.zeros(N_QPE_EVALUATIONS)
         qpe_idx = 0
+
+        # Timing arrays: HF times for each MC step, QPE times for each evaluation
+        hf_times = jnp.zeros(N_MC_STEPS)
+        qpe_times = jnp.zeros(N_QPE_EVALUATIONS)
 
         # MC step function
         def mc_step(step_idx, state):
@@ -445,6 +480,8 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
                 energies_sum,
                 qpe_energies,
                 qpe_idx,
+                hf_times,
+                qpe_times,
             ) = state
 
             # Generate random numbers for this step
@@ -475,8 +512,11 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
             new_state = jnp.concatenate([new_position, new_angles])
             new_waters = waters.at[water_idx].set(new_state)
 
-            # Compute new energy
-            new_energy = compute_total_energy(qm_coords_flat, new_waters)
+            # Compute new energy (with timing)
+            energy_result = compute_total_energy_with_timing(qm_coords_flat, new_waters)
+            new_energy = energy_result[0]
+            hf_elapsed = energy_result[1]
+            hf_times = hf_times.at[step_idx].set(hf_elapsed)
 
             # Metropolis criterion
             delta_e = new_energy - energy
@@ -502,37 +542,43 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
 
             @cond(should_run_qpe)
             def run_qpe_conditional():
+                # Record QPE start time
+                qpe_start = get_timestamp()
+
                 # Call pre-compiled QPE circuit directly (NO pure_callback!)
-                # This is the key optimization: circuit is already @qjit compiled
+                # This is key optimization: circuit is already @qjit compiled
                 samples = compiled_qpe_circuit()
 
                 # Extract energy from samples
-                # Note: We use pure_callback here because Counter is not JAX-compatible
-                @pure_callback
-                def extract_energy(s) -> float:
-                    return _extract_qpe_energy_from_samples(s, base_time)
+                qpe_e = extract_qpe_energy(samples)
 
-                qpe_e = extract_energy(samples)
+                # Record QPE end time
+                qpe_end = get_timestamp()
+                qpe_elapsed = qpe_end - qpe_start
 
-                # Print QPE result in real-time
+                # Print QPE result with timing
                 debug.print(
-                    "  [QPE] Step {step}: HF = {hf:.6f} Ha, QPE = {qpe:.6f} Ha",
+                    "  [QPE] Step {step}: HF={hf:.6f} Ha, QPE={qpe:.6f} Ha ({elapsed:.1f} ms)",
                     step=step_idx + 1,
                     hf=energy,
                     qpe=qpe_e,
+                    elapsed=qpe_elapsed * 1000.0,
                 )
-                return qpe_e
+                return jnp.array([qpe_e, qpe_elapsed])
 
             @run_qpe_conditional.otherwise
             def no_qpe():
-                return 0.0  # Placeholder, won't be stored
+                return jnp.array([0.0, 0.0])  # Placeholder, won't be stored
 
             qpe_result = run_qpe_conditional()
 
-            # Store QPE energy if we ran it
+            # Store QPE energy and timing if we ran QPE
             new_qpe_idx = jnp.where(should_run_qpe, qpe_idx + 1, qpe_idx)
             qpe_energies = jnp.where(
-                should_run_qpe, qpe_energies.at[qpe_idx].set(qpe_result), qpe_energies
+                should_run_qpe, qpe_energies.at[qpe_idx].set(qpe_result[0]), qpe_energies
+            )
+            qpe_times = jnp.where(
+                should_run_qpe, qpe_times.at[qpe_idx].set(qpe_result[1]), qpe_times
             )
 
             return (
@@ -545,6 +591,8 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
                 energies_sum,
                 qpe_energies,
                 new_qpe_idx,
+                hf_times,
+                qpe_times,
             )
 
         # Initial state
@@ -559,6 +607,8 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
             0.0,
             qpe_energies,
             qpe_idx,
+            hf_times,
+            qpe_times,
         )
 
         # Run MC loop
@@ -574,6 +624,8 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
             energies_sum,
             qpe_energies,
             final_qpe_idx,
+            hf_times,
+            qpe_times,
         ) = final_state
 
         return {
@@ -587,6 +639,8 @@ def create_mc_solvation_loop(compiled_qpe_circuit, base_time: float):
             "n_accepted": n_accepted,
             "qpe_energies": qpe_energies,
             "n_qpe_evaluations": final_qpe_idx,
+            "hf_times": hf_times,
+            "qpe_times": qpe_times,
         }
 
     return mc_solvation_with_qpe_loop
@@ -620,6 +674,96 @@ def initialize_water_states(
         water_states.append(state)
 
     return np.array(water_states)
+
+
+# =============================================================================
+# Time Statistics Formatting
+# =============================================================================
+
+
+def format_time_statistics(
+    qpe_compile_time: float,
+    mc_loop_time: float,
+    hf_times: np.ndarray,
+    qpe_times: np.ndarray,
+) -> str:
+    """
+    Format time statistics in a detailed table format (方案 B).
+
+    Args:
+        qpe_compile_time: Time to compile QPE circuit (one-time)
+        mc_loop_time: Total MC loop execution time (includes JIT compilation)
+        hf_times: Array of HF energy computation times per MC step
+        qpe_times: Array of QPE evaluation times
+
+    Returns:
+        Formatted string with time statistics table
+    """
+    # Calculate statistics
+    hf_total = np.sum(hf_times)
+    hf_avg = np.mean(hf_times) * 1000  # Convert to ms
+    hf_std = np.std(hf_times) * 1000
+
+    n_qpe = len(qpe_times[qpe_times > 0])  # Count non-zero entries
+    qpe_valid = qpe_times[qpe_times > 0]
+
+    if n_qpe > 0:
+        qpe_total = np.sum(qpe_valid)
+        qpe_avg = np.mean(qpe_valid) * 1000  # Convert to ms
+        qpe_std = np.std(qpe_valid) * 1000
+        qpe_first = qpe_valid[0] * 1000 if len(qpe_valid) > 0 else 0
+        qpe_subsequent = qpe_valid[1:] if len(qpe_valid) > 1 else np.array([])
+        qpe_subsequent_avg = np.mean(qpe_subsequent) * 1000 if len(qpe_subsequent) > 0 else 0
+        qpe_subsequent_std = np.std(qpe_subsequent) * 1000 if len(qpe_subsequent) > 0 else 0
+    else:
+        qpe_total = qpe_avg = qpe_std = qpe_first = qpe_subsequent_avg = qpe_subsequent_std = 0
+
+    # Estimate MC loop JIT compilation overhead (first run - steady state)
+    mc_jit_overhead = mc_loop_time - hf_total - qpe_total
+    if mc_jit_overhead < 0:
+        mc_jit_overhead = 0  # Numerical precision protection
+
+    total_wall_time = qpe_compile_time + mc_loop_time
+
+    n_mc_steps = len(hf_times)
+
+    # Format output - use shorter column widths to fit within 100 chars
+    lines = [
+        "",
+        "  " + "═" * 56,
+        "  Time Statistics",
+        "  " + "═" * 56,
+        "  1. Compilation Phase:",
+        f"     - QPE Circuit @qjit:  {qpe_compile_time:.2f} s (one-time)",
+        f"     - MC Loop @qjit:      ~{mc_jit_overhead:.2f} s (first-run overhead)",
+        "",
+        f"  2. Execution Phase ({n_mc_steps} MC steps, {n_qpe} QPE evals):",
+        "     ┌────────────────┬────────┬────────┬────────┐",
+        "     │ Component      │ Total  │ Avg    │ StdDev │",
+        "     ├────────────────┼────────┼────────┼────────┤",
+        f"     │ HF ({n_mc_steps:4d}x)     │ {hf_total:5.1f}s │ {hf_avg:5.1f}ms│ {hf_std:5.1f}ms│",
+        f"     │ QPE ({n_qpe:4d}x)    │ {qpe_total:5.1f}s │ {qpe_avg:5.1f}ms│ {qpe_std:5.1f}ms│",
+    ]
+
+    if n_qpe > 1:
+        qpe_subsequent_total = np.sum(qpe_subsequent)  # Already in seconds
+        lines.extend(
+            [
+                f"     │  - First eval  │ {qpe_first:5.1f}ms│   -    │   -    │",
+                f"     │  - Subsequent  │ {qpe_subsequent_total:5.2f}s │ {qpe_subsequent_avg:5.1f}ms│"
+                f" {qpe_subsequent_std:5.1f}ms│",
+            ]
+        )
+
+    lines.extend(
+        [
+            "     └────────────────┴────────┴────────┴────────┘",
+            "",
+            f"  Total wall time: {total_wall_time:.2f} s",
+        ]
+    )
+
+    return "\n".join(lines)
 
 
 # =============================================================================
@@ -707,6 +851,12 @@ def run_qjit_mc_solvation(config: SolvationConfig) -> dict:
     print()
     print(f"  MC sampling completed in {run_time:.2f} s")
     print(f"  Acceptance rate: {float(result['acceptance_rate']) * 100:.1f}%")
+
+    # Display time statistics (方案 B: 分层详细式)
+    hf_times = np.array(result["hf_times"])
+    qpe_times = np.array(result["qpe_times"])
+    time_stats = format_time_statistics(compile_time, run_time, hf_times, qpe_times)
+    print(time_stats)
     print()
 
     # Report results
@@ -728,24 +878,7 @@ def run_qjit_mc_solvation(config: SolvationConfig) -> dict:
         print("  [INFO] No lower energy found")
     print()
 
-    print("[Step 5] QPE Energy Summary")
-    print("-" * 70)
-    qpe_energies = np.array(result["qpe_energies"])
-    n_qpe = int(result["n_qpe_evaluations"])
-    print(f"  Total QPE evaluations: {n_qpe}")
-    if n_qpe > 0:
-        valid_qpe = qpe_energies[:n_qpe]
-        print(f"  QPE energy range:      [{valid_qpe.min():.6f}, {valid_qpe.max():.6f}] Ha")
-        print(f"  QPE energy average:    {valid_qpe.mean():.6f} Ha")
-        print(f"  QPE energy std dev:    {valid_qpe.std():.6f} Ha")
-        print()
-        print("  QPE energies at each checkpoint:")
-        for i, e in enumerate(valid_qpe):
-            step = (i + 1) * QPE_INTERVAL
-            print(f"    Step {step:3d}: {e:.6f} Ha")
-    print()
-
-    print("[Step 6] Best Configuration")
+    print("[Step 5] Best Configuration")
     print("-" * 70)
     best_waters = np.array(result["best_waters"])
     for i in range(config.n_waters):
@@ -754,27 +887,6 @@ def run_qjit_mc_solvation(config: SolvationConfig) -> dict:
         print(
             f"  Water {i + 1}: O at [{pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f}], dist = {dist:.2f} A"
         )
-    print()
-
-    print("[Step 7] Performance Summary")
-    print("-" * 70)
-    print(f"  QPE compilation time: {compile_time:.2f} s (one-time cost)")
-    print(f"  Total run time:       {run_time:.2f} s (includes MC loop QJIT compilation)")
-    print(f"  Time per MC step:     {run_time / N_MC_STEPS * 1000:.1f} ms")
-    print(f"  Time per QPE eval:    ~{run_time / N_QPE_EVALUATIONS:.2f} s")
-    print()
-
-    # Second run to show compiled performance
-    print("  Running second call (MC loop already compiled)...")
-    run2_start = time.perf_counter()
-    _ = mc_solvation_with_qpe_loop(water_states_np, qm_coords_flat_np, config.random_seed + 1)
-    run2_time = time.perf_counter() - run2_start
-    print(f"  Second run time:      {run2_time:.2f} s")
-    print(f"  Time per MC step:     {run2_time / N_MC_STEPS * 1000:.1f} ms")
-
-    if run2_time > 0:
-        speedup = run_time / run2_time
-        print(f"  Speedup (vs first run): {speedup:.1f}x")
     print()
     print("=" * 70)
 

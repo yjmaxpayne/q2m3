@@ -113,7 +113,8 @@ def analyze_qpe_solvation_effect(
     timing_vacuum = result_vacuum.get("timing", {})
     timing_solvated = result_solvated.get("timing", {})
 
-    return {
+    # Build result dictionary
+    result = {
         "energy_vacuum": result_vacuum["energy"],
         "energy_solvated": result_solvated["energy"],
         "energy_hf_vacuum": result_vacuum.get("energy_hf", None),
@@ -131,3 +132,18 @@ def analyze_qpe_solvation_effect(
         "timing_vacuum": timing_vacuum,
         "timing_solvated": timing_solvated,
     }
+
+    # For Catalyst mode: aggregate precompile and execution times separately
+    # This enables clear separation of compilation overhead vs execution speedup
+    if use_catalyst:
+        # Circuit build time = JIT compilation time (Catalyst overhead)
+        precompile_vacuum = timing_vacuum.get("qpe_circuit_build_s", 0.0)
+        precompile_solvated = timing_solvated.get("qpe_circuit_build_s", 0.0)
+        result["total_precompile_s"] = precompile_vacuum + precompile_solvated
+
+        # Circuit exec time = actual quantum execution (Catalyst benefit)
+        exec_vacuum = timing_vacuum.get("qpe_circuit_exec_s", 0.0)
+        exec_solvated = timing_solvated.get("qpe_circuit_exec_s", 0.0)
+        result["total_execution_s"] = exec_vacuum + exec_solvated
+
+    return result

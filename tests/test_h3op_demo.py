@@ -595,6 +595,106 @@ class TestAnalysisFunctions:
 # =============================================================================
 
 
+class TestDualCircuitPrecompilation:
+    """Test Dual-Circuit precompilation feature for Catalyst mode."""
+
+    def test_analyze_qpe_returns_timing_breakdown_catalyst_mode(self):
+        """Catalyst mode should return precompile and execution timing breakdown."""
+        from unittest.mock import MagicMock, patch
+
+        from examples.h3op_demo.analysis import analyze_qpe_solvation_effect
+        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry, get_qpe_config
+
+        h3o_atoms = create_h3o_geometry()
+        qpe_config = get_qpe_config()
+
+        # Mock QuantumQMMM to avoid actual QPE computation
+        mock_result = {
+            "energy": -75.3,
+            "energy_hf": -75.2,
+            "atomic_charges": {"O0": -0.5, "H1": 0.5, "H2": 0.5, "H3": 0.5},
+            "convergence": {"converged": True, "method": "QPE"},
+            "rdm_source": "quantum",
+            "timing": {
+                "qpe_circuit_build_s": 60.0,  # Compilation time
+                "qpe_circuit_exec_s": 0.5,  # Execution time
+            },
+        }
+
+        with patch("examples.h3op_demo.analysis.QuantumQMMM") as mock_class:
+            mock_qmmm = MagicMock()
+            mock_qmmm.compute_ground_state.return_value = mock_result
+            mock_class.return_value = mock_qmmm
+
+            result = analyze_qpe_solvation_effect(
+                h3o_atoms, mm_waters=8, qpe_config=qpe_config, use_catalyst=True
+            )
+
+        # Should have timing breakdown for precompilation vs execution
+        assert "timing_vacuum" in result
+        assert "timing_solvated" in result
+
+        # Timing details should include circuit build and exec times
+        assert "qpe_circuit_build_s" in result["timing_vacuum"]
+        assert "qpe_circuit_exec_s" in result["timing_vacuum"]
+
+    def test_analyze_qpe_timing_aggregation_catalyst_mode(self):
+        """Catalyst mode should aggregate precompile and exec times separately."""
+        from unittest.mock import MagicMock, patch
+
+        from examples.h3op_demo.analysis import analyze_qpe_solvation_effect
+        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry, get_qpe_config
+
+        h3o_atoms = create_h3o_geometry()
+        qpe_config = get_qpe_config()
+
+        # Mock with realistic Catalyst timing
+        mock_result_vacuum = {
+            "energy": -75.0,
+            "energy_hf": -75.0,
+            "atomic_charges": {"O0": -0.5, "H1": 0.5, "H2": 0.5, "H3": 0.5},
+            "convergence": {"converged": True, "method": "QPE"},
+            "timing": {
+                "qpe_circuit_build_s": 55.0,
+                "qpe_circuit_exec_s": 0.5,
+            },
+        }
+        mock_result_solvated = {
+            "energy": -75.1,
+            "energy_hf": -75.1,
+            "atomic_charges": {"O0": -0.5, "H1": 0.5, "H2": 0.5, "H3": 0.5},
+            "convergence": {"converged": True, "method": "QPE"},
+            "timing": {
+                "qpe_circuit_build_s": 58.0,
+                "qpe_circuit_exec_s": 0.6,
+            },
+        }
+
+        with patch("examples.h3op_demo.analysis.QuantumQMMM") as mock_class:
+            mock_qmmm = MagicMock()
+            mock_qmmm.compute_ground_state.side_effect = [
+                mock_result_vacuum,
+                mock_result_solvated,
+            ]
+            mock_class.return_value = mock_qmmm
+
+            result = analyze_qpe_solvation_effect(
+                h3o_atoms, mm_waters=8, qpe_config=qpe_config, use_catalyst=True
+            )
+
+        # Should have aggregated timing
+        assert "total_precompile_s" in result
+        assert "total_execution_s" in result
+
+        # Precompile should be sum of circuit build times
+        expected_precompile = 55.0 + 58.0
+        assert result["total_precompile_s"] == pytest.approx(expected_precompile, rel=0.1)
+
+        # Execution should be sum of circuit exec times
+        expected_exec = 0.5 + 0.6
+        assert result["total_execution_s"] == pytest.approx(expected_exec, rel=0.1)
+
+
 class TestProfilingReport:
     """Test print_profiling_report function."""
 

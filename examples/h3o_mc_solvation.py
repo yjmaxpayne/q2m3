@@ -8,10 +8,11 @@ Hydronium ion (H3O+) solvation simulation using the modular mc_solvation framewo
 
 Key differences from H2:
     - Charged system (+1)
-    - Larger active space (4e, 4o)
+    - Minimal (2e, 2o) active space configured for Catalyst compilation speed
     - Stronger solute-solvent interactions (ion-dipole)
-    - More qubits required (10 vs 4)
 
+Note: Physical H3O+ warrants a larger active space (e.g., 4e, 4o = 10 qubits),
+but this example uses (2e, 2o) = 4 qubits for faster compilation benchmarking.
 Uses energy-shifted QPE for high-precision measurements within the
 limited ancilla qubit range.
 """
@@ -50,8 +51,8 @@ H3OP_MOLECULE = MoleculeConfig(
         [-0.8286, -0.4786, -0.4692],
     ],
     charge=1,  # Cation
-    active_electrons=2,  # HOMO-LUMO active space (matches h3op_mc_solvation_qjit.py)
-    active_orbitals=2,  # 4 system qubits for faster compilation
+    active_electrons=2,  # Minimal HOMO-LUMO active space for faster Catalyst compilation
+    active_orbitals=2,  # 4 system qubits (Jordan-Wigner: 2 orbitals × 2 spin = 4 qubits)
     basis="sto-3g",
 )
 

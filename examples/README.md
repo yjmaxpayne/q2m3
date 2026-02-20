@@ -1,37 +1,492 @@
 # q2m3 Examples
 
-> **q2m3 MVP** - Hybrid Quantum-Classical QM/MM for Early Fault-Tolerant Quantum Computers (EFTQC)
+> Hybrid Quantum-Classical QM/MM for Early Fault-Tolerant Quantum Computers (EFTQC)
 
-## Overview
+---
 
-This directory contains examples demonstrating the q2m3 workflow for molecular ground state energy estimation using Quantum Phase Estimation (QPE), with GPU acceleration and optional PennyLane Catalyst JIT compilation support.
+## Table of Contents
 
-**Key Capabilities Demonstrated:**
+1. [Project Overview](#1-project-overview)
+2. [Motivation](#2-motivation)
+3. [Development Journey](#3-development-journey)
+4. [Phase 1-2: H2 QPE Validation](#phase-1-2-h2-qpe-validation)
+5. [Phase 3: H3O+ Full Demo](#phase-3-h3o-full-demo)
+6. [Phase 4-5: MC Solvation Sampling](#phase-4-5-mc-solvation-sampling)
+7. [Phase 6: HF-Level MM Embedding](#phase-6-hf-level-mm-embedding)
+8. [The Missing Physics](#8-the-missing-physics)
+9. [Path Forward](#9-path-forward)
+
+---
+
+## 1. Project Overview
+
+This directory contains examples demonstrating the q2m3 development journey from simple vacuum QPE to the current MC solvation workflow with Catalyst integration.
+
+**Core Capabilities:**
 - PySCF to PennyLane molecular Hamiltonian conversion
 - Standard QPE circuit with Trotter time evolution
 - GPU acceleration via `lightning.gpu` device
 - QM/MM system setup with TIP3P water solvation
 - Solvation effect analysis (vacuum vs explicit MM embedding)
-- EFTQC resource estimation (Toffoli gates, logical qubits, 1-norm analysis)
-- Catalyst `@qjit` compilation for JIT optimization
+- EFTQC resource estimation (Toffoli gates, logical qubits, 1-norm)
+- Catalyst `@qjit` compilation for iterative workflows
 - Quantum 1-RDM measurement for Mulliken population analysis
-- Circuit visualization via `qml.draw(decimals=None, level=0)`
+- Circuit visualization via `qml.draw()`
 
-## Quick Start
+**Quick Start:**
 
 ```bash
 # Activate virtual environment
 source .venv/bin/activate
 
-# Install GPU support (optional but recommended)
-uv pip install -e ".[gpu]"
-
-# Run minimal example (H2 + 2 TIP3P waters, fast validation)
-python examples/h2_qpe_h2o_mm_minimal.py
-
-# Run full demo (H3O+ + 8 TIP3P waters, comprehensive analysis)
-python examples/h3op_qpe_h2o_mm_full.py
+# Run examples in development order
+python examples/h2_qpe_validation.py       # Phase 1-2
+python examples/h3o_qpe_full_demo.py      # Phase 3
+python examples/h2_mc_solvation.py        # Phase 4-5
+python examples/h3o_mc_solvation.py       # Phase 6
 ```
+
+---
+
+## 2. Motivation
+
+### Scientific Motivation: Why Quantum QM/MM?
+
+In the electrostatic embedding QM/MM formalism (Warshel & Levitt, 1976), the effective Hamiltonian is:
+
+$$H_{\mathrm{eff}} = H_{\mathrm{QM}} + H_{\mathrm{QM-MM}}(R_{\mathrm{MM}}) + H_{\mathrm{MM}}$$
+
+The QM-MM coupling term $H_{\mathrm{QM-MM}}(R_{\mathrm{MM}})$ depends explicitly on the MM coordinates. For molecular solvation, this means:
+
+- Each solvent configuration (different water positions) creates a **different Hamiltonian**
+- The correlation energy $E_{\mathrm{corr}}$ varies with solvent geometry
+- Classical methods (HF, DFT) cannot capture configuration-specific correlation effects
+
+**The Scientific Question**: Can quantum computers efficiently estimate correlation energies for each solvent configuration, enabling accurate solvation free energy calculations?
+
+### Technical Motivation: Why This Stack?
+
+| Component | Rationale |
+|-----------|-----------|
+| **PySCF** | Mature classical QM; provides Hartree-Fock reference and molecular integrals |
+| **PennyLane** | Flexible quantum circuit library; supports multiple backends |
+| **Catalyst (@qjit)** | JIT compilation for iterative workflows (MC sampling, optimization) |
+| **Lightning GPU** | High-performance simulation; essential for QPE feasibility |
+
+### Project Motivation: What Are We Validating?
+
+q2m3 is a proof-of-concept (POC) targeting **Early Fault-Tolerant Quantum Computers (EFTQC)**. Our primary validation goals:
+
+1. **Algorithm correctness**: Can QPE reproduce HF energies and capture correlation?
+2. **MM embedding**: Does explicit solvent affect QPE energies consistently with HF?
+3. **Scalability**: What are the resource requirements for realistic molecular systems?
+4. **Compiler performance**: Can Catalyst enable practical iterative quantum-classical workflows?
+
+---
+
+## 3. Development Journey
+
+```
+Phase 1: Vacuum H2 QPE
+    ↓
+Phase 2: H2 + TIP3P MM Embedding
+    ↓
+Phase 3: H3O+ (More Complex System)
+    ↓
+Phase 4: MC Sampling (Dynamic Environment)
+    ↓
+Phase 5: Catalyst Integration → Discovered Bottleneck
+    ↓
+Phase 6: Pre-compilation Workaround (Current State)
+```
+
+### Phase 1: Vacuum H2 QPE (Algorithm Validation)
+
+**Goal**: Validate that QPE can reproduce Hartree-Fock energies and capture correlation.
+
+**Key Results**:
+- QPE-HF gap: ~0.017 Ha (10.9 kcal/mol of correlation energy)
+- Standard QPE achieves chemical accuracy for small molecules
+
+**File**: `h2_qpe_validation.py`
+
+### Phase 2: H2 + TIP3P MM Embedding (MM Validation)
+
+**Goal**: Verify that MM embedding is correctly incorporated into the quantum Hamiltonian.
+
+**Key Results**:
+- PySCF HF stabilization: -0.054 kcal/mol (2 waters)
+- QPE stabilization: -0.054 kcal/mol (consistent!)
+- PL↔PySCF agreement: < 0.001 kcal/mol
+
+**File**: `h2_qpe_validation.py`
+
+### Phase 3: H3O+ (More Complex System)
+
+**Goal**: Scale to a more complex cation (hydronium ion) with explicit solvation shell.
+
+**Key Results**:
+- 12 qubits (8 system + 4 estimation)
+- Solvation stabilization: 3.63 kcal/mol (8 TIP3P waters)
+- Mulliken charge redistribution captured from quantum RDM
+
+**File**: `h3o_qpe_full_demo.py`
+
+### Phase 4: MC Sampling (Dynamic Environment)
+
+**Goal**: Move from static solvent to dynamic MC sampling where each step changes the Hamiltonian.
+
+**Key Challenge Identified**: Every MC step (translation ±0.3Å, rotation ±15°) changes all one-electron integral coefficients simultaneously. For H3O+ (4e,4o), this affects **1086 Hamiltonian terms**.
+
+**File**: `h2_mc_solvation.py`
+
+### Phase 5: Catalyst Integration (Bottleneck Discovery)
+
+**Goal**: Use Catalyst @qjit to accelerate the MC loop.
+
+**Critical Finding**: Catalyst/XLA treats Hamiltonian coefficients as **compile-time constants**. Even with identical operator structure, coefficient changes trigger full recompilation:
+
+| Stage | Standard | Catalyst | Ratio |
+|-------|----------|----------|-------|
+| Circuit Build | 0.009s | 67.2s | ~7467x slower |
+| Circuit Exec | 23.3s | 0.65s | 36x faster |
+| **Total** | 23.3s | 67.8s | **2.9x slower** |
+
+**Root Cause**: XLA embeds Hamiltonian coefficients in the MLIR graph at compile time. New coefficient values = structurally new input = full recompilation (~67s per MC step).
+
+**File**: `h3o_qpe_full_demo.py`
+
+### Phase 6: Pre-compilation Workaround (Current Solution)
+
+**Goal**: Avoid per-step recompilation by using pre-compiled vacuum QPE + classical MM correction.
+
+**Energy Decomposition**:
+$$E_{\mathrm{total}} = E_{\mathrm{QPE}}(H_{\mathrm{vacuum}}) + \Delta E_{\mathrm{MM}}(\mathrm{HF})$$
+
+**Performance**:
+- QPE compilation: 10.55s (one-time)
+- Subsequent QPE calls: ~124 ms (vs 65s with recompilation)
+- Total (100 MC steps, 10 QPE evals): 38s
+
+**Trade-off**: This approximation ignores correlation-polarization coupling ($\delta_{\mathrm{corr-pol}}$), which is ~0.6-3 kcal/mol for H3O+ (comparable to the solvation energy itself).
+
+**File**: `h3o_mc_solvation.py`
+
+---
+
+## Phase 1-2: H2 QPE Validation
+
+`h2_qpe_validation.py` provides minimal validation of QPE + explicit MM solvation.
+
+```bash
+python examples/h2_qpe_validation.py
+```
+
+### Test System: H2 (Hydrogen Molecule)
+
+```
+H ─────── H          Total charge: 0
+
+Geometry (Angstrom):
+  H1: ( 0.000,  0.000,  0.000)
+  H2: ( 0.000,  0.000,  0.740)
+```
+
+### Quantum Resources
+
+| Parameter | Value |
+|-----------|-------|
+| Active Space | 2e, 2o |
+| System Qubits | 4 |
+| Estimation Qubits | 4 |
+| Total Qubits | 8 |
+| Trotter Steps | 20 |
+
+### Results
+
+| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization |
+|--------|-------------|---------------|---------------|
+| PySCF HF | -1.116759 | -1.116674 | -0.054 kcal/mol |
+| QPE | -1.134209 | -1.134122 | -0.054 kcal/mol |
+
+**Catalyst Performance**: For small systems (H2, 8 qubits), Catalyst shows nearly identical performance (1.01x slower).
+
+---
+
+## Phase 3: H3O+ Full Demo
+
+`h3o_qpe_full_demo.py` demonstrates the complete workflow with comprehensive solvation analysis.
+
+```bash
+python examples/h3o_qpe_full_demo.py
+```
+
+### Test System: H3O+ (Hydronium Ion)
+
+```
+        H (+1.0)
+         \
+          O (-2.0) --- H (+1.0)      Total charge: +1
+         /
+        H (+1.0)
+
+Geometry (Angstrom):
+  O:  ( 0.000,  0.000,  0.000)
+  H:  ( 0.960,  0.000,  0.000)
+  H:  (-0.480,  0.831,  0.000)
+  H:  (-0.480, -0.831,  0.000)
+```
+
+### Quantum Resources
+
+| Parameter | Value |
+|-----------|-------|
+| Active Space | 4e, 4o |
+| System Qubits | 8 |
+| Estimation Qubits | 4 |
+| Total Qubits | 12 |
+| Qubit Mapping | Jordan-Wigner |
+| Trotter Steps | 10 |
+
+### Solvation Effect
+
+| Method | Stabilization (kcal/mol) | Δ vs HF |
+|--------|-------------------------|---------|
+| PySCF HF | 3.57 | --- |
+| Standard QPE | 3.63 | +0.06 |
+| Catalyst QPE | 3.63 | +0.06 |
+
+### EFTQC Resources
+
+| Configuration | Toffoli Gates | Qubits |
+|--------------|---------------|--------|
+| Vacuum (chemical acc.) | 142,564,912 | 314 |
+| Vacuum (relaxed 10×) | 14,257,873 | 308 |
+| Solvated (chemical acc.) | 142,447,459 | 314 |
+
+---
+
+## Phase 4-5: MC Solvation Sampling
+
+`h2_mc_solvation.py` demonstrates MC sampling with Catalyst @qjit and pre-compiled QPE.
+
+```bash
+python examples/h2_mc_solvation.py
+```
+
+### System
+
+- **QM Region**: H2 molecule (4 qubits)
+- **MM Region**: 10 TIP3P water molecules
+- **Workflow**: 100 MC steps with QPE validation every 10 steps
+
+### Architecture
+
+```
+1. Pre-compilation Phase (one-time)
+   └─ Build vacuum Hamiltonian → @qjit compile QPE circuit → Ready (6.15s)
+
+2. MC Sampling Loop (100 steps)
+   ├─ Propose move (translation + rotation)
+   ├─ pure_callback (PySCF HF energy)
+   ├─ Metropolis acceptance
+   └─ catalyst.cond (QPE every 10 steps)
+
+3. QPE Validation
+   ├─ Pre-compiled circuit (via closure)
+   ├─ Extract energy (phase analysis)
+   └─ MM correction (pure_callback)
+```
+
+### Performance Results
+
+| Metric | Value |
+|--------|-------|
+| QPE Compilation | 6.15s (one-time) |
+| MC Loop Compilation | ~8.61s |
+| Total Wall Time | 17.99s |
+| QPE Evaluations | 10 (every 10 steps) |
+| Acceptance Rate | 38% |
+| QPE Energy per Call | ~30 ms |
+
+### Energy Formula
+
+$$E_{\mathrm{total}} = E_{\mathrm{QPE}}(\mathrm{vacuum}) + \Delta E_{\mathrm{MM}}(\mathrm{HF})$$
+
+---
+
+## Phase 6: HF-Level MM Embedding
+
+`h3o_mc_solvation.py` extends MC sampling to H3O+ with HF-level MM correction.
+
+```bash
+python examples/h3o_mc_solvation.py
+```
+
+### System
+
+- **QM Region**: H3O+ (hydronium ion, 4 atoms, +1 charge)
+- **MM Region**: 10 TIP3P water molecules
+- **Active Space**: 2 electrons, 2 orbitals (reduced for efficiency)
+
+### Performance Results
+
+| Metric | Value |
+|--------|-------|
+| QPE Compilation | 10.55s (one-time) |
+| Total Wall Time | 38.07s |
+| Acceptance Rate | 32% |
+| QPE Energy per Call (after first) | ~124 ms |
+
+### Comparison: vacuum_correction vs mm_embedded
+
+| Aspect | vacuum_correction | mm_embedded |
+|--------|------------------|-------------|
+| QPE Circuit | Pre-compiled once | Re-built per config |
+| Compilation | ~10.5s (one-time) | ~10s × N configs |
+| Energy Accuracy | Approximate | Rigorous |
+| Correlation-Polarization | Ignored | Included |
+| Best For | MC Sampling | Final Validation |
+
+---
+
+## 8. The Missing Physics
+
+### The Approximation: $\delta_{\mathrm{corr-pol}}$
+
+The current workaround uses:
+
+$$E_{\mathrm{QPE}}(H_{\mathrm{eff}}) \approx E_{\mathrm{QPE}}(H_{\mathrm{vac}}) + \Delta E_{\mathrm{HF}}$$
+
+This assumes the coupling term vanishes:
+$$\delta_{\mathrm{corr-pol}} \equiv E_{\mathrm{corr}}(H_{\mathrm{eff}}) - E_{\mathrm{corr}}(H_{\mathrm{vac}}) = 0$$
+
+### Literature Evidence: Why $\delta_{\mathrm{corr-pol}} \neq 0$
+
+| Paper | Finding |
+|-------|---------|
+| Yoshida et al. (JCTC 2024) | Different solvent snapshots yield different QPE/VQE energies; HF alone cannot recover configuration-specific correlation |
+| Weisburn et al. (arXiv:2409.06813) | Correlation energy variation ~100 kcal/mol across configurations; not predictable from HF |
+| Reinholdt et al. (JPCA 2025) | Static HF environment underestimates excitation energies; PE-UCCSD recovers accuracy |
+
+### Quantifying the Error
+
+- $\delta_{\mathrm{corr-pol}} \sim 10$-$30\%$ of $E_{\mathrm{corr}}$
+- For H3O+: **~0.6-3 kcal/mol**
+- Comparable to total solvation energy (3.57 kcal/mol)
+
+### Current Status
+
+| Quantity | Computed? | Value |
+|----------|-----------|-------|
+| HF solvation energy (H3O+) | ✓ | 3.57 kcal/mol |
+| QPE solvation energy (H3O+) | ✓ | 3.63 kcal/mol |
+| QPE-HF gap (vacuum, H2) | ✓ | 10.9 kcal/mol |
+| QPE-HF gap (vacuum, H3O+) | ✓ | ~1.18 Ha† |
+| $\delta_{\mathrm{corr-pol}}$ per config | ✗ | ~0.6-3 kcal/mol (est.) |
+| Config ranking error | ✗ | Unknown |
+
+†H3O+ QPE-HF gap is dominated by 4-bit phase estimation systematic error; not representative of true correlation energy. The δ_corr-pol estimate uses H2's correlation energy as a proxy.
+
+### Catalyst Compilation Bottleneck
+
+The root cause of the approximation is **not** a scientific limitation but a **compiler engineering challenge**:
+
+**Root Cause**: Catalyst/XLA treats Hamiltonian coefficients as compile-time constants. Changing coefficients triggers full recompilation.
+
+```python
+# Scientifically complete (blocked):
+for step in mc_steps:
+    H_new = build_hamiltonian(qm_atoms, mm_charges_new)
+    # Triggers ~67s recompilation!
+    E_qpe = QPE(H_new)
+```
+
+**Fine-grained timing** (H3O+, 12 qubits, 1086 Hamiltonian terms):
+
+| Stage | Standard | Catalyst | Ratio |
+|-------|----------|----------|-------|
+| Hamiltonian build | 1.24s | 1.17s | 1.06x |
+| Circuit compilation | 0.009s | 67.2s | ~7467x |
+| Circuit execution | 23.3s | 0.65s | 36x |
+| **Total** | 23.5s | 68.0s | **2.9x** |
+
+### static_argnums Test Results
+
+| Test Case | Result |
+|-----------|--------|
+| Simplified H (4 terms) | Cache hit: 606× speedup |
+| Real H3O+ (1086 terms, same structure) | Full recompilation: no speedup |
+
+`static_argnums` addresses recompilation from type/shape changes. Our problem is **coefficient value** changes — a different class, not covered by the existing mechanism.
+
+---
+
+## 9. Path Forward
+
+### Solution Paths
+
+| Path | Status | Completeness |
+|------|--------|--------------|
+| Coefficient parameterization in `TrotterProduct` | Open; MLIR layer change needed | Full |
+| `ParametrizedEvolution` + lightning | Compile error in Catalyst 0.14.0 | Full |
+| QA-VMC (Li 2025) | Available now | Partial |
+| HSB-QSCI (Sugisaki 2025) | Per-step recompile in Catalyst | Partial |
+
+### Target Architecture
+
+```python
+@qjit
+def mc_loop(solvents, op_structure):
+    @for_loop(0, n_steps, 1)
+    def step(i, state):
+        h_coeffs = pure_callback(
+            compute_mm_integrals, solvents)
+        H_dyn = build_H(op_structure, h_coeffs)
+        E = qpe_circuit(H_dyn)  # no recompile
+        return metropolis_update(state, E)
+    return for_loop(0, n_steps, 1)(step)(init)
+```
+
+### Open Questions for Xanadu/PennyLane Team
+
+1. **Coefficient parameterization**: Is passing Hamiltonian coefficients as runtime arguments on the Catalyst roadmap?
+
+2. **ParametrizedEvolution + Catalyst**: Is `qml.evolve(H, params)` with lightning devices planned for a future Catalyst release?
+
+3. **Alternative patterns**: Are there patterns beyond `static_argnums` that handle per-step coefficient value changes without full recompilation?
+
+4. **Recommended strategy**: For workflows where MM charges update at every MC step, what is the currently recommended path?
+
+### Roadmap
+
+| Milestone | Phase | Status |
+|-----------|-------|--------|
+| Real QPE circuit (H2) | 1 | ✓ Complete |
+| H2 + TIP3P solvation benchmark | 2 | ✓ Complete |
+| QJIT performance analysis | 1-2 | ✓ Complete |
+| H3O+ QPE demo | 3 | ✓ Complete |
+| H3O+ MC solvation demo | 6 | ✓ Complete |
+| NH3 / formamide examples | Future | ☐ Not started |
+| PennyLane blog post | Future | ☐ Not started |
+| JCTC paper | Future | ☐ Not started |
+
+### System Expansion
+
+| System | Active Space | System Qubits | Hamiltonian Terms |
+|--------|--------------|---------------|------------------|
+| H2 | (2e,2o) | 4 | ~15 |
+| H3O+ | (4e,4o) | 8 | 1086 |
+| NH3 | (8e,8o) | 16 | ~5k |
+| Formamide | (12e,10o) | 20 | ~15k |
+
+### Publication Timeline
+
+- arXiv pre-print: ~May 2026
+- JCTC submission: ~June 2026
+- PennyLane demo: concurrent with arXiv
+
+---
 
 ## Installation
 
@@ -51,706 +506,12 @@ uv pip install -e ".[gpu,catalyst]"
 
 ## Device Selection
 
-The examples support flexible device selection via the `device_type` parameter:
-
 | Device Type | Backend | Performance | Use Case |
 |-------------|---------|-------------|----------|
 | `auto` | Best available | Optimal | **Recommended** |
-| `lightning.gpu` | NVIDIA GPU | Fastest | Large circuits, GPU available, Catalyst compatible |
+| `lightning.gpu` | NVIDIA GPU | Fastest | Large circuits, GPU available |
 | `lightning.qubit` | CPU (optimized) | Fast | CPU-only, Catalyst JIT |
 | `default.qubit` | CPU (standard) | Baseline | Development, debugging |
-
-**Note:** Catalyst `@qjit` now supports `lightning.gpu` as of PennyLane Lightning 0.44.0 (Issue #2 fixed).
-
----
-
-## Example 1: H2 + MM Water (Minimal Validation)
-
-`h2_qpe_h2o_mm_minimal.py` provides a minimal validation of QPE + explicit MM solvation using H2 molecule with 2 TIP3P water molecules.
-
-```bash
-python examples/h2_qpe_h2o_mm_minimal.py
-```
-
-### Test System: H2 (Hydrogen Molecule)
-
-```
-H ─────── H          Total charge: 0
-
-Geometry (Angstrom):
-  H1: ( 0.000,  0.000,  0.000)
-  H2: ( 0.000,  0.000,  0.740)
-```
-
-### Quantum Resource Configuration (H2)
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| **Active Space** | 2e, 2o | 2 electrons in 2 spatial orbitals |
-| **System Qubits** | 4 | 2 orbitals x 2 spin = 4 spin orbitals |
-| **Estimation Qubits** | 4 | Precision bits for phase readout |
-| **Total Qubits** | 8 | System + estimation registers |
-| **Trotter Steps** | 20 | Time evolution accuracy |
-| **Shots** | 100 | Measurement statistics |
-
-### Validation Strategy
-
-1. Compare vacuum HF vs vacuum QPE (verify QPE correctness)
-2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
-3. Compare stabilization effects (HF vs QPE should agree on sign/magnitude)
-
-### Results (lightning.gpu, 8 qubits, 20 Trotter steps)
-
-| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization (kcal/mol) |
-|--------|-------------|---------------|--------------------------|
-| PySCF HF | -1.116759 | -1.116674 | -0.054 |
-| QPE | -1.134209 | -1.134122 | -0.054 |
-
-All validation checks passed: PL↔PySCF agreement < 0.001 kcal/mol, QPE↔HF diff ~0.017 Ha, stabilization sign consistent.
-
----
-
-## Example 2: H3O+ QPE Full Demo
-
-`h3op_qpe_h2o_mm_full.py` demonstrates the complete q2m3 workflow with comprehensive solvation effect analysis and Catalyst JIT comparison.
-
-```bash
-python examples/h3op_qpe_h2o_mm_full.py
-```
-
-### Pipeline
-
-```mermaid
-flowchart LR
-    subgraph Input["1. Input"]
-        A["H3O+ Geometry<br/>(4 atoms, +1 charge)"]
-        B["8 TIP3P Waters<br/>(MM solvation)"]
-    end
-
-    subgraph Classical["2. Classical (PySCF)"]
-        C["RHF/STO-3G<br/>E_HF = -75.33 Ha"]
-        D["Active Space<br/>(4e, 4o)"]
-    end
-
-    subgraph Quantum["3. Quantum (PennyLane)"]
-        E["Molecular<br/>Hamiltonian"]
-        F["QPE Circuit<br/>12 qubits"]
-    end
-
-    subgraph Output["4. Output"]
-        G["Ground State Energy"]
-        H["Mulliken Charges"]
-    end
-
-    A --> C
-    B --> C
-    C --> D --> E --> F --> G
-    F --> H
-
-    style F fill:#e1f5fe
-    style G fill:#c8e6c9
-```
-
-### Test System: H3O+ (Hydronium Ion)
-
-```
-        H (+1.0)
-         \
-          O (-2.0) --- H (+1.0)      Total charge: +1
-         /
-        H (+1.0)
-
-Geometry (Angstrom):
-  O:  ( 0.000,  0.000,  0.000)
-  H:  ( 0.960,  0.000,  0.000)
-  H:  (-0.480,  0.831,  0.000)
-  H:  (-0.480, -0.831,  0.000)
-```
-
-### Quantum Resource Configuration (H3O+)
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| **Active Space** | 4e, 4o | 4 electrons in 4 spatial orbitals |
-| **System Qubits** | 8 | 4 orbitals x 2 spin = 8 spin orbitals |
-| **Estimation Qubits** | 4 | Precision bits for phase readout |
-| **Total Qubits** | **12** | System + estimation registers |
-| **Qubit Mapping** | Jordan-Wigner | Fermion-to-qubit encoding |
-| **Trotter Steps** | 10 | Time evolution accuracy |
-| **Base Time** | auto | Auto-computed to avoid phase overflow |
-| **Shots** | 100 | Measurement statistics |
-
-### Demo Workflow (8 Steps)
-
-| Step | Description | Output |
-|------|-------------|--------|
-| **Step 1** | System Configuration | QM/MM setup, quantum resources, device selection |
-| **Step 1.5** | Circuit Visualization | QPE + RDM circuit diagrams via `qml.draw()` |
-| **Step 2** | EFTQC Resource Estimation | Toffoli gates, logical qubits, 1-norm analysis |
-| **Step 3** | Classical HF Solvation Analysis | Vacuum vs solvated HF energies, MM embedding validation |
-| **Step 4** | Standard QPE Solvation Analysis | Vacuum vs solvated QPE energies, charge redistribution |
-| **Step 5** | Catalyst QPE Solvation Analysis | Same as Step 4 with `@qjit` compilation |
-| **Step 6** | Results Comparison | Time comparison, energy consistency |
-| **Step 7** | Save Results | JSON output to `data/output/` |
-
-### Sample Output (GPU Environment)
-
-```
-================================================================================
-                    H3O+ Quantum Phase Estimation (QPE) Demo
-                    q2m3 MVP - Catalyst Technical Validation
-================================================================================
-Timestamp: 2025-11-27 08:49:37
-Catalyst Available: Yes (v0.14.0)
-Lightning GPU Available: Yes
-
-
-[Step 1] System Configuration
---------------------------------------------------------------------------------
-QM Region: H3O+ (4 atoms, total charge +1)
-MM Region: 8 TIP3P water molecules
-
-Quantum Resource Requirements:
-  Active Space: 4 electrons, 4 orbitals
-  System Qubits: 8 (spin orbitals)
-  Estimation Qubits: 4 (precision bits)
-  Total Qubits: 12
-
-QPE Circuit Parameters:
-  Base Evolution Time: auto
-  Trotter Steps: 10
-  Measurement Shots: 100
-  Qubit Mapping: jordan_wigner
-
-Device Selection: auto -> lightning.gpu (GPU detected)
-
-[Step 1.5] Circuit Visualization (PennyLane)
---------------------------------------------------------------------------------
-Generating QPE + RDM circuit diagrams...
-
-QPE Circuit (Standard Phase Estimation):
-------------------------------------------------------------
-PennyLane Circuit (decimals=None, level=0):
- 0: ─╭|Ψ⟩─╭TrotterProduct†─╭TrotterProduct†───────┤
- 1: ─├|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
-...
- 8: ──H───╰●───────────────│────────────────╭QFT†─┤ ╭Sample
- 9: ──H────────────────────╰●───────────────├QFT†─┤ ├Sample
-
-RDM Measurement Circuit (Pauli Expectation Values):
-------------------------------------------------------------
-PennyLane Circuit (decimals=None, level=0):
-0: ─╭|Ψ⟩─╭TrotterProduct─┤  <Z>
-1: ─├|Ψ⟩─├TrotterProduct─┤  <Z>
-...
-
-[Step 2] EFTQC Resource Estimation (Vacuum vs Solvated)
---------------------------------------------------------------------------------
-Resource Comparison (H3O+ with 8 TIP3P waters, 24 MM charges)
-
-  ----------------------------------------------------------------------
-  Configuration                 1-norm (Ha)     Toffoli Gates      Qubits
-  ----------------------------------------------------------------------
-  Vacuum (chemical)             34.21           148,284,000        314
-  Vacuum (relaxed)              34.21           14,828,400         314
-  Solvated (chemical)           34.66           150,234,000        314
-  Solvated (relaxed)            34.66           15,023,400         314
-  ----------------------------------------------------------------------
-
-  Analysis:
-    MM embedding effect: Δλ = +1.3% (1-norm increase)
-    Error relaxation:    90.0% fewer gates (10× error tolerance)
-
-[Step 3] Solvation Effect Analysis (Classical HF)
---------------------------------------------------------------------------------
-Comparing H3O+ energy in vacuum vs. explicit TIP3P water environment...
-This validates that MM embedding correctly polarizes the QM electron density.
-
-MM Environment: 8 TIP3P waters (24 point charges)
-
-Hartree-Fock Energy Comparison:
-  Vacuum (no MM):     -75.326464 Hartree
-  Solvated (with MM): -75.332155 Hartree
-
-Solvation Stabilization:
-  ΔE = 0.005691 Hartree
-     = 3.57 kcal/mol
-
-  [OK] MM embedding is working: explicit solvent stabilizes H3O+
-
-[Step 4] Standard QPE Solvation Effect Analysis (Quantum Level)
---------------------------------------------------------------------------------
-Comparing QPE energies: vacuum vs. explicit TIP3P solvation...
-This validates MM embedding is correctly included in the quantum Hamiltonian.
-
-Execution Time:
-  Vacuum QPE:   27.689 s
-  Solvated QPE: 28.717 s
-  Total:        56.406 s
-
-Standard QPE Energy Comparison:
-  Vacuum (no MM):     -76.503440 Hartree
-  Solvated (with MM): -76.509220 Hartree
-
-Standard QPE Solvation Stabilization:
-  ΔE = 0.005780 Hartree
-     = 3.63 kcal/mol
-
-Convergence Status (Solvated):
-  Converged: Yes
-  Method: real_qpe
-  RDM Source: quantum_measurement
-
-Comparison with Classical HF:
-  HF Stabilization:  3.57 kcal/mol
-  Standard QPE Stabilization: 3.63 kcal/mol
-  Difference: 0.06 kcal/mol
-
-  [OK] Standard QPE correctly captures MM solvation effect
-
-Mulliken Charge Redistribution (Vacuum -> Solvated):
-  O0: +0.8477 -> +0.8481 (Δq = +0.0004)
-  H1: -0.0538 -> +0.3133 (Δq = +0.3671)
-  H2: +0.1030 -> -0.2462 (Δq = -0.3493)
-  H3: +0.1030 -> +0.0849 (Δq = -0.0182)
-
-[Step 5] Catalyst @qjit QPE Solvation Effect Analysis
---------------------------------------------------------------------------------
-Comparing Catalyst QPE energies: vacuum vs. explicit TIP3P solvation...
-This validates MM embedding works correctly with Catalyst JIT compilation.
-
-Execution Time:
-  Vacuum QPE:   27.689 s
-  Solvated QPE: 28.717 s
-  Total:        56.406 s
-
-Catalyst QPE Energy Comparison:
-  Vacuum (no MM):     -76.503440 Hartree
-  Solvated (with MM): -76.509220 Hartree
-
-Catalyst QPE Solvation Stabilization:
-  ΔE = 0.005780 Hartree
-     = 3.63 kcal/mol
-
-  [OK] Catalyst QPE correctly captures MM solvation effect
-
-[Step 6] Results Comparison
---------------------------------------------------------------------------------
-Execution Time Comparison (Solvated QPE):
-  Standard QPE (lightning.gpu): 28.717 s
-  Catalyst QPE (lightning.gpu): 65.391 s
-  Ratio: 2.3x slower (Catalyst compilation overhead)
-
-**Important**: Catalyst @qjit incurs significant compilation overhead for
-single-shot QPE workflows. See "Catalyst @qjit Performance Guidelines" below.
-
-Fine-Grained Timing Breakdown:
-  Stage                     Standard     Catalyst     Ratio
-  -------------------------------------------------------
-  QPE Circuit Build         0.009s       64.766s      7448x (slower)
-  QPE Circuit Exec          24.212s      0.625s       39x   (faster)
-  -------------------------------------------------------
-  Total QPE                 24.221s      65.391s      2.7x  (slower)
-
-Note: Catalyst's 39x execution speedup is dominated by 7448x compilation
-overhead for single-shot QPE. For iterative workflows (MC, VQE), use
-the pre-compilation strategy demonstrated in h2_mc_solvation_qjit.py.
-
-Energy Comparison (Solvated):
-  Standard QPE: -76.509220 Hartree
-  Catalyst QPE: -76.509220 Hartree
-  Difference: 0.000000 Hartree
-  Status: Results consistent (diff < 0.01 Ha)
-
-[Step 7] Save Results
---------------------------------------------------------------------------------
-Results saved to: data/output/h3o_quantum_qpe_results.json
-
-Demo Summary
---------------------------------------------------------------------------------
-q2m3 MVP Capabilities Demonstrated:
-  [OK] PySCF -> PennyLane Hamiltonian conversion
-  [OK] Standard QPE circuit implementation
-  [OK] HF state preparation (qml.BasisState)
-  [OK] Trotter time evolution (qml.TrotterProduct)
-  [OK] Inverse QFT (qml.adjoint(qml.QFT))
-  [OK] Phase-to-energy extraction
-  [OK] QM/MM system with TIP3P solvation
-  [OK] EFTQC resource estimation (Toffoli gates, logical qubits)
-  [OK] HF MM embedding (ΔE = 3.6 kcal/mol)
-  [OK] Standard QPE MM embedding (ΔE = 3.6 kcal/mol)
-  [OK] Catalyst QPE MM embedding (ΔE = 3.6 kcal/mol)
-  [OK] Quantum RDM measurement (Pauli expectation values)
-  [OK] Mulliken population analysis (from quantum RDM)
-  [OK] Circuit visualization (qml.draw)
-  [OK] Catalyst @qjit JIT compilation (39x faster execution, 7448x slower compilation)
-  [OK] GPU acceleration (lightning.gpu, works with both standard and Catalyst QPE)
-  [!!] Catalyst compilation overhead dominates single-shot QPE (use pre-compilation for iterative workflows)
-
-================================================================================
-                           Demo Completed Successfully
-================================================================================
-```
-
-### Output Files
-
-Results are saved to `data/output/h3o_quantum_qpe_results.json`:
-
-```json
-{
-  "timestamp": "2025-11-26T07:27:51...",
-  "catalyst_available": true,
-  "catalyst_version": "0.14.0",
-  "lightning_gpu_available": true,
-  "system": {
-    "qm_region": "H3O+",
-    "n_atoms": 4,
-    "total_charge": 1,
-    "mm_waters": 8
-  },
-  "quantum_resources": {
-    "active_electrons": 4,
-    "active_orbitals": 4,
-    "system_qubits": 8,
-    "estimation_qubits": 4,
-    "total_qubits": 12
-  },
-  "results_standard": {
-    "device": "lightning.gpu",
-    "energy": -76.503440,
-    "energy_hf": -75.326464,
-    "execution_time_s": 42.290
-  },
-  "results_catalyst": {
-    "device": "lightning.gpu",
-    "energy": -76.503440,
-    "energy_hf": -75.326464,
-    "execution_time_s": 42.290,
-    "catalyst_enabled": true
-  }
-}
-```
-
-### Design Notes: Why Two QPE Calculations Are Required
-
-The demo compares vacuum and solvated QPE energies to demonstrate MM embedding effects at the quantum level. This requires **two independent QPE calculations**.
-
-**Fundamental Reason**: QPE performs time evolution `exp(-iHt)` on a Hamiltonian. Since vacuum and solvated environments use different Hamiltonians, separate QPE circuits are necessary:
-
-| Environment | Hamiltonian | Time Evolution |
-|-------------|-------------|----------------|
-| Vacuum | `H_vacuum` | `exp(-i * H_vacuum * t)` |
-| Solvated | `H_solvated = H_vacuum + H_MM` | `exp(-i * H_solvated * t)` |
-
-**Architectural Implication**:
-```python
-# Two QuantumQMMM instances are required
-qmmm_vacuum = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=0, ...)
-qmmm_solvated = QuantumQMMM(qm_atoms=h3o_atoms, mm_waters=8, ...)
-
-result_vacuum = qmmm_vacuum.compute_ground_state()
-result_solvated = qmmm_solvated.compute_ground_state()
-
-# Compare QPE energies
-stabilization = result_vacuum["energy"] - result_solvated["energy"]
-```
-
-This is not a code inefficiency but a fundamental requirement of the QPE algorithm when comparing different physical systems.
-
----
-
-## Example 3: H2 + MC Solvation with QJIT Pre-compilation
-
-`h2_mc_solvation_qjit.py` demonstrates the **pre-compilation optimization strategy** for Catalyst @qjit in iterative workflows. This example achieves **5.9x speedup** by compiling QPE once and reusing it across 10 evaluations.
-
-```bash
-python examples/h2_mc_solvation_qjit.py
-```
-
-### Test System
-
-- **QM Region**: H2 molecule (4 qubits)
-- **MM Region**: 2 TIP3P water molecules (Monte Carlo sampling)
-- **Workflow**: 100 MC steps with QPE validation every 10 steps
-
-### Key QJIT Integration Points
-
-1. **Pre-compiled QPE QNode**: Built and @qjit compiled ONCE before MC loop
-2. **Closure Capture**: Compiled circuit passed into @qjit MC loop via closure
-3. **catalyst.for_loop**: Replaces Python for-loop for MC iterations
-4. **catalyst.cond**: Conditional QPE execution every 10 steps
-5. **catalyst.debug.print**: Real-time output of QPE results
-6. **catalyst.pure_callback**: Wraps PySCF HF energy (non-JAX code)
-
-### Architecture
-
-```
-run_qjit_mc_solvation():
-    |
-    +-- [Outside @qjit] Build H2 vacuum Hamiltonian (6.79s one-time)
-    +-- [Outside @qjit] @qjit compile QPE QNode
-    |
-    +-- @qjit mc_solvation_with_qpe_loop()  [via closure]
-            |
-            +-- catalyst.for_loop (100 MC steps)
-            |       |
-            |       +-- propose_move() (JAX: translations + rotations)
-            |       +-- pure_callback(compute_hf_energy)  -> PySCF HF
-            |       +-- metropolis_accept() (JAX: Boltzmann criterion)
-            |       +-- catalyst.cond(step % 10 == 9):
-            |               +-- Call pre-compiled QPE (NO pure_callback!)
-            |               +-- catalyst.debug.print() -> Real-time output
-            |
-            +-- Return results with QPE energies
-```
-
-### Performance Results
-
-| Metric | First Run | Second Run | Improvement |
-|--------|-----------|------------|-------------|
-| QPE Compilation | 6.79s | 0s (cached) | One-time cost |
-| MC Loop + QPE | 11.26s | 1.90s | **5.9x faster** |
-| Time per MC step | 112.6 ms | 19.0 ms | **5.9x faster** |
-| Time per QPE eval | ~1.13s | ~0.19s | **5.9x faster** |
-
-### Comparison with h3op_qpe_h2o_mm_full.py
-
-| Aspect | h3op_qpe_h2o_mm_full.py | h2_mc_solvation_qjit.py |
-|--------|------------------------|-------------------------|
-| Compilation Strategy | Per-Hamiltonian | Pre-compiled once |
-| Hamiltonian | Dynamic (vacuum vs solvated) | Fixed (vacuum H2) |
-| QPE Evaluations | 2 (vacuum + solvated) | 10 (every 10 MC steps) |
-| Catalyst Benefit | **Negative** (2.7x slower) | **Positive** (5.9x faster) |
-| Use Case | Single-shot comparison | Iterative MC sampling |
-
-### Sample Output
-
-```
-======================================================================
-  H2 + TIP3P Water: QJIT-Compiled MC Solvation with QPE Validation
-======================================================================
-
-[Step 2] Pre-compiling QPE Circuit
-----------------------------------------------------------------------
-  Building H2 vacuum Hamiltonian...
-  Initial HF energy estimate: -1.116759 Ha
-  Compiling QPE QNode with @qjit...
-  QPE circuit compiled in 6.79 s
-
-[Step 3] Running QJIT-Compiled MC Sampling with QPE
-----------------------------------------------------------------------
-  QJIT Features:
-  - catalyst.pure_callback for PySCF HF energy
-  - PRE-COMPILED QPE circuit (compiled once, reused 10x)
-  - catalyst.for_loop for MC iterations
-  - catalyst.cond for conditional QPE execution
-
-  [QPE] Step 10: HF = -1.116845 Ha, QPE = -0.872468 Ha
-  [QPE] Step 20: HF = -1.116937 Ha, QPE = -1.221455 Ha
-  ... (8 more evaluations)
-
-[Step 7] Performance Summary
-----------------------------------------------------------------------
-  QPE compilation time: 6.79 s (one-time cost)
-  Total run time:       11.26 s (includes MC loop QJIT compilation)
-
-  Running second call (MC loop already compiled)...
-  Second run time:      1.90 s
-  Speedup (vs first run): 5.9x
-======================================================================
-```
-
----
-
-## Catalyst @qjit Performance Guidelines
-
-Catalyst's `@qjit` JIT compilation provides significant execution speedup but incurs substantial compilation overhead. Understanding when to use Catalyst is critical for optimal performance.
-
-### Performance Characteristics
-
-| Metric | Standard PennyLane | Catalyst @qjit | Ratio |
-|--------|-------------------|----------------|-------|
-| Circuit Build | 0.009s | 64.766s | **7448x slower** |
-| Circuit Execution | 24.212s | 0.625s | **39x faster** |
-| **Total (single-shot)** | 24.221s | 65.391s | **2.7x slower** |
-
-*Measured on H3O+ (14 qubits, 1086 Hamiltonian terms) with lightning.gpu*
-
-### Key Findings
-
-1. **Compilation overhead dominates single-shot workflows**: For single QPE execution, Catalyst's compilation overhead (64.8s) exceeds the execution time savings (23.6s), resulting in net slowdown.
-
-2. **Compilation cache is coefficient-dependent**: Catalyst recompiles circuits when Hamiltonian coefficients change, even if the operator structure is identical. This prevents cache reuse across parametric variations (e.g., vacuum vs solvated Hamiltonians).
-
-3. **Pre-compilation strategy is effective**: For iterative workflows, pre-compiling QPE circuits before the loop and reusing via closure capture achieves **5.9x speedup**.
-
-### Recommendations
-
-| Use Case | Recommendation | Expected Performance |
-|----------|----------------|----------------------|
-| Single QPE execution | **Use standard PennyLane** | Baseline |
-| Vacuum vs Solvated comparison | **Use standard PennyLane** | Baseline (avoid 2x compilation) |
-| Iterative MC/MD sampling | **Use Catalyst with pre-compilation** | 5.9x speedup |
-| VQE/QAOA optimization | **Use Catalyst** | 10-50x speedup (amortized) |
-
-### Pre-compilation Pattern (Recommended for Iterative Workflows)
-
-```python
-# Step 1: Build Hamiltonian and compile QPE ONCE (outside loop)
-compiled_qpe, base_time = build_precompiled_qpe(qm_coords, hf_energy)
-
-# Step 2: Create MC loop with pre-compiled QPE via closure
-@qjit
-def mc_loop(waters, compiled_qpe=compiled_qpe):
-    for step in range(n_steps):
-        # ... MC moves ...
-        if step % 10 == 0:
-            samples = compiled_qpe()  # Reuse compiled circuit
-            energy = extract_energy(samples)
-    return results
-
-# Step 3: Run (first call compiles MC loop, subsequent calls are fast)
-result = mc_loop(initial_waters)  # 11.26s (includes MC loop compilation)
-result = mc_loop(new_waters)      # 1.90s (5.9x faster)
-```
-
-### Related Reports
-
-- [`dev/reports/catalyst_qpe_compilation_overhead_analysis.md`](../dev/reports/catalyst_qpe_compilation_overhead_analysis.md): Root cause analysis of compilation overhead
-- [`dev/reports/catalyst_qpe_precompilation_optimization_report.md`](../dev/reports/catalyst_qpe_precompilation_optimization_report.md): Pre-compilation optimization results
-
----
-
-## Known Issues & Catalyst Compatibility
-
-### Issue 1: BasisState + Controlled Operations under @qjit (FIXED)
-
-**Status**: Fixed (as of PennyLane 0.44.0, Catalyst 0.14.0)
-
-**Tracking**: [Catalyst #2235](https://github.com/PennyLaneAI/catalyst/issues/2235) - Closed
-
-**Symptom**: QPE under `@qjit` produces incorrect quantum states when `qml.BasisState` coexists with `qml.ctrl()` operations in the same circuit.
-
-**Precise Diagnosis** (verified via state vector comparison):
-
-```python
-# Test circuit: BasisState + Hadamard + ctrl(TrotterProduct)
-# Expected: superposition state [(4, 0.7071), (5, 0.7071)]
-
-@qjit + BasisState:  [(4, 1.0)]           # ✗ Wrong (collapsed state)
-@qjit + X gates:     [(4, 0.7071), (5, 0.7071)]  # ✓ Correct
-No @qjit + BasisState: [(4, 0.7071), (5, 0.7071)]  # ✓ Correct
-```
-
-**Root Cause**: Under `@qjit`, when `qml.BasisState` and `qml.ctrl()` coexist in the same circuit, Catalyst's compilation produced incorrect quantum state evolution. Individual operations worked correctly; only the combination failed.
-
-**Fix**: Issue resolved in Catalyst 0.14.0. `qml.BasisState` now works correctly with `qml.ctrl()` under `@qjit`.
-
-**Previous Workaround** (`src/q2m3/core/qpe.py:173-177`): Used explicit X gates instead of BasisState (still works, can be kept):
-
-```python
-# Previous workaround (still functional):
-for wire, state in zip(wires, hf_state):
-    if state == 1:
-        qml.PauliX(wires=wire)
-
-# Can now use (both work correctly):
-qml.BasisState(hf_state, wires=wires)
-```
-
-**Verification** (H3O+, 12 qubits, Catalyst 0.14.0):
-
-| Configuration | Energy (Ha) | Success Rate |
-|--------------|-------------|--------------|
-| @qjit + BasisState | -76.503440 | 100% ✅ |
-| @qjit + X gates | -76.503440 | 100% ✅ |
-
-**Recommendation**: Can keep existing workaround (X gates) or switch to `qml.BasisState` for cleaner code. Both produce identical results (diff < 1e-10).
-
-**Note**: RDM module (`rdm.py:225`) uses `qml.BasisState` safely, as RDM circuits don't use `qml.ctrl()`.
-
----
-
-### Issue 2: Catalyst @qjit + lightning.gpu Incompatibility (FIXED)
-
-**Status**: Fixed (as of PennyLane Lightning 0.44.0)
-
-**Tracking**: [pennylane-lightning PR #1298](https://github.com/PennyLaneAI/pennylane-lightning/pull/1298) - Merged
-
-**Symptom**: Using `@qjit` with `lightning.gpu` triggers custatevec error:
-```
-RuntimeError: custatevec invalid value in applyParametricPauliGeneralGate_
-```
-
-**Affected Operation**: `qml.ctrl(qml.TrotterProduct(...))` (`qpe.py:206-209`)
-
-**Root Cause**: The `GPhase` operation with zero-qubit target wires was not supported in `lightning.gpu` backend, causing failures when executing controlled time evolution operators.
-
-**Fix**: PR #1298 added support for `GPhase` with zero-qubit target wires in Lightning GPU (merged in v0.44.0), enabling `ctrl(TrotterProduct)` execution. This brings feature parity with `lightning.qubit` and `lightning.kokkos` backends.
-
-**Verification**: Catalyst `@qjit` + `qml.ctrl(qml.TrotterProduct)` now works on both `lightning.qubit` (CPU) and `lightning.gpu` (GPU).
-
-**Recommended Configuration**:
-```python
-# GPU with Catalyst (best performance)
-qpe_config = {"device_type": "lightning.gpu"}
-qmmm = QuantumQMMM(qm_atoms, qpe_config=qpe_config, use_catalyst=True)
-
-# CPU with Catalyst (JIT optimization)
-qpe_config = {"device_type": "lightning.qubit"}
-qmmm = QuantumQMMM(qm_atoms, qpe_config=qpe_config, use_catalyst=True)
-
-# GPU without Catalyst (alternative)
-qpe_config = {"device_type": "lightning.gpu"}
-qmmm = QuantumQMMM(qm_atoms, qpe_config=qpe_config, use_catalyst=False)
-```
-
-**Performance Impact**:
-- Catalyst + GPU: ~2-3x faster than Catalyst + CPU
-- Catalyst + CPU: similar performance to non-Catalyst GPU (JIT compilation benefits)
-
-**Reference**: [Catalyst Supported Devices](https://docs.pennylane.ai/projects/catalyst/en/latest/dev/devices.html)
-
----
-
-### Issue 3: Lightning Device + MM Hamiltonian Compatibility (Fixed)
-
-**Status**: Fixed (as of commit 2025-11-27) - Verified with PennyLane 0.44.0
-
-**Symptom**: When using `qml.Hamiltonian` to construct MM corrections and adding them to the vacuum Hamiltonian via `+` operator, `lightning.qubit` and `lightning.gpu` fail with:
-```
-DeviceError: Operator Controlled(Evolution(...)) not supported with lightning.gpu
-```
-
-**Root Cause**:
-1. `qml.Hamiltonian(coeffs, ops)` returns `LinearCombination` type
-2. `H_vacuum + H_mm_correction` produces `LinearCombination` type
-3. `lightning` devices don't support `Controlled(Evolution(...))` decomposition for `LinearCombination` type
-
-**Fix** (`pyscf_pennylane.py:296-320`): Use `qml.s_prod` + `qml.sum` to maintain `Sum` type:
-
-```python
-# Before (incompatible with lightning devices):
-coeffs = [identity_coeff, -delta_h1e_mo[p, p] / 2, ...]
-ops = [qml.Identity(0), qml.Z(wire), ...]
-H_mm_correction = qml.Hamiltonian(coeffs, ops)  # Returns LinearCombination
-H_solvated = H_vacuum + H_mm_correction  # Returns LinearCombination
-
-# After (lightning-compatible):
-mm_terms = [qml.s_prod(identity_coeff, qml.Identity(wires=list(range(n_qubits))))]
-for p in range(active_orbitals):
-    for spin in [0, 1]:
-        mm_terms.append(qml.s_prod(-delta_h1e_mo[p, p] / 2, qml.Z(wire)))
-all_operands = list(H_vacuum.operands) + mm_terms
-H_solvated = qml.sum(*all_operands)  # Maintains Sum type
-```
-
-**Verification** (H2 + 2 TIP3P waters):
-
-| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization |
-|--------|-------------|---------------|---------------|
-| PySCF HF | -1.116759 | -1.116674 | -0.054 kcal/mol |
-| QPE (lightning.gpu) | -1.134209 | -1.134122 | -0.054 kcal/mol |
 
 ---
 

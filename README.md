@@ -59,11 +59,11 @@ uv sync --extra catalyst   # Catalyst JIT support
 # Activate virtual environment
 source .venv/bin/activate
 
-# Run minimal validation (H2 + 2 TIP3P waters, ~30s)
-python examples/h2_qpe_h2o_mm_minimal.py
+# Run minimal validation (H2 + TIP3P waters, ~30s)
+python examples/h2_qpe_validation.py
 
 # Run full demo (H3O+ + 8 TIP3P waters, ~3min)
-python examples/h3op_qpe_h2o_mm_full.py
+python examples/h3o_qpe_full_demo.py
 ```
 
 ### Basic Usage
@@ -194,63 +194,55 @@ The `device_type` parameter controls quantum device selection:
 
 ## Catalyst @qjit Performance Guidelines
 
-Catalyst's `@qjit` JIT compilation provides **39x faster execution** but incurs **7448x slower compilation** overhead. Understanding when to use Catalyst is critical for optimal performance.
+Catalyst's `@qjit` JIT compilation provides **~36x faster execution** but incurs **~7463x slower compilation** overhead. Understanding when to use Catalyst is critical for optimal performance.
 
-### Performance Characteristics (H3O+, 14 qubits)
+### Performance Characteristics (H3O+, 12 qubits)
 
 | Stage | Standard PennyLane | Catalyst @qjit | Ratio |
 |-------|-------------------|----------------|-------|
-| Circuit Build | 0.009s | 64.766s | 7448x slower |
-| Circuit Execution | 24.212s | 0.625s | 39x faster |
-| **Total (single-shot)** | 24.221s | 65.391s | **2.7x slower** |
+| Circuit Build | 0.009s | 67.163s | ~7463x slower |
+| Circuit Execution | 23.289s | 0.652s | 36x faster |
+| **Total (single-shot)** | 23.298s | 67.815s | **2.9x slower** |
 
 ### When to Use Catalyst
 
 | Use Case | Recommendation | Expected Performance |
-|----------|----------------|----------------------|
+|----------|----------------|---------------------|
 | Single QPE execution | **Use standard PennyLane** | Baseline |
-| Vacuum vs Solvated comparison | **Use standard PennyLane** | Avoid 2x compilation |
-| Iterative MC/MD sampling | **Use Catalyst with pre-compilation** | **5.9x speedup** |
+| Vacuum vs Solvated comparison | **Use standard PennyLane** | Avoid 3x compilation overhead |
+| Iterative MC/MD sampling | **Use Catalyst with pre-compilation** | Reduced per-evaluation overhead |
 | VQE/QAOA optimization | **Use Catalyst** | 10-50x speedup |
 
 ### Pre-compilation Strategy for Iterative Workflows
 
-For workflows with multiple QPE evaluations on the same molecular system:
+For workflows with multiple QPE evaluations on the same molecular system, use the modular `mc_solvation` framework:
 
 ```python
-# 1. Build and compile QPE ONCE before loop (6.79s one-time cost)
-compiled_qpe, base_time = build_precompiled_qpe(qm_coords, hf_energy)
+from examples.mc_solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
-# 2. Create @qjit loop with pre-compiled QPE via closure
-@qjit
-def mc_loop(waters):
-    for step in range(100):
-        if step % 10 == 0:
-            samples = compiled_qpe()  # Reuse compiled circuit
-    return results
+config = SolvationConfig(
+    molecule=MoleculeConfig(name="H2", symbols=["H", "H"], ...),
+    qpe_config=QPEConfig(use_catalyst=True, qpe_interval=10),
+    qpe_mode="vacuum_correction",  # Pre-compiled QPE, reused across MC steps
+    n_waters=10,
+    n_mc_steps=100,
+)
 
-# 3. Run (5.9x faster on subsequent calls)
-mc_loop(waters)  # 11.26s (includes compilation)
-mc_loop(waters)  # 1.90s (5.9x faster)
+result = run_solvation(config)
 ```
 
-See [`examples/h2_mc_solvation_qjit.py`](examples/h2_mc_solvation_qjit.py) for complete implementation.
+See [`examples/h2_mc_solvation.py`](examples/h2_mc_solvation.py) for complete implementation.
 
 ## EFTQC Resource Estimation
 
 q2m3 provides quantum resource estimation using PennyLane's `DoubleFactorization` API to assess feasibility for Early Fault-Tolerant Quantum Computers (EFTQC).
-
-```bash
-# Run resource estimation demo
-python examples/resource_estimation_demo.py
-```
 
 **Key Results (Chemical Accuracy = 0.0016 Ha):**
 
 | System | Basis | Toffoli Gates | Logical Qubits |
 |--------|-------|---------------|----------------|
 | H2 | STO-3G | ~1.2M | ~115 |
-| H3O+ | STO-3G | ~148M | ~314 |
+| H3O+ | STO-3G | ~143M | ~314 |
 | H3O+ | 6-31G | ~494M | ~778 |
 
 **Quick Start:**
@@ -271,20 +263,20 @@ print(f"Logical qubits: {algo.qubits}")
 ```
 
 **Documentation:**
-- Complete API guide: [docs/resource_estimation_api_research.md](docs/resource_estimation_api_research.md)
-- Quick reference: [docs/resource_estimation_quickstart.md](docs/resource_estimation_quickstart.md)
+- Complete API guide: [dev/reports/catalyst_qpe_compilation_overhead_analysis.md](dev/reports/catalyst_qpe_compilation_overhead_analysis.md)
+- Pre-compilation optimization: [dev/reports/catalyst_qpe_precompilation_optimization_report.md](dev/reports/catalyst_qpe_precompilation_optimization_report.md)
 
 ## Examples
 
-### Example 1: H2 + MM Water (Minimal Validation)
+### Example 1: H2 QPE Validation
 
-`examples/h2_qpe_h2o_mm_minimal.py` - Fast validation of QPE + MM embedding (~30s)
+`examples/h2_qpe_validation.py` - Fast validation of QPE + MM embedding + Catalyst benchmark (~30s)
 
 ```bash
-python examples/h2_qpe_h2o_mm_minimal.py
+python examples/h2_qpe_validation.py
 ```
 
-**Test System**: H2 molecule + 2 TIP3P waters (8 qubits: 4 system + 4 estimation)
+**Test System**: H2 molecule + TIP3P waters (8 qubits: 4 system + 4 estimation)
 
 | Method | Vacuum (Ha) | Solvated (Ha) | Stabilization |
 |--------|-------------|---------------|---------------|
@@ -293,10 +285,10 @@ python examples/h2_qpe_h2o_mm_minimal.py
 
 ### Example 2: H3O+ QPE Full Demo
 
-`examples/h3op_qpe_h2o_mm_full.py` - Complete workflow demonstration (~3min)
+`examples/h3o_qpe_full_demo.py` - Complete workflow demonstration (~3min)
 
 ```bash
-python examples/h3op_qpe_h2o_mm_full.py
+python examples/h3o_qpe_full_demo.py
 ```
 
 **Test System**: H3O+ ion + 8 TIP3P waters (12 qubits)
@@ -311,40 +303,21 @@ python examples/h3op_qpe_h2o_mm_full.py
 6. Results Comparison
 7. Save Results (JSON output)
 
-### Example 3: EFTQC Resource Estimation
+### Example 3: MC Solvation with Modular Framework
 
-`examples/resource_estimation_demo.py` - Quantum resource requirements analysis (~10s)
-
-```bash
-python examples/resource_estimation_demo.py
-```
-
-**Analysis:**
-- H2 and H3O+ resource estimates (STO-3G, 6-31G)
-- Error tolerance scaling (1×, 10×, 100× chemical accuracy)
-- EFTQC feasibility assessment
-- Resource-error trade-off analysis
-
-### Example 4: MC Solvation with QJIT Pre-compilation
-
-`examples/h2_mc_solvation_qjit.py` - Catalyst @qjit optimization for iterative workflows (~20s)
+`examples/h2_mc_solvation.py` - Modular MC solvation with Catalyst @qjit optimization
 
 ```bash
-python examples/h2_mc_solvation_qjit.py
+python examples/h2_mc_solvation.py
 ```
 
-**Test System**: H2 molecule + 2 TIP3P waters with Monte Carlo sampling
+**Test System**: H2 molecule + 10 TIP3P waters with Monte Carlo sampling
 
 **Key Features:**
-- Pre-compiled QPE circuit (compiled once, reused 10x)
+- Modular `mc_solvation` framework with configurable QPE modes
 - 100 MC steps with QPE validation every 10 steps
-- Demonstrates **5.9x speedup** via pre-compilation strategy
 - Full Catalyst integration: `for_loop`, `cond`, `pure_callback`, `debug.print`
-
-| Metric | First Run | Second Run | Speedup |
-|--------|-----------|------------|---------|
-| Total Time | 11.26s | 1.90s | **5.9x** |
-| Per QPE Eval | ~1.13s | ~0.19s | **5.9x** |
+- Rich console output with timing statistics
 
 See [examples/README.md](examples/README.md) for detailed documentation.
 
@@ -361,18 +334,24 @@ q2m3/
 |   |   +-- device_utils.py    # Device selection utilities
 |   +-- interfaces/
 |   |   +-- pyscf_pennylane.py # PySCF-PennyLane converter + MM embedding
+|   +-- sampling/
+|   |   +-- mc_moves.py       # Monte Carlo move proposals
+|   |   +-- metropolis.py     # Metropolis acceptance criterion
+|   |   +-- mm_forcefield.py  # MM force field (TIP3P)
+|   |   +-- water_molecule.py # Water molecule representation
 |   +-- utils/
 |       +-- io.py              # File I/O utilities
-+-- docs/
-|   +-- resource_estimation_api_research.md  # Complete API documentation
-|   +-- resource_estimation_quickstart.md    # Quick reference guide
++-- dev/reports/               # Technical analysis reports
 +-- tests/                     # Test suite
 +-- examples/                  # Example scripts
-|   +-- h2_qpe_h2o_mm_minimal.py     # H2 minimal validation
-|   +-- h3op_qpe_h2o_mm_full.py      # H3O+ full demo
-|   +-- h2_mc_solvation_qjit.py      # MC solvation with QJIT pre-compilation
-|   +-- h3op_demo                    # Sub-modules supporting the h3op_qpe_h2o_mm_full.y
-+-- data/output/               # Output files (JSON results)
+|   +-- h2_qpe_validation.py          # H2 QPE validation + Catalyst benchmark
+|   +-- h3o_qpe_full_demo.py          # H3O+ full demo
+|   +-- h2_mc_solvation.py            # H2 MC solvation with QJIT
+|   +-- h3o_mc_solvation.py           # H3O+ MC solvation
+|   +-- h3op_demo/                     # Sub-modules for h3op demo
+|   +-- mc_solvation/                  # Modular MC solvation framework
+|   +-- data/output/                   # Example output files (JSON results)
++-- data/                      # Input data files
 ```
 
 ## Development
@@ -411,7 +390,7 @@ pytest -m "gpu"           # Run only GPU tests
 
 **Core:**
 - `pyscf>=2.0.0` - Classical quantum chemistry
-- `pennylane>=0.44.0` - Quantum circuits
+- `pennylane>=0.33.0` - Quantum circuits (tested with 0.44.0)
 - `numpy>=1.21.0` - Numerical computing
 - `scipy>=1.7.0` - Scientific computing
 
@@ -438,7 +417,7 @@ Catalyst `@qjit` now supports `lightning.gpu` for `qml.ctrl(qml.TrotterProduct)`
 
 **Status**: Fixed
 
-`qml.Hamiltonian` returns `LinearCombination` type which lightning devices don't support for controlled evolution. **Fix**: Use `qml.s_prod` + `qml.sum` to maintain `Sum` type (`pyscf_pennylane.py:296-320`).
+`qml.Hamiltonian` returns `LinearCombination` type which lightning devices don't support for controlled evolution. **Fix**: Use `qml.s_prod` + `qml.sum` to maintain `Sum` type (`pyscf_pennylane.py:316-340`).
 
 See [examples/README.md](examples/README.md) for detailed diagnosis and workarounds.
 

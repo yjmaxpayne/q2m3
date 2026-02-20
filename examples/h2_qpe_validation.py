@@ -185,7 +185,7 @@ def run_qpe_for_system(
 
 
 def run_catalyst_benchmark(
-    h3o_atoms: list,
+    qm_atoms: list,
     mm_waters: int,
     hf_results: dict[str, float],
 ) -> dict | None:
@@ -218,7 +218,7 @@ def run_catalyst_benchmark(
 
     start_standard = time.perf_counter()
     qmmm_standard = QuantumQMMM(
-        qm_atoms=h3o_atoms,
+        qm_atoms=qm_atoms,
         mm_waters=mm_waters,
         qpe_config={
             "use_real_qpe": True,
@@ -248,7 +248,7 @@ def run_catalyst_benchmark(
 
     start_catalyst = time.perf_counter()
     qmmm_catalyst = QuantumQMMM(
-        qm_atoms=h3o_atoms,
+        qm_atoms=qm_atoms,
         mm_waters=mm_waters,
         qpe_config={
             "use_real_qpe": True,

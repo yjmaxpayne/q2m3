@@ -49,7 +49,11 @@ from q2m3.interfaces import PySCFPennyLaneConverter
 
 from .config import SolvationConfig
 from .constants import HARTREE_TO_KCAL_MOL
-from .energy import compute_hf_energy_vacuum, compute_mm_correction
+from .energy import (
+    compute_hf_energy_vacuum,
+    compute_mm_correction,
+    compute_mulliken_charges,
+)
 from .mc_loop import create_mc_loop
 from .solvent import TIP3P_WATER, initialize_solvent_ring, molecules_to_state_array
 from .statistics import create_timing_data_from_result, print_time_statistics
@@ -390,6 +394,31 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
 
         # Display best QPE configuration (all solvent molecules)
         best_qpe_solvents = np.array(result["best_qpe_solvent_states"])
+
+        # Solvation stabilization: E(vacuum) - E(best_QPE) > 0 means solvent stabilizes
+        stabilization_ha = e_vacuum - best_qpe_e
+        stabilization_kcal = stabilization_ha * HARTREE_TO_KCAL_MOL
+        console.print()
+        console.print(
+            "  [bold green]Solvation Stabilization (vacuum → optimal solvation shell):[/bold green]"
+        )
+        console.print(f"    dE = {stabilization_ha:.6f} Ha")
+        console.print(f"       = {stabilization_kcal:.2f} kcal/mol")
+        if stabilization_ha > 0:
+            console.print("    [OK] Solvent stabilizes the molecule")
+        else:
+            console.print("    [WARNING] No net stabilization detected")
+
+        # Mulliken charge redistribution (vacuum → best solvated config)
+        console.print()
+        console.print("  Mulliken Charge Redistribution (vacuum → best solvation shell):")
+        charges_vacuum = compute_mulliken_charges(mol)
+        charges_solvated = compute_mulliken_charges(mol, best_qpe_solvents)
+        for atom, q_vac in charges_vacuum.items():
+            q_sol = charges_solvated[atom]
+            dq = q_sol - q_vac
+            console.print(f"    {atom}: {q_vac:+.4f} → {q_sol:+.4f} (Δq = {dq:+.4f})")
+
         console.print(f"    Configuration (solvent O positions):")
         for i in range(config.n_waters):
             pos = best_qpe_solvents[i, :3]

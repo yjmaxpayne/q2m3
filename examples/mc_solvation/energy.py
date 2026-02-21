@@ -141,6 +141,51 @@ def compute_mm_correction(
     return e_solvated - e_vacuum
 
 
+def compute_mulliken_charges(
+    molecule: MoleculeConfig,
+    solvent_states: np.ndarray | None = None,
+) -> dict[str, float]:
+    """
+    Compute Mulliken charges for vacuum or solvated geometry.
+
+    Args:
+        molecule: QM region molecular configuration
+        solvent_states: Optional solvent state array (n_mol, 6); None for vacuum
+
+    Returns:
+        Dictionary {atom_label: mulliken_charge}, e.g. {"O0": -0.45, "H1": +0.22}
+    """
+    atom_str = "; ".join(
+        f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(molecule.symbols, molecule.coords, strict=True)
+    )
+    mol = gto.M(
+        atom=atom_str,
+        basis=molecule.basis,
+        charge=molecule.charge,
+        unit="Angstrom",
+    )
+    mf = scf.RHF(mol)
+    mf.verbose = 0
+
+    if solvent_states is not None:
+        from .solvent import (
+            SOLVENT_MODELS,
+            get_mm_embedding_data,
+            state_array_to_molecules,
+        )
+
+        model = SOLVENT_MODELS["TIP3P"]
+        solvent_molecules = state_array_to_molecules(model, np.asarray(solvent_states))
+        mm_coords, mm_charges = get_mm_embedding_data(solvent_molecules)
+        mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR
+        mf = qmmm.mm_charge(mf, mm_coords_bohr, mm_charges)
+
+    mf.run()
+    _, charges = mf.mulliken_pop(verbose=0)
+
+    return {f"{sym}{i}": float(charges[i]) for i, sym in enumerate(molecule.symbols)}
+
+
 # =============================================================================
 # Callback-Compatible Functions for @qjit
 # =============================================================================

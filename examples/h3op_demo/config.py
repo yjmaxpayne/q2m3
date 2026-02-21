@@ -5,23 +5,31 @@
 Configuration module for H3O+ QPE Demo.
 
 Contains:
-- Physical constants and thresholds
-- Device detection variables
+- Demo-specific thresholds
 - Configuration functions
 """
 
-import warnings
-
 import numpy as np
-import pennylane as qml
 
+from q2m3.constants import (  # noqa: F401 — re-exported for submodules
+    HARTREE_TO_KCAL_MOL,
+)
+from q2m3.core.device_utils import (  # noqa: F401 — re-exported for submodules
+    CATALYST_VERSION,
+    HAS_CATALYST,
+    HAS_JAX_CUDA,
+    HAS_LIGHTNING_GPU,
+    HAS_LIGHTNING_QUBIT,
+    JAX_DEFAULT_BACKEND,
+    get_best_available_device,
+    get_catalyst_effective_backend,
+)
 from q2m3.core.qmmm_system import Atom
 
 # =============================================================================
-# Physical Constants and Thresholds
+# Demo-specific Thresholds
 # =============================================================================
 
-HARTREE_TO_KCAL_MOL = 627.5094
 MM_STABILIZATION_THRESHOLD = (
     0.001  # Hartree - minimum stabilization to consider MM embedding active
 )
@@ -29,92 +37,10 @@ ENERGY_CONSISTENCY_THRESHOLD = 0.01  # Hartree - acceptable difference between m
 CHEMICAL_ACCURACY_ERROR = 0.0016  # Hartree (~1 kcal/mol)
 RELAXED_ACCURACY_ERROR = 0.016  # Hartree (~10 kcal/mol)
 
-# =============================================================================
-# Catalyst Availability Detection
-# =============================================================================
-
-try:
-    import catalyst
-
-    HAS_CATALYST = True
-    CATALYST_VERSION = catalyst.__version__
-except ImportError:
-    HAS_CATALYST = False
-    CATALYST_VERSION = "N/A"
-
-# =============================================================================
-# Device Detection: PennyLane Lightning (for standard QPE)
-# =============================================================================
-
-HAS_LIGHTNING_GPU = False
-try:
-    _test_dev = qml.device("lightning.gpu", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_GPU = True
-except Exception:
-    pass
-
-HAS_LIGHTNING_QUBIT = False
-try:
-    _test_dev = qml.device("lightning.qubit", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_QUBIT = True
-except Exception as e:
-    warnings.warn(
-        f"Could not initialize PennyLane 'lightning.qubit' device: {e}. "
-        "Falling back to other devices.",
-        RuntimeWarning,
-        stacklevel=2,
-    )
-
-# =============================================================================
-# Device Detection: JAX/Catalyst GPU (for @qjit compiled circuits)
-# IMPORTANT: This is SEPARATE from PennyLane Lightning GPU!
-# =============================================================================
-
-HAS_JAX_CUDA = False
-JAX_DEFAULT_BACKEND = "cpu"
-try:
-    import jax
-
-    JAX_DEFAULT_BACKEND = jax.default_backend()
-    HAS_JAX_CUDA = JAX_DEFAULT_BACKEND in ("cuda", "gpu")
-except ImportError:
-    pass
-except Exception:
-    pass
-
 
 # =============================================================================
 # Configuration Functions
 # =============================================================================
-
-
-def get_best_available_device() -> str:
-    """Return the best available PennyLane device name.
-
-    Priority: lightning.gpu > lightning.qubit > default.qubit
-    """
-    if HAS_LIGHTNING_GPU:
-        return "lightning.gpu"
-    elif HAS_LIGHTNING_QUBIT:
-        return "lightning.qubit"
-    return "default.qubit"
-
-
-def get_catalyst_effective_backend() -> str:
-    """Get the actual execution backend for Catalyst @qjit.
-
-    IMPORTANT: Catalyst uses JAX as its backend, which is SEPARATE from
-    PennyLane device selection. Even with lightning.gpu device, Catalyst
-    runs on CPU if JAX lacks CUDA support.
-
-    Returns:
-        Human-readable backend string like "GPU (JAX CUDA)" or "CPU (JAX)"
-    """
-    if HAS_JAX_CUDA:
-        return "GPU (JAX CUDA)"
-    return "CPU (JAX)"
 
 
 def create_h3o_geometry() -> list[Atom]:

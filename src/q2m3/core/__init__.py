@@ -8,9 +8,14 @@ Contains the main computational engines and system builders.
 """
 
 from .device_utils import (
+    CATALYST_VERSION,
+    HAS_CATALYST,
+    HAS_JAX_CUDA,
     HAS_LIGHTNING_GPU,
     HAS_LIGHTNING_QUBIT,
+    JAX_DEFAULT_BACKEND,
     get_best_available_device,
+    get_catalyst_effective_backend,
     select_device,
 )
 from .qmmm_system import QMMMSystem
@@ -27,6 +32,11 @@ __all__ = [
     # Device utilities
     "select_device",
     "get_best_available_device",
+    "get_catalyst_effective_backend",
     "HAS_LIGHTNING_GPU",
     "HAS_LIGHTNING_QUBIT",
+    "HAS_JAX_CUDA",
+    "JAX_DEFAULT_BACKEND",
+    "HAS_CATALYST",
+    "CATALYST_VERSION",
 ]

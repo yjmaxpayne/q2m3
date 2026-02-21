@@ -22,63 +22,25 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from q2m3.constants import (
+    ANGSTROM_TO_BOHR,
+    HARTREE_TO_KCAL_MOL,
+    TIP3P_HYDROGEN_CHARGE,
+    TIP3P_OXYGEN_CHARGE,
+)
+from q2m3.core.device_utils import (
+    HAS_CATALYST,
+    HAS_JAX_CUDA,
+    HAS_LIGHTNING_GPU,
+    get_best_available_device,
+    get_catalyst_effective_backend,
+)
+
 warnings.filterwarnings("ignore")
 
 # =============================================================================
-# Device Detection: PennyLane Lightning (for standard QPE)
+# Example-specific thresholds (POC validation, not general use)
 # =============================================================================
-HAS_LIGHTNING_GPU = False
-try:
-    import pennylane as qml
-
-    _test_dev = qml.device("lightning.gpu", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_GPU = True
-except Exception:
-    pass
-
-HAS_LIGHTNING_QUBIT = False
-try:
-    import pennylane as qml
-
-    _test_dev = qml.device("lightning.qubit", wires=1)
-    del _test_dev
-    HAS_LIGHTNING_QUBIT = True
-except Exception:
-    pass
-
-# =============================================================================
-# Device Detection: JAX/Catalyst GPU (for @qjit compiled circuits)
-# IMPORTANT: This is SEPARATE from PennyLane Lightning GPU!
-# =============================================================================
-HAS_JAX_CUDA = False
-JAX_DEFAULT_BACKEND = "cpu"
-try:
-    import jax
-
-    JAX_DEFAULT_BACKEND = jax.default_backend()
-    HAS_JAX_CUDA = JAX_DEFAULT_BACKEND in ("cuda", "gpu")
-except ImportError:
-    pass
-except Exception:
-    pass
-
-# Check Catalyst availability
-HAS_CATALYST = False
-CATALYST_VERSION = "N/A"
-try:
-    import catalyst
-
-    HAS_CATALYST = True
-    CATALYST_VERSION = catalyst.__version__
-except ImportError:
-    pass
-
-# =============================================================================
-# Constants
-# =============================================================================
-HARTREE_TO_KCAL_MOL = 627.5094
-ANGSTROM_TO_BOHR = 1.8897259886
 CHEMICAL_ACCURACY_KCAL = 0.1  # kcal/mol
 QPE_ENERGY_TOLERANCE_HA = 2.0  # Hartree (POC validation threshold)
 
@@ -86,10 +48,6 @@ QPE_ENERGY_TOLERANCE_HA = 2.0  # Hartree (POC validation threshold)
 DEFAULT_N_ESTIMATION_WIRES = 4
 DEFAULT_N_TROTTER_STEPS = 20
 DEFAULT_N_SHOTS = 100
-
-# TIP3P water model charges
-TIP3P_OXYGEN_CHARGE = -0.834
-TIP3P_HYDROGEN_CHARGE = 0.417
 
 
 # =============================================================================
@@ -132,33 +90,6 @@ class ValidationResult:
 # =============================================================================
 # Utility Functions
 # =============================================================================
-def get_best_available_device() -> str:
-    """Return the best available PennyLane device name.
-
-    Priority: lightning.gpu > lightning.qubit > default.qubit
-    """
-    if HAS_LIGHTNING_GPU:
-        return "lightning.gpu"
-    elif HAS_LIGHTNING_QUBIT:
-        return "lightning.qubit"
-    return "default.qubit"
-
-
-def get_catalyst_effective_backend() -> str:
-    """Get the actual execution backend for Catalyst @qjit.
-
-    IMPORTANT: Catalyst uses JAX as its backend, which is SEPARATE from
-    PennyLane device selection. Even with lightning.gpu device, Catalyst
-    runs on CPU if JAX lacks CUDA support.
-
-    Returns:
-        Human-readable backend string like "GPU (JAX CUDA)" or "CPU (JAX)"
-    """
-    if HAS_JAX_CUDA:
-        return "GPU (JAX CUDA)"
-    return "CPU (JAX)"
-
-
 def compute_stabilization_kcal(e_vacuum: float, e_solvated: float) -> float:
     """Compute stabilization energy in kcal/mol."""
     return (e_vacuum - e_solvated) * HARTREE_TO_KCAL_MOL

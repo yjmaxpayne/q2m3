@@ -69,6 +69,19 @@ except Exception:
     # Other JAX initialization errors
     pass
 
+# 3. Catalyst availability (for reporting/display purposes)
+# NOTE: qpe.py and rdm.py maintain their own HAS_CATALYST + no-op fallback
+# for graceful degradation. This detection is for display/reporting only.
+HAS_CATALYST = False
+CATALYST_VERSION = "N/A"
+try:
+    import catalyst
+
+    HAS_CATALYST = True
+    CATALYST_VERSION = catalyst.__version__
+except ImportError:
+    pass
+
 # Type alias for supported device types
 DeviceType = Literal["auto", "default.qubit", "lightning.qubit", "lightning.gpu"]
 
@@ -136,6 +149,17 @@ def get_effective_catalyst_device_label() -> str:
     pennylane_device = get_best_available_device()
     jax_backend = "GPU" if HAS_JAX_CUDA else "CPU"
     return f"{pennylane_device} (JAX: {jax_backend})"
+
+
+def get_catalyst_effective_backend() -> str:
+    """Get human-readable Catalyst execution backend label.
+
+    Returns:
+        String like "GPU (JAX CUDA)" or "CPU (JAX)"
+    """
+    if HAS_JAX_CUDA:
+        return "GPU (JAX CUDA)"
+    return "CPU (JAX)"
 
 
 def select_device(

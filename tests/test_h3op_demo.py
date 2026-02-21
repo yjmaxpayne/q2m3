@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-Protective tests for h3op_qpe_h2o_mm_full.py demo script.
+Protective tests for h3o_qpe_full_demo.py demo script.
 
 These tests ensure the refactoring of the 918-line demo script
 maintains functional equivalence. Tests are designed to run quickly
@@ -24,7 +24,7 @@ class TestModuleImports:
 
     def test_import_demo_module(self):
         """Demo module should import without errors."""
-        import examples.h3op_qpe_h2o_mm_full as demo
+        import examples.h3o_qpe_full_demo as demo
 
         assert hasattr(demo, "main")
         assert hasattr(demo, "create_h3o_geometry")
@@ -33,7 +33,7 @@ class TestModuleImports:
 
     def test_import_constants(self):
         """Demo constants should be defined."""
-        from examples.h3op_qpe_h2o_mm_full import (
+        from examples.h3op_demo.config import (
             CHEMICAL_ACCURACY_ERROR,
             ENERGY_CONSISTENCY_THRESHOLD,
             HARTREE_TO_KCAL_MOL,
@@ -58,7 +58,7 @@ class TestCreateH3OGeometry:
 
     def test_returns_list_of_atoms(self):
         """Should return a list of Atom objects."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
         from q2m3.core.qmmm_system import Atom
 
         atoms = create_h3o_geometry()
@@ -70,7 +70,7 @@ class TestCreateH3OGeometry:
 
     def test_contains_correct_elements(self):
         """Should contain 1 O and 3 H atoms."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
 
         atoms = create_h3o_geometry()
         symbols = [atom.symbol for atom in atoms]
@@ -80,7 +80,7 @@ class TestCreateH3OGeometry:
 
     def test_has_correct_total_charge(self):
         """Formal charges should sum to +1 (H3O+ cation)."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
 
         atoms = create_h3o_geometry()
         total_charge = sum(atom.charge for atom in atoms)
@@ -89,7 +89,7 @@ class TestCreateH3OGeometry:
 
     def test_oxygen_is_first_atom(self):
         """Oxygen should be the first atom in the list."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
 
         atoms = create_h3o_geometry()
 
@@ -97,7 +97,7 @@ class TestCreateH3OGeometry:
 
     def test_positions_are_valid_arrays(self):
         """All positions should be 3D numpy arrays."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
 
         atoms = create_h3o_geometry()
 
@@ -111,7 +111,7 @@ class TestGetQPEConfig:
 
     def test_returns_valid_config_dict(self):
         """Should return a dictionary with required keys."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config
+        from examples.h3o_qpe_full_demo import get_qpe_config
 
         config = get_qpe_config()
 
@@ -133,7 +133,7 @@ class TestGetQPEConfig:
 
     def test_default_device_type_is_auto(self):
         """Default device_type should be 'auto'."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config
+        from examples.h3o_qpe_full_demo import get_qpe_config
 
         config = get_qpe_config()
 
@@ -141,7 +141,7 @@ class TestGetQPEConfig:
 
     def test_custom_device_type(self):
         """Should accept custom device_type parameter."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config
+        from examples.h3o_qpe_full_demo import get_qpe_config
 
         config_gpu = get_qpe_config(device_type="lightning.gpu")
         config_cpu = get_qpe_config(device_type="default.qubit")
@@ -151,7 +151,7 @@ class TestGetQPEConfig:
 
     def test_uses_real_qpe(self):
         """use_real_qpe should be True."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config
+        from examples.h3o_qpe_full_demo import get_qpe_config
 
         config = get_qpe_config()
 
@@ -159,7 +159,7 @@ class TestGetQPEConfig:
 
     def test_active_space_is_4e4o(self):
         """Active space should be 4 electrons, 4 orbitals."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config
+        from examples.h3o_qpe_full_demo import get_qpe_config
 
         config = get_qpe_config()
 
@@ -172,7 +172,7 @@ class TestGetBestAvailableDevice:
 
     def test_returns_string(self):
         """Should return a device name string."""
-        from examples.h3op_qpe_h2o_mm_full import get_best_available_device
+        from examples.h3o_qpe_full_demo import get_best_available_device
 
         device = get_best_available_device()
 
@@ -181,7 +181,7 @@ class TestGetBestAvailableDevice:
 
     def test_device_priority_when_no_gpu(self):
         """Without GPU, should return lightning.qubit or default.qubit."""
-        from examples.h3op_qpe_h2o_mm_full import (
+        from examples.h3op_demo.config import (
             HAS_LIGHTNING_GPU,
             HAS_LIGHTNING_QUBIT,
             get_best_available_device,
@@ -202,7 +202,7 @@ class TestGetCatalystEffectiveBackend:
 
     def test_returns_human_readable_string(self):
         """Should return a human-readable backend description."""
-        from examples.h3op_qpe_h2o_mm_full import get_catalyst_effective_backend
+        from examples.h3op_demo.config import get_catalyst_effective_backend
 
         backend = get_catalyst_effective_backend()
 
@@ -221,7 +221,7 @@ class TestBuildOutputData:
     @pytest.fixture
     def mock_input_data(self):
         """Create mock input data for build_output_data."""
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry
+        from examples.h3o_qpe_full_demo import create_h3o_geometry
 
         h3o_atoms = create_h3o_geometry()
         mm_waters = 8
@@ -317,7 +317,7 @@ class TestBuildOutputData:
 
     def test_returns_dict(self, mock_input_data):
         """Should return a dictionary."""
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         result = build_output_data(**mock_input_data)
 
@@ -325,7 +325,7 @@ class TestBuildOutputData:
 
     def test_contains_required_top_level_keys(self, mock_input_data):
         """Output should contain all required top-level keys."""
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         result = build_output_data(**mock_input_data)
 
@@ -350,7 +350,7 @@ class TestBuildOutputData:
 
     def test_system_section_structure(self, mock_input_data):
         """System section should have correct structure."""
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         result = build_output_data(**mock_input_data)
 
@@ -361,7 +361,7 @@ class TestBuildOutputData:
 
     def test_quantum_resources_qubit_calculation(self, mock_input_data):
         """Quantum resources should correctly calculate qubit counts."""
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         result = build_output_data(**mock_input_data)
         qr = result["quantum_resources"]
@@ -375,7 +375,7 @@ class TestBuildOutputData:
 
     def test_catalyst_section_is_none_when_not_provided(self, mock_input_data):
         """Catalyst section should be None when catalyst data is None."""
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         mock_input_data["catalyst_solvation_data"] = None
         result = build_output_data(**mock_input_data)
@@ -386,7 +386,7 @@ class TestBuildOutputData:
         """Timestamp should be in ISO format."""
         from datetime import datetime
 
-        from examples.h3op_qpe_h2o_mm_full import build_output_data
+        from examples.h3o_qpe_full_demo import build_output_data
 
         result = build_output_data(**mock_input_data)
 
@@ -404,7 +404,7 @@ class TestPrintFunctions:
 
     def test_print_header_no_exception(self, capsys):
         """print_header should execute without error."""
-        from examples.h3op_qpe_h2o_mm_full import print_header
+        from examples.h3o_qpe_full_demo import print_header
 
         # Should not raise
         print_header()
@@ -414,7 +414,7 @@ class TestPrintFunctions:
 
     def test_print_section_no_exception(self, capsys):
         """print_section should execute without error."""
-        from examples.h3op_qpe_h2o_mm_full import print_section
+        from examples.h3o_qpe_full_demo import print_section
 
         print_section("Test Section", step=1)
         print_section("No Step Section")
@@ -425,7 +425,7 @@ class TestPrintFunctions:
 
     def test_print_system_info_no_exception(self, capsys):
         """print_system_info should execute without error."""
-        from examples.h3op_qpe_h2o_mm_full import get_qpe_config, print_system_info
+        from examples.h3o_qpe_full_demo import get_qpe_config, print_system_info
 
         config = get_qpe_config()
         print_system_info(config, mm_waters=8)
@@ -436,7 +436,7 @@ class TestPrintFunctions:
 
     def test_print_hf_solvation_effect_no_exception(self, capsys):
         """print_hf_solvation_effect should execute without error."""
-        from examples.h3op_qpe_h2o_mm_full import print_hf_solvation_effect
+        from examples.h3o_qpe_full_demo import print_hf_solvation_effect
 
         solvation_data = {
             "energy_vacuum": -75.0,
@@ -464,7 +464,7 @@ class TestMainFunction:
     @pytest.mark.slow
     def test_main_function_is_callable(self):
         """main function should exist and be callable."""
-        from examples.h3op_qpe_h2o_mm_full import main
+        from examples.h3o_qpe_full_demo import main
 
         assert callable(main)
 
@@ -504,8 +504,8 @@ class TestMainFunction:
             patch(
                 "examples.h3op_demo.computation.PySCFPennyLaneConverter"
             ) as mock_converter_class_comp,
-            patch("examples.h3op_qpe_h2o_mm_full.QuantumQMMM") as mock_qmmm_class_main,
-            patch("examples.h3op_qpe_h2o_mm_full.save_json_results") as mock_save,
+            patch("examples.h3o_qpe_full_demo.QuantumQMMM") as mock_qmmm_class_main,
+            patch("examples.h3o_qpe_full_demo.save_json_results") as mock_save,
         ):
             # Setup mock QuantumQMMM
             mock_qmmm = MagicMock()
@@ -525,7 +525,7 @@ class TestMainFunction:
             mock_converter_class_comp.return_value = mock_converter
 
             # Import and call main
-            from examples.h3op_qpe_h2o_mm_full import main
+            from examples.h3o_qpe_full_demo import main
 
             # This should complete without error
             main()
@@ -548,7 +548,7 @@ class TestAnalysisFunctions:
     @pytest.mark.slow
     def test_analyze_solvation_effect_structure(self):
         """analyze_solvation_effect should return expected structure."""
-        from examples.h3op_qpe_h2o_mm_full import (
+        from examples.h3o_qpe_full_demo import (
             analyze_solvation_effect,
             create_h3o_geometry,
         )
@@ -567,7 +567,7 @@ class TestAnalysisFunctions:
     @pytest.mark.slow
     def test_run_resource_estimation_structure(self):
         """run_resource_estimation should return expected structure."""
-        from examples.h3op_qpe_h2o_mm_full import (
+        from examples.h3o_qpe_full_demo import (
             create_h3o_geometry,
             run_resource_estimation,
         )
@@ -602,8 +602,8 @@ class TestDualCircuitPrecompilation:
         """Catalyst mode should return precompile and execution timing breakdown."""
         from unittest.mock import MagicMock, patch
 
+        from examples.h3o_qpe_full_demo import create_h3o_geometry, get_qpe_config
         from examples.h3op_demo.analysis import analyze_qpe_solvation_effect
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry, get_qpe_config
 
         h3o_atoms = create_h3o_geometry()
         qpe_config = get_qpe_config()
@@ -642,8 +642,8 @@ class TestDualCircuitPrecompilation:
         """Catalyst mode should aggregate precompile and exec times separately."""
         from unittest.mock import MagicMock, patch
 
+        from examples.h3o_qpe_full_demo import create_h3o_geometry, get_qpe_config
         from examples.h3op_demo.analysis import analyze_qpe_solvation_effect
-        from examples.h3op_qpe_h2o_mm_full import create_h3o_geometry, get_qpe_config
 
         h3o_atoms = create_h3o_geometry()
         qpe_config = get_qpe_config()

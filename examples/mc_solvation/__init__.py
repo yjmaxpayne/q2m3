@@ -60,14 +60,21 @@ from .constants import (
 
 # Energy computation
 from .energy import (
+    build_operator_index_map,
     compute_hf_energy_solvated,
     compute_hf_energy_vacuum,
     compute_mm_correction,
     compute_total_energy,
+    create_coeff_callback,
+    decompose_hamiltonian,
 )
 
 # MC loop
-from .mc_loop import create_classical_mc_loop, create_mc_loop
+from .mc_loop import (
+    create_classical_mc_loop,
+    create_mc_loop,
+    create_mm_embedded_mc_loop,
+)
 
 # Main orchestrator
 from .orchestrator import run_solvation
@@ -121,6 +128,9 @@ __all__ = [
     "compute_hf_energy_solvated",
     "compute_total_energy",
     "compute_mm_correction",
+    "decompose_hamiltonian",
+    "build_operator_index_map",
+    "create_coeff_callback",
     # Quantum solver
     "QuantumSolver",
     "SolverResult",
@@ -130,6 +140,7 @@ __all__ = [
     # MC loop
     "create_mc_loop",
     "create_classical_mc_loop",
+    "create_mm_embedded_mc_loop",
     # Statistics
     "TimingData",
     "print_time_statistics",

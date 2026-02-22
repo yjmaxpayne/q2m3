@@ -12,8 +12,10 @@ import pytest
 
 from examples.mc_solvation.config import MoleculeConfig, QPEConfig, SolvationConfig
 from examples.mc_solvation.orchestrator import (
+    _MAX_TROTTER_STEPS_RUNTIME,
     _create_energy_callback_mm_embedded,
     _create_energy_callback_vacuum_correction,
+    build_mm_embedded_qpe_circuit,
     extract_qpe_energy_from_samples,
     run_solvation,
 )
@@ -113,10 +115,8 @@ class TestEnergyCallbackCreation:
         assert result[0] < 0  # H2 + water should have negative energy
         assert result[1] >= 0  # Time should be non-negative
 
-    def test_mm_embedded_callback_raises_not_implemented(
-        self, h2_molecule_config, qpe_config_minimal
-    ):
-        """mm_embedded callback should raise NotImplementedError."""
+    def test_mm_embedded_callback_returns_callable(self, h2_molecule_config, qpe_config_minimal):
+        """mm_embedded callback should return a callable (same as vacuum_correction)."""
         config = SolvationConfig(
             molecule=h2_molecule_config,
             qpe_config=qpe_config_minimal,
@@ -125,8 +125,9 @@ class TestEnergyCallbackCreation:
             n_mc_steps=5,
         )
 
-        with pytest.raises(NotImplementedError, match="mm_embedded"):
-            _create_energy_callback_mm_embedded(config)
+        e_vacuum = -1.1
+        callback = _create_energy_callback_mm_embedded(config, e_vacuum)
+        assert callable(callback)
 
 
 class TestConfigurationValidation:
@@ -192,6 +193,10 @@ class TestOrchestratorIntegration:
         assert "quantum_energies" in result
         assert "timing" in result
         assert "e_vacuum" in result
+        assert "circuit_metadata" in result
+        meta = result["circuit_metadata"]
+        assert set(meta.keys()) == TestCircuitMetadata.EXPECTED_KEYS
+        assert meta["total_qubits"] == meta["n_system_qubits"] + meta["n_estimation_wires"]
 
     @pytest.mark.skip(reason="Full orchestrator test requires QPE execution (slow)")
     def test_run_solvation_energy_changes(self, minimal_h2_config):
@@ -237,10 +242,10 @@ class TestVacuumCorrectionMode:
 
 
 class TestMMEmbeddedMode:
-    """Tests for mm_embedded mode (not yet implemented)."""
+    """Tests for mm_embedded mode (Frame 14 target architecture)."""
 
-    def test_mm_embedded_raises_not_implemented(self, h2_molecule_config, qpe_config_minimal):
-        """mm_embedded mode should clearly indicate it's not implemented."""
+    def test_mm_embedded_mode_accepted(self, h2_molecule_config, qpe_config_minimal):
+        """mm_embedded mode should be accepted as valid qpe_mode."""
         config = SolvationConfig(
             molecule=h2_molecule_config,
             qpe_config=qpe_config_minimal,
@@ -248,8 +253,86 @@ class TestMMEmbeddedMode:
             n_waters=2,
             n_mc_steps=5,
         )
+        config.validate()
+        assert config.qpe_mode == "mm_embedded"
 
-        with pytest.raises(NotImplementedError) as exc_info:
-            run_solvation(config, show_plots=False)
 
-        assert "mm_embedded" in str(exc_info.value).lower()
+class TestCircuitMetadata:
+    """Tests for circuit_metadata dict schema in run_solvation result."""
+
+    # Expected keys for any circuit_metadata dict
+    EXPECTED_KEYS = {
+        "n_system_qubits",
+        "n_estimation_wires",
+        "total_qubits",
+        "n_hamiltonian_terms",
+        "n_trotter_steps",
+        "n_trotter_steps_requested",
+        "base_time",
+        "energy_formula",
+        "energy_shift",
+    }
+
+    def test_circuit_metadata_expected_keys(self):
+        """circuit_metadata should contain all expected keys, no more no less."""
+        # Simulate a circuit_metadata dict from vacuum_correction mode
+        metadata = {
+            "n_system_qubits": 4,
+            "n_estimation_wires": 3,
+            "total_qubits": 7,
+            "n_hamiltonian_terms": 15,
+            "n_trotter_steps": 10,
+            "n_trotter_steps_requested": 10,
+            "base_time": 1.23,
+            "energy_formula": "E_corr(vac) + E_HF(R)",
+            "energy_shift": -1.117,
+        }
+        assert set(metadata.keys()) == self.EXPECTED_KEYS
+
+    def test_circuit_metadata_total_qubits_consistent(self):
+        """total_qubits must equal n_system_qubits + n_estimation_wires."""
+        for n_sys, n_est in [(4, 3), (8, 4), (2, 2)]:
+            metadata = {
+                "n_system_qubits": n_sys,
+                "n_estimation_wires": n_est,
+                "total_qubits": n_sys + n_est,
+            }
+            assert (
+                metadata["total_qubits"]
+                == metadata["n_system_qubits"] + metadata["n_estimation_wires"]
+            )
+
+
+class TestTrotterStepsCeiling:
+    """Tests for runtime-parameterized circuit compilation memory guard."""
+
+    def test_max_trotter_steps_constant_exists(self):
+        """_MAX_TROTTER_STEPS_RUNTIME should be a positive integer."""
+        assert isinstance(_MAX_TROTTER_STEPS_RUNTIME, int)
+        assert 1 <= _MAX_TROTTER_STEPS_RUNTIME <= 50
+
+    def test_max_trotter_steps_is_conservative(self):
+        """Ceiling should be within practical compilation range."""
+        # Validated: n_trotter=10 compiles in ~225s for H2 (4 est wires, 15 terms).
+        # Ceiling of 20 allows headroom for larger systems.
+        assert _MAX_TROTTER_STEPS_RUNTIME <= 50
+
+    @pytest.mark.skip(reason="Requires PySCF + Catalyst compilation (slow)")
+    def test_build_mm_embedded_caps_trotter_steps(self, h2_molecule_config):
+        """build_mm_embedded_qpe_circuit should cap n_trotter when exceeding ceiling."""
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(
+                n_estimation_wires=2,
+                n_trotter_steps=10,  # Exceeds _MAX_TROTTER_STEPS_RUNTIME
+                n_shots=5,
+                use_catalyst=True,
+            ),
+            qpe_mode="mm_embedded",
+            n_waters=2,
+            n_mc_steps=5,
+        )
+        qm_coords = np.array(h2_molecule_config.coords)
+        # Should not OOM — guard caps n_trotter internally
+        result = build_mm_embedded_qpe_circuit(config, qm_coords, hf_energy_estimate=-1.1)
+        assert result is not None

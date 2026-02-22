@@ -19,9 +19,10 @@ Energy Decomposition Strategies:
 Both strategies use pyscf.qmmm.mm_charge() for electrostatic embedding.
 """
 
-from typing import Sequence
+from typing import Callable, Sequence
 
 import numpy as np
+import pennylane as qml
 from pyscf import gto, qmmm, scf
 
 from .config import MoleculeConfig, SolvationConfig
@@ -184,6 +185,195 @@ def compute_mulliken_charges(
     _, charges = mf.mulliken_pop(verbose=0)
 
     return {f"{sym}{i}": float(charges[i]) for i, sym in enumerate(molecule.symbols)}
+
+
+# =============================================================================
+# Hamiltonian Coefficient Decomposition (for mm_embedded mode)
+# =============================================================================
+
+
+def decompose_hamiltonian(H) -> tuple[list[float], list]:
+    """
+    Extract (coeffs, ops) from PennyLane Sum/Hamiltonian.
+
+    PennyLane 0.44+ returns Sum of SProd from qml.qchem.molecular_hamiltonian.
+    We need separate coefficients and operators for qml.dot(coeffs, ops).
+
+    Args:
+        H: PennyLane Hamiltonian (Sum of SProd operators)
+
+    Returns:
+        Tuple of (coefficients, operators) where coefficients are floats
+        and operators are PennyLane operator instances.
+    """
+    coeffs = []
+    ops = []
+    for op in H.operands:
+        if isinstance(op, qml.ops.SProd):
+            coeffs.append(float(op.scalar))
+            ops.append(op.base)
+        else:
+            coeffs.append(1.0)
+            ops.append(op)
+    return coeffs, ops
+
+
+def build_operator_index_map(
+    ops: list,
+    n_system_qubits: int,
+    coeffs: list[float],
+) -> tuple[dict, list[float], list]:
+    """
+    Scan ops to find Identity and single-Z(wire) indices for MM coefficient updates.
+
+    If any Z(wire) for wire in range(n_system_qubits) is missing, appends a
+    coeff=0.0 placeholder to ensure all spin orbitals can receive MM corrections.
+
+    Args:
+        ops: List of PennyLane operators (from decompose_hamiltonian)
+        n_system_qubits: Number of system qubits (= 2 * active_orbitals)
+        coeffs: Corresponding coefficient list (may be extended)
+
+    Returns:
+        Tuple of (index_map, extended_coeffs, extended_ops) where:
+            - index_map: {"identity_idx": int, "z_wire_idx": {wire: idx, ...}}
+            - extended_coeffs: coefficients with any missing Z terms appended
+            - extended_ops: operators with any missing Z terms appended
+    """
+    coeffs = list(coeffs)
+    ops = list(ops)
+
+    identity_idx = None
+    z_wire_idx = {}
+
+    for i, op in enumerate(ops):
+        # Detect multi-wire Identity (matches qml.Identity(wires=[0,1,...]))
+        if isinstance(op, qml.Identity):
+            identity_idx = i
+        # Detect single-qubit PauliZ
+        elif isinstance(op, qml.PauliZ) and len(op.wires) == 1:
+            wire = op.wires[0]
+            z_wire_idx[wire] = i
+
+    # Ensure all spin-orbital wires have a Z entry
+    for wire in range(n_system_qubits):
+        if wire not in z_wire_idx:
+            z_wire_idx[wire] = len(ops)
+            coeffs.append(0.0)
+            ops.append(qml.PauliZ(wires=wire))
+
+    if identity_idx is None:
+        raise ValueError("Hamiltonian has no Identity term — cannot apply MM corrections")
+
+    index_map = {"identity_idx": identity_idx, "z_wire_idx": z_wire_idx}
+    return index_map, coeffs, ops
+
+
+def create_coeff_callback(
+    config: SolvationConfig,
+    base_coeffs: np.ndarray,
+    op_index_map: dict,
+    active_orbitals: int,
+) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+    """
+    Factory: create a callback that computes updated Hamiltonian coefficients
+    for a given solvent configuration.
+
+    The callback runs PySCF vacuum + solvated SCF to compute delta_h1e_mo
+    and delta_nuc, then patches the base_coeffs (which include vacuum H +
+    energy shift) with MM corrections on Identity and Z(wire) terms.
+
+    Physics:
+        H_mm = H_vacuum + delta_nuc * I + sum_p delta_h1e[p,p] * n_p
+        where n_p = (I - Z_p) / 2 for each spin orbital p.
+        Expanding: Identity += delta_nuc + sum_p delta_h1e[p,p]
+                   Z(2p+s)  -= delta_h1e[p,p] / 2    (for s in {0,1})
+
+    Args:
+        config: Solvation configuration
+        base_coeffs: Coefficient array including vacuum H + energy shift
+        op_index_map: From build_operator_index_map()
+        active_orbitals: Number of active spatial orbitals
+
+    Returns:
+        Callable: (solvent_states, qm_coords_flat) -> np.ndarray[n_terms]
+    """
+    from .solvent import SOLVENT_MODELS, get_mm_embedding_data, state_array_to_molecules
+
+    symbols = config.molecule.symbols
+    charge = config.molecule.charge
+    basis = config.molecule.basis
+    active_electrons = config.molecule.active_electrons
+
+    identity_idx = op_index_map["identity_idx"]
+    z_wire_idx = op_index_map["z_wire_idx"]
+
+    n_terms = len(base_coeffs)
+    base_coeffs_copy = np.array(base_coeffs, dtype=np.float64)
+
+    def compute_mm_coefficients(
+        solvent_states: np.ndarray, qm_coords_flat: np.ndarray
+    ) -> np.ndarray:
+        """Compute Hamiltonian coefficients with MM embedding for current solvent config."""
+        # Reconstruct solvent molecules from state array
+        model = SOLVENT_MODELS["TIP3P"]
+        solvent_molecules = state_array_to_molecules(model, np.asarray(solvent_states))
+        mm_coords, mm_charges = get_mm_embedding_data(solvent_molecules)
+
+        if len(mm_charges) == 0:
+            return base_coeffs_copy.copy()
+
+        # Build PySCF molecule
+        coords = np.asarray(qm_coords_flat).reshape(-1, 3)
+        atom_str = "; ".join(
+            f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(symbols, coords, strict=True)
+        )
+        mol = gto.M(atom=atom_str, basis=basis, charge=charge, unit="Angstrom")
+
+        # Vacuum SCF (for MO coefficients)
+        mf_vac = scf.RHF(mol)
+        mf_vac.verbose = 0
+        mf_vac.run()
+
+        # Solvated SCF (for MM-modified integrals)
+        mf_sol = scf.RHF(mol)
+        mf_sol.verbose = 0
+        mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR
+        mf_sol = qmmm.mm_charge(mf_sol, mm_coords_bohr, mm_charges)
+        mf_sol.run()
+
+        # Active space selection
+        n_electrons = mol.nelectron
+        n_core = (n_electrons - active_electrons) // 2
+        active_idx = list(range(n_core, n_core + active_orbitals))
+
+        # MM effect on single-electron integrals (MO basis)
+        mo_coeff_active = mf_vac.mo_coeff[:, active_idx]
+        delta_h1e_ao = mf_sol.get_hcore() - mf_vac.get_hcore()
+        delta_h1e_mo = mo_coeff_active.T @ delta_h1e_ao @ mo_coeff_active
+
+        # MM effect on nuclear energy
+        delta_nuc = mf_sol.energy_nuc() - mol.energy_nuc()
+
+        # Patch coefficients
+        new_coeffs = base_coeffs_copy.copy()
+
+        # Identity: += delta_nuc + sum_p delta_h1e_mo[p,p]
+        identity_correction = delta_nuc
+        for p in range(active_orbitals):
+            identity_correction += delta_h1e_mo[p, p]
+        new_coeffs[identity_idx] += identity_correction
+
+        # Z(wire): -= delta_h1e_mo[p,p] / 2  for each spin orbital
+        for p in range(active_orbitals):
+            for spin in [0, 1]:
+                wire = 2 * p + spin
+                if wire in z_wire_idx:
+                    new_coeffs[z_wire_idx[wire]] -= delta_h1e_mo[p, p] / 2
+
+        return new_coeffs
+
+    return compute_mm_coefficients
 
 
 # =============================================================================

@@ -98,11 +98,19 @@ def print_time_statistics(timing: TimingData, console: Console | None = None) ->
         - np.sum(timing.quantum_times[timing.quantum_times > 0]),
     )
 
-    compile_info = (
-        f"[bold]Compilation Phase[/bold]\n"
-        f"  • Quantum Circuit @qjit: {timing.quantum_compile_time:.2f}s (one-time)\n"
-        f"  • MC Loop @qjit: ~{mc_jit_overhead:.2f}s (first-run overhead)"
-    )
+    if timing.quantum_compile_time > 0:
+        # Legacy mode: separate QPE pre-compilation + MC loop compilation
+        compile_info = (
+            f"[bold]Compilation Phase[/bold]\n"
+            f"  • Quantum Circuit @qjit: {timing.quantum_compile_time:.2f}s (one-time)\n"
+            f"  • MC Loop @qjit: ~{mc_jit_overhead:.2f}s (first-run overhead)"
+        )
+    else:
+        # Unified mode: QPE IR inlined into MC loop @qjit compilation
+        compile_info = (
+            f"[bold]Compilation Phase[/bold]\n"
+            f"  • @qjit compilation: ~{mc_jit_overhead:.2f}s (first-run, includes QPE)"
+        )
     console.print(Panel(compile_info, title="Time Statistics", border_style="blue"))
 
     # Execution phase table

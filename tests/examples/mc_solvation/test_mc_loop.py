@@ -55,13 +55,11 @@ class TestMCLoopCreation:
         """
         from examples.mc_solvation.mc_loop import create_mc_loop
 
-        # Mock quantum circuit (returns dummy samples)
+        # Mock quantum circuit (returns probability distribution for 3 estimation wires)
         def dummy_circuit():
-            return np.zeros((10, 3), dtype=np.int64)
-
-        # Mock energy extraction
-        def dummy_extract(samples, base_time):
-            return np.float64(-1.0)
+            probs = np.zeros(2**3, dtype=np.float64)
+            probs[0] = 1.0  # All probability on bin 0 -> phase=0
+            return probs
 
         # Mock energy computation
         def dummy_energy_impl(qm_coords, solvent_states):
@@ -71,9 +69,10 @@ class TestMCLoopCreation:
         mc_loop = create_mc_loop(
             config=minimal_config,
             compiled_circuit=dummy_circuit,
-            extract_energy=dummy_extract,
             compute_energy_impl=dummy_energy_impl,
             base_time=1.0,
+            n_estimation_wires=3,
+            energy_shift=-1.0,
         )
 
         # Verify the function was created successfully

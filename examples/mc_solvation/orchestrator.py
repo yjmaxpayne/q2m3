@@ -66,6 +66,7 @@ from .energy import (
     compute_mulliken_charges,
     create_coeff_callback,
     create_fused_qpe_callback,
+    create_qpe_step_callback,
     decompose_hamiltonian,
     precompute_vacuum_cache,
 )
@@ -622,14 +623,17 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             active_orbitals,
             vacuum_cache,
         )
-        mc_loop = create_qpe_driven_mc_loop(
-            config=config,
+        step_callback = create_qpe_step_callback(
+            fused_callback=fused_callback,
             compiled_circuit=compiled_circuit,
-            compute_fused_impl=fused_callback,
             base_time=base_time,
             n_estimation_wires=n_estimation_wires_actual,
             energy_shift=energy_shift,
             n_terms=len(base_coeffs),
+        )
+        mc_loop = create_qpe_driven_mc_loop(
+            config=config,
+            compute_step_impl=step_callback,
         )
 
     console.print(f"  MC steps: {config.n_mc_steps}")
@@ -643,10 +647,40 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     qm_coords_flat = qm_coords.flatten().astype(np.float64)
     solvent_states_np = solvent_states.astype(np.float64)
 
-    console.print("  [dim]Compiling @qjit (first-run, includes QPE circuit)...[/dim]")
+    # For qpe_driven mode, pre-compute initial energy OUTSIDE @qjit to avoid
+    # double-inlining QPE circuit IR (OOM fix: 2 IR copies → 1).
+    # The compiled_circuit call here triggers its own @qjit compilation separately
+    # from the MC loop compilation, which is both more memory-efficient and allows
+    # better control over the compilation process.
+    init_energy_precomputed = None
+    precompute_compile_time = 0.0
+    if config.qpe_mode == "qpe_driven":
+        console.print("  [dim]Pre-computing initial QPE energy (triggers QPE @qjit)...[/dim]")
+        precompute_start = time.perf_counter()
+        init_result = step_callback(solvent_states_np, qm_coords_flat)
+        precompute_compile_time = time.perf_counter() - precompute_start
+        init_e_qpe = float(init_result[0])
+        init_e_mm = float(init_result[1])
+        init_energy_precomputed = init_e_qpe + init_e_mm
+        console.print(f"  QPE precompilation + first eval: {precompute_compile_time:.2f}s")
+        console.print(f"  Initial QPE energy: {init_e_qpe:.6f} Ha")
+        console.print(f"  Initial total energy: {init_energy_precomputed:.6f} Ha")
+
+    if config.qpe_mode == "qpe_driven":
+        console.print(
+            "  [dim]Running Python MC loop "
+            "(each step: PySCF callback + pre-compiled @qjit QPE with JAX coefficients)...[/dim]"
+        )
+    else:
+        console.print("  [dim]Compiling @qjit (first-run, includes QPE circuit)...[/dim]")
 
     loop_start = time.perf_counter()
-    result = mc_loop(solvent_states_np, qm_coords_flat, config.random_seed)
+    if config.qpe_mode == "qpe_driven":
+        result = mc_loop(
+            solvent_states_np, qm_coords_flat, config.random_seed, init_energy_precomputed
+        )
+    else:
+        result = mc_loop(solvent_states_np, qm_coords_flat, config.random_seed)
     loop_time = time.perf_counter() - loop_start
 
     # Compute compilation overhead from timing breakdown
@@ -655,8 +689,11 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     mc_exec_time = float(np.sum(hf_times_arr) + np.sum(q_times_arr[q_times_arr > 0]))
     mc_compile_time = max(0.0, loop_time - mc_exec_time)
 
-    console.print(f"\n  @qjit compilation: {mc_compile_time:.2f}s (first-run, includes QPE)")
-    console.print(f"  MC sampling completed in {mc_exec_time:.2f}s")
+    if config.qpe_mode == "qpe_driven":
+        console.print(f"\n  QPE @qjit precompilation: {precompute_compile_time:.2f}s")
+    else:
+        console.print(f"\n  @qjit compilation: {mc_compile_time:.2f}s (first-run, includes QPE)")
+    console.print(f"\n  MC sampling completed in {mc_exec_time:.2f}s")
     console.print(f"  Acceptance rate: {float(result['acceptance_rate']) * 100:.1f}%")
 
     # ==========================================================================
@@ -671,18 +708,29 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
 
     console.print(f"  Initial energy: {initial_e:.6f} Ha")
     console.print(f"  Final energy:   {final_e:.6f} Ha")
-    console.print(f"  Best HF energy: {best_e:.6f} Ha")
-    console.print(f"  HF energy change: {energy_change:+.4f} kcal/mol")
 
-    # QPE-validated best energy (more accurate with electron correlation)
+    is_qpe_driven = config.qpe_mode == "qpe_driven"
+
+    if is_qpe_driven:
+        console.print(f"  Best total energy (QPE+MM): {best_e:.6f} Ha")
+        console.print(f"  Energy change: {energy_change:+.4f} kcal/mol")
+    else:
+        console.print(f"  Best HF energy: {best_e:.6f} Ha")
+        console.print(f"  HF energy change: {energy_change:+.4f} kcal/mol")
+
+    # QPE energy details
     best_qpe_e = float(result["best_qpe_energy"])
     n_eval = int(result["n_quantum_evaluations"])
     if n_eval > 0 and best_qpe_e < 1e9:  # Check if any QPE evaluation occurred
         qpe_change = (best_qpe_e - initial_e) * HARTREE_TO_KCAL_MOL
         console.print()
-        console.print("[bold cyan]  QPE-Validated Best (Recommended):[/bold cyan]")
-        console.print(f"    Best QPE energy: {best_qpe_e:.6f} Ha")
-        console.print(f"    QPE energy change: {qpe_change:+.4f} kcal/mol")
+        if is_qpe_driven:
+            console.print("[bold cyan]  QPE Energy Component:[/bold cyan]")
+            console.print(f"    Best QPE energy: {best_qpe_e:.6f} Ha (without E_MM)")
+        else:
+            console.print("[bold cyan]  QPE-Validated Best (Recommended):[/bold cyan]")
+            console.print(f"    Best QPE energy: {best_qpe_e:.6f} Ha")
+            console.print(f"    QPE energy change: {qpe_change:+.4f} kcal/mol")
 
         # Display best QPE configuration (all solvent molecules)
         best_qpe_solvents = np.array(result["best_qpe_solvent_states"])
@@ -719,7 +767,10 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             )
 
     # Timing statistics
-    timing = create_timing_data_from_result(result, 0.0, loop_time)
+    qpe_compile = precompute_compile_time if config.qpe_mode == "qpe_driven" else 0.0
+    timing = create_timing_data_from_result(
+        result, qpe_compile, loop_time, qpe_mode=config.qpe_mode
+    )
     print_time_statistics(timing, console)
 
     # Plots

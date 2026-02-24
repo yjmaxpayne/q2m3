@@ -24,6 +24,7 @@ class TimingData:
     quantum_times: np.ndarray = field(default_factory=lambda: np.array([]))
     n_mc_steps: int = 0
     n_quantum_evals: int = 0
+    qpe_mode: str = ""
 
 
 def create_timing_table(timing: TimingData) -> Table:
@@ -103,7 +104,14 @@ def print_time_statistics(timing: TimingData, console: Console | None = None) ->
         - np.sum(timing.quantum_times[timing.quantum_times > 0]),
     )
 
-    if timing.quantum_compile_time > 0:
+    if timing.qpe_mode == "qpe_driven":
+        compile_info = (
+            f"[bold]Compilation Phase[/bold]\n"
+            f"  • QPE @qjit precompilation: {timing.quantum_compile_time:.2f}s "
+            f"(parameterized TrotterProduct)\n"
+            f"  • MC loop: Python (calls precompiled QPE via JAX arrays)"
+        )
+    elif timing.quantum_compile_time > 0:
         # Legacy mode: separate QPE pre-compilation + MC loop compilation
         compile_info = (
             f"[bold]Compilation Phase[/bold]\n"
@@ -130,6 +138,7 @@ def create_timing_data_from_result(
     result: dict,
     compile_time: float,
     loop_time: float,
+    qpe_mode: str = "",
 ) -> TimingData:
     """Create TimingData from MC loop result dictionary."""
     hf_times = np.array(result.get("hf_times", []))
@@ -144,4 +153,5 @@ def create_timing_data_from_result(
         n_quantum_evals=int(
             result.get("n_quantum_evaluations", result.get("n_qpe_evaluations", 0))
         ),
+        qpe_mode=qpe_mode,
     )

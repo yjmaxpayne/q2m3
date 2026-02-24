@@ -76,6 +76,7 @@ from .mc_loop import (
     create_classical_mc_loop,
     create_mc_loop,
     create_mm_embedded_mc_loop,
+    create_qpe_driven_mc_loop,
 )
 
 # Main orchestrator
@@ -145,6 +146,7 @@ __all__ = [
     "create_mc_loop",
     "create_classical_mc_loop",
     "create_mm_embedded_mc_loop",
+    "create_qpe_driven_mc_loop",
     # Statistics
     "TimingData",
     "print_time_statistics",

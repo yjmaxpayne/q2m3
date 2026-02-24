@@ -34,18 +34,23 @@ def create_timing_table(timing: TimingData) -> Table:
     table.add_column("Avg", justify="right")
     table.add_column("StdDev", justify="right")
 
-    # HF statistics
+    # QPE-driven mode: n_quantum_evals == n_mc_steps (every step runs QPE)
+    is_qpe_driven = timing.n_quantum_evals == timing.n_mc_steps and timing.n_mc_steps > 0
+
+    # HF / Callback statistics
+    hf_label = "Callback" if is_qpe_driven else "HF"
     hf_total = np.sum(timing.hf_times)
     hf_avg = np.mean(timing.hf_times) * 1000 if len(timing.hf_times) > 0 else 0
     hf_std = np.std(timing.hf_times) * 1000 if len(timing.hf_times) > 0 else 0
     table.add_row(
-        f"HF ({timing.n_mc_steps}x)",
+        f"{hf_label} ({timing.n_mc_steps}x)",
         f"{hf_total:.1f}s",
         f"{hf_avg:.1f}ms",
         f"{hf_std:.1f}ms",
     )
 
-    # Quantum statistics
+    # Quantum / QPE statistics
+    q_label = "QPE" if is_qpe_driven else "Quantum"
     q_valid = timing.quantum_times[timing.quantum_times > 0]
     n_q = len(q_valid)
     if n_q > 0:
@@ -53,7 +58,7 @@ def create_timing_table(timing: TimingData) -> Table:
         q_avg = np.mean(q_valid) * 1000
         q_std = np.std(q_valid) * 1000
         table.add_row(
-            f"Quantum ({n_q}x)",
+            f"{q_label} ({n_q}x)",
             f"{q_total:.1f}s",
             f"{q_avg:.1f}ms",
             f"{q_std:.1f}ms",

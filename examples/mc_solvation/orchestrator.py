@@ -4,7 +4,7 @@
 MC Solvation Orchestrator
 
 Main workflow coordinator for QM/MM Monte Carlo solvation simulations
-with quantum algorithm validation. Supports two QPE modes:
+with quantum algorithm validation. Supports three QPE modes:
 
 1. vacuum_correction: E_total = E_corr(vac) + E_HF(R)
    - QPE on H' = H_vac - E_HF·I measures correlation energy directly
@@ -14,6 +14,11 @@ with quantum algorithm validation. Supports two QPE modes:
 2. mm_embedded: E_total = E_QPE(with_MM_embedding)
    - Rigorous: MM charges included in QPE Hamiltonian
    - Slow: Requires dynamic Hamiltonian reconstruction per evaluation
+
+3. qpe_driven: E_total = E_QPE(H_eff) + E_MM(sol-sol)
+   - QPE energy directly drives Metropolis acceptance criterion
+   - Every MC step runs QPE (no interval-based scheduling)
+   - Fused callback consolidates coefficient + energy in single PySCF call
 
 Usage:
     from mc_solvation import SolvationConfig, MoleculeConfig, run_solvation
@@ -60,9 +65,15 @@ from .energy import (
     compute_mm_correction,
     compute_mulliken_charges,
     create_coeff_callback,
+    create_fused_qpe_callback,
     decompose_hamiltonian,
+    precompute_vacuum_cache,
 )
-from .mc_loop import create_mc_loop, create_mm_embedded_mc_loop
+from .mc_loop import (
+    create_mc_loop,
+    create_mm_embedded_mc_loop,
+    create_qpe_driven_mc_loop,
+)
 from .solvent import TIP3P_WATER, initialize_solvent_ring, molecules_to_state_array
 from .statistics import create_timing_data_from_result, print_time_statistics
 
@@ -542,10 +553,35 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             "energy_formula": "E_QPE(H_eff with MM)",
             "energy_shift": energy_shift,
         }
+    elif config.qpe_mode == "qpe_driven":
+        # Reuse mm_embedded QPE circuit (same runtime-coefficient architecture)
+        (
+            compiled_circuit,
+            base_coeffs,
+            ops,
+            base_time,
+            op_index_map,
+            n_estimation_wires_actual,
+            energy_shift,
+            n_system_qubits,
+            active_orbitals,
+            n_trotter_actual,
+        ) = build_mm_embedded_qpe_circuit(config, qm_coords, e_vacuum)
+        circuit_metadata = {
+            "n_system_qubits": n_system_qubits,
+            "n_estimation_wires": n_estimation_wires_actual,
+            "total_qubits": n_system_qubits + n_estimation_wires_actual,
+            "n_hamiltonian_terms": len(base_coeffs),
+            "n_trotter_steps": n_trotter_actual,
+            "n_trotter_steps_requested": qpe.n_trotter_steps,
+            "base_time": base_time,
+            "energy_formula": "E_QPE(H_eff) + E_MM(sol-sol)",
+            "energy_shift": energy_shift,
+        }
 
     console.print(f"  Base time (shifted QPE): {base_time:.6f}")
     console.print(f"  Energy shift: {energy_shift:.6f} Ha")
-    if config.qpe_mode == "mm_embedded":
+    if config.qpe_mode in ("mm_embedded", "qpe_driven"):
         console.print(f"  Hamiltonian terms: {len(base_coeffs)}")
 
     # Create MC loop
@@ -577,9 +613,30 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             n_estimation_wires=n_estimation_wires_actual,
             energy_shift=energy_shift,
         )
+    elif config.qpe_mode == "qpe_driven":
+        vacuum_cache = precompute_vacuum_cache(config)
+        fused_callback = create_fused_qpe_callback(
+            config,
+            base_coeffs,
+            op_index_map,
+            active_orbitals,
+            vacuum_cache,
+        )
+        mc_loop = create_qpe_driven_mc_loop(
+            config=config,
+            compiled_circuit=compiled_circuit,
+            compute_fused_impl=fused_callback,
+            base_time=base_time,
+            n_estimation_wires=n_estimation_wires_actual,
+            energy_shift=energy_shift,
+            n_terms=len(base_coeffs),
+        )
 
     console.print(f"  MC steps: {config.n_mc_steps}")
-    console.print(f"  QPE interval: every {config.qpe_config.qpe_interval} steps")
+    if config.qpe_mode == "qpe_driven":
+        console.print("  QPE interval: every step (QPE-driven)")
+    else:
+        console.print(f"  QPE interval: every {config.qpe_config.qpe_interval} steps")
     console.print(f"  Temperature: {config.temperature} K")
 
     # Run MC loop (first call triggers @qjit compilation, including QPE circuit)

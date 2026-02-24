@@ -257,6 +257,41 @@ class TestMMEmbeddedMode:
         assert config.qpe_mode == "mm_embedded"
 
 
+class TestQPEDrivenMode:
+    """Tests for qpe_driven mode orchestrator integration."""
+
+    def test_qpe_driven_mode_accepted(self, h2_molecule_config, qpe_config_minimal):
+        """qpe_driven mode should be accepted as valid qpe_mode."""
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=qpe_config_minimal,
+            qpe_mode="qpe_driven",
+            n_waters=2,
+            n_mc_steps=5,
+        )
+        config.validate()
+        assert config.qpe_mode == "qpe_driven"
+
+    def test_qpe_driven_circuit_metadata_has_correct_energy_formula(self):
+        """qpe_driven circuit_metadata should have QPE-driven energy formula."""
+        metadata = {
+            "n_system_qubits": 4,
+            "n_estimation_wires": 3,
+            "total_qubits": 7,
+            "n_hamiltonian_terms": 15,
+            "n_trotter_steps": 2,
+            "n_trotter_steps_requested": 2,
+            "base_time": 1.23,
+            "energy_formula": "E_QPE(H_eff) + E_MM(sol-sol)",
+            "energy_shift": -1.117,
+        }
+        assert metadata["energy_formula"] == "E_QPE(H_eff) + E_MM(sol-sol)"
+        # Same keys as other modes
+        from tests.examples.mc_solvation.test_orchestrator import TestCircuitMetadata
+
+        assert set(metadata.keys()) == TestCircuitMetadata.EXPECTED_KEYS
+
+
 class TestCircuitMetadata:
     """Tests for circuit_metadata dict schema in run_solvation result."""
 

@@ -134,6 +134,7 @@ class SolvationConfig:
         qpe_mode: Energy evaluation mode
             - "vacuum_correction": E_QPE(vacuum) + ΔE_MM(HF) [fast, approximate]
             - "mm_embedded": E_QPE(with_MM_embedding) [slow, rigorous]
+            - "qpe_driven": E_QPE(H_eff) + E_MM(sol-sol) [QPE drives Metropolis every step]
         n_waters: Number of TIP3P water molecules
         n_mc_steps: Total MC sampling steps
         temperature: Simulation temperature in Kelvin
@@ -154,7 +155,7 @@ class SolvationConfig:
 
     molecule: MoleculeConfig
     qpe_config: QPEConfig = field(default_factory=QPEConfig)
-    qpe_mode: Literal["vacuum_correction", "mm_embedded"] = "vacuum_correction"
+    qpe_mode: Literal["vacuum_correction", "mm_embedded", "qpe_driven"] = "vacuum_correction"
     n_waters: int = DEFAULT_N_WATERS
     n_mc_steps: int = DEFAULT_N_MC_STEPS
     temperature: float = DEFAULT_TEMPERATURE
@@ -167,6 +168,8 @@ class SolvationConfig:
     @property
     def n_qpe_evaluations(self) -> int:
         """Calculate total number of QPE evaluations."""
+        if self.qpe_mode == "qpe_driven":
+            return self.n_mc_steps
         return self.n_mc_steps // self.qpe_config.qpe_interval
 
     @property
@@ -183,5 +186,5 @@ class SolvationConfig:
             raise ValueError("n_mc_steps must be at least 1")
         if self.qpe_config.qpe_interval > self.n_mc_steps:
             raise ValueError("qpe_interval cannot exceed n_mc_steps")
-        if self.qpe_mode not in ("vacuum_correction", "mm_embedded"):
+        if self.qpe_mode not in ("vacuum_correction", "mm_embedded", "qpe_driven"):
             raise ValueError(f"Invalid qpe_mode: {self.qpe_mode}")

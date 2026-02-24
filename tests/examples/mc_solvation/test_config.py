@@ -237,3 +237,24 @@ class TestSolvationConfig:
             qpe_mode="mm_embedded",
         )
         assert config.qpe_mode == "mm_embedded"
+
+    def test_qpe_driven_mode(self, h2_molecule_config, qpe_config_minimal):
+        """Should accept qpe_driven mode without raising."""
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=qpe_config_minimal,
+            qpe_mode="qpe_driven",
+            n_mc_steps=50,
+        )
+        assert config.qpe_mode == "qpe_driven"
+        config.validate()  # Should not raise
+
+    def test_n_qpe_evaluations_qpe_driven(self, h2_molecule_config, qpe_config_minimal):
+        """n_qpe_evaluations for qpe_driven should equal n_mc_steps."""
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=qpe_config_minimal,
+            qpe_mode="qpe_driven",
+            n_mc_steps=50,
+        )
+        assert config.n_qpe_evaluations == 50

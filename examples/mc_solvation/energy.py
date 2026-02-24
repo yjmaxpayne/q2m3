@@ -269,6 +269,56 @@ def build_operator_index_map(
     return index_map, coeffs, ops
 
 
+def precompute_vacuum_cache(config: SolvationConfig) -> dict:
+    """
+    Pre-compute and cache vacuum SCF data (runs once at initialization).
+
+    Eliminates redundant vacuum SCF calls in MC loop callbacks by caching
+    all vacuum-derived quantities needed for MM coefficient patching.
+
+    Args:
+        config: Solvation configuration with molecule definition
+
+    Returns:
+        Dictionary containing cached vacuum SCF data:
+            - h_core_vac: Vacuum core Hamiltonian (AO basis)
+            - mo_coeff: Full MO coefficient matrix
+            - mo_coeff_active: Active-space MO coefficients (AO x active_orbitals)
+            - energy_nuc_vac: Vacuum nuclear repulsion energy
+            - e_vacuum: Total vacuum HF energy
+            - active_idx: List of active orbital indices
+    """
+    symbols = config.molecule.symbols
+    coords = config.molecule.coords
+    charge = config.molecule.charge
+    basis = config.molecule.basis
+    active_electrons = config.molecule.active_electrons
+    active_orbitals = config.molecule.active_orbitals
+
+    # Build PySCF molecule
+    atom_str = "; ".join(f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(symbols, coords, strict=True))
+    mol = gto.M(atom=atom_str, basis=basis, charge=charge, unit="Angstrom")
+
+    # Run vacuum RHF SCF
+    mf_vac = scf.RHF(mol)
+    mf_vac.verbose = 0
+    mf_vac.run()
+
+    # Active space indices
+    n_electrons = mol.nelectron
+    n_core = (n_electrons - active_electrons) // 2
+    active_idx = list(range(n_core, n_core + active_orbitals))
+
+    return {
+        "h_core_vac": mf_vac.get_hcore(),
+        "mo_coeff": mf_vac.mo_coeff,
+        "mo_coeff_active": mf_vac.mo_coeff[:, active_idx],
+        "energy_nuc_vac": mol.energy_nuc(),
+        "e_vacuum": float(mf_vac.e_tot),
+        "active_idx": active_idx,
+    }
+
+
 def create_coeff_callback(
     config: SolvationConfig,
     base_coeffs: np.ndarray,
@@ -374,6 +424,103 @@ def create_coeff_callback(
         return new_coeffs
 
     return compute_mm_coefficients
+
+
+def create_fused_qpe_callback(
+    config: SolvationConfig,
+    base_coeffs: np.ndarray,
+    op_index_map: dict,
+    active_orbitals: int,
+    vacuum_cache: dict,
+) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+    """
+    Factory: fused callback for qpe_driven mode.
+
+    Single solvated SCF per call (using cached vacuum data).
+    Returns flat array: [coeffs(n_terms), e_mm_sol_sol, e_hf_solvated]
+
+    Args:
+        config: Solvation configuration
+        base_coeffs: Coefficient array including vacuum H + energy shift
+        op_index_map: From build_operator_index_map()
+        active_orbitals: Number of active spatial orbitals
+        vacuum_cache: Pre-computed vacuum data from precompute_vacuum_cache()
+
+    Returns:
+        Callable: (solvent_states, qm_coords_flat) -> np.ndarray[n_terms + 2]
+    """
+    from .solvent import SOLVENT_MODELS, get_mm_embedding_data, state_array_to_molecules
+
+    symbols = config.molecule.symbols
+    charge = config.molecule.charge
+    basis = config.molecule.basis
+
+    identity_idx = op_index_map["identity_idx"]
+    z_wire_idx = op_index_map["z_wire_idx"]
+
+    n_terms = len(base_coeffs)
+    base_coeffs_copy = np.array(base_coeffs, dtype=np.float64)
+
+    # Unpack vacuum cache
+    h_core_vac = vacuum_cache["h_core_vac"]
+    mo_coeff_active = vacuum_cache["mo_coeff_active"]
+    energy_nuc_vac = vacuum_cache["energy_nuc_vac"]
+
+    def fused_callback(solvent_states: np.ndarray, qm_coords_flat: np.ndarray) -> np.ndarray:
+        """Compute fused Hamiltonian coefficients + energies for qpe_driven mode."""
+        # Reconstruct solvent molecules from state array
+        model = SOLVENT_MODELS["TIP3P"]
+        solvent_molecules = state_array_to_molecules(model, np.asarray(solvent_states))
+        mm_coords, mm_charges = get_mm_embedding_data(solvent_molecules)
+
+        if len(mm_charges) == 0:
+            e_mm = compute_mm_energy(solvent_molecules)
+            return np.concatenate([base_coeffs_copy.copy(), [e_mm, 0.0]])
+
+        # Build PySCF molecule
+        coords = np.asarray(qm_coords_flat).reshape(-1, 3)
+        atom_str = "; ".join(
+            f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(symbols, coords, strict=True)
+        )
+        mol = gto.M(atom=atom_str, basis=basis, charge=charge, unit="Angstrom")
+
+        # Solvated SCF only (vacuum data from cache)
+        mf_sol = scf.RHF(mol)
+        mf_sol.verbose = 0
+        mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR
+        mf_sol = qmmm.mm_charge(mf_sol, mm_coords_bohr, mm_charges)
+        mf_sol.run()
+
+        # MM effect on single-electron integrals (MO basis) using cached vacuum data
+        delta_h1e_ao = mf_sol.get_hcore() - h_core_vac
+        delta_h1e_mo = mo_coeff_active.T @ delta_h1e_ao @ mo_coeff_active
+
+        # MM effect on nuclear energy using cached vacuum data
+        delta_nuc = mf_sol.energy_nuc() - energy_nuc_vac
+
+        # Patch coefficients (same logic as create_coeff_callback)
+        new_coeffs = base_coeffs_copy.copy()
+
+        # Identity: += delta_nuc + sum_p delta_h1e_mo[p,p]
+        identity_correction = delta_nuc
+        for p in range(active_orbitals):
+            identity_correction += delta_h1e_mo[p, p]
+        new_coeffs[identity_idx] += identity_correction
+
+        # Z(wire): -= delta_h1e_mo[p,p] / 2  for each spin orbital
+        for p in range(active_orbitals):
+            for spin in [0, 1]:
+                wire = 2 * p + spin
+                if wire in z_wire_idx:
+                    new_coeffs[z_wire_idx[wire]] -= delta_h1e_mo[p, p] / 2
+
+        # Append additional energies for qpe_driven mode
+        e_mm_sol_sol = compute_mm_energy(solvent_molecules)
+        e_hf_solvated = float(mf_sol.e_tot)
+
+        return np.concatenate([new_coeffs, [e_mm_sol_sol, e_hf_solvated]])
+
+    return fused_callback
 
 
 # =============================================================================

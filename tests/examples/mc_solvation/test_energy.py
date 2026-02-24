@@ -8,22 +8,30 @@ Note: These tests involve actual quantum chemistry calculations and may be slow.
 """
 
 import numpy as np
+import pennylane as qml
 import pytest
 
 from examples.mc_solvation.constants import HARTREE_TO_KCAL_MOL
 from examples.mc_solvation.energy import (
     _compute_hf_energy_solvated_impl,
     _compute_hf_energy_vacuum_impl,
+    build_operator_index_map,
     compute_hf_energy_solvated,
     compute_hf_energy_vacuum,
     compute_mm_correction,
     compute_total_energy,
+    create_coeff_callback,
     create_energy_callback,
+    create_fused_qpe_callback,
+    decompose_hamiltonian,
+    precompute_vacuum_cache,
 )
 from examples.mc_solvation.solvent import (
     TIP3P_WATER,
     SolventMolecule,
+    compute_mm_energy,
     initialize_solvent_ring,
+    molecules_to_state_array,
 )
 
 
@@ -207,6 +215,47 @@ class TestCallbackImplementations:
         assert abs(e_high_level - e_impl) < 1e-10
 
 
+class TestPrecomputeVacuumCache:
+    """Tests for precompute_vacuum_cache()."""
+
+    def test_returns_dict_with_all_keys(self, solvation_config_minimal):
+        """Cache should contain all required keys."""
+        cache = precompute_vacuum_cache(solvation_config_minimal)
+        expected_keys = {
+            "h_core_vac",
+            "mo_coeff",
+            "mo_coeff_active",
+            "energy_nuc_vac",
+            "e_vacuum",
+            "active_idx",
+        }
+        assert set(cache.keys()) == expected_keys
+
+    def test_e_vacuum_matches_compute_hf_energy_vacuum(self, solvation_config_minimal):
+        """Cached e_vacuum should match compute_hf_energy_vacuum()."""
+        cache = precompute_vacuum_cache(solvation_config_minimal)
+        e_vacuum_ref = compute_hf_energy_vacuum(solvation_config_minimal.molecule)
+        assert abs(cache["e_vacuum"] - e_vacuum_ref) < 1e-10
+
+    def test_mo_coeff_active_shape(self, solvation_config_minimal):
+        """mo_coeff_active should have correct shape (n_ao, active_orbitals)."""
+        cache = precompute_vacuum_cache(solvation_config_minimal)
+        active_orbitals = solvation_config_minimal.molecule.active_orbitals
+        assert cache["mo_coeff_active"].shape[1] == active_orbitals
+
+    def test_h_core_vac_is_symmetric(self, solvation_config_minimal):
+        """h_core_vac should be a symmetric matrix."""
+        cache = precompute_vacuum_cache(solvation_config_minimal)
+        h = cache["h_core_vac"]
+        np.testing.assert_allclose(h, h.T, atol=1e-12)
+
+    def test_active_idx_range(self, solvation_config_minimal):
+        """active_idx should be a list of correct length."""
+        cache = precompute_vacuum_cache(solvation_config_minimal)
+        active_orbitals = solvation_config_minimal.molecule.active_orbitals
+        assert len(cache["active_idx"]) == active_orbitals
+
+
 class TestEnergyCallback:
     """Tests for energy callback factory."""
 
@@ -233,3 +282,125 @@ class TestEnergyCallback:
         assert isinstance(energy, (float, np.floating))
         assert not np.isnan(energy)
         assert not np.isinf(energy)
+
+
+# =============================================================================
+# Fused QPE Callback Tests
+# =============================================================================
+
+
+@pytest.fixture
+def h2_hamiltonian_data(h2_molecule_config):
+    """Build H2 Hamiltonian data needed for callback tests."""
+    mol_cfg = h2_molecule_config
+    H, n_qubits = qml.qchem.molecular_hamiltonian(
+        symbols=mol_cfg.symbols,
+        coordinates=np.array(mol_cfg.coords).flatten(),
+        charge=mol_cfg.charge,
+        basis=mol_cfg.basis,
+        mapping="jordan_wigner",
+    )
+
+    coeffs, ops = decompose_hamiltonian(H)
+    op_index_map, coeffs, ops = build_operator_index_map(ops, n_qubits, coeffs)
+    base_coeffs = np.array(coeffs, dtype=np.float64)
+
+    return {
+        "base_coeffs": base_coeffs,
+        "op_index_map": op_index_map,
+        "n_qubits": n_qubits,
+        "active_orbitals": mol_cfg.active_orbitals,
+    }
+
+
+@pytest.fixture
+def h2_test_solvent():
+    """Create 2 water molecules around H2 for callback testing."""
+    waters = initialize_solvent_ring(
+        model=TIP3P_WATER,
+        n_molecules=2,
+        center=np.array([0.0, 0.0, 0.37]),
+        radius=4.0,
+        random_seed=42,
+    )
+    return waters
+
+
+class TestCreateFusedQpeCallback:
+    """Tests for create_fused_qpe_callback()."""
+
+    def test_returns_correct_shape(
+        self, solvation_config_minimal, h2_hamiltonian_data, h2_test_solvent
+    ):
+        """Fused callback should return array of shape (n_terms + 2,)."""
+        vacuum_cache = precompute_vacuum_cache(solvation_config_minimal)
+
+        callback = create_fused_qpe_callback(
+            config=solvation_config_minimal,
+            base_coeffs=h2_hamiltonian_data["base_coeffs"],
+            op_index_map=h2_hamiltonian_data["op_index_map"],
+            active_orbitals=h2_hamiltonian_data["active_orbitals"],
+            vacuum_cache=vacuum_cache,
+        )
+
+        solvent_states = molecules_to_state_array(h2_test_solvent)
+        qm_coords_flat = np.array(solvation_config_minimal.molecule.coords).flatten()
+
+        result = callback(solvent_states, qm_coords_flat)
+
+        n_terms = len(h2_hamiltonian_data["base_coeffs"])
+        assert result.shape == (n_terms + 2,)
+
+    def test_coeffs_match_coeff_callback(
+        self, solvation_config_minimal, h2_hamiltonian_data, h2_test_solvent
+    ):
+        """Fused callback coeffs should match create_coeff_callback output."""
+        vacuum_cache = precompute_vacuum_cache(solvation_config_minimal)
+
+        fused = create_fused_qpe_callback(
+            config=solvation_config_minimal,
+            base_coeffs=h2_hamiltonian_data["base_coeffs"],
+            op_index_map=h2_hamiltonian_data["op_index_map"],
+            active_orbitals=h2_hamiltonian_data["active_orbitals"],
+            vacuum_cache=vacuum_cache,
+        )
+        original = create_coeff_callback(
+            config=solvation_config_minimal,
+            base_coeffs=h2_hamiltonian_data["base_coeffs"],
+            op_index_map=h2_hamiltonian_data["op_index_map"],
+            active_orbitals=h2_hamiltonian_data["active_orbitals"],
+        )
+
+        solvent_states = molecules_to_state_array(h2_test_solvent)
+        qm_coords_flat = np.array(solvation_config_minimal.molecule.coords).flatten()
+
+        fused_result = fused(solvent_states, qm_coords_flat)
+        original_result = original(solvent_states, qm_coords_flat)
+
+        n_terms = len(h2_hamiltonian_data["base_coeffs"])
+        np.testing.assert_allclose(fused_result[:n_terms], original_result, atol=1e-10)
+
+    def test_e_mm_matches_compute_mm_energy(
+        self, solvation_config_minimal, h2_hamiltonian_data, h2_test_solvent
+    ):
+        """Fused callback e_mm_sol_sol should match compute_mm_energy()."""
+        vacuum_cache = precompute_vacuum_cache(solvation_config_minimal)
+
+        fused = create_fused_qpe_callback(
+            config=solvation_config_minimal,
+            base_coeffs=h2_hamiltonian_data["base_coeffs"],
+            op_index_map=h2_hamiltonian_data["op_index_map"],
+            active_orbitals=h2_hamiltonian_data["active_orbitals"],
+            vacuum_cache=vacuum_cache,
+        )
+
+        solvent_states = molecules_to_state_array(h2_test_solvent)
+        qm_coords_flat = np.array(solvation_config_minimal.molecule.coords).flatten()
+
+        result = fused(solvent_states, qm_coords_flat)
+
+        n_terms = len(h2_hamiltonian_data["base_coeffs"])
+        e_mm_from_fused = result[n_terms]
+        e_mm_ref = compute_mm_energy(h2_test_solvent)
+
+        assert abs(e_mm_from_fused - e_mm_ref) < 1e-10

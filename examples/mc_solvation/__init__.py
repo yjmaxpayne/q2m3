@@ -66,7 +66,9 @@ from .energy import (
     compute_mm_correction,
     compute_total_energy,
     create_coeff_callback,
+    create_fused_qpe_callback,
     decompose_hamiltonian,
+    precompute_vacuum_cache,
 )
 
 # MC loop
@@ -131,6 +133,8 @@ __all__ = [
     "decompose_hamiltonian",
     "build_operator_index_map",
     "create_coeff_callback",
+    "create_fused_qpe_callback",
+    "precompute_vacuum_cache",
     # Quantum solver
     "QuantumSolver",
     "SolverResult",

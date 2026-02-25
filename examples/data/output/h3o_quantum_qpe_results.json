@@ -5,6 +5,8 @@
   "lightning_gpu_available": true,
   "jax_cuda_available": true,
   "jax_backend": "gpu",
+  "jax_cuda_available": true,
+  "jax_backend": "gpu",
   "system": {
     "qm_region": "H3O+",
     "n_atoms": 4,
@@ -40,11 +42,11 @@
   },
   "solvation_effect_standard_qpe": {
     "device": "lightning.gpu",
-    "energy_vacuum_hartree": -76.50344019396726,
-    "energy_solvated_hartree": -76.50921973590124,
-    "energy_hf_solvated": -75.33215481688737,
-    "stabilization_hartree": 0.005779541933975452,
-    "stabilization_kcal_mol": 3.6267168912637753,
+    "energy_vacuum_hartree": -76.5034401939673,
+    "energy_solvated_hartree": -76.5092197359012,
+    "energy_hf_solvated": -75.33215481688734,
+    "stabilization_hartree": 0.005779541933904397,
+    "stabilization_kcal_mol": 3.6267168912191883,
     "mm_embedding_active": true,
     "charges_vacuum": {
       "O0": 0.8476946302212331,
@@ -113,6 +115,7 @@
       "chemical_accuracy": {
         "target_error_hartree": 0.0016,
         "hamiltonian_1norm": 63.00193875542307,
+        "hamiltonian_1norm": 63.00193875542307,
         "logical_qubits": 314,
         "toffoli_gates": 142447459,
         "qpe_iterations": 39377,
@@ -128,6 +131,7 @@
       }
     },
     "analysis": {
+      "mm_embedding_1norm_increase_percent": -0.08377633497466717,
       "mm_embedding_1norm_increase_percent": -0.08377633497466717,
       "error_relaxation_gate_reduction_percent": 89.99903075730163
     }

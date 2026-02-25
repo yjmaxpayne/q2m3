@@ -295,8 +295,15 @@ class QPEEngine:
             return qml.sample(wires=estimation_wires)
 
         # Apply Catalyst @qjit compilation if enabled
+        # Note: autograph=True enables automatic compilation of Python for-loops
+        # inside the circuit, which can improve performance for complex circuits.
+        # However, for single QPE executions, the JIT compilation overhead may
+        # offset the execution speedup. Catalyst shows significant speedup when:
+        # - Running multiple iterations (e.g., VQE optimization with qml.for_loop)
+        # - Batch processing multiple parameter sets
+        # - Computing gradients with catalyst.value_and_grad()
         if self.use_catalyst:
-            return qjit(qpe_circuit)
+            return qjit(qpe_circuit, autograph=True)
         return qpe_circuit
 
     @staticmethod

@@ -26,8 +26,8 @@ Usage with PySCF:
     mf = qmmm.mm_charge(mf, mm_coords_bohr, mm_charges)
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import numpy as np
 

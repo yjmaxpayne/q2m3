@@ -28,7 +28,6 @@ from examples.mc_solvation.energy import (
 )
 from examples.mc_solvation.solvent import (
     TIP3P_WATER,
-    SolventMolecule,
     compute_mm_energy,
     initialize_solvent_ring,
     molecules_to_state_array,
@@ -279,7 +278,7 @@ class TestEnergyCallback:
 
         energy = callback(qm_coords_flat, solvent_states)
 
-        assert isinstance(energy, (float, np.floating))
+        assert isinstance(energy, float | np.floating)
         assert not np.isnan(energy)
         assert not np.isinf(energy)
 

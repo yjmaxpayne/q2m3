@@ -13,7 +13,6 @@ from examples.mc_solvation import (
     MoleculeConfig,
     QPEConfig,
     SolvationConfig,
-    SolventMolecule,
     initialize_solvent_ring,
 )
 

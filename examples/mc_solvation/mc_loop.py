@@ -35,7 +35,8 @@ Random Number Generation:
     - Parameters from Numerical Recipes: a=1664525, c=1013904223, m=2^32
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import jax
 import jax.numpy as jnp

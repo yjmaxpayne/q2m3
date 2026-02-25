@@ -146,7 +146,7 @@ def _make_json_serializable(obj: Any) -> Any:
         return {"real": obj.real, "imag": obj.imag}
     elif isinstance(obj, dict):
         return {key: _make_json_serializable(value) for key, value in obj.items()}
-    elif isinstance(obj, (list, tuple)):
+    elif isinstance(obj, list | tuple):
         return [_make_json_serializable(item) for item in obj]
     else:
         return obj

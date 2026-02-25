@@ -20,7 +20,7 @@ Energy Decomposition Strategies:
 Both strategies use pyscf.qmmm.mm_charge() for electrostatic embedding.
 """
 
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import pennylane as qml
@@ -359,7 +359,6 @@ def create_coeff_callback(
     identity_idx = op_index_map["identity_idx"]
     z_wire_idx = op_index_map["z_wire_idx"]
 
-    n_terms = len(base_coeffs)
     base_coeffs_copy = np.array(base_coeffs, dtype=np.float64)
 
     def compute_mm_coefficients(
@@ -459,7 +458,6 @@ def create_fused_qpe_callback(
     identity_idx = op_index_map["identity_idx"]
     z_wire_idx = op_index_map["z_wire_idx"]
 
-    n_terms = len(base_coeffs)
     base_coeffs_copy = np.array(base_coeffs, dtype=np.float64)
 
     # Unpack vacuum cache

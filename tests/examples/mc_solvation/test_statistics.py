@@ -20,8 +20,6 @@ class TestTimingTableLabels:
             mc_loop_time=1.0,
         )
         table = create_timing_table(timing)
-        # Extract column content from Rich table
-        row_texts = [str(row) for row in table.rows]
         # Standard mode: n_quantum_evals (1) != n_mc_steps (3) -> HF/Quantum labels
         assert any("HF" in str(cell) for cell in table.columns[0]._cells)
         assert any("Quantum" in str(cell) for cell in table.columns[0]._cells)

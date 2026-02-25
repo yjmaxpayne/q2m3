@@ -227,7 +227,7 @@ def run_catalyst_benchmark(
     # B1: Standard QPE - multiple executions
     print(f"  B1. Standard QPE x{n_iterations} (each run is independent)...")
     start_multi_standard = time.perf_counter()
-    for i in range(n_iterations):
+    for _ in range(n_iterations):
         qmmm_std = QuantumQMMM(
             qm_atoms=h3o_atoms,
             mm_waters=mm_waters,
@@ -272,7 +272,7 @@ def run_catalyst_benchmark(
     _ = qmmm_cat.compute_ground_state()
 
     # Subsequent calls use cached compilation
-    for i in range(n_iterations - 1):
+    for _ in range(n_iterations - 1):
         _ = qmmm_cat.compute_ground_state()
 
     time_multi_catalyst = time.perf_counter() - start_multi_catalyst

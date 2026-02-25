@@ -27,7 +27,7 @@ class TestPennyLaneHamiltonianBasic:
 
         # Hamiltonian should be valid
         assert H is not None
-        assert isinstance(H, (qml.Hamiltonian, qml.ops.Sum))
+        assert isinstance(H, qml.Hamiltonian | qml.ops.Sum)
 
         # H2 STO-3G: 2 spatial orbitals * 2 spins = 4 qubits
         assert n_qubits == 4

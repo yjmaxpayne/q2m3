@@ -112,7 +112,7 @@ class TestEnergyShiftedQPE:
         ANGSTROM_TO_BOHR = 1.8897259886
         atom_str = "; ".join(
             f"{s} {c[0]} {c[1]} {c[2]}"
-            for s, c in zip(h2_vacuum_config["symbols"], h2_vacuum_config["coords"])
+            for s, c in zip(h2_vacuum_config["symbols"], h2_vacuum_config["coords"], strict=True)
         )
         mol = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
         mf = scf.RHF(mol)
@@ -150,7 +150,7 @@ class TestEnergyShiftedQPE:
         # --- Vacuum case ---
         atom_str = "; ".join(
             f"{s} {c[0]} {c[1]} {c[2]}"
-            for s, c in zip(h2_vacuum_config["symbols"], h2_vacuum_config["coords"])
+            for s, c in zip(h2_vacuum_config["symbols"], h2_vacuum_config["coords"], strict=True)
         )
         mol = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
         mf_vac = scf.RHF(mol)

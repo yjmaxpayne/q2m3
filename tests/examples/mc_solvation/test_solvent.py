@@ -7,6 +7,8 @@ Tests verify solvent model definitions, coordinate transformations,
 and MM energy calculations.
 """
 
+import dataclasses
+
 import numpy as np
 import pytest
 
@@ -16,7 +18,6 @@ from examples.mc_solvation.solvent import (
     SPC_E_WATER,
     TIP3P_WATER,
     SolventAtom,
-    SolventModel,
     SolventMolecule,
     _euler_to_rotation_matrix,
     compute_mm_energy,
@@ -56,7 +57,7 @@ class TestSolventAtom:
     def test_frozen_immutable(self):
         """SolventAtom should be immutable (frozen dataclass)."""
         atom = SolventAtom("O", (0.0, 0.0, 0.0), -0.8)
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(dataclasses.FrozenInstanceError):
             atom.symbol = "H"
 
 
@@ -336,7 +337,7 @@ class TestSolventInitialization:
             radius=4.0,
             random_seed=42,
         )
-        for m1, m2 in zip(mols1, mols2):
+        for m1, m2 in zip(mols1, mols2, strict=True):
             np.testing.assert_array_equal(m1.position, m2.position)
             np.testing.assert_array_equal(m1.euler_angles, m2.euler_angles)
 
@@ -368,6 +369,6 @@ class TestStateArrayConversion:
         model = water_molecules_3[0].model
         restored = state_array_to_molecules(model, states)
 
-        for orig, rest in zip(water_molecules_3, restored):
+        for orig, rest in zip(water_molecules_3, restored, strict=True):
             np.testing.assert_array_almost_equal(orig.position, rest.position)
             np.testing.assert_array_almost_equal(orig.euler_angles, rest.euler_angles)

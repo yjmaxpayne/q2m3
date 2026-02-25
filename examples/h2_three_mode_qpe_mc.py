@@ -212,7 +212,10 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
     n_evals = [int(r["n_quantum_evaluations"]) for _, r in modes]
     table.add_row(
         "Best QPE Energy (Ha)†",
-        *[f"{v:.6f} (n={n})" if v < 1e9 else "N/A" for v, n in zip(qpe_vals, n_evals)],
+        *[
+            f"{v:.6f} (n={n})" if v < 1e9 else "N/A"
+            for v, n in zip(qpe_vals, n_evals, strict=False)
+        ],
     )
 
     # Energy change vs HF vacuum reference
@@ -318,7 +321,6 @@ def _print_architecture_performance_analysis(
     )
 
     timing_emb = result_emb.get("timing")
-    timing_vac = result_vac.get("timing")
     timing_drv = result_driven.get("timing")
     meta_emb = result_emb.get("circuit_metadata", {})
     meta_vac = result_vac.get("circuit_metadata", {})
@@ -520,7 +522,7 @@ def _print_delta_corr_pol_analysis(
     console.print(f"  Range: [{np.min(delta):+.6f}, {np.max(delta):+.6f}] Ha")
 
     # ── 4. Per-step Comparison (vac <-> emb only) ───────────────────────
-    console.print(f"\n[bold]3. Per-step Comparison (vac <-> emb)[/bold]")
+    console.print("\n[bold]3. Per-step Comparison (vac <-> emb)[/bold]")
 
     n_show = min(n_eval, 10)
     table = Table(show_header=True, header_style="bold")
@@ -546,7 +548,7 @@ def _print_delta_corr_pol_analysis(
     )
 
     # ── 5. Energy Trend Analysis ────────────────────────────────────────
-    console.print(f"\n[bold]4. Energy Trend Analysis[/bold]")
+    console.print("\n[bold]4. Energy Trend Analysis[/bold]")
 
     n_third = max(1, n_eval // 3)
     early_delta = delta[:n_third]
@@ -569,7 +571,7 @@ def _print_delta_corr_pol_analysis(
     )
 
     # ── 6. Three-Mode QPE Energy Distribution ──────────────────────────
-    console.print(f"\n[bold]5. Three-Mode QPE Energy Distribution[/bold]")
+    console.print("\n[bold]5. Three-Mode QPE Energy Distribution[/bold]")
 
     dist_table = Table(show_header=True, header_style="bold")
     dist_table.add_column("Statistic", style="bold")
@@ -616,7 +618,7 @@ def _print_delta_corr_pol_analysis(
     )
 
     # ── 7. Comparability Constraints ────────────────────────────────────
-    console.print(f"\n[bold]6. Comparability Constraints[/bold]")
+    console.print("\n[bold]6. Comparability Constraints[/bold]")
 
     console.print("  Controlled variable analysis:")
     console.print(
@@ -634,7 +636,7 @@ def _print_delta_corr_pol_analysis(
     console.print("    * Acceptance rates reflect different criteria (not directly comparable)")
 
     # ── 8. QPE-HF Trajectory Consistency (qpe_driven) ──────────────────
-    console.print(f"\n[bold]7. qpe_driven: QPE-HF Trajectory Consistency[/bold]")
+    console.print("\n[bold]7. qpe_driven: QPE-HF Trajectory Consistency[/bold]")
 
     hf_energies_drv = np.array(result_driven["hf_energies"])[:n_drv]
     diff_drv = q_drv - hf_energies_drv
@@ -697,7 +699,7 @@ def _print_delta_corr_pol_analysis(
 
         qpe_drift = (np.mean(q_drv[-window:]) - np.mean(q_drv[:window])) * 1000
         console.print()
-        console.print(f"  [bold]Equilibration diagnostic:[/bold]")
+        console.print("  [bold]Equilibration diagnostic:[/bold]")
         console.print(
             f"    Windowed trend (window={window} steps, {n_windows} segments): "
             f"{n_decreasing}/{n_windows - 1} decreasing ({frac_decreasing:.0%})"
@@ -719,7 +721,7 @@ def _print_delta_corr_pol_analysis(
             )
 
     # ── 9. Physical Interpretation ──────────────────────────────────────
-    console.print(f"\n[bold]8. Physical Interpretation[/bold]")
+    console.print("\n[bold]8. Physical Interpretation[/bold]")
 
     # Compute Trotter bias from data (not hardcoded)
     trotter_corr_offset = (np.mean(q_vac) - e_vacuum) * 1000  # mHa

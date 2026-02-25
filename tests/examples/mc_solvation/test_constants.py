@@ -6,8 +6,6 @@ Unit tests for mc_solvation.constants module.
 Tests verify physical constant values and their relationships.
 """
 
-import pytest
-
 from examples.mc_solvation.constants import (  # Unit conversion; TIP3P parameters; Default parameters
     ANGSTROM_TO_BOHR,
     BOLTZMANN_CONSTANT,

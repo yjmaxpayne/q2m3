@@ -47,7 +47,6 @@ import time
 from collections import Counter
 from typing import Any
 
-import jax.numpy as jnp
 import numpy as np
 import pennylane as qml
 from catalyst import qjit
@@ -63,7 +62,6 @@ from .constants import HARTREE_TO_KCAL_MOL
 from .energy import (
     build_operator_index_map,
     compute_hf_energy_vacuum,
-    compute_mm_correction,
     compute_mulliken_charges,
     create_coeff_callback,
     create_fused_qpe_callback,
@@ -767,7 +765,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             dq = q_sol - q_vac
             console.print(f"    {atom}: {q_vac:+.4f} → {q_sol:+.4f} (Δq = {dq:+.4f})")
 
-        console.print(f"    Configuration (solvent O positions):")
+        console.print("    Configuration (solvent O positions):")
         for i in range(config.n_waters):
             pos = best_qpe_solvents[i, :3]
             console.print(
@@ -789,8 +787,6 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         n_eval = int(result["n_quantum_evaluations"])
         if n_eval > 0:
             quantum_steps = [(i + 1) * config.qpe_config.qpe_interval for i in range(n_eval)]
-            mc_steps = list(range(1, config.n_mc_steps + 1))
-            # For HF energies, we'd need to track them separately in mc_loop
             # For now, just plot quantum energies
             plot_energy_trajectory(
                 mc_steps=quantum_steps,

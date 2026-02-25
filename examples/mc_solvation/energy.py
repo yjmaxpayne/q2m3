@@ -13,7 +13,8 @@ Energy Decomposition Strategies:
        - Approximate: Ignores correlation-polarization coupling
 
     2. mm_embedded: E_total = E_QPE(with_MM_embedding)
-       - More complete: diagonal MM corrections in QPE Hamiltonian
+       - Diagonal MM embedding: includes diagonal one-electron MM corrections
+         (delta_h1e[p,p]); neglects off-diagonal h1e terms and two-electron modifications
        - Slow: Requires dynamic Hamiltonian construction
 
 Both strategies use pyscf.qmmm.mm_charge() for electrostatic embedding.

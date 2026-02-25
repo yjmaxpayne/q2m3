@@ -23,7 +23,8 @@ QPE Modes:
     - vacuum_correction: E_total = E_QPE(vacuum) + ΔE_MM(HF)
       Fast, pre-compiled circuit reused for all evaluations
     - mm_embedded: E_total = E_QPE(with_MM_embedding)
-      More complete, diagonal MM embedding in QPE Hamiltonian
+      Diagonal MM embedding: includes diagonal one-electron corrections (delta_h1e[p,p]);
+      neglects off-diagonal h1e terms and two-electron modifications
 
 Usage:
     from mc_solvation import run_solvation, SolvationConfig, MoleculeConfig

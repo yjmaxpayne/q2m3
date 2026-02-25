@@ -6,16 +6,17 @@ H2 Three-Mode QPE Comparison: MC Solvation Experiment
 
 Side-by-side comparison of three QPE modes for MC solvation:
 
-  Mode 1 (vacuum_correction): E = E_QPE(vacuum) + delta_E_HF(MM)
+  Mode 1 (vacuum_correction): E = E_corr(vac) + E_HF(R)
     - Pre-compiled QPE circuit, reused for all evaluations
     - Approximate: ignores correlation-polarization coupling (delta_corr-pol)
 
   Mode 2 (mm_embedded): E = E_QPE(H_eff with MM embedding)
     - Runtime Hamiltonian coefficient parameterization (benchmark-validated)
     - Compile once (~219s for H2), execute with new coeffs (~45ms, no recompile)
-    - More complete: QPE Hamiltonian includes diagonal MM corrections at every configuration
+    - Diagonal MM embedding: QPE Hamiltonian includes diagonal one-electron MM corrections
+      (delta_h1e[p,p]); neglects off-diagonal h1e terms and two-electron modifications
 
-  Mode 3 (qpe_driven): E = E_QPE(H_eff) + E_MM(sol-sol)
+  Mode 3 (qpe_driven): E = E_QPE(H_eff with MM) + E_MM(sol-sol)
     - QPE energy directly drives Metropolis acceptance criterion
     - Every MC step runs QPE (no interval-based scheduling)
     - Fused callback consolidates coefficient + energy in single PySCF call
@@ -206,10 +207,11 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
         table.add_column(name, justify="right")
 
     # Best QPE energy (with eval count for honest comparison)
+    # †: min across different-sized samples is NOT directly comparable
     qpe_vals = [float(r["best_qpe_energy"]) for _, r in modes]
     n_evals = [int(r["n_quantum_evaluations"]) for _, r in modes]
     table.add_row(
-        "Best QPE Energy (Ha)",
+        "Best QPE Energy (Ha)†",
         *[f"{v:.6f} (n={n})" if v < 1e9 else "N/A" for v, n in zip(qpe_vals, n_evals)],
     )
 
@@ -258,13 +260,15 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
 
     console.print()
     console.print(
-        "  [dim]*qpe_driven: Best MC Energy = E_QPE + E_MM(sol-sol) (QPE-driven acceptance).\n"
+        "  [dim]†Best QPE Energy: min across all evaluations. NOT directly comparable across modes:\n"
+        "    vac/emb sample from a near-stationary distribution (n=50, interval-based);\n"
+        "    qpe_driven samples from a monotonically evolving trajectory (n=500, every step).\n"
+        "    More samples + downhill drift → qpe_driven min is biased lower.\n"
+        "  *qpe_driven: Best MC Energy = E_QPE + E_MM(sol-sol) (QPE-driven acceptance).\n"
         "   vac/emb: Best MC Energy = E_HF(solvated) + E_MM(sol-sol) (HF-based acceptance).\n"
         "  **dE vs HF(vac) = E_HF(vacuum) - Best_QPE_Energy. This mixes theory levels:\n"
         "    QPE energies include correlation, so dE contains |E_corr(vac)| + solvation.\n"
-        "    For pure solvation energy, compare QPE energies across modes (delta_corr-pol).\n"
-        "  Note: qpe_driven runs QPE every step (vs interval for vac/emb). Monotonically\n"
-        "    decreasing QPE energy may indicate incomplete equilibration.[/dim]"
+        "    For pure solvation energy, compare QPE energies across modes (delta_corr-pol).[/dim]"
     )
 
     # Compile-once architecture summary (three-mode)
@@ -467,16 +471,22 @@ def _print_delta_corr_pol_analysis(
     console.print("\n[bold]1. Energy Definitions[/bold]")
     console.print("  vacuum_correction:  E(R) = E_corr(vac) + E_HF(R)")
     console.print("                      [QPE on H' = H_vac - E_HF*I; measures ~ E_corr(vac)]")
-    console.print("  mm_embedded:        E(R) = delta_QPE(R) + E_HF(vac)")
-    console.print("                      [QPE on H'_eff = H_eff(R) - E_HF(vac)*I]")
-    console.print("                      delta_QPE(R) = E_exact(H_eff) - E_HF(vac)")
+    console.print("  mm_embedded:        E(R) ~ delta_QPE(R) + E_HF(vac)")
+    console.print("                      [QPE on H'_eff ~ H_eff(R) - E_HF(vac)*I]")
     console.print(
-        "                                   = E_corr(solvated, R) + [E_HF(R) - E_HF(vac)]"
+        "                      delta_QPE(R) ~ E_corr(solvated, R) + [E_HF(R) - E_HF(vac)]"
+    )
+    console.print(
+        "                      [~ : H_eff includes only diagonal one-electron MM corrections\n"
+        "                       delta_h1e[p,p]; off-diagonal and two-electron terms neglected]"
     )
     console.print()
     console.print("  delta_corr-pol(R) = E(mm_emb, R) - E(vac_corr, R)")
-    console.print("                    = E_corr(solvated, R) - E_corr(vacuum)")
-    console.print("                      [E_HF(R) terms cancel in the subtraction]")
+    console.print("                    ~ E_corr(solvated, R) - E_corr(vacuum)")
+    console.print(
+        "                      [E_HF(R) terms cancel exactly in the math;\n"
+        "                       Trotter errors cancel approximately (H_eff != H_vac)]"
+    )
     console.print()
     console.print(
         "  [dim]vac <-> emb share the same MC trajectory (same seed, same HF acceptance),\n"
@@ -488,13 +498,25 @@ def _print_delta_corr_pol_analysis(
     delta_kcal = delta * HARTREE_TO_KCAL_MOL
 
     # ── 3. Statistics ───────────────────────────────────────────────────
+    mean_delta = np.mean(delta)
+    std_delta = np.std(delta, ddof=1) if n_eval > 1 else np.std(delta)
+    sem_delta = std_delta / np.sqrt(n_eval) if n_eval > 0 else 0.0
+    t_stat = mean_delta / sem_delta if sem_delta > 0 else 0.0
+
+    mean_kcal = np.mean(delta_kcal)
+    sem_kcal = sem_delta * HARTREE_TO_KCAL_MOL
+
     console.print(f"\n[bold]2. Per-step Statistics (n={n_eval}, vac <-> emb)[/bold]")
+    console.print(f"  <delta_corr-pol> = {mean_delta:+.6f} Ha" f" = {mean_kcal:+.2f} kcal/mol")
     console.print(
-        f"  <delta_corr-pol> = {np.mean(delta):+.6f} Ha" f" = {np.mean(delta_kcal):+.2f} kcal/mol"
+        f"  sigma(delta_corr-pol) = {std_delta:.6f} Ha" f" = {np.std(delta_kcal):.2f} kcal/mol"
     )
-    console.print(
-        f"  sigma(delta_corr-pol) = {np.std(delta):.6f} Ha" f" = {np.std(delta_kcal):.2f} kcal/mol"
-    )
+    console.print(f"  SEM = {sem_delta:.6f} Ha = {sem_kcal:.2f} kcal/mol")
+    console.print(f"  t-statistic = {t_stat:.2f}  (|t|>2.0 needed for p<0.05, df={n_eval - 1})")
+    if abs(t_stat) < 2.0:
+        console.print("  [yellow]NOT statistically significant at 95% confidence[/yellow]")
+    else:
+        console.print("  [green]Statistically significant at 95% confidence[/green]")
     console.print(f"  Range: [{np.min(delta):+.6f}, {np.max(delta):+.6f}] Ha")
 
     # ── 4. Per-step Comparison (vac <-> emb only) ───────────────────────
@@ -620,7 +642,7 @@ def _print_delta_corr_pol_analysis(
     console.print(f"  Steps analyzed: {n_drv}")
     console.print(
         f"  QPE-HF offset: <Delta> = {np.mean(diff_drv) * 1000:+.2f} mHa"
-        f"  (Trotter bias + correlation + configuration-dependent MM embedding)"
+        f"  (dominated by E_corr; residuals from Trotter bias and config-dependent MM embedding)"
     )
 
     if np.std(q_drv) > 0 and np.std(hf_energies_drv) > 0:
@@ -650,20 +672,86 @@ def _print_delta_corr_pol_analysis(
         f"sigma = {np.std(late_diff_drv) * 1000:.2f} mHa"
     )
 
+    # QPE-HF offset drift explanation
+    offset_drift = (np.mean(late_diff_drv) - np.mean(early_diff_drv)) * 1000
+    console.print(f"\n  Offset drift (early→late): {offset_drift:+.2f} mHa")
+    if abs(offset_drift) > 5.0:
+        console.print(
+            "  [dim]Physical origin: as MC explores lower-energy configurations, MM perturbation\n"
+            "  grows (solvent moves closer). This increases the gap between H_eff and H_vac,\n"
+            "  causing Trotter decomposition errors to diverge — hence the growing QPE-HF offset.\n"
+            "  At higher QPE resolution (more qubits, more Trotter steps), this drift shrinks.[/dim]"
+        )
+
+    # Monotonicity diagnostic for qpe_driven
+    if n_drv >= 10:
+        # Check if QPE energies are monotonically decreasing (windowed)
+        window = max(1, n_drv // 5)
+        n_windows = n_drv // window
+        window_means = [np.mean(q_drv[i * window : (i + 1) * window]) for i in range(n_windows)]
+        n_decreasing = sum(
+            1 for i in range(1, len(window_means)) if window_means[i] < window_means[i - 1]
+        )
+        frac_decreasing = n_decreasing / max(1, len(window_means) - 1)
+        monotonic = frac_decreasing > 0.8
+
+        qpe_drift = (np.mean(q_drv[-window:]) - np.mean(q_drv[:window])) * 1000
+        console.print()
+        console.print(f"  [bold]Equilibration diagnostic:[/bold]")
+        console.print(
+            f"    Windowed trend (window={window} steps, {n_windows} segments): "
+            f"{n_decreasing}/{n_windows - 1} decreasing ({frac_decreasing:.0%})"
+        )
+        console.print(f"    QPE energy drift: {qpe_drift:+.2f} mHa (first→last window)")
+        if monotonic:
+            console.print(
+                "    [yellow]WARNING: Monotonically decreasing QPE energy detected.[/yellow]\n"
+                "    [dim]At POC scale (4-bit QPE, 500 steps), this is expected behavior:\n"
+                "    the QPE-driven MC loop systematically explores lower-energy configurations.\n"
+                "    This does NOT indicate a bug — it indicates the chain has not equilibrated.\n"
+                "    Longer chains (10k+ steps) with burn-in removal are needed to assess\n"
+                "    whether stationary distribution is reached.[/dim]"
+            )
+        else:
+            console.print(
+                "    [green]No strong monotonic trend detected — "
+                "consistent with near-equilibration.[/green]"
+            )
+
     # ── 9. Physical Interpretation ──────────────────────────────────────
     console.print(f"\n[bold]8. Physical Interpretation[/bold]")
-    avg_kcal = np.mean(delta_kcal)
 
-    if avg_kcal > 0:
-        console.print(
-            f"  delta_corr-pol = {avg_kcal:+.2f} kcal/mol " f"(positive, mm_embedded energy higher)"
-        )
-        console.print("  -> vacuum_correction OVERESTIMATES solvation stabilization")
+    # Compute Trotter bias from data (not hardcoded)
+    trotter_corr_offset = (np.mean(q_vac) - e_vacuum) * 1000  # mHa
+    console.print(
+        f"  Trotter+phase bias: <E_QPE(vac)> - E_HF(vac) = {trotter_corr_offset:+.1f} mHa"
+    )
+    console.print("  [dim](derived from data: mean vacuum QPE - vacuum HF energy)[/dim]")
+
+    # Significance-aware directional claim (Issue 2b)
+    console.print()
+    console.print(f"  delta_corr-pol = {mean_kcal:+.2f} +/- {sem_kcal:.2f} kcal/mol (mean +/- SEM)")
+    if abs(t_stat) >= 2.0:
+        if mean_kcal > 0:
+            console.print(
+                "  -> Statistically significant: vacuum_correction OVERESTIMATES"
+                " solvation stabilization"
+            )
+        else:
+            console.print(
+                "  -> Statistically significant: vacuum_correction UNDERESTIMATES"
+                " solvation stabilization"
+            )
     else:
         console.print(
-            f"  delta_corr-pol = {avg_kcal:+.2f} kcal/mol " f"(negative, mm_embedded energy lower)"
+            f"  -> NOT statistically significant (|t|={abs(t_stat):.2f} < 2.0, df={n_eval - 1})."
+            " Direction inconclusive at this sample size."
         )
-        console.print("  -> vacuum_correction UNDERESTIMATES solvation stabilization")
+        console.print(
+            "  [dim]Interpretation: the signal (~0.1 kcal/mol) is buried in 4-bit QPE noise\n"
+            "  (~7 kcal/mol sigma). More qubits improve per-measurement resolution exponentially;\n"
+            "  more MC steps reduce SEM as 1/sqrt(n) but cannot sharpen individual measurements.[/dim]"
+        )
 
     console.print()
     console.print(
@@ -672,11 +760,14 @@ def _print_delta_corr_pol_analysis(
     console.print(
         "  The probability-weighted expected value (sum probs[k]*k) extracts a continuous"
     )
-    console.print("  phase estimate dominated by E_corr (for H2/STO-3G, |<0|HF>|^2 ~ 0.97).")
+    console.print("  phase estimate dominated by E_corr (for H2/STO-3G vacuum, |<0|HF>|^2 ~ 0.97).")
     console.print(
-        "  Systematic Trotter bias (~28.6 mHa, vacuum reference) approximately cancels in vac<->emb"
+        f"  Systematic Trotter bias ({trotter_corr_offset:+.1f} mHa, computed from vacuum QPE data)"
     )
-    console.print("  per-step difference (same Trotter order/steps; residual from H_eff != H_vac).")
+    console.print(
+        "  approximately cancels in vac<->emb per-step difference" " (same Trotter order/steps;"
+    )
+    console.print("  residual from H_eff != H_vac).")
     console.print()
     console.print(
         "  [dim]Note: 4-bit QPE resolution (bin width ~ 12 mHa ~ 7.5 kcal/mol) limits\n"
@@ -700,6 +791,25 @@ def main():
             "Runtime Hamiltonian coefficient parameterization",
             title="Experiment",
             border_style="green",
+        )
+    )
+
+    # POC Scope Declaration
+    console.print(
+        Panel(
+            "[bold]POC Scope[/bold]\n\n"
+            "[green]This experiment demonstrates:[/green]\n"
+            "  • Three QPE architectures (vacuum, MM-embedded, QPE-driven) running end-to-end\n"
+            "  • Runtime Hamiltonian coefficient parameterization (compile once, reuse)\n"
+            "  • Fused PySCF+QPE callback architecture for QPE-driven MC\n"
+            "  • Controlled delta_corr-pol measurement via shared MC trajectory\n\n"
+            "[yellow]This experiment does NOT demonstrate:[/yellow]\n"
+            "  • Numerical accuracy (4-bit QPE, STO-3G basis, 500 MC steps)\n"
+            "  • Statistical convergence (SEM ~ 1 kcal/mol >> expected signal)\n"
+            "  • Equilibration adequacy (short chains, no burn-in analysis)\n\n"
+            "[dim]Accuracy targets are next-phase milestones: more estimation qubits,\n"
+            "larger basis sets, longer MC chains with burn-in diagnostics.[/dim]",
+            border_style="dim",
         )
     )
 
@@ -747,9 +857,27 @@ def main():
         result_vac, result_emb, result_driven, e_vacuum, QPE_VACUUM.qpe_interval
     )
 
-    console.print("\n" + "=" * 60)
-    console.print("  Experiment complete.")
-    console.print("=" * 60)
+    # Closing POC Summary
+    console.print()
+    console.print(
+        Panel(
+            "[bold]POC Summary[/bold]\n\n"
+            "Architecture validated:\n"
+            "  • Runtime coefficient parameterization eliminates recompilation bottleneck\n"
+            "  • QPE-driven MC acceptance is end-to-end functional\n"
+            "  • Shared-trajectory delta_corr-pol measurement framework works\n\n"
+            "Known limitations at POC scale:\n"
+            "  • 4-bit QPE: ~12 mHa bin width >> sub-mHa solvation effects\n"
+            "  • STO-3G: minimal basis limits correlation energy accuracy\n"
+            "  • 500 MC steps: insufficient for equilibration convergence analysis\n\n"
+            "Next-phase targets:\n"
+            "  • 8+ estimation qubits for sub-mHa resolution\n"
+            "  • cc-pVDZ or larger basis for quantitative correlation\n"
+            "  • 10k+ MC steps with burn-in and autocorrelation diagnostics",
+            title="What This POC Proves",
+            border_style="green",
+        )
+    )
 
     return result_vac, result_emb, result_driven
 

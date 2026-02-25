@@ -12,7 +12,8 @@ with quantum algorithm validation. Supports three QPE modes:
    - Approximate: Ignores correlation-polarization coupling
 
 2. mm_embedded: E_total = E_QPE(with_MM_embedding)
-   - More complete: diagonal MM corrections in QPE Hamiltonian
+   - Diagonal MM embedding: includes diagonal one-electron MM corrections (delta_h1e[p,p]);
+     neglects off-diagonal h1e terms and two-electron modifications
    - Slow: Requires dynamic Hamiltonian reconstruction per evaluation
 
 3. qpe_driven: E_total = E_QPE(H_eff) + E_MM(sol-sol)
@@ -580,7 +581,14 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             "energy_shift": energy_shift,
         }
 
-    console.print(f"  Base time (shifted QPE): {base_time:.6f}")
+    # base_time = t₀ in U = exp(-iH't₀): the evolution time parameter
+    n_bins = 2**n_estimation_wires_actual
+    phase_resolution_ha = 2 * np.pi / (base_time * n_bins)
+    console.print(
+        f"  Base time (shifted QPE): {base_time:.6f} a.u.  "
+        f"(phase resolution: {phase_resolution_ha * 1000:.1f} mHa/bin, "
+        f"{n_bins} bins)"
+    )
     console.print(f"  Energy shift: {energy_shift:.6f} Ha")
     if config.qpe_mode in ("mm_embedded", "qpe_driven"):
         console.print(f"  Hamiltonian terms: {len(base_coeffs)}")

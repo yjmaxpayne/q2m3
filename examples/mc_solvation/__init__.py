@@ -23,7 +23,7 @@ QPE Modes:
     - vacuum_correction: E_total = E_QPE(vacuum) + ΔE_MM(HF)
       Fast, pre-compiled circuit reused for all evaluations
     - mm_embedded: E_total = E_QPE(with_MM_embedding)
-      Rigorous, dynamic Hamiltonian construction (planned)
+      More complete, diagonal MM embedding in QPE Hamiltonian
 
 Usage:
     from mc_solvation import run_solvation, SolvationConfig, MoleculeConfig
@@ -67,6 +67,7 @@ from .energy import (
     compute_total_energy,
     create_coeff_callback,
     create_fused_qpe_callback,
+    create_qpe_step_callback,
     decompose_hamiltonian,
     precompute_vacuum_cache,
 )
@@ -135,6 +136,7 @@ __all__ = [
     "build_operator_index_map",
     "create_coeff_callback",
     "create_fused_qpe_callback",
+    "create_qpe_step_callback",
     "precompute_vacuum_cache",
     # Quantum solver
     "QuantumSolver",

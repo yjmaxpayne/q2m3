@@ -133,7 +133,7 @@ class SolvationConfig:
         qpe_config: QPE parameters
         qpe_mode: Energy evaluation mode
             - "vacuum_correction": E_QPE(vacuum) + ΔE_MM(HF) [fast, approximate]
-            - "mm_embedded": E_QPE(with_MM_embedding) [slow, rigorous]
+            - "mm_embedded": E_QPE(with_MM_embedding) [slow, more complete]
             - "qpe_driven": E_QPE(H_eff) + E_MM(sol-sol) [QPE drives Metropolis every step]
         n_waters: Number of TIP3P water molecules
         n_mc_steps: Total MC sampling steps

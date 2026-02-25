@@ -13,7 +13,7 @@ Energy Decomposition Strategies:
        - Approximate: Ignores correlation-polarization coupling
 
     2. mm_embedded: E_total = E_QPE(with_MM_embedding)
-       - Rigorous: MM charges in QPE Hamiltonian
+       - More complete: diagonal MM corrections in QPE Hamiltonian
        - Slow: Requires dynamic Hamiltonian construction
 
 Both strategies use pyscf.qmmm.mm_charge() for electrostatic embedding.
@@ -643,6 +643,72 @@ def _compute_total_energy_impl(
     e_mm = compute_mm_energy(solvent_molecules)
 
     return np.float64(e_qm + e_mm)
+
+
+def create_qpe_step_callback(
+    fused_callback: Callable[[np.ndarray, np.ndarray], np.ndarray],
+    compiled_circuit: Callable,
+    base_time: float,
+    n_estimation_wires: int,
+    energy_shift: float,
+    n_terms: int,
+) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+    """
+    Create a consolidated callback for one QPE-driven MC step.
+
+    Wraps fused_callback + compiled_circuit + phase_extraction into a single
+    callable that is opaque to Catalyst @qjit via pure_callback. This prevents
+    the QPE circuit IR from being inlined into the MC loop MLIR, reducing
+    compilation memory from ~16G to <1G.
+
+    The callback executes:
+        1. fused_callback → coeffs, e_mm, e_hf  (PySCF + MM)
+        2. compiled_circuit(coeffs) → probs      (pre-compiled QPE)
+        3. phase extraction → e_qpe              (expected value)
+
+    Args:
+        fused_callback: From create_fused_qpe_callback, returns [coeffs(n_terms), e_mm, e_hf]
+        compiled_circuit: Pre-compiled @qjit QPE circuit accepting coeffs array
+        base_time: Base evolution time for QPE phase-to-energy conversion
+        n_estimation_wires: Number of QPE estimation qubits
+        energy_shift: Energy shift applied to Hamiltonian (for un-shifting)
+        n_terms: Number of Hamiltonian coefficient terms
+
+    Returns:
+        Callable: (solvent_states, qm_coords_flat) -> np.ndarray[5]
+            Output: [e_qpe, e_mm, e_hf, cb_elapsed, qpe_elapsed]
+    """
+    import time as _time
+
+    import jax.numpy as jnp
+
+    n_bins = 2**n_estimation_wires
+
+    def compute_step(solvent_states: np.ndarray, qm_coords_flat: np.ndarray) -> np.ndarray:
+        # Step 1: fused callback (PySCF + MM energy)
+        cb_start = _time.perf_counter()
+        fused_result = fused_callback(solvent_states, qm_coords_flat)
+        cb_elapsed = _time.perf_counter() - cb_start
+
+        coeffs = fused_result[:n_terms]
+        e_mm = float(fused_result[n_terms])
+        e_hf = float(fused_result[n_terms + 1])
+
+        # Step 2: QPE circuit (already @qjit compiled, just call it)
+        qpe_start = _time.perf_counter()
+        probs = compiled_circuit(jnp.array(coeffs))
+        qpe_elapsed = _time.perf_counter() - qpe_start
+
+        # Step 3: phase extraction (expected value mode)
+        probs_np = np.asarray(probs)
+        expected_bin = sum(float(probs_np[k]) * k for k in range(n_bins))
+        phase = expected_bin / n_bins
+        delta_e = -2.0 * np.pi * phase / base_time
+        e_qpe = delta_e + energy_shift
+
+        return np.array([e_qpe, e_mm, e_hf, cb_elapsed, qpe_elapsed], dtype=np.float64)
+
+    return compute_step
 
 
 def create_energy_callback(config: SolvationConfig):

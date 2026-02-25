@@ -119,31 +119,13 @@ class TestQPEDrivenMCLoopCreation:
         """create_qpe_driven_mc_loop returns a callable @qjit function."""
         from examples.mc_solvation.mc_loop import create_qpe_driven_mc_loop
 
-        n_terms = 15
-
-        # Mock compiled circuit: accepts coeffs array, returns probs
-        def dummy_circuit(coeffs):
-            probs = np.zeros(2**3, dtype=np.float64)
-            probs[0] = 0.8
-            probs[1] = 0.2
-            return probs
-
-        # Mock fused callback: returns [coeffs(n_terms), e_mm, e_hf]
-        def dummy_fused_impl(solvent_states, qm_coords_flat):
-            result = np.zeros(n_terms + 2, dtype=np.float64)
-            result[:n_terms] = np.random.default_rng(42).random(n_terms)
-            result[n_terms] = 0.001  # e_mm_sol_sol
-            result[n_terms + 1] = -1.1  # e_hf_solvated
-            return result
+        # Mock step callback: returns [e_qpe, e_mm, e_hf, cb_time, qpe_time]
+        def dummy_step_impl(solvent_states, qm_coords_flat):
+            return np.array([-1.15, 0.001, -1.1, 0.01, 0.005], dtype=np.float64)
 
         mc_loop = create_qpe_driven_mc_loop(
             config=qpe_driven_config,
-            compiled_circuit=dummy_circuit,
-            compute_fused_impl=dummy_fused_impl,
-            base_time=1.0,
-            n_estimation_wires=3,
-            energy_shift=-1.0,
-            n_terms=n_terms,
+            compute_step_impl=dummy_step_impl,
         )
 
         assert callable(mc_loop)
@@ -157,15 +139,29 @@ class TestQPEDrivenMCLoopCreation:
         sig = inspect.signature(create_qpe_driven_mc_loop)
         param_names = list(sig.parameters.keys())
 
-        # Required parameters from task spec
+        # Required parameters (simplified interface)
         assert "config" in param_names
-        assert "compiled_circuit" in param_names
-        assert "compute_fused_impl" in param_names
-        assert "base_time" in param_names
-        assert "n_estimation_wires" in param_names
-        assert "energy_shift" in param_names
-        assert "n_terms" in param_names
+        assert "compute_step_impl" in param_names
         assert "n_shots" in param_names
+
+    def test_returned_loop_accepts_init_energy(self, qpe_driven_config):
+        """Returned @qjit loop accepts 4th argument: init_energy (OOM fix)."""
+        from examples.mc_solvation.mc_loop import create_qpe_driven_mc_loop
+
+        def dummy_step_impl(solvent_states, qm_coords_flat):
+            return np.array([-1.15, 0.001, -1.1, 0.01, 0.005], dtype=np.float64)
+
+        mc_loop = create_qpe_driven_mc_loop(
+            config=qpe_driven_config,
+            compute_step_impl=dummy_step_impl,
+        )
+
+        solvents = np.random.default_rng(42).random((2, 6))
+        qm_coords = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])
+
+        # Should accept 4 arguments (init_energy is the 4th)
+        result = mc_loop(solvents, qm_coords, 42, -1.05)
+        assert "initial_energy" in result
 
 
 class TestQPEDrivenMCLoopExecution:
@@ -201,56 +197,40 @@ class TestQPEDrivenMCLoopExecution:
 
     @pytest.fixture
     def mc_loop_and_inputs(self, qpe_driven_config):
-        """Create mc_loop with mock callbacks and inputs."""
+        """Create mc_loop with mock step callback and inputs."""
         from examples.mc_solvation.mc_loop import create_qpe_driven_mc_loop
 
-        n_terms = 15
-        n_estimation_wires = 3
-        energy_shift = -1.1
-
-        # Deterministic mock circuit: slight energy variation based on coeffs
-        def mock_circuit(coeffs):
-            probs = np.zeros(2**n_estimation_wires, dtype=np.float64)
-            # Put most probability in bin 1, with small variation from coeffs
-            probs[0] = 0.1
-            probs[1] = 0.7
-            probs[2] = 0.15
-            probs[3] = 0.05
-            return probs
-
-        # Deterministic fused callback with slight variation
+        # Deterministic mock step callback with slight per-call variation
         step_counter = {"n": 0}
 
-        def mock_fused_impl(solvent_states, qm_coords_flat):
+        def mock_step_impl(solvent_states, qm_coords_flat):
             step_counter["n"] += 1
-            result = np.zeros(n_terms + 2, dtype=np.float64)
-            # Coefficients with small variation per call
             rng = np.random.default_rng(42 + step_counter["n"])
-            result[:n_terms] = rng.random(n_terms) * 0.1
-            result[n_terms] = 0.002  # e_mm_sol_sol
-            result[n_terms + 1] = -1.05  # e_hf_solvated (reference)
-            return result
+            e_qpe = -1.15 + rng.random() * 0.01  # slight variation
+            e_mm = 0.002
+            e_hf = -1.05  # HF reference
+            cb_time = 0.01
+            qpe_time = 0.005
+            return np.array([e_qpe, e_mm, e_hf, cb_time, qpe_time], dtype=np.float64)
 
         mc_loop = create_qpe_driven_mc_loop(
             config=qpe_driven_config,
-            compiled_circuit=mock_circuit,
-            compute_fused_impl=mock_fused_impl,
-            base_time=1.0,
-            n_estimation_wires=n_estimation_wires,
-            energy_shift=energy_shift,
-            n_terms=n_terms,
+            compute_step_impl=mock_step_impl,
         )
 
         n_waters = qpe_driven_config.n_waters
         initial_solvents = np.random.default_rng(42).random((n_waters, 6))
         qm_coords_flat = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])
 
-        return mc_loop, initial_solvents, qm_coords_flat
+        # Pre-compute initial energy outside @qjit (matches OOM fix pattern)
+        init_energy = -1.05
+
+        return mc_loop, initial_solvents, qm_coords_flat, init_energy
 
     def test_return_dict_has_all_required_keys(self, mc_loop_and_inputs):
         """Return dict contains all keys specified in task 2.3."""
-        mc_loop, solvents, qm_coords = mc_loop_and_inputs
-        result = mc_loop(solvents, qm_coords, 42)
+        mc_loop, solvents, qm_coords, init_energy = mc_loop_and_inputs
+        result = mc_loop(solvents, qm_coords, 42, init_energy)
 
         required_keys = [
             "initial_energy",
@@ -275,8 +255,8 @@ class TestQPEDrivenMCLoopExecution:
 
     def test_quantum_energies_shape_and_nonzero(self, mc_loop_and_inputs):
         """quantum_energies has shape (n_mc_steps,) and all elements are non-zero."""
-        mc_loop, solvents, qm_coords = mc_loop_and_inputs
-        result = mc_loop(solvents, qm_coords, 42)
+        mc_loop, solvents, qm_coords, init_energy = mc_loop_and_inputs
+        result = mc_loop(solvents, qm_coords, 42, init_energy)
 
         qe = np.asarray(result["quantum_energies"])
         assert qe.shape == (5,), f"Expected (5,), got {qe.shape}"
@@ -285,8 +265,8 @@ class TestQPEDrivenMCLoopExecution:
 
     def test_hf_energies_recorded_every_step(self, mc_loop_and_inputs):
         """hf_energies records HF reference energy at each step."""
-        mc_loop, solvents, qm_coords = mc_loop_and_inputs
-        result = mc_loop(solvents, qm_coords, 42)
+        mc_loop, solvents, qm_coords, init_energy = mc_loop_and_inputs
+        result = mc_loop(solvents, qm_coords, 42, init_energy)
 
         hf_e = np.asarray(result["hf_energies"])
         assert hf_e.shape == (5,), f"Expected (5,), got {hf_e.shape}"
@@ -295,15 +275,15 @@ class TestQPEDrivenMCLoopExecution:
 
     def test_n_quantum_evaluations_equals_n_mc_steps(self, mc_loop_and_inputs):
         """n_quantum_evaluations should equal n_mc_steps for qpe_driven."""
-        mc_loop, solvents, qm_coords = mc_loop_and_inputs
-        result = mc_loop(solvents, qm_coords, 42)
+        mc_loop, solvents, qm_coords, init_energy = mc_loop_and_inputs
+        result = mc_loop(solvents, qm_coords, 42, init_energy)
 
         assert int(result["n_quantum_evaluations"]) == 5
 
     def test_acceptance_rate_in_valid_range(self, mc_loop_and_inputs):
         """Acceptance rate should be between 0 and 1."""
-        mc_loop, solvents, qm_coords = mc_loop_and_inputs
-        result = mc_loop(solvents, qm_coords, 42)
+        mc_loop, solvents, qm_coords, init_energy = mc_loop_and_inputs
+        result = mc_loop(solvents, qm_coords, 42, init_energy)
 
         rate = float(result["acceptance_rate"])
         assert 0.0 <= rate <= 1.0, f"Invalid acceptance rate: {rate}"

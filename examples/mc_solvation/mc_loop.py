@@ -963,47 +963,44 @@ def create_mm_embedded_mc_loop(
 
 def create_qpe_driven_mc_loop(
     config: SolvationConfig,
-    compiled_circuit: Callable,
-    compute_fused_impl: Callable[[np.ndarray, np.ndarray], np.ndarray],
-    base_time: float,
-    n_estimation_wires: int,
-    energy_shift: float,
-    n_terms: int,
+    compute_step_impl: Callable[[np.ndarray, np.ndarray], np.ndarray],
     n_shots: int = 0,
 ) -> Callable:
     """
-    Factory function to create @qjit MC loop with QPE-driven Metropolis.
+    Factory function to create a pure-Python MC loop with QPE-driven Metropolis.
 
-    QPE energy directly drives the acceptance criterion (not HF).
-    Every MC step runs: fused_callback → QPE circuit → Metropolis.
+    Uses a plain Python for-loop instead of @qjit + for_loop + pure_callback.
+
+    Why not @qjit?
+        Catalyst runtime does NOT support re-entrant @qjit calls. In qpe_driven
+        mode, compute_step_impl invokes a pre-compiled @qjit QPE circuit. If this
+        MC loop were also @qjit-compiled, the pure_callback → @qjit call chain
+        would cause a segfault (documented in mc_loop.py:136-138).
+
+        Performance impact is negligible: each MC step runs PySCF + QPE (~15ms),
+        so Python for-loop overhead (~µs) is < 0.01% of total runtime.
 
     Key differences from create_mm_embedded_mc_loop:
         1. QPE runs every step (no interval-based conditional)
         2. Metropolis uses E_QPE + E_MM(sol-sol), not HF energy
-        3. Single fused callback replaces separate energy + coeffs callbacks
+        3. Direct Python callback call (no pure_callback wrapper)
         4. All arrays sized n_mc_steps (not n_mc_steps // interval)
 
     Energy Calculation (qpe_driven mode):
-        fused = compute_fused(solvent_states, qm_coords)
-        coeffs, e_mm, e_hf = fused[:n_terms], fused[n_terms], fused[n_terms+1]
-        probs = compiled_circuit(coeffs)
-        phase = expected_value(probs) / 2^n_estimation_wires
-        E_QPE = -2π·phase/base_time + energy_shift
-        E_total = E_QPE + e_mm
+        step_result = compute_step_impl(solvent_states, qm_coords)
+        [e_qpe, e_mm, e_hf, cb_time, qpe_time] = step_result
+        E_total = e_qpe + e_mm  (Metropolis criterion)
 
     Args:
         config: Solvation simulation configuration
-        compiled_circuit: @qjit QPE circuit accepting coeffs array
-        compute_fused_impl: Fused callback returning [coeffs(n_terms), e_mm, e_hf]
-            Signature: (solvent_states, qm_coords_flat) -> np.ndarray[n_terms + 2]
-        base_time: Base evolution time for QPE
-        n_estimation_wires: Number of QPE estimation qubits
-        energy_shift: Energy shift applied to Hamiltonian (for un-shifting)
-        n_terms: Number of Hamiltonian coefficient terms
+        compute_step_impl: Consolidated QPE step callback
+            Signature: (solvent_states, qm_coords_flat) -> np.ndarray[5]
+            Returns: [e_qpe, e_mm, e_hf, cb_elapsed, qpe_elapsed]
         n_shots: 0 = expected_value mode, >0 = shots-based (future)
 
     Returns:
-        @qjit compiled MC solvation loop function
+        Pure-Python MC solvation loop function (no @qjit).
+        Signature: (initial_solvent_states, qm_coords_flat, rng_seed, init_energy) -> dict
     """
     n_solvent = config.n_waters
     n_mc_steps = config.n_mc_steps
@@ -1011,233 +1008,109 @@ def create_qpe_driven_mc_loop(
     rotation_step = config.rotation_step
     kt = BOLTZMANN_CONSTANT * config.temperature
 
-    @qjit
     def qpe_driven_mc_loop(
         initial_solvent_states,
         qm_coords_flat,
         rng_seed,
+        init_energy,
     ):
-        """MC sampling with QPE-driven Metropolis criterion."""
-        # Define pure_callbacks inside @qjit
-        n_fused_result = n_terms + 2
-        fused_struct = jax.ShapeDtypeStruct((n_fused_result,), jnp.float64)
+        """MC sampling with QPE-driven Metropolis criterion (pure Python).
 
-        @pure_callback
-        def compute_fused(ss, qc) -> fused_struct:  # type: ignore
-            """Fused callback: coeffs + e_mm + e_hf in single call."""
-            return compute_fused_impl(ss, qc)
+        Args:
+            initial_solvent_states: numpy array (n_waters, 6)
+            qm_coords_flat: numpy array of QM atom coordinates
+            rng_seed: integer seed for reproducible RNG
+            init_energy: Pre-computed initial energy (E_QPE + E_MM)
+        """
+        rng = np.random.default_rng(rng_seed)
 
-        @pure_callback
-        def get_timestamp() -> float:
-            """Get current timestamp for timing measurements."""
-            import time
+        # Mutable state
+        solvents = np.array(initial_solvent_states, dtype=np.float64)
+        energy = float(init_energy)
 
-            return np.float64(time.perf_counter())
+        # Tracking arrays
+        quantum_energies = np.zeros(n_mc_steps)
+        hf_energies = np.zeros(n_mc_steps)
+        callback_times = np.zeros(n_mc_steps)
+        quantum_times = np.zeros(n_mc_steps)
 
-        # LCG constants
-        a, c, m = 1664525, 1013904223, 2**32
+        # Best configuration tracking
+        best_solvents = solvents.copy()
+        best_energy = energy
+        best_qpe_energy = 1e10
+        best_qpe_solvents = solvents.copy()
 
-        rng = rng_seed
+        n_accepted = 0
+        energies_sum = 0.0
 
-        # Initialize: fused callback → QPE → initial energy
-        init_fused = compute_fused(initial_solvent_states, qm_coords_flat)
-        init_coeffs = init_fused[:n_terms]
-        init_e_mm = init_fused[n_terms]
-
-        init_probs = compiled_circuit(init_coeffs)
-
-        # Phase extraction for initial energy
-        n_bins = 2**n_estimation_wires
-        init_expected_bin = jnp.float64(0.0)
-        for k in range(n_bins):
-            init_expected_bin = init_expected_bin + init_probs[k] * k
-        init_phase = init_expected_bin / n_bins
-        init_delta_e = -2.0 * jnp.pi * init_phase / base_time
-        init_e_qpe = init_delta_e + energy_shift
-
-        initial_energy = init_e_qpe + init_e_mm
-
-        # Arrays for per-step tracking
-        quantum_energies = jnp.zeros(n_mc_steps)
-        hf_energies = jnp.zeros(n_mc_steps)
-        callback_times = jnp.zeros(n_mc_steps)
-        quantum_times = jnp.zeros(n_mc_steps)
-
-        # Track best QPE configuration
-        best_qpe_energy = jnp.float64(1e10)
-        best_qpe_solvents = jnp.array(initial_solvent_states)
-
-        def mc_step(step_idx, state):
-            (
-                solvents,
-                rng,
-                energy,
-                best_solvents,
-                best_energy,
-                n_accepted,
-                energies_sum,
-                quantum_energies,
-                hf_energies,
-                callback_times,
-                quantum_times,
-                best_qpe_energy,
-                best_qpe_solvents,
-            ) = state
-
+        for step_idx in range(n_mc_steps):
             # Select random solvent molecule
-            rng = (a * rng + c) % m
-            mol_idx = jnp.int32((rng / m) * n_solvent) % n_solvent
+            mol_idx = rng.integers(0, n_solvent)
 
-            old_state = solvents[mol_idx]
+            old_state = solvents[mol_idx].copy()
             position = old_state[:3]
             angles = old_state[3:]
 
             # Propose translation
-            rng = (a * rng + c) % m
-            tx = ((rng / m) * 2 - 1) * translation_step
-            rng = (a * rng + c) % m
-            ty = ((rng / m) * 2 - 1) * translation_step
-            rng = (a * rng + c) % m
-            tz = ((rng / m) * 2 - 1) * translation_step
-            new_position = position + jnp.array([tx, ty, tz])
+            delta_pos = (rng.random(3) * 2 - 1) * translation_step
+            new_position = position + delta_pos
 
             # Propose rotation
-            rng = (a * rng + c) % m
-            d_roll = ((rng / m) * 2 - 1) * rotation_step
-            rng = (a * rng + c) % m
-            d_pitch = ((rng / m) * 2 - 1) * rotation_step
-            rng = (a * rng + c) % m
-            d_yaw = ((rng / m) * 2 - 1) * rotation_step
-            new_angles = angles + jnp.array([d_roll, d_pitch, d_yaw])
-            new_angles = jnp.mod(new_angles + jnp.pi, 2 * jnp.pi) - jnp.pi
+            delta_ang = (rng.random(3) * 2 - 1) * rotation_step
+            new_angles = angles + delta_ang
+            new_angles = (new_angles + np.pi) % (2 * np.pi) - np.pi
 
-            new_state = jnp.concatenate([new_position, new_angles])
-            new_solvents = solvents.at[mol_idx].set(new_state)
+            new_state = np.concatenate([new_position, new_angles])
+            new_solvents = solvents.copy()
+            new_solvents[mol_idx] = new_state
 
-            # Fused callback: coeffs + e_mm + e_hf in one call
-            cb_start = get_timestamp()
-            fused_result = compute_fused(new_solvents, qm_coords_flat)
-            cb_end = get_timestamp()
-            cb_elapsed = cb_end - cb_start
-
-            new_coeffs = fused_result[:n_terms]
-            e_mm_sol_sol = fused_result[n_terms]
-            e_hf_ref = fused_result[n_terms + 1]
-
-            # QPE circuit with updated coefficients
-            q_start = get_timestamp()
-            probs = compiled_circuit(new_coeffs)
-            q_end = get_timestamp()
-            q_elapsed = q_end - q_start
-
-            # Phase extraction (expected value mode)
-            expected_bin = jnp.float64(0.0)
-            for k in range(n_bins):
-                expected_bin = expected_bin + probs[k] * k
-            phase = expected_bin / n_bins
-            delta_e_qpe = -2.0 * jnp.pi * phase / base_time
-            e_qpe = delta_e_qpe + energy_shift
+            # Direct callback: PySCF + QPE + phase extraction
+            step_result = compute_step_impl(new_solvents, qm_coords_flat)
+            e_qpe = float(step_result[0])
+            e_mm_sol_sol = float(step_result[1])
+            e_hf_ref = float(step_result[2])
+            cb_elapsed = float(step_result[3])
+            qpe_elapsed = float(step_result[4])
 
             # QPE-driven total energy
             new_energy = e_qpe + e_mm_sol_sol
 
             # Record timing and energies
-            callback_times = callback_times.at[step_idx].set(cb_elapsed)
-            quantum_times = quantum_times.at[step_idx].set(q_elapsed)
-            quantum_energies = quantum_energies.at[step_idx].set(e_qpe)
-            hf_energies = hf_energies.at[step_idx].set(e_hf_ref)
+            callback_times[step_idx] = cb_elapsed
+            quantum_times[step_idx] = qpe_elapsed
+            quantum_energies[step_idx] = e_qpe
+            hf_energies[step_idx] = e_hf_ref
 
             # Metropolis acceptance: uses QPE + E_MM energy
             delta_e = new_energy - energy
-            rng = (a * rng + c) % m
-            random_val = rng / m
-            accept_prob = jnp.exp(-delta_e / kt)
-            accept = (delta_e <= 0.0) | (random_val < accept_prob)
+            if delta_e <= 0.0 or rng.random() < np.exp(-delta_e / kt):
+                solvents = new_solvents
+                energy = new_energy
+                n_accepted += 1
 
-            # Update state based on acceptance
-            solvents = jnp.where(accept, new_solvents, solvents)
-            energy = jnp.where(accept, new_energy, energy)
-            n_accepted = n_accepted + jnp.where(accept, 1, 0)
-
-            # Track best configuration
-            is_new_best = energy < best_energy
-            best_solvents = jnp.where(is_new_best, solvents, best_solvents)
-            best_energy = jnp.where(is_new_best, energy, best_energy)
+            # Track best total configuration
+            if energy < best_energy:
+                best_solvents = solvents.copy()
+                best_energy = energy
 
             # Track best QPE energy
-            is_new_best_qpe = e_qpe < best_qpe_energy
-            new_best_qpe_energy = jnp.where(is_new_best_qpe, e_qpe, best_qpe_energy)
-            new_best_qpe_solvents = jnp.where(is_new_best_qpe, solvents, best_qpe_solvents)
+            if e_qpe < best_qpe_energy:
+                best_qpe_energy = e_qpe
+                best_qpe_solvents = solvents.copy()
 
-            energies_sum = energies_sum + energy
+            energies_sum += energy
 
-            debug.print(
-                "  [QPE-MC] Step {step}: QPE={q:.6f} HF={hf:.6f} E_tot={e:.6f} Ha",
-                step=step_idx + 1,
-                q=e_qpe,
-                hf=e_hf_ref,
-                e=new_energy,
+            print(
+                f"  [QPE-MC] Step {step_idx + 1}: "
+                f"QPE={e_qpe:.6f} HF={e_hf_ref:.6f} E_tot={new_energy:.6f} Ha"
             )
-
-            return (
-                solvents,
-                rng,
-                energy,
-                best_solvents,
-                best_energy,
-                n_accepted,
-                energies_sum,
-                quantum_energies,
-                hf_energies,
-                callback_times,
-                quantum_times,
-                new_best_qpe_energy,
-                new_best_qpe_solvents,
-            )
-
-        # Initialize state tuple
-        solvents_jnp = jnp.array(initial_solvent_states)
-        init_state = (
-            solvents_jnp,
-            rng,
-            initial_energy,
-            solvents_jnp.copy(),
-            initial_energy,
-            0,
-            0.0,
-            quantum_energies,
-            hf_energies,
-            callback_times,
-            quantum_times,
-            best_qpe_energy,
-            best_qpe_solvents,
-        )
-
-        # Run MC loop
-        final_state = for_loop(0, n_mc_steps, 1)(mc_step)(init_state)
-
-        (
-            final_solvents,
-            final_rng,
-            final_energy,
-            best_solvents,
-            best_energy,
-            n_accepted,
-            energies_sum,
-            quantum_energies,
-            hf_energies,
-            callback_times,
-            quantum_times,
-            final_best_qpe_energy,
-            final_best_qpe_solvents,
-        ) = final_state
 
         return {
-            "initial_energy": initial_energy,
-            "final_energy": final_energy,
+            "initial_energy": float(init_energy),
+            "final_energy": energy,
             "best_energy": best_energy,
             "best_solvent_states": best_solvents,
-            "final_solvent_states": final_solvents,
+            "final_solvent_states": solvents,
             "acceptance_rate": n_accepted / n_mc_steps,
             "avg_energy": energies_sum / n_mc_steps,
             "n_accepted": n_accepted,
@@ -1246,8 +1119,8 @@ def create_qpe_driven_mc_loop(
             "n_quantum_evaluations": n_mc_steps,
             "hf_times": callback_times,
             "quantum_times": quantum_times,
-            "best_qpe_energy": final_best_qpe_energy,
-            "best_qpe_solvent_states": final_best_qpe_solvents,
+            "best_qpe_energy": best_qpe_energy,
+            "best_qpe_solvent_states": best_qpe_solvents,
         }
 
     return qpe_driven_mc_loop

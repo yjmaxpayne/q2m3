@@ -12,7 +12,7 @@ with quantum algorithm validation. Supports three QPE modes:
    - Approximate: Ignores correlation-polarization coupling
 
 2. mm_embedded: E_total = E_QPE(with_MM_embedding)
-   - Rigorous: MM charges included in QPE Hamiltonian
+   - More complete: diagonal MM corrections in QPE Hamiltonian
    - Slow: Requires dynamic Hamiltonian reconstruction per evaluation
 
 3. qpe_driven: E_total = E_QPE(H_eff) + E_MM(sol-sol)
@@ -576,7 +576,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
             "n_trotter_steps": n_trotter_actual,
             "n_trotter_steps_requested": qpe.n_trotter_steps,
             "base_time": base_time,
-            "energy_formula": "E_QPE(H_eff) + E_MM(sol-sol)",
+            "energy_formula": "E_QPE(H_eff with MM) + E_MM(sol-sol)",
             "energy_shift": energy_shift,
         }
 
@@ -722,7 +722,6 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     best_qpe_e = float(result["best_qpe_energy"])
     n_eval = int(result["n_quantum_evaluations"])
     if n_eval > 0 and best_qpe_e < 1e9:  # Check if any QPE evaluation occurred
-        qpe_change = (best_qpe_e - initial_e) * HARTREE_TO_KCAL_MOL
         console.print()
         if is_qpe_driven:
             console.print("[bold cyan]  QPE Energy Component:[/bold cyan]")
@@ -730,22 +729,23 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         else:
             console.print("[bold cyan]  QPE-Validated Best (Recommended):[/bold cyan]")
             console.print(f"    Best QPE energy: {best_qpe_e:.6f} Ha")
-            console.print(f"    QPE energy change: {qpe_change:+.4f} kcal/mol")
 
         # Display best QPE configuration (all solvent molecules)
         best_qpe_solvents = np.array(result["best_qpe_solvent_states"])
 
-        # Solvation stabilization: E(vacuum) - E(best_QPE) > 0 means solvent stabilizes
+        # Energy change vs HF vacuum reference
+        # NOTE: This mixes theory levels — e_vacuum is HF while best_qpe_e
+        # includes correlation. The difference overstates solvation by |E_corr|.
         stabilization_ha = e_vacuum - best_qpe_e
         stabilization_kcal = stabilization_ha * HARTREE_TO_KCAL_MOL
         console.print()
+        console.print("  [bold green]dE vs HF(vacuum) reference:[/bold green]")
+        console.print(f"    dE = {stabilization_ha:.6f} Ha = {stabilization_kcal:.2f} kcal/mol")
         console.print(
-            "  [bold green]Solvation Stabilization (vacuum → optimal solvation shell):[/bold green]"
+            "    [dim]Caution: QPE includes correlation energy, so dE = |E_corr| + solvation.[/dim]"
         )
-        console.print(f"    dE = {stabilization_ha:.6f} Ha")
-        console.print(f"       = {stabilization_kcal:.2f} kcal/mol")
         if stabilization_ha > 0:
-            console.print("    [OK] Solvent stabilizes the molecule")
+            console.print("    [OK] Solvent + correlation stabilizes vs HF vacuum")
         else:
             console.print("    [WARNING] No net stabilization detected")
 

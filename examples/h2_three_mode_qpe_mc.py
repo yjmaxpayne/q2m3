@@ -13,7 +13,7 @@ Side-by-side comparison of three QPE modes for MC solvation:
   Mode 2 (mm_embedded): E = E_QPE(H_eff with MM embedding)
     - Runtime Hamiltonian coefficient parameterization (benchmark-validated)
     - Compile once (~219s for H2), execute with new coeffs (~45ms, no recompile)
-    - Complete: QPE Hamiltonian includes MM embedding at every configuration
+    - More complete: QPE Hamiltonian includes diagonal MM corrections at every configuration
 
   Mode 3 (qpe_driven): E = E_QPE(H_eff) + E_MM(sol-sol)
     - QPE energy directly drives Metropolis acceptance criterion
@@ -205,27 +205,38 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
     for name, _ in modes:
         table.add_column(name, justify="right")
 
-    # Best QPE energy
+    # Best QPE energy (with eval count for honest comparison)
     qpe_vals = [float(r["best_qpe_energy"]) for _, r in modes]
+    n_evals = [int(r["n_quantum_evaluations"]) for _, r in modes]
     table.add_row(
         "Best QPE Energy (Ha)",
-        *[f"{v:.6f}" if v < 1e9 else "N/A" for v in qpe_vals],
+        *[f"{v:.6f} (n={n})" if v < 1e9 else "N/A" for v, n in zip(qpe_vals, n_evals)],
     )
 
-    # Solvation stabilization
+    # Energy change vs HF vacuum reference
+    # NOTE: This metric mixes theory levels — e_vacuum is HF while best_qpe_energy
+    # includes correlation. The difference contains E_corr(vac) + solvation effect,
+    # so it overstates the true solvation stabilization by |E_corr(vac)|.
     stab_vals = [e_vacuum - v if v < 1e9 else float("nan") for v in qpe_vals]
     table.add_row(
-        "Solvation Stab (Ha)",
+        "dE vs HF(vac) (Ha)**",
         *[f"{v:.6f}" if not np.isnan(v) else "N/A" for v in stab_vals],
     )
     table.add_row(
-        "Solvation Stab (kcal/mol)",
+        "dE vs HF(vac) (kcal/mol)**",
         *[f"{v * HARTREE_TO_KCAL_MOL:.2f}" if not np.isnan(v) else "N/A" for v in stab_vals],
     )
 
-    # Best HF energy
+    # Best MC acceptance energy (different meaning per mode)
     hf_vals = [float(r["best_energy"]) for _, r in modes]
-    table.add_row("Best HF Energy (Ha)*", *[f"{v:.6f}" for v in hf_vals])
+    # Label each value to reflect what best_energy actually tracks
+    hf_labels = []
+    for name, _ in modes:
+        if name == "qpe_driven":
+            hf_labels.append(f"{hf_vals[len(hf_labels)]:.6f}*")
+        else:
+            hf_labels.append(f"{hf_vals[len(hf_labels)]:.6f}")
+    table.add_row("Best MC Energy (Ha)", *hf_labels)
 
     # Acceptance rate
     acc_vals = [float(r["acceptance_rate"]) * 100 for _, r in modes]
@@ -239,16 +250,21 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
             *[f"{_effective_compile_time(t):.1f}" for t in timings],
         )
         table.add_row(
-            "Total MC Time (s)",
-            *[f"{t.mc_loop_time:.1f}" for t in timings],
+            "Total Time (s)",
+            *[f"{t.quantum_compile_time + t.mc_loop_time:.1f}" for t in timings],
         )
 
     console.print(table)
 
     console.print()
     console.print(
-        "  [dim]*qpe_driven 'Best HF' is a reference value (not the acceptance criterion).\n"
-        "   In qpe_driven mode, Metropolis uses E_QPE + E_MM(sol-sol) directly.[/dim]"
+        "  [dim]*qpe_driven: Best MC Energy = E_QPE + E_MM(sol-sol) (QPE-driven acceptance).\n"
+        "   vac/emb: Best MC Energy = E_HF(solvated) + E_MM(sol-sol) (HF-based acceptance).\n"
+        "  **dE vs HF(vac) = E_HF(vacuum) - Best_QPE_Energy. This mixes theory levels:\n"
+        "    QPE energies include correlation, so dE contains |E_corr(vac)| + solvation.\n"
+        "    For pure solvation energy, compare QPE energies across modes (delta_corr-pol).\n"
+        "  Note: qpe_driven runs QPE every step (vs interval for vac/emb). Monotonically\n"
+        "    decreasing QPE energy may indicate incomplete equilibration.[/dim]"
     )
 
     # Compile-once architecture summary (three-mode)
@@ -270,11 +286,11 @@ def print_mode_comparison(result_vac: dict, result_emb: dict, result_driven: dic
         arch_summary = (
             f"[bold]Compile-Once Architecture Comparison[/bold]\n"
             f"  vacuum_correction: Fixed H_vac  -> compile {compile_vac:.1f}s, "
-            f"per-step QPE ~{avg_vac:.1f}ms\n"
+            f"per-eval ~{avg_vac:.1f}ms (QPE + PySCF callback)\n"
             f"  mm_embedded:       Runtime H_eff -> compile {compile_emb:.1f}s, "
-            f"per-step QPE ~{avg_emb:.1f}ms\n"
+            f"per-eval ~{avg_emb:.1f}ms (PySCF callback + QPE)\n"
             f"  qpe_driven:        Runtime H_eff -> QPE precompile {compile_drv:.1f}s, "
-            f"pure Python MC (~{avg_drv:.1f}ms/step)"
+            f"QPE only ~{avg_drv:.1f}ms/step (PySCF tracked separately)"
         )
         console.print()
         console.print(Panel(arch_summary, border_style="green"))
@@ -399,7 +415,7 @@ def _print_architecture_performance_analysis(
     formula_table.add_row(
         "mm_embedded",
         formula_emb,
-        "Rigorous: MM in QPE Hamiltonian",
+        "Diagonal MM embedding in QPE Hamiltonian",
     )
     formula_table.add_row(
         "qpe_driven",
@@ -419,7 +435,7 @@ def _print_delta_corr_pol_analysis(
     """
     δ_corr-pol analysis with controlled variable analysis.
 
-    Rigorous per-step δ_corr-pol comparison uses vac↔emb (shared MC trajectory).
+    Controlled per-step δ_corr-pol comparison uses vac↔emb (shared MC trajectory).
     qpe_driven data is presented as independent ensemble statistics only—
     not for per-step alignment (different RNG + QPE-driven acceptance).
     """
@@ -447,15 +463,20 @@ def _print_delta_corr_pol_analysis(
     q_emb = q_emb[:n_eval]
     q_drv = q_drv[:n_drv]
 
-    # ── 1. Rigorous Definition ──────────────────────────────────────────
-    console.print("\n[bold]1. Rigorous Definition[/bold]")
+    # ── 1. Energy Definitions ───────────────────────────────────────────
+    console.print("\n[bold]1. Energy Definitions[/bold]")
     console.print("  vacuum_correction:  E(R) = E_corr(vac) + E_HF(R)")
-    console.print("                      [QPE on H' = H_vac - E_HF*I -> E_corr(vac)]")
-    console.print("  mm_embedded:        E(R) = E_corr_eff(R) + E_HF(vac)")
-    console.print("                      [QPE on H'_eff = H_eff(R) - E_HF*I -> E_corr_eff(R)]")
+    console.print("                      [QPE on H' = H_vac - E_HF*I; measures ~ E_corr(vac)]")
+    console.print("  mm_embedded:        E(R) = delta_QPE(R) + E_HF(vac)")
+    console.print("                      [QPE on H'_eff = H_eff(R) - E_HF(vac)*I]")
+    console.print("                      delta_QPE(R) = E_exact(H_eff) - E_HF(vac)")
+    console.print(
+        "                                   = E_corr(solvated, R) + [E_HF(R) - E_HF(vac)]"
+    )
     console.print()
     console.print("  delta_corr-pol(R) = E(mm_emb, R) - E(vac_corr, R)")
     console.print("                    = E_corr(solvated, R) - E_corr(vacuum)")
+    console.print("                      [E_HF(R) terms cancel in the subtraction]")
     console.print()
     console.print(
         "  [dim]vac <-> emb share the same MC trajectory (same seed, same HF acceptance),\n"
@@ -559,7 +580,12 @@ def _print_delta_corr_pol_analysis(
         f"{np.max(q_drv):.6f}",
     )
     dist_table.add_row("n_evals", str(n_eval), str(n_eval), str(n_drv))
-    dist_table.add_row("Measurement mode", "shots (n=100)", "shots (n=100)", "expected_value")
+    dist_table.add_row(
+        "Measurement mode",
+        "analytical probs",
+        "analytical probs",
+        "analytical probs",
+    )
     console.print(dist_table)
 
     console.print(
@@ -576,9 +602,9 @@ def _print_delta_corr_pol_analysis(
     )
     console.print("    qpe_driven:  NumPy RNG + QPE-driven acceptance " "-> independent trajectory")
     console.print()
-    console.print("  Rigorous comparisons (shared trajectory):")
+    console.print("  Controlled comparisons (shared trajectory):")
     console.print("    * Per-step delta_corr-pol = E_QPE(emb) - E_QPE(vac) at same configuration")
-    console.print("    * Trotter bias cancellation in per-step difference")
+    console.print("    * Trotter bias approximately cancels in per-step difference")
     console.print()
     console.print("  Independent observations (separate ensembles):")
     console.print("    * Energy distribution statistics (mean, sigma, min, max) for each mode")
@@ -594,7 +620,7 @@ def _print_delta_corr_pol_analysis(
     console.print(f"  Steps analyzed: {n_drv}")
     console.print(
         f"  QPE-HF offset: <Delta> = {np.mean(diff_drv) * 1000:+.2f} mHa"
-        f"  (Trotter + quantization + correlation)"
+        f"  (Trotter bias + correlation + configuration-dependent MM embedding)"
     )
 
     if np.std(q_drv) > 0 and np.std(hf_energies_drv) > 0:
@@ -641,11 +667,16 @@ def _print_delta_corr_pol_analysis(
 
     console.print()
     console.print(
-        "  [bold]Key mechanism:[/bold] All modes use energy-shifted QPE (H' = H - E_HF*I),"
+        "  [bold]Key mechanism:[/bold] All modes use energy-shifted QPE (H' = H - E_HF*I)."
     )
-    console.print("  measuring correlation energy directly. Phase is extracted via probability-")
-    console.print("  weighted expected value (sum probs[k]*k), preserving continuous sensitivity.")
-    console.print("  Systematic Trotter bias (~28.6 mHa) cancels in vac<->emb per-step difference.")
+    console.print(
+        "  The probability-weighted expected value (sum probs[k]*k) extracts a continuous"
+    )
+    console.print("  phase estimate dominated by E_corr (for H2/STO-3G, |<0|HF>|^2 ~ 0.97).")
+    console.print(
+        "  Systematic Trotter bias (~28.6 mHa, vacuum reference) approximately cancels in vac<->emb"
+    )
+    console.print("  per-step difference (same Trotter order/steps; residual from H_eff != H_vac).")
     console.print()
     console.print(
         "  [dim]Note: 4-bit QPE resolution (bin width ~ 12 mHa ~ 7.5 kcal/mol) limits\n"

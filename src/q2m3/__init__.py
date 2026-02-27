@@ -32,6 +32,7 @@ from .core import (
     get_catalyst_effective_backend,
 )
 from .interfaces import PySCFPennyLaneConverter, UnifiedDensityMatrix
+from .molecule import MoleculeConfig
 from .utils import load_xyz, save_json_results
 
 __all__ = [
@@ -42,6 +43,8 @@ __all__ = [
     "UnifiedDensityMatrix",
     "load_xyz",
     "save_json_results",
+    # Molecule config
+    "MoleculeConfig",
     # Constants
     "HARTREE_TO_KCAL_MOL",
     "KCAL_TO_HARTREE",

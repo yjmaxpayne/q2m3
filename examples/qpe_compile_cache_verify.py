@@ -158,6 +158,8 @@ def build_hamiltonian_data(mol_config_key: str, n_est: int, n_trotter: int) -> d
         "n_trotter": n_trotter,
         "base_time": base_time,
         "n_terms": len(ops),
+        "op_index_map": op_index_map,  # for create_fused_qpe_callback
+        "energy_shift": hf_energy,  # for create_qpe_step_callback (un-shift energy)
     }
 
 

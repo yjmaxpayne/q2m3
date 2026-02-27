@@ -26,6 +26,7 @@ Usage:
 """
 
 import argparse
+import math
 import multiprocessing
 import sys
 import time
@@ -75,6 +76,21 @@ ROTATION_STEP = 0.2618
 INITIAL_WATER_DISTANCE = 4.0
 RANDOM_SEED = 42
 DEFAULT_CACHE_DIR = "/tmp/qpe_ir_cache"
+
+# Minimum O-O spacing to avoid TIP3P LJ repulsive core (sigma_OO=3.151 Å).
+# 3.5 Å is below the TIP3P equilibrium (~3.54 Å) but well above the repulsive onset.
+_MIN_WATER_SPACING_ANG = 3.5
+
+
+def _adaptive_ring_radius(n_waters: int, base_radius: float = INITIAL_WATER_DISTANCE) -> float:
+    """Compute ring radius ensuring minimum inter-molecular O-O spacing.
+
+    For small n_waters the base radius is sufficient. For large n_waters the
+    fixed base radius places molecules within the TIP3P LJ repulsive core
+    (spacing < sigma_OO = 3.151 Å), causing catastrophic MM energy (> 1000 Ha).
+    """
+    return max(base_radius, n_waters * _MIN_WATER_SPACING_ANG / (2 * math.pi))
+
 
 H2_MOLECULE = MoleculeConfig(
     name="H2",
@@ -278,7 +294,7 @@ def run_cached_mc(
         model=TIP3P_WATER,
         n_molecules=n_waters,
         center=qm_center,
-        radius=INITIAL_WATER_DISTANCE,
+        radius=_adaptive_ring_radius(n_waters),
         random_seed=RANDOM_SEED,
     )
     solvent_states = molecules_to_state_array(solvent_molecules)

@@ -342,6 +342,41 @@ class TestSolventInitialization:
             np.testing.assert_array_equal(m1.euler_angles, m2.euler_angles)
 
 
+class TestAdaptiveRingRadius:
+    """BUG regression: fixed radius=4.0 Å causes catastrophic LJ repulsion for large n_waters.
+
+    Root cause: h2_cached_qpe_driven_mc.py passed INITIAL_WATER_DISTANCE=4.0 Å as ring
+    radius regardless of n_waters. For n>=15, inter-molecular spacing falls below
+    TIP3P sigma_OO=3.151 Å, producing E_mm >> 1000 Ha.
+    """
+
+    def test_adaptive_ring_radius_callable(self):
+        """_adaptive_ring_radius helper must exist in h2_cached_qpe_driven_mc."""
+        from examples.h2_cached_qpe_driven_mc import _adaptive_ring_radius
+
+        assert callable(_adaptive_ring_radius)
+
+    def test_small_n_uses_base_radius(self):
+        """For n_waters=5 (spacing ~5.0 Å >> sigma_OO), base radius 4.0 Å is sufficient."""
+        from examples.h2_cached_qpe_driven_mc import INITIAL_WATER_DISTANCE, _adaptive_ring_radius
+
+        r = _adaptive_ring_radius(5)
+        assert r == pytest.approx(INITIAL_WATER_DISTANCE)
+
+    def test_large_n_scales_radius_up(self):
+        """For n_waters=20, fixed radius=4.0 Å gives spacing 1.26 Å << sigma_OO=3.151 Å."""
+        import math
+
+        from examples.h2_cached_qpe_driven_mc import INITIAL_WATER_DISTANCE, _adaptive_ring_radius
+
+        TIP3P_SIGMA_OO = 3.151  # Å
+        r = _adaptive_ring_radius(20)
+        assert r > INITIAL_WATER_DISTANCE
+        # Verify resulting spacing is above TIP3P LJ repulsive core
+        spacing = 2 * math.pi * r / 20
+        assert spacing > TIP3P_SIGMA_OO
+
+
 class TestStateArrayConversion:
     """Tests for state array conversion utilities."""
 

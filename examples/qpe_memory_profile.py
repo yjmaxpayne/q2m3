@@ -5,7 +5,14 @@
 QPE Circuit Compilation Memory Profiler
 
 Measures real peak memory consumption during Catalyst @qjit compilation of
-runtime-coefficient QPE circuits. Designed to answer Xanadu's question:
+QPE circuits in two Hamiltonian modes:
+
+  - H_fixed:   Coefficients are Python floats, built OUTSIDE @qjit.
+                Catalyst can constant-fold them → smaller IR, less memory.
+  - H_dynamic: Coefficients are JAX-traced runtime parameters INSIDE @qjit.
+                Full symbolic graph preserved → larger IR, more memory.
+
+Designed to answer Xanadu's question:
 
     "4.2k IR operations is relatively small and isn't expected to drive
      such large memory requirements."
@@ -21,21 +28,27 @@ Three measurement layers:
   - tracemalloc → Python heap only (PennyLane IR construction, JAX tracing)
 
 Usage:
-    uv run python examples/qpe_memory_profile.py
-    uv run python examples/qpe_memory_profile.py --sweep
-    uv run python examples/qpe_memory_profile.py --molecule h3o
-    uv run python examples/qpe_memory_profile.py --n-est 2 --n-trotter 3
+    uv run python examples/qpe_memory_profile.py                          # both modes
+    uv run python examples/qpe_memory_profile.py --mode fixed             # H_fixed only
+    uv run python examples/qpe_memory_profile.py --mode dynamic           # H_dynamic only
+    uv run python examples/qpe_memory_profile.py --mode both --n-est 2    # compare modes
+    uv run python examples/qpe_memory_profile.py --sweep                  # parameter sweep
+    uv run python examples/qpe_memory_profile.py --sweep --mode fixed     # sweep H_fixed
+    uv run python examples/qpe_memory_profile.py --ir-dir ./tmp           # preserve IR files
 """
 
 import argparse
 import multiprocessing
 import os
 import resource
+import shutil
 import sys
+import tempfile
 import threading
 import time
 import tracemalloc
 import warnings
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -126,6 +139,7 @@ class ProfileResult:
     n_trotter: int
     n_terms: int
     ir_scale: int  # n_est × n_trotter × n_terms
+    mode: str = "dynamic"  # "fixed" or "dynamic"
     phase_a: MemorySnapshot | None = None
     phase_b: MemorySnapshot | None = None
     phase_c: MemorySnapshot | None = None
@@ -168,6 +182,35 @@ def take_snapshot(label: str) -> MemorySnapshot:
         tracemalloc_peak_mb=tm_peak / (1024 * 1024),
         tracemalloc_current_mb=tm_current / (1024 * 1024),
     )
+
+
+@contextmanager
+def ir_output_dir(path: str | None = None):
+    """Manage Catalyst IR workspace directory.
+
+    Must wrap @qjit decoration (not just the call), because Catalyst captures
+    os.getcwd() at decoration time to determine the IR output location.
+
+    Args:
+        path: If provided, IR files are written here and preserved after exit.
+              If None, a temporary directory is used and auto-cleaned on exit.
+
+    Yields:
+        The workspace directory path (user-specified or auto-created tempdir).
+    """
+    original_cwd = os.getcwd()
+    if path is not None:
+        os.makedirs(path, exist_ok=True)
+        workspace = path
+    else:
+        workspace = tempfile.mkdtemp(prefix="qpe_ir_")
+    os.chdir(workspace)
+    try:
+        yield workspace
+    finally:
+        os.chdir(original_cwd)
+        if path is None:
+            shutil.rmtree(workspace, ignore_errors=True)
 
 
 class MemoryTimeline:
@@ -311,11 +354,20 @@ def profile_qjit_compilation(
     coeffs: list[float],
     hf_state: np.ndarray,
     circuit_params: dict,
+    ir_dir: str | None = None,
 ) -> tuple[MemorySnapshot, MemoryTimeline, list, object]:
     """
     Profile Phase B: @qjit(keep_intermediate=True) QPE circuit compilation.
 
     This is the critical phase — first call triggers MLIR→LLVM compilation.
+
+    IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context,
+    because Catalyst captures os.getcwd() at decoration time to determine
+    the IR workspace location.
+
+    Args:
+        ir_dir: If provided, IR files are preserved at this path.
+                If None, a tempdir is used and auto-cleaned after IR analysis.
 
     Returns:
         Tuple of (snapshot, timeline, ir_analysis, compiled_fn)
@@ -331,8 +383,7 @@ def profile_qjit_compilation(
 
     dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
 
-    # Build @qjit circuit with keep_intermediate for IR export
-    @qjit(keep_intermediate=True)
+    # Bare function — NO @qjit decorator here (applied functionally below)
     def qpe_profiled(coeffs_arr):
         H_runtime = qml.dot(coeffs_arr, ops)
 
@@ -370,13 +421,15 @@ def profile_qjit_compilation(
     with timeline:
         t0 = time.monotonic()
         coeffs_jax = np.array(coeffs, dtype=np.float64)
-        _result = qpe_profiled(coeffs_jax)  # Triggers compilation
+        # Apply @qjit INSIDE ir_output_dir so Catalyst captures correct cwd
+        with ir_output_dir(ir_dir):
+            compiled = qjit(keep_intermediate=True)(qpe_profiled)
+            _result = compiled(coeffs_jax)  # Triggers compilation
+            # Analyze IR stages BEFORE context exit (tempdir may be cleaned)
+            ir_analysis = analyze_ir_stages(compiled)
         elapsed = time.monotonic() - t0
 
     snap_after = take_snapshot("B:after")
-
-    # Analyze IR stages
-    ir_analysis = analyze_ir_stages(qpe_profiled)
 
     result_snap = MemorySnapshot(
         label="Phase B: @qjit Compilation",
@@ -389,7 +442,96 @@ def profile_qjit_compilation(
         elapsed_s=elapsed,
     )
 
-    return result_snap, timeline, ir_analysis, qpe_profiled
+    return result_snap, timeline, ir_analysis, compiled
+
+
+def profile_qjit_compilation_fixed(
+    ops: list,
+    coeffs: list[float],
+    hf_state: np.ndarray,
+    circuit_params: dict,
+    ir_dir: str | None = None,
+) -> tuple[MemorySnapshot, MemoryTimeline, list, object]:
+    """
+    Profile Phase B for H_fixed mode: Hamiltonian built OUTSIDE @qjit.
+
+    Coefficients are Python floats → Catalyst can constant-fold them into MLIR.
+    The compiled function takes zero arguments.
+
+    IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context,
+    because Catalyst captures os.getcwd() at decoration time.
+
+    Args:
+        ir_dir: If provided, IR files are preserved at this path.
+                If None, a tempdir is used and auto-cleaned after IR analysis.
+    """
+    n_system = circuit_params["n_system_qubits"]
+    n_est = circuit_params["n_estimation_wires"]
+    n_trotter = circuit_params["n_trotter"]
+    base_time = circuit_params["base_time"]
+
+    system_wires = list(range(n_system))
+    est_wires = list(range(n_system, n_system + n_est))
+    total_wires = n_system + n_est
+
+    dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
+
+    # H_fixed: build concrete Hamiltonian BEFORE @qjit (Python floats, not JAX tracers)
+    H_fixed = qml.dot(list(coeffs), ops)
+
+    # Bare function — NO @qjit decorator here (applied functionally below)
+    def qpe_fixed():  # Zero arguments — all coefficients are compile-time constants
+        @qml.qnode(dev)
+        def qnode():
+            # HF state preparation via X gates (Catalyst-compatible)
+            for wire, occ in zip(system_wires, hf_state, strict=True):
+                if occ == 1:
+                    qml.PauliX(wires=wire)
+            # Hadamard on estimation qubits
+            for w in est_wires:
+                qml.Hadamard(wires=w)
+            # Controlled time evolutions (MSB-first convention)
+            for k, ew in enumerate(est_wires):
+                t = (2 ** (n_est - 1 - k)) * base_time
+                qml.ctrl(
+                    qml.adjoint(qml.TrotterProduct(H_fixed, time=t, n=n_trotter, order=2)),
+                    control=ew,
+                )
+            # Inverse QFT
+            qml.adjoint(qml.QFT)(wires=est_wires)
+            return qml.probs(wires=est_wires)
+
+        return qnode()
+
+    # Profile compilation (triggered by first call)
+    tracemalloc.reset_peak()
+    snap_before = take_snapshot("B:before")
+    timeline = MemoryTimeline(interval_s=0.1)
+
+    with timeline:
+        t0 = time.monotonic()
+        # Apply @qjit INSIDE ir_output_dir so Catalyst captures correct cwd
+        with ir_output_dir(ir_dir):
+            compiled = qjit(keep_intermediate=True)(qpe_fixed)
+            _result = compiled()  # Zero-arg call triggers compilation
+            # Analyze IR stages BEFORE context exit (tempdir may be cleaned)
+            ir_analysis = analyze_ir_stages(compiled)
+        elapsed = time.monotonic() - t0
+
+    snap_after = take_snapshot("B:after")
+
+    result_snap = MemorySnapshot(
+        label="Phase B: @qjit Compilation (H_fixed)",
+        rss_mb=snap_after.rss_mb - snap_before.rss_mb,
+        vm_peak_mb=snap_after.vm_peak_mb,
+        maxrss_mb=snap_after.maxrss_mb,
+        tracemalloc_peak_mb=snap_after.tracemalloc_peak_mb,
+        tracemalloc_current_mb=snap_after.tracemalloc_current_mb
+        - snap_before.tracemalloc_current_mb,
+        elapsed_s=elapsed,
+    )
+
+    return result_snap, timeline, ir_analysis, compiled
 
 
 # =============================================================================
@@ -398,7 +540,7 @@ def profile_qjit_compilation(
 
 
 def profile_execution(
-    compiled_fn, coeffs: list[float], n_calls: int = 5
+    compiled_fn, coeffs: list[float], n_calls: int = 5, is_fixed: bool = False
 ) -> tuple[MemorySnapshot, float]:
     """
     Profile Phase C: repeated execution of already-compiled circuit.
@@ -413,7 +555,7 @@ def profile_execution(
     coeffs_arr = np.array(coeffs, dtype=np.float64)
     result = None
     for _ in range(n_calls):
-        result = compiled_fn(coeffs_arr)
+        result = compiled_fn() if is_fixed else compiled_fn(coeffs_arr)
 
     elapsed = time.monotonic() - t0
     snap_after = take_snapshot("C:after")
@@ -472,6 +614,12 @@ def analyze_ir_stages(compiled_fn) -> list[tuple[str, float, int]]:
 # Step 7: Parameter Sweep (subprocess isolation)
 # =============================================================================
 
+
+def _spawn_context():
+    """Get 'spawn' multiprocessing context to avoid CUDA fork issues."""
+    return multiprocessing.get_context("spawn")
+
+
 H2_SWEEP_GRID = [
     (2, 1),
     (2, 3),
@@ -484,11 +632,18 @@ H2_SWEEP_GRID = [
 ]
 
 
-def run_single_profile_in_subprocess(mol_key: str, n_est: int, n_trotter: int, queue):
+def run_single_profile_in_subprocess(
+    mol_key: str,
+    n_est: int,
+    n_trotter: int,
+    queue,
+    mode: str = "dynamic",
+    ir_dir: str | None = None,
+):
     """Run a single profiling pass inside a subprocess (avoids ru_maxrss accumulation)."""
     try:
         tracemalloc.start()
-        result = run_single_profile(mol_key, n_est, n_trotter)
+        result = run_single_profile(mol_key, n_est, n_trotter, mode=mode, ir_dir=ir_dir)
         tracemalloc.stop()
         queue.put(result)
     except Exception as e:
@@ -500,16 +655,24 @@ def run_single_profile_in_subprocess(mol_key: str, n_est: int, n_trotter: int, q
                 n_trotter=n_trotter,
                 n_terms=0,
                 ir_scale=0,
+                mode=mode,
                 error=str(e),
             )
         )
 
 
-def run_single_profile(mol_key: str, n_est: int, n_trotter: int) -> ProfileResult:
+def run_single_profile(
+    mol_key: str,
+    n_est: int,
+    n_trotter: int,
+    mode: str = "dynamic",
+    ir_dir: str | None = None,
+) -> ProfileResult:
     """Execute all three profiling phases for one parameter combination."""
     mol = MOLECULES[mol_key]
+    is_fixed = mode == "fixed"
 
-    # Phase A: Hamiltonian build
+    # Phase A: Hamiltonian build (shared between modes)
     snap_a, ops, coeffs, hf_state, circuit_params = profile_hamiltonian_build(mol, n_est, n_trotter)
     circuit_params["n_estimation_wires"] = n_est
     circuit_params["n_trotter"] = n_trotter
@@ -517,13 +680,18 @@ def run_single_profile(mol_key: str, n_est: int, n_trotter: int) -> ProfileResul
     n_terms = circuit_params["n_terms"]
     ir_scale = n_est * n_trotter * n_terms
 
-    # Phase B: @qjit compilation
-    snap_b, timeline, ir_analysis, compiled_fn = profile_qjit_compilation(
-        ops, coeffs, hf_state, circuit_params
-    )
+    # Phase B: @qjit compilation (mode-dependent)
+    if is_fixed:
+        snap_b, timeline, ir_analysis, compiled_fn = profile_qjit_compilation_fixed(
+            ops, coeffs, hf_state, circuit_params, ir_dir=ir_dir
+        )
+    else:
+        snap_b, timeline, ir_analysis, compiled_fn = profile_qjit_compilation(
+            ops, coeffs, hf_state, circuit_params, ir_dir=ir_dir
+        )
 
     # Phase C: Execution
-    snap_c, prob_sum = profile_execution(compiled_fn, coeffs)
+    snap_c, prob_sum = profile_execution(compiled_fn, coeffs, is_fixed=is_fixed)
 
     return ProfileResult(
         molecule=mol_key,
@@ -532,6 +700,7 @@ def run_single_profile(mol_key: str, n_est: int, n_trotter: int) -> ProfileResul
         n_trotter=n_trotter,
         n_terms=n_terms,
         ir_scale=ir_scale,
+        mode=mode,
         phase_a=snap_a,
         phase_b=snap_b,
         phase_c=snap_c,
@@ -542,20 +711,23 @@ def run_single_profile(mol_key: str, n_est: int, n_trotter: int) -> ProfileResul
     )
 
 
-def run_sweep(mol_key: str) -> list[ProfileResult]:
+def run_sweep(
+    mol_key: str, mode: str = "dynamic", ir_dir: str | None = None
+) -> list[ProfileResult]:
     """Run parameter sweep with subprocess isolation."""
     results = []
     grid = H2_SWEEP_GRID  # Only H2 sweep is practical
 
     for i, (n_est, n_trotter) in enumerate(grid):
         console.print(
-            f"  [{i + 1}/{len(grid)}] n_est={n_est}, n_trotter={n_trotter} ...",
+            f"  [{i + 1}/{len(grid)}] n_est={n_est}, n_trotter={n_trotter} " f"(H_{mode}) ...",
             end=" ",
         )
-        queue = multiprocessing.Queue()
-        proc = multiprocessing.Process(
+        ctx = _spawn_context()
+        queue = ctx.Queue()
+        proc = ctx.Process(
             target=run_single_profile_in_subprocess,
-            args=(mol_key, n_est, n_trotter, queue),
+            args=(mol_key, n_est, n_trotter, queue, mode, ir_dir),
         )
         proc.start()
         proc.join(timeout=600)  # 10 min timeout per config
@@ -601,6 +773,137 @@ def run_sweep(mol_key: str) -> list[ProfileResult]:
     return results
 
 
+def _run_mode_in_subprocess(
+    mol_key: str, n_est: int, n_trotter: int, mode: str, ir_dir: str | None = None
+):
+    """Run a single mode in a subprocess and return ProfileResult."""
+    ctx = _spawn_context()
+    queue = ctx.Queue()
+    proc = ctx.Process(
+        target=run_single_profile_in_subprocess,
+        args=(mol_key, n_est, n_trotter, queue, mode, ir_dir),
+    )
+    proc.start()
+    proc.join(timeout=600)
+
+    if proc.is_alive():
+        proc.kill()
+        proc.join()
+        return ProfileResult(
+            molecule=mol_key,
+            n_system_qubits=0,
+            n_estimation_wires=n_est,
+            n_trotter=n_trotter,
+            n_terms=0,
+            ir_scale=0,
+            mode=mode,
+            error="timeout",
+        )
+    elif not queue.empty():
+        return queue.get()
+    else:
+        return ProfileResult(
+            molecule=mol_key,
+            n_system_qubits=0,
+            n_estimation_wires=n_est,
+            n_trotter=n_trotter,
+            n_terms=0,
+            ir_scale=0,
+            mode=mode,
+            error="no result from subprocess",
+        )
+
+
+def run_both_modes(
+    mol_key: str, n_est: int, n_trotter: int, ir_dir: str | None = None
+) -> tuple[ProfileResult, ProfileResult]:
+    """Run fixed and dynamic modes in isolated subprocesses (avoids ru_maxrss pollution)."""
+    console.print("\n[bold]Running H_fixed mode...[/bold]")
+    result_fixed = _run_mode_in_subprocess(mol_key, n_est, n_trotter, "fixed", ir_dir=ir_dir)
+    if result_fixed.error:
+        console.print(f"  [red]H_fixed ERROR: {result_fixed.error}[/red]")
+    else:
+        console.print(
+            f"  [green]H_fixed: peak={result_fixed.phase_b.maxrss_mb:.0f} MB, "
+            f"compile={result_fixed.phase_b.elapsed_s:.1f}s[/green]"
+        )
+
+    console.print("\n[bold]Running H_dynamic mode...[/bold]")
+    result_dynamic = _run_mode_in_subprocess(mol_key, n_est, n_trotter, "dynamic", ir_dir=ir_dir)
+    if result_dynamic.error:
+        console.print(f"  [red]H_dynamic ERROR: {result_dynamic.error}[/red]")
+    else:
+        console.print(
+            f"  [green]H_dynamic: peak={result_dynamic.phase_b.maxrss_mb:.0f} MB, "
+            f"compile={result_dynamic.phase_b.elapsed_s:.1f}s[/green]"
+        )
+
+    return result_fixed, result_dynamic
+
+
+def print_mode_comparison(fixed: ProfileResult, dynamic: ProfileResult):
+    """Print side-by-side comparison table of H_fixed vs H_dynamic."""
+    table = Table(title="H_fixed vs H_dynamic Comparison", show_lines=True)
+    table.add_column("Metric", style="bold")
+    table.add_column("H_fixed", justify="right", style="cyan")
+    table.add_column("H_dynamic", justify="right", style="magenta")
+    table.add_column("Ratio (dyn/fix)", justify="right", style="yellow")
+
+    def _ratio(a: float, b: float) -> str:
+        if a > 0:
+            return f"{b / a:.2f}×"
+        return "—"
+
+    # Compilation time
+    fix_t = fixed.phase_b.elapsed_s if fixed.phase_b else 0
+    dyn_t = dynamic.phase_b.elapsed_s if dynamic.phase_b else 0
+    table.add_row("Compile Time (s)", f"{fix_t:.1f}", f"{dyn_t:.1f}", _ratio(fix_t, dyn_t))
+
+    # Peak RSS
+    fix_rss = fixed.phase_b.maxrss_mb if fixed.phase_b else 0
+    dyn_rss = dynamic.phase_b.maxrss_mb if dynamic.phase_b else 0
+    table.add_row("Peak RSS (MB)", f"{fix_rss:.0f}", f"{dyn_rss:.0f}", _ratio(fix_rss, dyn_rss))
+
+    # Timeline peak
+    table.add_row(
+        "Timeline Peak (MB)",
+        f"{fixed.timeline_peak_mb:.0f}",
+        f"{dynamic.timeline_peak_mb:.0f}",
+        _ratio(fixed.timeline_peak_mb, dynamic.timeline_peak_mb),
+    )
+
+    # Python heap peak
+    fix_heap = fixed.phase_b.tracemalloc_peak_mb if fixed.phase_b else 0
+    dyn_heap = dynamic.phase_b.tracemalloc_peak_mb if dynamic.phase_b else 0
+    table.add_row("Python Heap Peak (MB)", f"{fix_heap:.1f}", f"{dyn_heap:.1f}", "")
+
+    # Execution time
+    fix_exec = fixed.phase_c.elapsed_s if fixed.phase_c else 0
+    dyn_exec = dynamic.phase_c.elapsed_s if dynamic.phase_c else 0
+    table.add_row("Exec Time (5x, s)", f"{fix_exec:.3f}", f"{dyn_exec:.3f}", "")
+
+    # IR sizes (largest stage)
+    def _largest_ir(analysis):
+        if not analysis:
+            return 0.0, "N/A"
+        stage, size, _ = max(analysis, key=lambda x: x[1])
+        return size, stage
+
+    fix_ir, fix_stage = _largest_ir(fixed.ir_analysis)
+    dyn_ir, dyn_stage = _largest_ir(dynamic.ir_analysis)
+    table.add_row(
+        "Largest IR (KB)",
+        f"{fix_ir:.0f} ({fix_stage})",
+        f"{dyn_ir:.0f} ({dyn_stage})",
+        _ratio(fix_ir, dyn_ir),
+    )
+
+    # Prob sum sanity
+    table.add_row("Prob Sum", f"{fixed.prob_sum:.6f}", f"{dynamic.prob_sum:.6f}", "")
+
+    console.print(table)
+
+
 # =============================================================================
 # Step 8: Output Formatting
 # =============================================================================
@@ -631,12 +934,18 @@ def print_system_info():
 
 def print_circuit_params(result: ProfileResult):
     """Print circuit parameters panel."""
+    mode_label = (
+        "H_fixed (compile-time constants)"
+        if result.mode == "fixed"
+        else "H_dynamic (runtime coefficients)"
+    )
     lines = [
-        f"Molecule:        {result.molecule}",
-        f"System qubits:   {result.n_system_qubits}",
-        f"Estimation wires:{result.n_estimation_wires}",
-        f"Total qubits:    {result.n_system_qubits + result.n_estimation_wires}",
-        f"Trotter steps:   {result.n_trotter}",
+        f"Molecule:          {result.molecule}",
+        f"Hamiltonian mode:  {mode_label}",
+        f"System qubits:     {result.n_system_qubits}",
+        f"Estimation wires:  {result.n_estimation_wires}",
+        f"Total qubits:      {result.n_system_qubits + result.n_estimation_wires}",
+        f"Trotter steps:     {result.n_trotter}",
         f"Hamiltonian terms: {result.n_terms}",
         f"IR scale estimate: {result.ir_scale} "
         f"({result.n_estimation_wires}×{result.n_trotter}×{result.n_terms})",
@@ -649,7 +958,7 @@ def print_memory_table(result: ProfileResult):
     table = Table(title="Memory Profile by Phase", show_lines=True)
     table.add_column("Phase", style="bold")
     table.add_column("RSS Δ (MB)", justify="right")
-    table.add_column("Process Peak RSS (MB)", justify="right")
+    table.add_column("VmPeak (MB)", justify="right")
     table.add_column("ru_maxrss (MB)", justify="right")
     table.add_column("Python Heap Peak (MB)", justify="right")
     table.add_column("Wall Time (s)", justify="right")
@@ -733,6 +1042,7 @@ def print_memory_timeline(samples: list[tuple[float, float]]):
 def print_sweep_table(results: list[ProfileResult]):
     """Print parameter sweep results table."""
     table = Table(title="Parameter Sweep: Memory Scaling", show_lines=True)
+    table.add_column("Mode", justify="center")
     table.add_column("n_est", justify="center")
     table.add_column("n_trotter", justify="center")
     table.add_column("IR Scale", justify="right")
@@ -742,8 +1052,10 @@ def print_sweep_table(results: list[ProfileResult]):
     table.add_column("Status", justify="center")
 
     for r in results:
+        mode_tag = "fixed" if r.mode == "fixed" else "dyn"
         if r.error:
             table.add_row(
+                mode_tag,
                 str(r.n_estimation_wires),
                 str(r.n_trotter),
                 str(r.ir_scale),
@@ -754,6 +1066,7 @@ def print_sweep_table(results: list[ProfileResult]):
             )
         else:
             table.add_row(
+                mode_tag,
                 str(r.n_estimation_wires),
                 str(r.n_trotter),
                 str(r.ir_scale),
@@ -775,6 +1088,7 @@ def print_summary(result: ProfileResult):
     compile_time = result.phase_b.elapsed_s
     n_terms = result.n_terms
     ir_scale = result.ir_scale
+    mode_label = "H_fixed" if result.mode == "fixed" else "H_dynamic"
 
     # Find largest IR stage
     largest_stage = "N/A"
@@ -786,6 +1100,7 @@ def print_summary(result: ProfileResult):
 
     lines = [
         f"[bold]Molecule:[/bold] {result.molecule}",
+        f"[bold]Hamiltonian Mode:[/bold] {mode_label}",
         f"[bold]Peak Process RSS:[/bold] {peak_rss:.0f} MB ({peak_rss / 1024:.2f} GB)",
         f"[bold]Compilation Time:[/bold] {compile_time:.1f}s",
         f"[bold]Hamiltonian Terms:[/bold] {n_terms}",
@@ -808,12 +1123,21 @@ def print_summary(result: ProfileResult):
             "Investigate IR amplification stages above."
         )
 
-    console.print(Panel("\n".join(lines), title="Summary for Xanadu", border_style="green"))
+    console.print(Panel("\n".join(lines), title=f"Summary ({mode_label})", border_style="green"))
 
 
 # =============================================================================
 # Step 9: Main + CLI
 # =============================================================================
+
+
+def _print_single_result(result: ProfileResult):
+    """Print full profiling report for a single mode result."""
+    print_circuit_params(result)
+    print_memory_table(result)
+    print_ir_analysis(result.ir_analysis)
+    print_memory_timeline(result.timeline_samples)
+    print_summary(result)
 
 
 def main():
@@ -828,19 +1152,31 @@ def main():
         help="Target molecule (default: h2)",
     )
     parser.add_argument(
+        "--mode",
+        choices=["fixed", "dynamic", "both"],
+        default="both",
+        help="Hamiltonian mode: fixed (compile-time), dynamic (runtime), both (default: both)",
+    )
+    parser.add_argument(
         "--sweep",
         action="store_true",
         help="Run parameter scaling sweep (H2 only)",
     )
     parser.add_argument("--n-est", type=int, default=4, help="Estimation wires (default: 4)")
     parser.add_argument("--n-trotter", type=int, default=10, help="Trotter steps (default: 10)")
+    parser.add_argument(
+        "--ir-dir",
+        type=str,
+        default=None,
+        help="Directory to save Catalyst IR stages (default: auto-cleanup after analysis)",
+    )
     args = parser.parse_args()
 
     console.print(
         Panel(
             "[bold]QPE Circuit Compilation Memory Profiler[/bold]\n"
             "Measuring real peak memory during Catalyst @qjit compilation\n"
-            "of runtime-coefficient QPE circuits.",
+            "of QPE circuits (H_fixed and/or H_dynamic modes).",
             border_style="magenta",
         )
     )
@@ -848,34 +1184,57 @@ def main():
     print_system_info()
 
     if args.sweep:
-        console.print("\n[bold]Running parameter sweep...[/bold]")
-        results = run_sweep(args.molecule)
-        print_sweep_table(results)
-        # Print detailed analysis for last successful result
-        for r in reversed(results):
-            if not r.error:
-                print_ir_analysis(r.ir_analysis)
-                print_summary(r)
-                break
-    else:
+        console.print(f"\n[bold]Running parameter sweep (mode={args.mode})...[/bold]")
+        if args.mode == "both":
+            results_fixed = run_sweep(args.molecule, mode="fixed", ir_dir=args.ir_dir)
+            results_dynamic = run_sweep(args.molecule, mode="dynamic", ir_dir=args.ir_dir)
+            print_sweep_table(results_fixed + results_dynamic)
+        else:
+            results = run_sweep(args.molecule, mode=args.mode, ir_dir=args.ir_dir)
+            print_sweep_table(results)
+            for r in reversed(results):
+                if not r.error:
+                    print_ir_analysis(r.ir_analysis)
+                    print_summary(r)
+                    break
+    elif args.mode == "both":
         console.print(
             f"\n[bold]Profiling {args.molecule.upper()}: "
-            f"n_est={args.n_est}, n_trotter={args.n_trotter}[/bold]"
+            f"n_est={args.n_est}, n_trotter={args.n_trotter} (both modes)[/bold]"
+        )
+        result_fixed, result_dynamic = run_both_modes(
+            args.molecule, args.n_est, args.n_trotter, ir_dir=args.ir_dir
+        )
+
+        # Print detailed reports for each mode
+        for result in [result_fixed, result_dynamic]:
+            if not result.error:
+                console.print(f"\n{'=' * 70}")
+                _print_single_result(result)
+
+        # Print comparison if both succeeded
+        if not result_fixed.error and not result_dynamic.error:
+            console.print(f"\n{'=' * 70}")
+            print_mode_comparison(result_fixed, result_dynamic)
+    else:
+        # Single mode (in-process)
+        console.print(
+            f"\n[bold]Profiling {args.molecule.upper()}: "
+            f"n_est={args.n_est}, n_trotter={args.n_trotter} "
+            f"(H_{args.mode})[/bold]"
         )
 
         tracemalloc.start()
-        result = run_single_profile(args.molecule, args.n_est, args.n_trotter)
+        result = run_single_profile(
+            args.molecule, args.n_est, args.n_trotter, mode=args.mode, ir_dir=args.ir_dir
+        )
         tracemalloc.stop()
 
         if result.error:
             console.print(f"[red]ERROR: {result.error}[/red]")
             sys.exit(1)
 
-        print_circuit_params(result)
-        print_memory_table(result)
-        print_ir_analysis(result.ir_analysis)
-        print_memory_timeline(result.timeline_samples)
-        print_summary(result)
+        _print_single_result(result)
 
 
 if __name__ == "__main__":

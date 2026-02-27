@@ -13,5 +13,13 @@ except ImportError as e:
         "q2m3.solvation requires Catalyst and JAX. " "Install with: uv sync --extra solvation"
     ) from e
 
-# Public API will be populated as modules are implemented
-__all__: list[str] = []
+from q2m3.solvation.config import MoleculeConfig, QPEConfig, SolvationConfig
+from q2m3.solvation.solvent import SPC_E_WATER, TIP3P_WATER
+
+__all__ = [
+    "MoleculeConfig",
+    "QPEConfig",
+    "SolvationConfig",
+    "TIP3P_WATER",
+    "SPC_E_WATER",
+]

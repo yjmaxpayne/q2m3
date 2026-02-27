@@ -58,15 +58,15 @@ from examples.mc_solvation.energy import (  # noqa: E402
     build_operator_index_map,
     decompose_hamiltonian,
 )
-from examples.qpe_memory_profile import (  # noqa: E402
+from q2m3.core import QPEEngine  # noqa: E402
+from q2m3.core.device_utils import select_device as _select_device  # noqa: E402
+from q2m3.interfaces import PySCFPennyLaneConverter  # noqa: E402
+from q2m3.profiling import (  # noqa: E402
     MOLECULES,
     analyze_ir_stages,
     ir_output_dir,
     take_snapshot,
 )
-from q2m3.core import QPEEngine  # noqa: E402
-from q2m3.core.device_utils import select_device as _select_device  # noqa: E402
-from q2m3.interfaces import PySCFPennyLaneConverter  # noqa: E402
 
 console = Console()
 

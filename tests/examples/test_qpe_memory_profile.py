@@ -35,39 +35,6 @@ class TestImportIntegrity:
         assert hasattr(mod, "main")
         assert hasattr(mod, "console")
 
-    def test_reexported_symbols_match_source(self):
-        """Three re-exported symbols have object identity with source module."""
-        from examples.qpe_memory_profile import (
-            analyze_ir_stages,
-            ir_output_dir,
-            take_snapshot,
-        )
-        from q2m3.profiling import (
-            analyze_ir_stages as src_analyze,
-        )
-        from q2m3.profiling import (
-            ir_output_dir as src_ir_dir,
-        )
-        from q2m3.profiling import (
-            take_snapshot as src_snap,
-        )
-
-        assert analyze_ir_stages is src_analyze
-        assert ir_output_dir is src_ir_dir
-        assert take_snapshot is src_snap
-
-    def test_downstream_imports_work(self):
-        """Downstream scripts' import statements succeed without error."""
-        from examples.qpe_memory_profile import (
-            analyze_ir_stages,
-            ir_output_dir,
-            take_snapshot,
-        )
-
-        assert callable(analyze_ir_stages)
-        assert callable(take_snapshot)
-        assert callable(ir_output_dir)
-
 
 # =============================================================================
 # Layer 2: Output Formatting Functions

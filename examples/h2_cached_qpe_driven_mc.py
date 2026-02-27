@@ -84,7 +84,7 @@ from examples.mc_solvation import (  # noqa: E402
 )
 from examples.mc_solvation.energy import compute_hf_energy_vacuum  # noqa: E402
 from examples.qpe_compile_cache_verify import build_hamiltonian_data, make_qpe_circuit  # noqa: E402
-from examples.qpe_memory_profile import ir_output_dir, take_snapshot  # noqa: E402
+from q2m3.profiling import ir_output_dir, take_snapshot  # noqa: E402
 
 console = Console()
 

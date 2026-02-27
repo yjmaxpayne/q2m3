@@ -60,12 +60,9 @@ from q2m3.core.device_utils import CATALYST_VERSION  # noqa: E402
 from q2m3.profiling import (  # noqa: E402
     MOLECULES,
     ProfileResult,
-    analyze_ir_stages,  # noqa: F401 — re-exported for downstream scripts
-    ir_output_dir,  # noqa: F401 — re-exported for downstream scripts
     run_both_modes,
     run_single_profile,
     run_sweep,
-    take_snapshot,  # noqa: F401 — re-exported for downstream scripts
 )
 
 console = Console()

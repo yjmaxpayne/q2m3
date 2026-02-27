@@ -2691,6 +2691,12 @@ gpu = [
     { name = "jax", extra = ["cuda12"] },
     { name = "pennylane-lightning", extra = ["gpu"] },
 ]
+solvation = [
+    { name = "jax" },
+    { name = "jaxlib" },
+    { name = "pennylane-catalyst" },
+    { name = "pennylane-lightning" },
+]
 viz = [
     { name = "ase" },
     { name = "nglview" },
@@ -2703,13 +2709,15 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
     { name = "cupy-cuda12x", marker = "extra == 'gpu'", specifier = ">=12.0.0" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "jax", marker = "extra == 'solvation'", specifier = ">=0.4.20" },
     { name = "jax", extras = ["cuda12"], marker = "extra == 'gpu'", specifier = ">=0.4.0" },
+    { name = "jaxlib", marker = "extra == 'solvation'", specifier = ">=0.4.20" },
     { name = "jupyter", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "matplotlib", specifier = ">=3.5.0" },
     { name = "nglview", marker = "extra == 'viz'", specifier = ">=3.0.0" },
     { name = "notebook", marker = "extra == 'dev'", specifier = ">=6.5.0" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "pennylane", specifier = ">=0.33.0" },
+    { name = "pennylane", specifier = ">=0.44.0" },
     { name = "pennylane-catalyst", marker = "extra == 'catalyst'", specifier = ">=0.14.0" },
     { name = "pennylane-lightning", marker = "extra == 'catalyst'", specifier = ">=0.44.0" },
     { name = "pennylane-lightning", extras = ["gpu"], marker = "extra == 'gpu'", specifier = ">=0.44.0" },
@@ -2719,12 +2727,13 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "q2m3", extras = ["catalyst"], marker = "extra == 'solvation'" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "tqdm", specifier = ">=4.65.0" },
 ]
-provides-extras = ["dev", "gpu", "catalyst", "viz"]
+provides-extras = ["dev", "gpu", "catalyst", "solvation", "viz"]
 
 [[package]]
 name = "referencing"

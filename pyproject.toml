@@ -25,7 +25,7 @@ classifiers = [
 
 dependencies = [
     "pyscf>=2.0.0",
-    "pennylane>=0.33.0",
+    "pennylane>=0.44.0",
     "numpy>=2.0.0",
     "scipy>=1.7.0",
     "pyyaml>=6.0",
@@ -53,6 +53,11 @@ gpu = [
 catalyst = [
     "pennylane-catalyst>=0.14.0",
     "pennylane-lightning>=0.44.0",
+]
+solvation = [
+    "q2m3[catalyst]",
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
 ]
 viz = [
     "py3dmol>=2.0.0",
@@ -116,6 +121,7 @@ addopts = [
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "solvation: marks tests requiring solvation dependencies (Catalyst + JAX)",
     "catalyst: marks tests requiring Catalyst (skip if not installed)",
     "gpu: marks tests requiring lightning.gpu (skip if not available)",
     "rdm: marks tests related to 1-RDM measurement functionality",

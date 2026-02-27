@@ -27,6 +27,9 @@ Three measurement layers:
   - /proc/self/status VmRSS/VmPeak → current/peak RSS (Linux kernel level)
   - tracemalloc → Python heap only (PennyLane IR construction, JAX tracing)
 
+Core profiling logic has been migrated to ``q2m3.profiling`` subpackage.
+This script retains only the CLI interface and Rich output formatting.
+
 Usage:
     uv run python examples/qpe_memory_profile.py                          # both modes
     uv run python examples/qpe_memory_profile.py --mode fixed             # H_fixed only
@@ -38,1010 +41,39 @@ Usage:
 """
 
 import argparse
-import multiprocessing
 import os
-import resource
-import shutil
 import sys
-import tempfile
-import threading
-import time
 import tracemalloc
-import warnings
-from contextlib import contextmanager
-from dataclasses import dataclass, field
 from pathlib import Path
 
-warnings.filterwarnings("ignore")
-
-# Ensure project root is in sys.path
+# Ensure project root is in sys.path for direct script execution
 _project_root = Path(__file__).resolve().parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-import numpy as np  # noqa: E402
 import pennylane as qml  # noqa: E402
-from catalyst import qjit  # noqa: E402
-from catalyst.debug import get_compilation_stage  # noqa: E402
 from rich.console import Console  # noqa: E402
 from rich.panel import Panel  # noqa: E402
 from rich.table import Table  # noqa: E402
 
-from examples.mc_solvation.config import MoleculeConfig  # noqa: E402
-from examples.mc_solvation.energy import (  # noqa: E402
-    build_operator_index_map,
-    decompose_hamiltonian,
-)
-from q2m3.core import QPEEngine  # noqa: E402
 from q2m3.core.device_utils import CATALYST_VERSION  # noqa: E402
-from q2m3.core.device_utils import select_device as _select_device  # noqa: E402
-from q2m3.interfaces import PySCFPennyLaneConverter  # noqa: E402
+from q2m3.profiling import (  # noqa: E402
+    MOLECULES,
+    ProfileResult,
+    analyze_ir_stages,  # noqa: F401 — re-exported for downstream scripts
+    ir_output_dir,  # noqa: F401 — re-exported for downstream scripts
+    run_both_modes,
+    run_single_profile,
+    run_sweep,
+    take_snapshot,  # noqa: F401 — re-exported for downstream scripts
+)
 
 console = Console()
 
 
 # =============================================================================
-# Molecule Presets
+# Output Formatting (Rich tables/panels)
 # =============================================================================
-
-MOLECULES = {
-    "h2": MoleculeConfig(
-        name="H2",
-        symbols=["H", "H"],
-        coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
-        charge=0,
-        active_electrons=2,
-        active_orbitals=2,
-        basis="sto-3g",
-    ),
-    "h3o": MoleculeConfig(
-        name="H3O+",
-        symbols=["O", "H", "H", "H"],
-        coords=[
-            [0.0000, 0.0000, 0.1173],
-            [0.0000, 0.9572, -0.4692],
-            [0.8286, -0.4786, -0.4692],
-            [-0.8286, -0.4786, -0.4692],
-        ],
-        charge=1,
-        active_electrons=4,
-        active_orbitals=4,
-        basis="sto-3g",
-    ),
-}
-
-
-# =============================================================================
-# Step 1-2: Memory Measurement Infrastructure
-# =============================================================================
-
-
-@dataclass
-class MemorySnapshot:
-    """Multi-layer memory snapshot at a single point in time."""
-
-    label: str
-    rss_mb: float  # /proc/self/status VmRSS
-    vm_peak_mb: float  # /proc/self/status VmPeak
-    maxrss_mb: float  # resource.getrusage RUSAGE_SELF (cumulative peak)
-    maxrss_children_mb: float  # resource.getrusage RUSAGE_CHILDREN peak
-    tracemalloc_peak_mb: float  # Python heap peak since last reset
-    tracemalloc_current_mb: float  # Python heap current
-    elapsed_s: float = 0.0
-
-
-@dataclass
-class ProfileResult:
-    """Complete profiling result for one parameter combination."""
-
-    molecule: str
-    n_system_qubits: int
-    n_estimation_wires: int
-    n_trotter: int
-    n_terms: int
-    ir_scale: int  # n_est × n_trotter × n_terms
-    mode: str = "dynamic"  # "fixed" or "dynamic"
-    phase_a: MemorySnapshot | None = None
-    phase_b: MemorySnapshot | None = None
-    phase_c: MemorySnapshot | None = None
-    timeline_peak_mb: float = 0.0
-    timeline_samples: list = field(default_factory=list)
-    ir_analysis: list = field(default_factory=list)  # list of (stage, size_kb, lines)
-    prob_sum: float = 0.0
-    error: str | None = None
-
-
-def read_proc_status(pid: int | str = "self") -> dict[str, float]:
-    """Parse /proc/[pid]/status for VmRSS and VmPeak (Linux only).
-
-    Args:
-        pid: Process ID to read, or "self" for current process.
-    """
-    result = {"VmRSS": 0.0, "VmPeak": 0.0, "VmSize": 0.0, "VmHWM": 0.0}
-    try:
-        with open(f"/proc/{pid}/status") as f:
-            for line in f:
-                for key in result:
-                    if line.startswith(key + ":"):
-                        # Format: "VmRSS:    123456 kB"
-                        result[key] = float(line.split()[1]) / 1024.0  # kB → MB
-    except (FileNotFoundError, ProcessLookupError, PermissionError):
-        pass
-    return result
-
-
-def read_smaps_rollup(pid: int | str = "self") -> dict[str, float]:
-    """Parse /proc/[pid]/smaps_rollup to categorize RSS into memory types.
-
-    Returns dict with MB values for:
-      - Rss: total resident
-      - Pss: proportional share
-      - Anonymous: heap + anonymous mmap (C++ allocations, LLVM JIT code)
-      - LazyFree, AnonHugePages, etc.
-    """
-    result = {}
-    try:
-        with open(f"/proc/{pid}/smaps_rollup") as f:
-            for line in f:
-                parts = line.split()
-                if len(parts) >= 2:
-                    key = parts[0].rstrip(":")
-                    try:
-                        result[key] = float(parts[1]) / 1024.0  # kB → MB
-                    except ValueError:
-                        pass
-    except (FileNotFoundError, ProcessLookupError, PermissionError):
-        pass
-    return result
-
-
-def take_snapshot(label: str) -> MemorySnapshot:
-    """Take a comprehensive memory snapshot from all measurement layers.
-
-    Captures both RUSAGE_SELF (Python process) and RUSAGE_CHILDREN (catalyst
-    subprocess) to detect the measurement blind spot where MLIR→LLVM
-    compilation happens in a child process.
-    """
-    proc = read_proc_status()
-    ru_self = resource.getrusage(resource.RUSAGE_SELF)
-    ru_children = resource.getrusage(resource.RUSAGE_CHILDREN)
-    # ru_maxrss is in KB on Linux
-    maxrss_mb = ru_self.ru_maxrss / 1024.0
-    maxrss_children_mb = ru_children.ru_maxrss / 1024.0
-
-    tm_current, tm_peak = tracemalloc.get_traced_memory()
-
-    return MemorySnapshot(
-        label=label,
-        rss_mb=proc["VmRSS"],
-        vm_peak_mb=proc["VmPeak"],
-        maxrss_mb=maxrss_mb,
-        maxrss_children_mb=maxrss_children_mb,
-        tracemalloc_peak_mb=tm_peak / (1024 * 1024),
-        tracemalloc_current_mb=tm_current / (1024 * 1024),
-    )
-
-
-@contextmanager
-def ir_output_dir(path: str | None = None):
-    """Manage Catalyst IR workspace directory.
-
-    Must wrap @qjit decoration (not just the call), because Catalyst captures
-    os.getcwd() at decoration time to determine the IR output location.
-
-    Args:
-        path: If provided, IR files are written here and preserved after exit.
-              If None, a temporary directory is used and auto-cleaned on exit.
-
-    Yields:
-        The workspace directory path (user-specified or auto-created tempdir).
-    """
-    original_cwd = os.getcwd()
-    if path is not None:
-        os.makedirs(path, exist_ok=True)
-        workspace = path
-    else:
-        workspace = tempfile.mkdtemp(prefix="qpe_ir_")
-    os.chdir(workspace)
-    try:
-        yield workspace
-    finally:
-        os.chdir(original_cwd)
-        if path is None:
-            shutil.rmtree(workspace, ignore_errors=True)
-
-
-class MemoryTimeline:
-    """Background daemon thread sampling /proc/self/status VmRSS at 100ms intervals.
-
-    Also captures /proc/self/smaps_rollup at peak RSS to categorize memory.
-    """
-
-    def __init__(self, interval_s: float = 0.1):
-        self._interval = interval_s
-        self._samples: list[tuple[float, float]] = []
-        self._stop_event = threading.Event()
-        self._thread: threading.Thread | None = None
-        self._start_time = 0.0
-        self._peak_rss = 0.0
-        self._peak_smaps: dict[str, float] = {}
-
-    def __enter__(self):
-        self._start_time = time.monotonic()
-        self._samples.clear()
-        self._stop_event.clear()
-        self._peak_rss = 0.0
-        self._peak_smaps = {}
-        self._thread = threading.Thread(target=self._sample_loop, daemon=True)
-        self._thread.start()
-        return self
-
-    def __exit__(self, *args):
-        self._stop_event.set()
-        if self._thread:
-            self._thread.join(timeout=2.0)
-
-    def _sample_loop(self):
-        while not self._stop_event.is_set():
-            elapsed = time.monotonic() - self._start_time
-            proc = read_proc_status()
-            rss = proc["VmRSS"]
-            self._samples.append((elapsed, rss))
-            # Capture smaps_rollup at new peak
-            if rss > self._peak_rss:
-                self._peak_rss = rss
-                self._peak_smaps = read_smaps_rollup()
-            self._stop_event.wait(self._interval)
-
-    @property
-    def peak_rss_mb(self) -> float:
-        if not self._samples:
-            return 0.0
-        return max(s[1] for s in self._samples)
-
-    @property
-    def peak_smaps(self) -> dict[str, float]:
-        """Memory categorization captured at peak RSS moment."""
-        return dict(self._peak_smaps)
-
-    @property
-    def samples(self) -> list[tuple[float, float]]:
-        return list(self._samples)
-
-
-class ParentSideMonitor:
-    """Monitor a child process's RSS from the parent side via /proc/PID/status.
-
-    This provides an independent measurement that validates the child's
-    self-reported ru_maxrss. Critical for detecting measurement blind spots
-    where getrusage misses certain allocation patterns (mmap, LLVM JIT, etc.).
-    """
-
-    def __init__(self, pid: int, interval_s: float = 0.1):
-        self._pid = pid
-        self._interval = interval_s
-        self._samples: list[tuple[float, float]] = []
-        self._stop_event = threading.Event()
-        self._thread: threading.Thread | None = None
-        self._start_time = 0.0
-        self._peak_rss = 0.0
-        self._peak_smaps: dict[str, float] = {}
-        self._peak_hwm = 0.0
-
-    def start(self):
-        self._start_time = time.monotonic()
-        self._samples.clear()
-        self._stop_event.clear()
-        self._peak_rss = 0.0
-        self._peak_smaps = {}
-        self._peak_hwm = 0.0
-        self._thread = threading.Thread(target=self._sample_loop, daemon=True)
-        self._thread.start()
-
-    def stop(self):
-        self._stop_event.set()
-        if self._thread:
-            self._thread.join(timeout=2.0)
-
-    def _sample_loop(self):
-        while not self._stop_event.is_set():
-            elapsed = time.monotonic() - self._start_time
-            proc = read_proc_status(self._pid)
-            rss = proc["VmRSS"]
-            hwm = proc["VmHWM"]
-            if rss > 0:
-                self._samples.append((elapsed, rss))
-                if rss > self._peak_rss:
-                    self._peak_rss = rss
-                    self._peak_smaps = read_smaps_rollup(self._pid)
-                if hwm > self._peak_hwm:
-                    self._peak_hwm = hwm
-            self._stop_event.wait(self._interval)
-
-    @property
-    def peak_rss_mb(self) -> float:
-        return self._peak_rss
-
-    @property
-    def peak_hwm_mb(self) -> float:
-        """VmHWM: kernel-tracked high water mark for RSS (most reliable)."""
-        return self._peak_hwm
-
-    @property
-    def peak_smaps(self) -> dict[str, float]:
-        return dict(self._peak_smaps)
-
-    @property
-    def samples(self) -> list[tuple[float, float]]:
-        return list(self._samples)
-
-
-# =============================================================================
-# Step 3: Phase A — Hamiltonian Construction Profiler
-# =============================================================================
-
-
-def profile_hamiltonian_build(
-    mol: MoleculeConfig, n_est: int, n_trotter: int
-) -> tuple[MemorySnapshot, list, list[float], np.ndarray, dict]:
-    """
-    Profile Phase A: PySCF → PennyLane Hamiltonian construction.
-
-    Returns:
-        Tuple of (snapshot, ops, coeffs, hf_state, circuit_params)
-    """
-    tracemalloc.reset_peak()
-    snap_before = take_snapshot("A:before")
-    t0 = time.monotonic()
-
-    # Build vacuum Hamiltonian
-    converter = PySCFPennyLaneConverter(basis=mol.basis, mapping="jordan_wigner")
-    H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(
-        symbols=mol.symbols,
-        coords=np.array(mol.coords),
-        charge=mol.charge,
-        active_electrons=mol.active_electrons,
-        active_orbitals=mol.active_orbitals,
-    )
-
-    # Decompose into coefficients and operators
-    coeffs, ops = decompose_hamiltonian(H)
-
-    # Build operator index map (may extend coeffs/ops with missing Z terms)
-    op_index_map, coeffs, ops = build_operator_index_map(ops, n_qubits, coeffs)
-
-    # Compute shifted QPE parameters (use HF energy as shift reference)
-    from pyscf import gto, scf
-
-    pyscf_mol = gto.M(
-        atom=[(s, c) for s, c in zip(mol.symbols, mol.coords, strict=True)],
-        basis=mol.basis,
-        charge=mol.charge,
-        unit="Angstrom",
-    )
-    mf = scf.RHF(pyscf_mol)
-    mf.verbose = 0
-    hf_energy = mf.kernel()
-
-    params = QPEEngine.compute_shifted_qpe_params(
-        target_resolution=0.003,
-        energy_range=0.2,
-    )
-    base_time = params["base_time"]
-    energy_shift = hf_energy
-
-    # Apply energy shift to Identity coefficient
-    identity_idx = op_index_map["identity_idx"]
-    coeffs[identity_idx] -= energy_shift
-    base_coeffs = np.array(coeffs, dtype=np.float64)
-
-    elapsed = time.monotonic() - t0
-    snap_after = take_snapshot("A:after")
-    snap_after.elapsed_s = elapsed
-
-    circuit_params = {
-        "n_system_qubits": n_qubits,
-        "n_estimation_wires": n_est,
-        "n_trotter": n_trotter,
-        "n_terms": len(ops),
-        "base_time": base_time,
-        "energy_shift": energy_shift,
-        "hf_state": hf_state,
-        "base_coeffs": base_coeffs,
-        "op_index_map": op_index_map,
-    }
-
-    # Report delta
-    result_snap = MemorySnapshot(
-        label="Phase A: Hamiltonian Build",
-        rss_mb=snap_after.rss_mb - snap_before.rss_mb,
-        vm_peak_mb=snap_after.vm_peak_mb,
-        maxrss_mb=snap_after.maxrss_mb,
-        maxrss_children_mb=snap_after.maxrss_children_mb,
-        tracemalloc_peak_mb=snap_after.tracemalloc_peak_mb,
-        tracemalloc_current_mb=snap_after.tracemalloc_current_mb
-        - snap_before.tracemalloc_current_mb,
-        elapsed_s=elapsed,
-    )
-
-    return result_snap, ops, coeffs, hf_state, circuit_params
-
-
-# =============================================================================
-# Step 4: Phase B — @qjit Compilation Profiler (core)
-# =============================================================================
-
-
-def profile_qjit_compilation(
-    ops: list,
-    coeffs: list[float],
-    hf_state: np.ndarray,
-    circuit_params: dict,
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-) -> tuple[MemorySnapshot, MemoryTimeline, list, object]:
-    """
-    Profile Phase B: @qjit QPE circuit compilation.
-
-    This is the critical phase — first call triggers MLIR→LLVM compilation.
-
-    IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context,
-    because Catalyst captures os.getcwd() at decoration time to determine
-    the IR workspace location.
-
-    Args:
-        ir_dir: If provided, IR files are preserved at this path.
-                If None, a tempdir is used and auto-cleaned after IR analysis.
-        keep_intermediate: If True, retain all 6 IR stages in memory for analysis.
-                          If False, only final stage is kept (tests memory impact).
-
-    Returns:
-        Tuple of (snapshot, timeline, ir_analysis, compiled_fn)
-    """
-    n_system = circuit_params["n_system_qubits"]
-    n_est = circuit_params["n_estimation_wires"]
-    n_trotter = circuit_params["n_trotter"]
-    base_time = circuit_params["base_time"]
-
-    system_wires = list(range(n_system))
-    est_wires = list(range(n_system, n_system + n_est))
-    total_wires = n_system + n_est
-
-    dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
-
-    # Bare function — NO @qjit decorator here (applied functionally below)
-    def qpe_profiled(coeffs_arr):
-        H_runtime = qml.dot(coeffs_arr, ops)
-
-        @qml.qnode(dev)
-        def qnode():
-            # HF state preparation via X gates (Catalyst-compatible)
-            for wire, occ in zip(system_wires, hf_state, strict=True):
-                if occ == 1:
-                    qml.PauliX(wires=wire)
-            # Hadamard on estimation qubits
-            for w in est_wires:
-                qml.Hadamard(wires=w)
-            # Controlled time evolutions (MSB-first convention)
-            for k, ew in enumerate(est_wires):
-                t = (2 ** (n_est - 1 - k)) * base_time
-                qml.ctrl(
-                    qml.adjoint(
-                        qml.TrotterProduct(
-                            H_runtime, time=t, n=n_trotter, order=2, check_hermitian=False
-                        )
-                    ),
-                    control=ew,
-                )
-            # Inverse QFT
-            qml.adjoint(qml.QFT)(wires=est_wires)
-            return qml.probs(wires=est_wires)
-
-        return qnode()
-
-    # Profile compilation (triggered by first call)
-    tracemalloc.reset_peak()
-    snap_before = take_snapshot("B:before")
-    timeline = MemoryTimeline(interval_s=0.1)
-
-    with timeline:
-        t0 = time.monotonic()
-        coeffs_jax = np.array(coeffs, dtype=np.float64)
-        # Apply @qjit INSIDE ir_output_dir so Catalyst captures correct cwd
-        with ir_output_dir(ir_dir):
-            compiled = qjit(keep_intermediate=keep_intermediate)(qpe_profiled)
-            _result = compiled(coeffs_jax)  # Triggers compilation
-            # Analyze IR stages BEFORE context exit (tempdir may be cleaned)
-            ir_analysis = analyze_ir_stages(compiled) if keep_intermediate else []
-        elapsed = time.monotonic() - t0
-
-    snap_after = take_snapshot("B:after")
-
-    result_snap = MemorySnapshot(
-        label="Phase B: @qjit Compilation",
-        rss_mb=snap_after.rss_mb - snap_before.rss_mb,
-        vm_peak_mb=snap_after.vm_peak_mb,
-        maxrss_mb=snap_after.maxrss_mb,
-        maxrss_children_mb=snap_after.maxrss_children_mb,
-        tracemalloc_peak_mb=snap_after.tracemalloc_peak_mb,
-        tracemalloc_current_mb=snap_after.tracemalloc_current_mb
-        - snap_before.tracemalloc_current_mb,
-        elapsed_s=elapsed,
-    )
-
-    return result_snap, timeline, ir_analysis, compiled
-
-
-def profile_qjit_compilation_fixed(
-    ops: list,
-    coeffs: list[float],
-    hf_state: np.ndarray,
-    circuit_params: dict,
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-) -> tuple[MemorySnapshot, MemoryTimeline, list, object]:
-    """
-    Profile Phase B for H_fixed mode: Hamiltonian built OUTSIDE @qjit.
-
-    Coefficients are Python floats → Catalyst can constant-fold them into MLIR.
-    The compiled function takes zero arguments.
-
-    IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context,
-    because Catalyst captures os.getcwd() at decoration time.
-
-    Args:
-        ir_dir: If provided, IR files are preserved at this path.
-                If None, a tempdir is used and auto-cleaned after IR analysis.
-        keep_intermediate: If True, retain all 6 IR stages for analysis.
-    """
-    n_system = circuit_params["n_system_qubits"]
-    n_est = circuit_params["n_estimation_wires"]
-    n_trotter = circuit_params["n_trotter"]
-    base_time = circuit_params["base_time"]
-
-    system_wires = list(range(n_system))
-    est_wires = list(range(n_system, n_system + n_est))
-    total_wires = n_system + n_est
-
-    dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
-
-    # H_fixed: build concrete Hamiltonian BEFORE @qjit (Python floats, not JAX tracers)
-    H_fixed = qml.dot(list(coeffs), ops)
-
-    # Bare function — NO @qjit decorator here (applied functionally below)
-    def qpe_fixed():  # Zero arguments — all coefficients are compile-time constants
-        @qml.qnode(dev)
-        def qnode():
-            # HF state preparation via X gates (Catalyst-compatible)
-            for wire, occ in zip(system_wires, hf_state, strict=True):
-                if occ == 1:
-                    qml.PauliX(wires=wire)
-            # Hadamard on estimation qubits
-            for w in est_wires:
-                qml.Hadamard(wires=w)
-            # Controlled time evolutions (MSB-first convention)
-            for k, ew in enumerate(est_wires):
-                t = (2 ** (n_est - 1 - k)) * base_time
-                qml.ctrl(
-                    qml.adjoint(qml.TrotterProduct(H_fixed, time=t, n=n_trotter, order=2)),
-                    control=ew,
-                )
-            # Inverse QFT
-            qml.adjoint(qml.QFT)(wires=est_wires)
-            return qml.probs(wires=est_wires)
-
-        return qnode()
-
-    # Profile compilation (triggered by first call)
-    tracemalloc.reset_peak()
-    snap_before = take_snapshot("B:before")
-    timeline = MemoryTimeline(interval_s=0.1)
-
-    with timeline:
-        t0 = time.monotonic()
-        # Apply @qjit INSIDE ir_output_dir so Catalyst captures correct cwd
-        with ir_output_dir(ir_dir):
-            compiled = qjit(keep_intermediate=keep_intermediate)(qpe_fixed)
-            _result = compiled()  # Zero-arg call triggers compilation
-            # Analyze IR stages BEFORE context exit (tempdir may be cleaned)
-            ir_analysis = analyze_ir_stages(compiled) if keep_intermediate else []
-        elapsed = time.monotonic() - t0
-
-    snap_after = take_snapshot("B:after")
-
-    result_snap = MemorySnapshot(
-        label="Phase B: @qjit Compilation (H_fixed)",
-        rss_mb=snap_after.rss_mb - snap_before.rss_mb,
-        vm_peak_mb=snap_after.vm_peak_mb,
-        maxrss_mb=snap_after.maxrss_mb,
-        maxrss_children_mb=snap_after.maxrss_children_mb,
-        tracemalloc_peak_mb=snap_after.tracemalloc_peak_mb,
-        tracemalloc_current_mb=snap_after.tracemalloc_current_mb
-        - snap_before.tracemalloc_current_mb,
-        elapsed_s=elapsed,
-    )
-
-    return result_snap, timeline, ir_analysis, compiled
-
-
-# =============================================================================
-# Step 5: Phase C — Execution Profiler
-# =============================================================================
-
-
-def profile_execution(
-    compiled_fn, coeffs: list[float], n_calls: int = 5, is_fixed: bool = False
-) -> tuple[MemorySnapshot, float]:
-    """
-    Profile Phase C: repeated execution of already-compiled circuit.
-
-    Returns:
-        Tuple of (snapshot, prob_sum_from_last_call)
-    """
-    tracemalloc.reset_peak()
-    snap_before = take_snapshot("C:before")
-    t0 = time.monotonic()
-
-    coeffs_arr = np.array(coeffs, dtype=np.float64)
-    result = None
-    for _ in range(n_calls):
-        result = compiled_fn() if is_fixed else compiled_fn(coeffs_arr)
-
-    elapsed = time.monotonic() - t0
-    snap_after = take_snapshot("C:after")
-
-    prob_sum = float(np.sum(result)) if result is not None else 0.0
-
-    result_snap = MemorySnapshot(
-        label=f"Phase C: Execution ({n_calls}x)",
-        rss_mb=snap_after.rss_mb - snap_before.rss_mb,
-        vm_peak_mb=snap_after.vm_peak_mb,
-        maxrss_mb=snap_after.maxrss_mb,
-        maxrss_children_mb=snap_after.maxrss_children_mb,
-        tracemalloc_peak_mb=snap_after.tracemalloc_peak_mb,
-        tracemalloc_current_mb=snap_after.tracemalloc_current_mb
-        - snap_before.tracemalloc_current_mb,
-        elapsed_s=elapsed,
-    )
-
-    return result_snap, prob_sum
-
-
-# =============================================================================
-# Step 6: Catalyst IR Analysis
-# =============================================================================
-
-COMPILATION_STAGES = [
-    "mlir",
-    "QuantumCompilationStage",
-    "HLOLoweringStage",
-    "BufferizationStage",
-    "MLIRToLLVMDialectConversion",
-    "LLVMIRTranslation",
-]
-
-
-def analyze_ir_stages(compiled_fn) -> list[tuple[str, float, int]]:
-    """
-    Export IR text from each compilation stage and measure size/lines.
-
-    Returns:
-        List of (stage_name, size_kb, n_lines)
-    """
-    results = []
-    for stage in COMPILATION_STAGES:
-        try:
-            ir_text = get_compilation_stage(compiled_fn, stage)
-            size_kb = len(ir_text.encode("utf-8")) / 1024.0
-            n_lines = ir_text.count("\n")
-            results.append((stage, size_kb, n_lines))
-        except Exception:
-            # Stage may not exist for this compilation
-            pass
-    return results
-
-
-# =============================================================================
-# Step 7: Parameter Sweep (subprocess isolation)
-# =============================================================================
-
-
-def _spawn_context():
-    """Get 'spawn' multiprocessing context to avoid CUDA fork issues."""
-    return multiprocessing.get_context("spawn")
-
-
-H2_SWEEP_GRID = [
-    (2, 1),
-    (2, 3),
-    (2, 5),
-    (3, 3),
-    (3, 5),
-    (4, 3),
-    (4, 5),
-    (4, 10),
-]
-
-
-def run_single_profile_in_subprocess(
-    mol_key: str,
-    n_est: int,
-    n_trotter: int,
-    queue,
-    mode: str = "dynamic",
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-):
-    """Run a single profiling pass inside a subprocess (avoids ru_maxrss accumulation)."""
-    try:
-        tracemalloc.start()
-        result = run_single_profile(
-            mol_key,
-            n_est,
-            n_trotter,
-            mode=mode,
-            ir_dir=ir_dir,
-            keep_intermediate=keep_intermediate,
-        )
-        tracemalloc.stop()
-        queue.put(result)
-    except Exception as e:
-        queue.put(
-            ProfileResult(
-                molecule=mol_key,
-                n_system_qubits=0,
-                n_estimation_wires=n_est,
-                n_trotter=n_trotter,
-                n_terms=0,
-                ir_scale=0,
-                mode=mode,
-                error=str(e),
-            )
-        )
-
-
-def run_single_profile(
-    mol_key: str,
-    n_est: int,
-    n_trotter: int,
-    mode: str = "dynamic",
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-) -> ProfileResult:
-    """Execute all three profiling phases for one parameter combination."""
-    mol = MOLECULES[mol_key]
-    is_fixed = mode == "fixed"
-
-    # Phase A: Hamiltonian build (shared between modes)
-    snap_a, ops, coeffs, hf_state, circuit_params = profile_hamiltonian_build(mol, n_est, n_trotter)
-    circuit_params["n_estimation_wires"] = n_est
-    circuit_params["n_trotter"] = n_trotter
-
-    n_terms = circuit_params["n_terms"]
-    ir_scale = n_est * n_trotter * n_terms
-
-    # Phase B: @qjit compilation (mode-dependent)
-    if is_fixed:
-        snap_b, timeline, ir_analysis, compiled_fn = profile_qjit_compilation_fixed(
-            ops,
-            coeffs,
-            hf_state,
-            circuit_params,
-            ir_dir=ir_dir,
-            keep_intermediate=keep_intermediate,
-        )
-    else:
-        snap_b, timeline, ir_analysis, compiled_fn = profile_qjit_compilation(
-            ops,
-            coeffs,
-            hf_state,
-            circuit_params,
-            ir_dir=ir_dir,
-            keep_intermediate=keep_intermediate,
-        )
-
-    # Phase C: Execution
-    snap_c, prob_sum = profile_execution(compiled_fn, coeffs, is_fixed=is_fixed)
-
-    return ProfileResult(
-        molecule=mol_key,
-        n_system_qubits=circuit_params["n_system_qubits"],
-        n_estimation_wires=n_est,
-        n_trotter=n_trotter,
-        n_terms=n_terms,
-        ir_scale=ir_scale,
-        mode=mode,
-        phase_a=snap_a,
-        phase_b=snap_b,
-        phase_c=snap_c,
-        timeline_peak_mb=timeline.peak_rss_mb,
-        timeline_samples=timeline.samples,
-        ir_analysis=ir_analysis,
-        prob_sum=prob_sum,
-    )
-
-
-def run_sweep(
-    mol_key: str, mode: str = "dynamic", ir_dir: str | None = None
-) -> list[ProfileResult]:
-    """Run parameter sweep with subprocess isolation."""
-    results = []
-    grid = H2_SWEEP_GRID  # Only H2 sweep is practical
-
-    for i, (n_est, n_trotter) in enumerate(grid):
-        console.print(
-            f"  [{i + 1}/{len(grid)}] n_est={n_est}, n_trotter={n_trotter} " f"(H_{mode}) ...",
-            end=" ",
-        )
-        ctx = _spawn_context()
-        queue = ctx.Queue()
-        proc = ctx.Process(
-            target=run_single_profile_in_subprocess,
-            args=(mol_key, n_est, n_trotter, queue, mode, ir_dir),
-        )
-        proc.start()
-        proc.join(timeout=600)  # 10 min timeout per config
-
-        if proc.is_alive():
-            proc.kill()
-            proc.join()
-            console.print("[red]TIMEOUT[/red]")
-            results.append(
-                ProfileResult(
-                    molecule=mol_key,
-                    n_system_qubits=0,
-                    n_estimation_wires=n_est,
-                    n_trotter=n_trotter,
-                    n_terms=0,
-                    ir_scale=0,
-                    error="timeout",
-                )
-            )
-        elif not queue.empty():
-            result = queue.get()
-            if result.error:
-                console.print(f"[red]ERROR: {result.error}[/red]")
-            else:
-                console.print(
-                    f"[green]peak={result.phase_b.maxrss_mb:.0f} MB, "
-                    f"compile={result.phase_b.elapsed_s:.1f}s[/green]"
-                )
-            results.append(result)
-        else:
-            console.print("[red]NO RESULT[/red]")
-            results.append(
-                ProfileResult(
-                    molecule=mol_key,
-                    n_system_qubits=0,
-                    n_estimation_wires=n_est,
-                    n_trotter=n_trotter,
-                    n_terms=0,
-                    ir_scale=0,
-                    error="no result from subprocess",
-                )
-            )
-    return results
-
-
-def _run_mode_in_subprocess(
-    mol_key: str,
-    n_est: int,
-    n_trotter: int,
-    mode: str,
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-):
-    """Run a single mode in a subprocess with parent-side RSS monitoring.
-
-    Returns:
-        Tuple of (ProfileResult, parent_monitor_data_dict_or_None)
-    """
-    ctx = _spawn_context()
-    queue = ctx.Queue()
-    proc = ctx.Process(
-        target=run_single_profile_in_subprocess,
-        args=(mol_key, n_est, n_trotter, queue, mode, ir_dir, keep_intermediate),
-    )
-    proc.start()
-
-    # Start parent-side monitoring of child process
-    monitor = ParentSideMonitor(proc.pid, interval_s=0.1)
-    monitor.start()
-
-    proc.join(timeout=600)
-    monitor.stop()
-
-    # Collect parent-observed data
-    parent_data = {
-        "peak_rss_mb": monitor.peak_rss_mb,
-        "peak_hwm_mb": monitor.peak_hwm_mb,
-        "peak_smaps": monitor.peak_smaps,
-        "n_samples": len(monitor.samples),
-    }
-
-    if proc.is_alive():
-        proc.kill()
-        proc.join()
-        return (
-            ProfileResult(
-                molecule=mol_key,
-                n_system_qubits=0,
-                n_estimation_wires=n_est,
-                n_trotter=n_trotter,
-                n_terms=0,
-                ir_scale=0,
-                mode=mode,
-                error="timeout",
-            ),
-            parent_data,
-        )
-    elif not queue.empty():
-        return queue.get(), parent_data
-    else:
-        return (
-            ProfileResult(
-                molecule=mol_key,
-                n_system_qubits=0,
-                n_estimation_wires=n_est,
-                n_trotter=n_trotter,
-                n_terms=0,
-                ir_scale=0,
-                mode=mode,
-                error="no result from subprocess",
-            ),
-            parent_data,
-        )
-
-
-def run_both_modes(
-    mol_key: str,
-    n_est: int,
-    n_trotter: int,
-    ir_dir: str | None = None,
-    keep_intermediate: bool = True,
-) -> tuple[ProfileResult, ProfileResult, dict, dict]:
-    """Run fixed and dynamic modes in isolated subprocesses with parent-side monitoring.
-
-    Returns:
-        Tuple of (result_fixed, result_dynamic, parent_data_fixed, parent_data_dynamic)
-    """
-    console.print("\n[bold]Running H_fixed mode...[/bold]")
-    result_fixed, parent_fixed = _run_mode_in_subprocess(
-        mol_key,
-        n_est,
-        n_trotter,
-        "fixed",
-        ir_dir=ir_dir,
-        keep_intermediate=keep_intermediate,
-    )
-    if result_fixed.error:
-        console.print(f"  [red]H_fixed ERROR: {result_fixed.error}[/red]")
-    else:
-        console.print(
-            f"  [green]H_fixed: self={result_fixed.phase_b.maxrss_mb:.0f} MB, "
-            f"parent-observed={parent_fixed['peak_rss_mb']:.0f} MB, "
-            f"compile={result_fixed.phase_b.elapsed_s:.1f}s[/green]"
-        )
-
-    console.print("\n[bold]Running H_dynamic mode...[/bold]")
-    result_dynamic, parent_dynamic = _run_mode_in_subprocess(
-        mol_key,
-        n_est,
-        n_trotter,
-        "dynamic",
-        ir_dir=ir_dir,
-        keep_intermediate=keep_intermediate,
-    )
-    if result_dynamic.error:
-        console.print(f"  [red]H_dynamic ERROR: {result_dynamic.error}[/red]")
-    else:
-        console.print(
-            f"  [green]H_dynamic: self={result_dynamic.phase_b.maxrss_mb:.0f} MB, "
-            f"parent-observed={parent_dynamic['peak_rss_mb']:.0f} MB, "
-            f"compile={result_dynamic.phase_b.elapsed_s:.1f}s[/green]"
-        )
-
-    return result_fixed, result_dynamic, parent_fixed, parent_dynamic
 
 
 def print_mode_comparison(
@@ -1183,11 +215,6 @@ def _print_smaps_comparison(parent_fixed: dict, parent_dynamic: dict):
             table.add_row(key, f"{fix_val:.1f}", f"{dyn_val:.1f}", f"{delta:+.1f}")
 
     console.print(table)
-
-
-# =============================================================================
-# Step 8: Output Formatting
-# =============================================================================
 
 
 def print_system_info():
@@ -1419,7 +446,7 @@ def print_summary(result: ProfileResult):
 
 
 # =============================================================================
-# Step 9: Main + CLI
+# Main + CLI
 # =============================================================================
 
 
@@ -1462,21 +489,13 @@ def main():
         default=None,
         help="Directory to save Catalyst IR stages (default: auto-cleanup after analysis)",
     )
-    parser.add_argument(
-        "--no-keep-intermediate",
-        action="store_true",
-        help="Disable keep_intermediate in @qjit (tests memory impact of IR retention)",
-    )
     args = parser.parse_args()
-
-    keep_intermediate = not args.no_keep_intermediate
 
     console.print(
         Panel(
             "[bold]QPE Circuit Compilation Memory Profiler[/bold]\n"
             "Measuring real peak memory during Catalyst @qjit compilation\n"
-            "of QPE circuits (H_fixed and/or H_dynamic modes).\n"
-            f"keep_intermediate={'ON' if keep_intermediate else '[red]OFF[/red]'}",
+            "of QPE circuits (H_fixed and/or H_dynamic modes).",
             border_style="magenta",
         )
     )
@@ -1486,13 +505,14 @@ def main():
     if args.sweep:
         console.print(f"\n[bold]Running parameter sweep (mode={args.mode})...[/bold]")
         if args.mode == "both":
-            results_fixed = run_sweep(args.molecule, mode="fixed", ir_dir=args.ir_dir)
-            results_dynamic = run_sweep(args.molecule, mode="dynamic", ir_dir=args.ir_dir)
-            print_sweep_table(results_fixed + results_dynamic)
+            results_fixed = run_sweep(args.molecule, mode="fixed", on_progress=console.print)
+            results_dynamic = run_sweep(args.molecule, mode="dynamic", on_progress=console.print)
+            print_sweep_table(list(results_fixed.values()) + list(results_dynamic.values()))
         else:
-            results = run_sweep(args.molecule, mode=args.mode, ir_dir=args.ir_dir)
-            print_sweep_table(results)
-            for r in reversed(results):
+            results = run_sweep(args.molecule, mode=args.mode, on_progress=console.print)
+            results_list = list(results.values())
+            print_sweep_table(results_list)
+            for r in reversed(results_list):
                 if not r.error:
                     print_ir_analysis(r.ir_analysis)
                     print_summary(r)
@@ -1507,7 +527,7 @@ def main():
             args.n_est,
             args.n_trotter,
             ir_dir=args.ir_dir,
-            keep_intermediate=keep_intermediate,
+            on_progress=console.print,
         )
 
         # Print detailed reports for each mode
@@ -1535,12 +555,12 @@ def main():
 
         tracemalloc.start()
         result = run_single_profile(
-            args.molecule,
+            MOLECULES[args.molecule],
             args.n_est,
             args.n_trotter,
             mode=args.mode,
             ir_dir=args.ir_dir,
-            keep_intermediate=keep_intermediate,
+            on_progress=console.print,
         )
         tracemalloc.stop()
 

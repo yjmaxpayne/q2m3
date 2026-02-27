@@ -191,6 +191,11 @@ def compute_mulliken_charges(
 # Hamiltonian Coefficient Decomposition (for mm_embedded mode)
 # =============================================================================
 
+from q2m3.core.hamiltonian_utils import (  # noqa: F401, E402  # re-export
+    build_operator_index_map,
+    decompose_hamiltonian,
+)
+
 
 def precompute_vacuum_cache(config: SolvationConfig) -> dict:
     """

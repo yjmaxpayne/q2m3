@@ -14,6 +14,7 @@ except ImportError as e:
     ) from e
 
 from q2m3.solvation.config import MoleculeConfig, QPEConfig, SolvationConfig
+from q2m3.solvation.phase_extraction import extract_energy_from_probs, extract_energy_from_shots
 from q2m3.solvation.solvent import SPC_E_WATER, TIP3P_WATER
 
 __all__ = [
@@ -22,4 +23,6 @@ __all__ = [
     "SolvationConfig",
     "TIP3P_WATER",
     "SPC_E_WATER",
+    "extract_energy_from_probs",
+    "extract_energy_from_shots",
 ]

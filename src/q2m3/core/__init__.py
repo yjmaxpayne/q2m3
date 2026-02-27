@@ -18,12 +18,15 @@ from .device_utils import (
     get_catalyst_effective_backend,
     select_device,
 )
+from .hamiltonian_utils import build_operator_index_map, decompose_hamiltonian
 from .qmmm_system import QMMMSystem
 from .qpe import QPEEngine
 from .quantum_qmmm import QuantumQMMM
 from .rdm import RDMEstimator, measure_rdm_from_qpe_state
 
 __all__ = [
+    "decompose_hamiltonian",
+    "build_operator_index_map",
     "QPEEngine",
     "QMMMSystem",
     "QuantumQMMM",

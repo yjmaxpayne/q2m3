@@ -29,6 +29,7 @@ from q2m3.solvation.energy import (
     create_step_callback,
     precompute_vacuum_cache,
 )
+from q2m3.solvation.mc_loop import MCResult, create_mc_loop
 from q2m3.solvation.phase_extraction import extract_energy_from_probs, extract_energy_from_shots
 from q2m3.solvation.solvent import SPC_E_WATER, TIP3P_WATER
 
@@ -51,4 +52,6 @@ __all__ = [
     "compute_hf_energy_vacuum",
     "compute_hf_energy_solvated",
     "compute_mulliken_charges",
+    "MCResult",
+    "create_mc_loop",
 ]

@@ -7,15 +7,39 @@ H2 Cached QPE-Driven MC Solvation
 End-to-end H2 QPE-driven Monte Carlo solvation using Catalyst IR cache
 to mitigate the MLIR→LLVM amplification cascade.
 
-Two-path compilation:
+H_dynamic runtime-coefficient architecture
+-------------------------------------------
+The QPE circuit is compiled under H_dynamic mode: the Hamiltonian operator
+structure (Pauli terms from Jordan-Wigner mapping) is fixed at compile time,
+while the operator *coefficients* are passed as a JAX-traceable array at
+execution time.  This design has two key consequences:
+
+  1. **Cache key = circuit topology only.**
+     The LLVM IR depends on (n_est, n_trotter) — i.e. the estimation-wire
+     count and Trotter decomposition depth — which together determine the
+     circuit graph.  Parameters such as n_waters or solvent geometry do NOT
+     affect the IR, because they only influence the coefficient values, not
+     the operator set or wiring.
+
+  2. **Per-step MM embedding via runtime coefficients.**
+     At each MC step, create_fused_qpe_callback() runs a solvated PySCF SCF,
+     computes delta_h1e_mo = h1e_solvated - h1e_vacuum, patches the vacuum
+     Hamiltonian coefficients, and feeds the updated coeffs_arr to the
+     *same* compiled circuit.  This avoids recompilation (~67 s per step)
+     while faithfully reflecting the changing solvent environment.
+
+As a result, IR compiled for n_waters=5 is validly reused for n_waters=20;
+the cache hit is correct by construction.
+
+Two-path compilation
+--------------------
   Phase A (cache miss): spawn subprocess → full @qjit(keep_intermediate=True) →
-                        save LLVM IR to disk
-                        NOTE: Uses H_dynamic (runtime coefficients) because qpe_driven MC
-                        requires updating Hamiltonian coefficients each step. H_fixed IR
-                        (zero-arg) is incompatible with H_dynamic shell via replace_ir
-                        due to LLVM symbol name mismatch (verified empirically).
+                        save LLVM IR to disk.
+                        NOTE: H_fixed IR (zero-arg) is incompatible with
+                        H_dynamic shell via replace_ir due to LLVM symbol
+                        name mismatch (verified empirically).
   Phase B (cache hit):  replace_ir + jit_compile → skip MLIR pipeline (~5× faster,
-                        ~79% memory reduction)
+                        ~79% memory reduction).
 
 MC solvation reuses mc_solvation/ components (Mode 3 / qpe_driven architecture).
 

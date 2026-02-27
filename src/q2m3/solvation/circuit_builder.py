@@ -1,0 +1,236 @@
+"""
+QPE circuit builder for MC solvation simulations.
+
+Builds parameterized @qjit-compiled QPE circuits that accept Hamiltonian
+coefficients as runtime arguments. Compile once, call with different
+coefficients each MC step — avoids 67s recompilation per step.
+
+Key Catalyst constraints (POC-validated):
+- Use X gates instead of qml.BasisState (Catalyst @qjit + ctrl() bug)
+- TrotterProduct requires check_hermitian=False (JAX tracer incompatible)
+- MAX_TROTTER_STEPS_RUNTIME caps Trotter steps to avoid MLIR OOM
+- MSB-first qubit ordering (matching PennyLane QFT convention)
+"""
+
+import warnings
+from collections.abc import Callable
+from dataclasses import dataclass
+
+import numpy as np
+import pennylane as qml
+from catalyst import qjit
+
+from q2m3.core.device_utils import select_device as _select_device
+from q2m3.core.hamiltonian_utils import (  # re-export for convenience
+    build_operator_index_map,
+    decompose_hamiltonian,
+)
+from q2m3.core.qpe import QPEEngine
+from q2m3.interfaces import PySCFPennyLaneConverter
+
+from .config import SolvationConfig
+
+# Re-export helpers so callers can import from circuit_builder
+__all__ = [
+    "QPECircuitBundle",
+    "MAX_TROTTER_STEPS_RUNTIME",
+    "build_qpe_circuit",
+    "decompose_hamiltonian",
+    "build_operator_index_map",
+]
+
+# OOM protection: cap Trotter steps for runtime-parameterized circuits.
+# Catalyst MLIR cannot constant-fold JAX-traced coefficients,
+# so symbolic IR scales as n_estimation × n_trotter × n_hamiltonian_terms.
+# Benchmark: n_est=2, n_trotter=3 → ~24s (H2), ~96s (H3O+).
+MAX_TROTTER_STEPS_RUNTIME: int = 20
+
+
+@dataclass(frozen=True)
+class QPECircuitBundle:
+    """All artifacts from QPE circuit compilation.
+
+    Attributes:
+        compiled_circuit: @qjit function: (coeffs_arr) → probs or samples
+        base_coeffs: Initial vacuum + shift coefficients
+        ops: PennyLane operators (compile-time constants)
+        base_time: Evolution time for phase-to-energy conversion
+        op_index_map: {"identity_idx": int, "z_wire_idx": {wire: idx}}
+        energy_shift: E_HF shift applied to Hamiltonian
+        n_estimation_wires: Number of QPE estimation qubits
+        n_system_qubits: Number of system qubits (= 2 * active_orbitals)
+        active_orbitals: Number of active spatial orbitals
+        n_trotter_steps: Actual Trotter steps (may be capped)
+        measurement_mode: "probs" or "shots"
+    """
+
+    compiled_circuit: Callable
+    base_coeffs: np.ndarray
+    ops: list
+    base_time: float
+    op_index_map: dict
+    energy_shift: float
+    n_estimation_wires: int
+    n_system_qubits: int
+    active_orbitals: int
+    n_trotter_steps: int
+    measurement_mode: str
+
+
+def build_qpe_circuit(
+    config: SolvationConfig,
+    qm_coords: np.ndarray,
+    hf_energy: float,
+) -> QPECircuitBundle:
+    """
+    Build parameterized QPE circuit accepting runtime coefficients.
+
+    Steps:
+    1. Build vacuum Hamiltonian via PySCFPennyLaneConverter
+    2. Decompose H → (coeffs, ops)
+    3. Build operator index map (Identity + Z wire indices)
+    4. Apply energy shift: coeffs[identity_idx] -= hf_energy
+    5. Compute shifted QPE params (base_time, n_estimation_wires)
+    6. Cap Trotter steps if exceeding MAX_TROTTER_STEPS_RUNTIME
+    7. Build @qjit circuit: circuit(coeffs_arr) → probs or samples
+    8. Return QPECircuitBundle
+
+    Args:
+        config: Solvation configuration
+        qm_coords: QM region coordinates in Angstrom, shape (n_atoms, 3)
+        hf_energy: HF energy for energy shift and base_time calculation
+
+    Returns:
+        QPECircuitBundle with compiled circuit and metadata
+    """
+    mol = config.molecule
+    qpe = config.qpe_config
+
+    # Step 1: Build vacuum Hamiltonian
+    converter = PySCFPennyLaneConverter(basis=mol.basis, mapping="jordan_wigner")
+    H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(
+        symbols=mol.symbols,
+        coords=qm_coords,
+        charge=mol.charge,
+        active_electrons=mol.active_electrons,
+        active_orbitals=mol.active_orbitals,
+    )
+
+    # Step 2: Decompose H into coefficients and operators
+    coeffs, ops = decompose_hamiltonian(H)
+
+    # Step 3: Build operator index map (may extend with missing Z terms)
+    op_index_map, coeffs, ops = build_operator_index_map(ops, n_qubits, coeffs)
+
+    # Step 4: Compute shifted QPE parameters
+    params = QPEEngine.compute_shifted_qpe_params(
+        target_resolution=qpe.target_resolution,
+        energy_range=qpe.energy_range,
+    )
+    base_time = params["base_time"]
+    energy_shift = hf_energy
+
+    n_estimation_wires = qpe.n_estimation_wires
+    if n_estimation_wires <= 0:
+        n_estimation_wires = params["n_estimation_wires"]
+
+    # Apply energy shift to Identity coefficient
+    coeffs[op_index_map["identity_idx"]] -= energy_shift
+    base_coeffs = np.array(coeffs, dtype=np.float64)
+
+    # Step 5: Cap Trotter steps for OOM protection
+    n_trotter = qpe.n_trotter_steps
+    if n_trotter > MAX_TROTTER_STEPS_RUNTIME:
+        warnings.warn(
+            f"n_trotter_steps={n_trotter} exceeds runtime circuit ceiling "
+            f"({MAX_TROTTER_STEPS_RUNTIME}). Capping to avoid OOM.",
+            stacklevel=2,
+        )
+        n_trotter = MAX_TROTTER_STEPS_RUNTIME
+
+    # Step 6: Wire layout
+    n_system = n_qubits
+    system_wires = list(range(n_system))
+    est_wires = list(range(n_system, n_system + n_estimation_wires))
+    total_wires = n_system + n_estimation_wires
+
+    # Step 7: Build @qjit circuit
+    if qpe.n_shots == 0:
+        # Probs mode: analytical probability distribution
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
+        measurement_mode = "probs"
+
+        @qjit
+        def compiled_circuit(coeffs_arr):
+            H_runtime = qml.dot(coeffs_arr, ops)
+
+            @qml.qnode(dev)
+            def qnode():
+                # HF state preparation via X gates (Catalyst-compatible)
+                for wire, occ in zip(system_wires, hf_state, strict=True):
+                    if occ == 1:
+                        qml.PauliX(wires=wire)
+                # Hadamard on estimation qubits
+                for w in est_wires:
+                    qml.Hadamard(wires=w)
+                # Controlled time evolutions (MSB-first convention)
+                for k, ew in enumerate(est_wires):
+                    t = (2 ** (n_estimation_wires - 1 - k)) * base_time
+                    qml.ctrl(
+                        qml.adjoint(
+                            qml.TrotterProduct(
+                                H_runtime, time=t, n=n_trotter, order=2, check_hermitian=False
+                            )
+                        ),
+                        control=ew,
+                    )
+                # Inverse QFT
+                qml.adjoint(qml.QFT)(wires=est_wires)
+                return qml.probs(wires=est_wires)
+
+            return qnode()
+
+    else:
+        # Shots mode: measurement samples
+        dev = qml.device("lightning.qubit", wires=total_wires, shots=qpe.n_shots)
+        measurement_mode = "shots"
+
+        @qjit
+        def compiled_circuit(coeffs_arr):
+            H_runtime = qml.dot(coeffs_arr, ops)
+
+            @qml.qnode(dev)
+            def qnode():
+                for wire, occ in zip(system_wires, hf_state, strict=True):
+                    if occ == 1:
+                        qml.PauliX(wires=wire)
+                for w in est_wires:
+                    qml.Hadamard(wires=w)
+                for k, ew in enumerate(est_wires):
+                    t = (2 ** (n_estimation_wires - 1 - k)) * base_time
+                    qml.ctrl(
+                        qml.adjoint(
+                            qml.TrotterProduct(
+                                H_runtime, time=t, n=n_trotter, order=2, check_hermitian=False
+                            )
+                        ),
+                        control=ew,
+                    )
+                qml.adjoint(qml.QFT)(wires=est_wires)
+                return qml.sample(wires=est_wires)
+
+            return qnode()
+
+    return QPECircuitBundle(
+        compiled_circuit=compiled_circuit,
+        base_coeffs=base_coeffs,
+        ops=ops,
+        base_time=base_time,
+        op_index_map=op_index_map,
+        energy_shift=energy_shift,
+        n_estimation_wires=n_estimation_wires,
+        n_system_qubits=n_system,
+        active_orbitals=mol.active_orbitals,
+        n_trotter_steps=n_trotter,
+        measurement_mode=measurement_mode,
+    )

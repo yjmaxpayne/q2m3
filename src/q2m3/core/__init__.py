@@ -23,10 +23,21 @@ from .qmmm_system import QMMMSystem
 from .qpe import QPEEngine
 from .quantum_qmmm import QuantumQMMM
 from .rdm import RDMEstimator, measure_rdm_from_qpe_state
+from .resource_estimation import (
+    EFTQCResources,
+    ResourceComparisonResult,
+    compare_vacuum_solvated,
+    estimate_resources,
+)
 
 __all__ = [
     "decompose_hamiltonian",
     "build_operator_index_map",
+    # Resource estimation
+    "EFTQCResources",
+    "ResourceComparisonResult",
+    "estimate_resources",
+    "compare_vacuum_solvated",
     "QPEEngine",
     "QMMMSystem",
     "QuantumQMMM",

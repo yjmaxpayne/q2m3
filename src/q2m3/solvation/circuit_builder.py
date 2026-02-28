@@ -81,6 +81,8 @@ def build_qpe_circuit(
     config: SolvationConfig,
     qm_coords: np.ndarray,
     hf_energy: float,
+    *,
+    _keep_intermediate: bool = False,
 ) -> QPECircuitBundle:
     """
     Build parameterized QPE circuit accepting runtime coefficients.
@@ -155,12 +157,14 @@ def build_qpe_circuit(
     total_wires = n_system + n_estimation_wires
 
     # Step 7: Build @qjit circuit
+    _qjit_deco = qjit(keep_intermediate=True) if _keep_intermediate else qjit
+
     if qpe.n_shots == 0:
         # Probs mode: analytical probability distribution
         dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
         measurement_mode = "probs"
 
-        @qjit
+        @_qjit_deco
         def compiled_circuit(coeffs_arr):
             H_runtime = qml.dot(coeffs_arr, ops)
 
@@ -195,7 +199,7 @@ def build_qpe_circuit(
         dev = qml.device("lightning.qubit", wires=total_wires, shots=qpe.n_shots)
         measurement_mode = "shots"
 
-        @qjit
+        @_qjit_deco
         def compiled_circuit(coeffs_arr):
             H_runtime = qml.dot(coeffs_arr, ops)
 

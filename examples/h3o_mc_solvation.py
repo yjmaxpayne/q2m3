@@ -10,6 +10,7 @@ Key differences from H2:
     - Charged system (+1)
     - (4e, 4o) active space covering HOMO-1/HOMO occupied + 2 virtual orbitals
     - Stronger solute-solvent interactions (ion-dipole)
+    - LLVM IR caching (Phase A/B: first run ~96s, subsequent ~5s)
 
 Active space: H3O+ (STO-3G) has 8 MOs, 10 electrons (charge +1).
     - (4e, 4o) selects 4 active electrons in 4 orbitals
@@ -80,8 +81,15 @@ def main():
         verbose=True,
     )
 
-    # Run simulation
+    # Run simulation (IR cache auto-enabled: first run compiles, subsequent use cache)
     result = run_solvation(config, show_plots=False)
+
+    # Print cache status
+    cache = result.get("cache_stats", {})
+    if cache.get("is_cache_hit"):
+        print(f"\nIR Cache: HIT (Phase B: {cache.get('phase_b_time_s', 0):.2f}s)")
+    else:
+        print(f"\nIR Cache: MISS (Phase A: {cache.get('phase_a_time_s', 0):.1f}s)")
 
     return result
 

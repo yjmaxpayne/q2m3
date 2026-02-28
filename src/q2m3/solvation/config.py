@@ -112,6 +112,10 @@ class SolvationConfig:
     initial_water_distance: float = 4.0
     random_seed: int = 42
     verbose: bool = True
+    # IR cache settings (Catalyst LLVM IR caching for compilation speedup)
+    ir_cache_dir: str | None = None  # None = {project_root}/tmp/qpe_ir_cache/
+    ir_cache_enabled: bool = True
+    ir_cache_force_recompile: bool = False
 
     @property
     def n_qpe_evaluations(self) -> int:

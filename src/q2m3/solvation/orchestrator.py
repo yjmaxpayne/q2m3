@@ -21,6 +21,7 @@ Usage:
     result = run_solvation(config, show_plots=False)
 """
 
+import os
 import time
 from typing import Any
 
@@ -109,7 +110,39 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         console.print(f"  Vacuum HF energy: {e_vacuum:.6f} Ha")
 
     # === Step 3: Build QPE Circuit ===
-    circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
+    # Redirect Catalyst @qjit compilation artifacts to cache directory.
+    # Catalyst captures os.getcwd() at decoration time for intermediate files.
+    if config.ir_cache_enabled:
+        from .ir_cache import cache_path_for_config
+
+        _cache_dir = cache_path_for_config(config).parent
+        _cache_dir.mkdir(parents=True, exist_ok=True)
+        _original_cwd = os.getcwd()
+        os.chdir(str(_cache_dir))
+    try:
+        circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
+    finally:
+        if config.ir_cache_enabled:
+            os.chdir(_original_cwd)
+
+    # === Step 3.5: IR Cache Resolution ===
+    cache_stats: dict = {"is_cache_hit": False}
+    if config.ir_cache_enabled:
+        from .ir_cache import resolve_compiled_circuit
+
+        circuit_bundle, cache_stats = resolve_compiled_circuit(config, circuit_bundle)
+        if config.verbose:
+            if cache_stats.get("is_cache_hit"):
+                t = cache_stats.get("phase_b_time_s", 0)
+                console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
+            elif cache_stats.get("fallback"):
+                console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
+            else:
+                ta = cache_stats.get("phase_a_time_s", 0)
+                tb = cache_stats.get("phase_b_time_s", 0)
+                console.print(
+                    f"  [cyan]IR cache miss[/cyan] " f"(Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
+                )
 
     # Circuit metadata (all modes share same bundle structure)
     n_trotter_requested = config.qpe_config.n_trotter_steps
@@ -218,6 +251,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     result["e_vacuum"] = e_vacuum
     result["circuit_metadata"] = circuit_metadata
     result["mulliken_charges"] = mulliken_charges
+    result["cache_stats"] = cache_stats
 
     if config.verbose:
         # Print results summary

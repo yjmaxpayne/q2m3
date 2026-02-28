@@ -10,6 +10,7 @@ QM/MM Monte Carlo solvation simulations.
 Features:
     - QJIT-compiled MC loop with Catalyst
     - Pre-compiled QPE circuit (fixed mode)
+    - LLVM IR caching (Phase A/B: first run ~24s, subsequent ~5s)
     - Rich console output with timing statistics
     - Energy trajectory plotting
 """
@@ -72,8 +73,15 @@ def main():
         verbose=True,
     )
 
-    # Run simulation
+    # Run simulation (IR cache auto-enabled: first run compiles, subsequent use cache)
     result = run_solvation(config, show_plots=False)
+
+    # Print cache status
+    cache = result.get("cache_stats", {})
+    if cache.get("is_cache_hit"):
+        print(f"\nIR Cache: HIT (Phase B: {cache.get('phase_b_time_s', 0):.2f}s)")
+    else:
+        print(f"\nIR Cache: MISS (Phase A: {cache.get('phase_a_time_s', 0):.1f}s)")
 
     return result
 

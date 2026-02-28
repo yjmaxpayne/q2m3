@@ -28,6 +28,9 @@ unlike argmax which discretizes to integer bins (resolution ~12 mHa for 4-bit QP
 
 Key technical requirement: TrotterProduct must use check_hermitian=False
 when coefficients are JAX-traceable runtime parameters.
+
+IR caching: Each mode auto-caches LLVM IR to {project_root}/tmp/qpe_ir_cache/.
+First run: full compilation (~24s per mode). Subsequent runs: ~5s per mode.
 """
 
 import warnings

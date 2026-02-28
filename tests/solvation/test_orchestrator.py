@@ -218,6 +218,7 @@ class TestResultDictCompleteness:
         "e_vacuum",
         "circuit_metadata",
         "mulliken_charges",
+        "cache_stats",
     }
     CIRCUIT_META_FIELDS = {
         "hamiltonian_mode",

@@ -2,9 +2,9 @@
 # Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """
-H3O+ + TIP3P Water: Modular MC Solvation with QPE Validation
+H3O+ + TIP3P Water: MC Solvation with QPE Validation
 
-Hydronium ion (H3O+) solvation simulation using the modular mc_solvation framework.
+Hydronium ion (H3O+) solvation simulation using q2m3.solvation module.
 
 Key differences from H2:
     - Charged system (+1)
@@ -19,19 +19,11 @@ Uses energy-shifted QPE for high-precision measurements within the
 ancilla qubit range.
 """
 
-import sys
-from pathlib import Path
-
-# Ensure project root is in sys.path
-_project_root = Path(__file__).resolve().parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
-
 import warnings
 
 warnings.filterwarnings("ignore")
 
-from examples.mc_solvation import (
+from q2m3.solvation import (
     MoleculeConfig,
     QPEConfig,
     SolvationConfig,
@@ -76,9 +68,8 @@ def main():
             qpe_interval=10,
             target_resolution=0.003,  # ~2 kcal/mol
             energy_range=0.2,  # ±0.1 Ha for MM effects
-            use_catalyst=True,
         ),
-        qpe_mode="vacuum_correction",
+        hamiltonian_mode="hf_corrected",
         n_waters=10,
         n_mc_steps=100,
         temperature=300.0,

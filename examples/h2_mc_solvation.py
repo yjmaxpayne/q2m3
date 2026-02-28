@@ -2,37 +2,23 @@
 # Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """
-H2 + TIP3P Water: Modular MC Solvation with QPE Validation
+H2 + TIP3P Water: MC Solvation with QPE Validation
 
-This example demonstrates the modular mc_solvation framework for
-hybrid quantum-classical QM/MM Monte Carlo solvation simulations.
-
-Uses the refactored module structure:
-    - mc_solvation.config: Configuration dataclasses
-    - mc_solvation.solvent: TIP3P water model
-    - mc_solvation.energy: PySCF HF + MM energy computation
-    - mc_solvation.orchestrator: Main workflow with qpe_mode switching
+Demonstrates the q2m3.solvation module for hybrid quantum-classical
+QM/MM Monte Carlo solvation simulations.
 
 Features:
     - QJIT-compiled MC loop with Catalyst
-    - Pre-compiled QPE circuit (vacuum_correction mode)
+    - Pre-compiled QPE circuit (fixed mode)
     - Rich console output with timing statistics
     - Energy trajectory plotting
 """
-
-import sys
-from pathlib import Path
-
-# Ensure project root is in sys.path
-_project_root = Path(__file__).resolve().parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
 
 import warnings
 
 warnings.filterwarnings("ignore")
 
-from examples.mc_solvation import (
+from q2m3.solvation import (
     MoleculeConfig,
     QPEConfig,
     SolvationConfig,
@@ -74,9 +60,8 @@ def main():
             qpe_interval=10,
             target_resolution=0.003,
             energy_range=0.2,
-            use_catalyst=True,
         ),
-        qpe_mode="vacuum_correction",
+        hamiltonian_mode="fixed",
         n_waters=10,
         n_mc_steps=100,
         temperature=300.0,

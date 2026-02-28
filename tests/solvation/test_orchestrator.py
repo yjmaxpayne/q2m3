@@ -171,10 +171,11 @@ class TestPublicAPIExports:
     """Test __all__ exports exactly 7 symbols."""
 
     def test_public_api_symbols(self):
-        """Only 7 public symbols are exported."""
+        """Public symbols exported from q2m3.solvation."""
         from q2m3 import solvation
 
         expected = {
+            # Core orchestration
             "run_solvation",
             "MoleculeConfig",
             "QPEConfig",
@@ -182,6 +183,17 @@ class TestPublicAPIExports:
             "SolventModel",
             "TIP3P_WATER",
             "SPC_E_WATER",
+            # Analysis functions and result types (added in Task 1)
+            "run_mode_comparison",
+            "ModeComparisonResult",
+            "compute_delta_corr_pol",
+            "DeltaCorrPolResult",
+            "compute_qpe_hf_consistency",
+            "QPEHFConsistencyResult",
+            "detect_equilibration",
+            "EquilibrationResult",
+            "analyze_energy_phases",
+            "EnergyPhaseResult",
         }
         assert set(solvation.__all__) == expected
 

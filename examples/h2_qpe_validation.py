@@ -2,22 +2,21 @@
 # Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """
-Minimal H2 + MM Water Example for QPE Validation + Catalyst Benchmark
+H2 + MM Water: QPE Solvation Validation
 
-This script validates QPE + explicit MM solvation using the simplest
-possible molecular system: H2 molecule with 1-3 TIP3P water molecules.
+Validates QPE energy estimates for H2 with TIP3P water MM embedding.
+Compares vacuum vs solvated results to verify MM embedding correctness.
 
 Validation Strategy:
 1. Compare vacuum HF vs vacuum QPE (verify QPE correctness)
 2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
 3. Compare stabilization effects (HF vs QPE should agree)
 
-Catalyst Benchmark:
-4. Compare lightning.gpu vs qjit+lightning.gpu performance
+Related examples:
+  h2_resource_estimation.py  - EFTQC hardware resource estimates
+  catalyst_benchmark.py      - Catalyst JIT compilation performance
 """
 
-import time
-import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -28,15 +27,7 @@ from q2m3.constants import (
     TIP3P_HYDROGEN_CHARGE,
     TIP3P_OXYGEN_CHARGE,
 )
-from q2m3.core.device_utils import (
-    HAS_CATALYST,
-    HAS_JAX_CUDA,
-    HAS_LIGHTNING_GPU,
-    get_best_available_device,
-    get_catalyst_effective_backend,
-)
-
-warnings.filterwarnings("ignore")
+from q2m3.core.device_utils import get_best_available_device
 
 # =============================================================================
 # Example-specific thresholds (POC validation, not general use)
@@ -115,230 +106,6 @@ def run_qpe_for_system(
     return qpe_engine._extract_energy_from_samples(samples, base_time)
 
 
-def run_catalyst_benchmark(
-    qm_atoms: list,
-    mm_waters: int,
-    hf_results: dict[str, float],
-) -> dict | None:
-    """Run Catalyst @qjit QPE benchmark and compare with standard QPE.
-
-    IMPORTANT: Catalyst JIT compilation shows significant speedup primarily in:
-    1. Multi-iteration scenarios (VQE optimization with qml.for_loop)
-    2. Batch processing with compiled parameter updates
-    3. Gradient computation with catalyst.value_and_grad()
-
-    For single QPE executions, JIT compilation overhead often equals or exceeds
-    execution time, resulting in no net speedup. This is EXPECTED behavior.
-
-    Returns:
-        Catalyst benchmark data if Catalyst is available, None otherwise.
-    """
-    from q2m3.core import QuantumQMMM
-
-    if not HAS_CATALYST:
-        print("WARNING: pennylane-catalyst is not installed.")
-        print("To enable Catalyst support, install with:")
-        print("  pip install pennylane-catalyst")
-        print()
-        print("Skipping Catalyst benchmark...")
-        return None
-
-    print()
-    print("=" * 70)
-    print("Catalyst @qjit Benchmark: Single vs Multi-Execution Performance")
-    print("=" * 70)
-    print()
-
-    # =========================================================================
-    # PART A: Single Execution Comparison (demonstrates JIT overhead)
-    # =========================================================================
-    print("[Part A] Single Execution (demonstrates JIT overhead)")
-    print("-" * 70)
-    device_type = get_best_available_device()
-    print(f"Device: {device_type}")
-    print()
-
-    # A1: Standard QPE (baseline)
-    print("  A1. Standard QPE (no @qjit)...")
-    start_standard = time.perf_counter()
-    qmmm_standard = QuantumQMMM(
-        qm_atoms=qm_atoms,
-        mm_waters=mm_waters,
-        qpe_config={
-            "use_real_qpe": True,
-            "n_estimation_wires": DEFAULT_N_ESTIMATION_WIRES,
-            "base_time": "auto",
-            "n_trotter_steps": DEFAULT_N_TROTTER_STEPS,
-            "n_shots": DEFAULT_N_SHOTS,
-            "active_electrons": 2,
-            "active_orbitals": 2,
-            "device_type": device_type,
-            "use_catalyst": False,
-        },
-    )
-    result_standard = qmmm_standard.compute_ground_state()
-    time_standard = time.perf_counter() - start_standard
-    print(f"      Energy: {result_standard['energy']:.6f} Ha, Time: {time_standard:.3f} s")
-
-    # A2: Catalyst QPE (includes JIT compilation time)
-    print("  A2. Catalyst QPE (@qjit, includes compilation)...")
-    catalyst_backend = get_catalyst_effective_backend()
-    start_catalyst = time.perf_counter()
-    qmmm_catalyst = QuantumQMMM(
-        qm_atoms=qm_atoms,
-        mm_waters=mm_waters,
-        qpe_config={
-            "use_real_qpe": True,
-            "n_estimation_wires": DEFAULT_N_ESTIMATION_WIRES,
-            "base_time": "auto",
-            "n_trotter_steps": DEFAULT_N_TROTTER_STEPS,
-            "n_shots": DEFAULT_N_SHOTS,
-            "active_electrons": 2,
-            "active_orbitals": 2,
-            "device_type": device_type,
-            "use_catalyst": True,
-        },
-    )
-    result_catalyst = qmmm_catalyst.compute_ground_state()
-    time_catalyst_first = time.perf_counter() - start_catalyst
-    print(f"      Energy: {result_catalyst['energy']:.6f} Ha, Time: {time_catalyst_first:.3f} s")
-    print()
-
-    # Single execution comparison
-    single_speedup = time_standard / time_catalyst_first if time_catalyst_first > 0 else 0
-    print("  Single Execution Result:")
-    print(f"    Standard:     {time_standard:.3f} s")
-    print(f"    Catalyst:     {time_catalyst_first:.3f} s (includes JIT compilation)")
-    if single_speedup >= 1:
-        print(f"    Speedup:      {single_speedup:.2f}x")
-    else:
-        print(f"    Slowdown:     {1 / single_speedup:.2f}x (expected due to JIT overhead)")
-    print()
-
-    # =========================================================================
-    # PART B: Multi-Execution Comparison (demonstrates Catalyst advantage)
-    # =========================================================================
-    n_iterations = 5
-    print(f"[Part B] Multi-Execution Benchmark ({n_iterations} runs, reuses compiled circuit)")
-    print("-" * 70)
-    print("  This demonstrates Catalyst's advantage: compile once, execute many times.")
-    print()
-
-    # B1: Standard QPE - multiple executions
-    print(f"  B1. Standard QPE x{n_iterations} (each run is independent)...")
-    start_multi_standard = time.perf_counter()
-    for _ in range(n_iterations):
-        qmmm_std = QuantumQMMM(
-            qm_atoms=h3o_atoms,
-            mm_waters=mm_waters,
-            qpe_config={
-                "use_real_qpe": True,
-                "n_estimation_wires": DEFAULT_N_ESTIMATION_WIRES,
-                "base_time": "auto",
-                "n_trotter_steps": DEFAULT_N_TROTTER_STEPS,
-                "n_shots": DEFAULT_N_SHOTS,
-                "active_electrons": 2,
-                "active_orbitals": 2,
-                "device_type": device_type,
-                "use_catalyst": False,
-            },
-        )
-        _ = qmmm_std.compute_ground_state()
-    time_multi_standard = time.perf_counter() - start_multi_standard
-    print(
-        f"      Total time: {time_multi_standard:.3f} s ({time_multi_standard / n_iterations:.3f} s/iter)"
-    )
-
-    # B2: Catalyst QPE - reusing compiled circuit
-    print(f"  B2. Catalyst QPE x{n_iterations} (reuses compiled circuit)...")
-    start_multi_catalyst = time.perf_counter()
-
-    # First call includes compilation
-    qmmm_cat = QuantumQMMM(
-        qm_atoms=h3o_atoms,
-        mm_waters=mm_waters,
-        qpe_config={
-            "use_real_qpe": True,
-            "n_estimation_wires": DEFAULT_N_ESTIMATION_WIRES,
-            "base_time": "auto",
-            "n_trotter_steps": DEFAULT_N_TROTTER_STEPS,
-            "n_shots": DEFAULT_N_SHOTS,
-            "active_electrons": 2,
-            "active_orbitals": 2,
-            "device_type": device_type,
-            "use_catalyst": True,
-        },
-    )
-    _ = qmmm_cat.compute_ground_state()
-
-    # Subsequent calls use cached compilation
-    for _ in range(n_iterations - 1):
-        _ = qmmm_cat.compute_ground_state()
-
-    time_multi_catalyst = time.perf_counter() - start_multi_catalyst
-    print(
-        f"      Total time: {time_multi_catalyst:.3f} s ({time_multi_catalyst / n_iterations:.3f} s/iter)"
-    )
-    print()
-
-    # Multi-execution comparison
-    multi_speedup = time_multi_standard / time_multi_catalyst if time_multi_catalyst > 0 else 0
-    print("  Multi-Execution Result:")
-    print(f"    Standard:     {time_multi_standard:.3f} s total")
-    print(f"    Catalyst:     {time_multi_catalyst:.3f} s total")
-    if multi_speedup >= 1:
-        print(f"    Speedup:      {multi_speedup:.2f}x faster with Catalyst")
-    else:
-        print(f"    Ratio:        {1 / multi_speedup:.2f}x")
-    print()
-
-    # =========================================================================
-    # PART C: Summary and Explanation
-    # =========================================================================
-    print("[Part C] Summary and Interpretation")
-    print("-" * 70)
-
-    print("  Why no speedup for single execution?")
-    print("  ------------------------------------")
-    print("  Catalyst's JIT compilation has overhead that ~equals execution time for")
-    print("  small circuits. The speedup appears when:")
-    print("    1. Reusing compiled circuits across multiple executions")
-    print("    2. Running optimization loops with qml.for_loop()")
-    print("    3. Computing gradients with catalyst.value_and_grad()")
-    print()
-    print("  For VQE-style workloads (100+ iterations), expect 10-50x speedup.")
-    print("  Reference: https://pennylane.ai/qml/demos/how_to_catalyst_lightning_gpu")
-    print()
-
-    # Energy comparison
-    e_diff = abs(result_standard["energy"] - result_catalyst["energy"])
-    print("  Energy Comparison:")
-    print(f"    Standard QPE:  {result_standard['energy']:.6f} Ha")
-    print(f"    Catalyst QPE:  {result_catalyst['energy']:.6f} Ha")
-    print(f"    Difference:    {e_diff:.6f} Ha")
-    if e_diff < 0.01:
-        print("    Status: Results consistent (diff < 0.01 Ha)")
-    else:
-        print("    Status: Results differ (stochastic QPE sampling)")
-    print()
-
-    return {
-        "device_type": device_type,
-        "catalyst_backend": catalyst_backend,
-        "has_lightning_gpu": HAS_LIGHTNING_GPU,
-        "has_jax_cuda": HAS_JAX_CUDA,
-        "time_standard": time_standard,
-        "time_catalyst_first": time_catalyst_first,
-        "time_multi_standard": time_multi_standard,
-        "time_multi_catalyst": time_multi_catalyst,
-        "n_iterations": n_iterations,
-        "single_speedup": single_speedup,
-        "multi_speedup": multi_speedup,
-        "energy_standard": result_standard["energy"],
-        "energy_catalyst": result_catalyst["energy"],
-    }
-
-
 # =============================================================================
 # Geometry and Environment Setup
 # =============================================================================
@@ -378,110 +145,6 @@ def create_tip3p_environment() -> MMEnvironment:
 # =============================================================================
 # Core Computation Functions
 # =============================================================================
-def run_classical_hf(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, float]:
-    """Run classical Hartree-Fock calculations for vacuum and solvated systems."""
-    from pyscf import gto, qmmm, scf
-
-    print("[Step 3] Classical Hartree-Fock Reference")
-    print("-" * 70)
-
-    # Build atom string from geometry
-    atom_str = "; ".join(
-        f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(geometry.symbols, geometry.coords, strict=True)
-    )
-
-    # Vacuum HF
-    mol_vacuum = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
-    mf_vacuum = scf.RHF(mol_vacuum)
-    mf_vacuum.verbose = 0
-    mf_vacuum.run()
-    hf_vacuum = mf_vacuum.e_tot
-
-    # Solvated HF (with MM embedding)
-    mol_solvated = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
-    mf_solvated = scf.RHF(mol_solvated)
-    mf_solvated.verbose = 0
-    mm_coords_bohr = mm_env.coords * ANGSTROM_TO_BOHR
-    mf_solvated = qmmm.mm_charge(mf_solvated, mm_coords_bohr, mm_env.charges)
-    mf_solvated.run()
-    hf_solvated = mf_solvated.e_tot
-
-    hf_stabilization = compute_stabilization_kcal(hf_vacuum, hf_solvated)
-
-    print(f"  Vacuum HF:     {hf_vacuum:.8f} Ha")
-    print(f"  Solvated HF:   {hf_solvated:.8f} Ha")
-    print(f"  Stabilization: {hf_stabilization:.4f} kcal/mol")
-    print()
-
-    return {
-        "vacuum": hf_vacuum,
-        "solvated": hf_solvated,
-        "stabilization": hf_stabilization,
-    }
-
-
-def run_resource_estimation(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, dict]:
-    """Run EFTQC resource estimation for vacuum and solvated Hamiltonians."""
-    from q2m3.interfaces import PySCFPennyLaneConverter
-
-    print("[Step 2] EFTQC Resource Estimation (Vacuum vs Solvated)")
-    print("-" * 70)
-
-    converter = PySCFPennyLaneConverter(basis="sto-3g", mapping="jordan_wigner")
-
-    # Vacuum Hamiltonian resource estimation
-    eftqc_vacuum = converter.estimate_qpe_resources(
-        symbols=geometry.symbols,
-        coords=geometry.coords,
-        charge=0,
-        target_error=0.0016,  # Chemical accuracy (1 kcal/mol)
-    )
-
-    # Solvated Hamiltonian resource estimation
-    eftqc_solvated = converter.estimate_qpe_resources(
-        symbols=geometry.symbols,
-        coords=geometry.coords,
-        charge=0,
-        mm_charges=mm_env.charges,
-        mm_coords=mm_env.coords,
-        target_error=0.0016,
-    )
-
-    # Print results
-    print("  Vacuum Hamiltonian (no MM):")
-    print(f"    Hamiltonian 1-norm:  {eftqc_vacuum['hamiltonian_1norm']:.2f} Ha")
-    print(f"    Logical Qubits:      {eftqc_vacuum['logical_qubits']}")
-    print(f"    Toffoli Gates:       {eftqc_vacuum['toffoli_gates']:,}")
-    print()
-
-    delta_lambda = (
-        (eftqc_solvated["hamiltonian_1norm"] - eftqc_vacuum["hamiltonian_1norm"])
-        / eftqc_vacuum["hamiltonian_1norm"]
-        * 100
-    )
-    delta_gates = (
-        (eftqc_solvated["toffoli_gates"] - eftqc_vacuum["toffoli_gates"])
-        / eftqc_vacuum["toffoli_gates"]
-        * 100
-    )
-
-    print(f"  Solvated Hamiltonian (2 TIP3P waters, {eftqc_solvated['n_mm_charges']} MM charges):")
-    print(
-        f"    Hamiltonian 1-norm:  {eftqc_solvated['hamiltonian_1norm']:.2f} Ha (Δλ = {delta_lambda:+.1f}%)"
-    )
-    print(f"    Logical Qubits:      {eftqc_solvated['logical_qubits']}")
-    print(
-        f"    Toffoli Gates:       {eftqc_solvated['toffoli_gates']:,} (ΔG = {delta_gates:+.1f}%)"
-    )
-    print()
-    print("  Note: MM embedding only modifies 1-electron integrals (QM-MM electrostatics).")
-    print("        Resource estimates are dominated by 2-electron integrals, which remain")
-    print("        unchanged. Thus, MM embedding has minimal impact on EFTQC resources.")
-    print()
-
-    return {"vacuum": eftqc_vacuum, "solvated": eftqc_solvated}
-
-
 def build_hamiltonians(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict:
     """Build PennyLane Hamiltonians for vacuum and solvated systems."""
     from q2m3.interfaces import PySCFPennyLaneConverter
@@ -524,13 +187,55 @@ def build_hamiltonians(geometry: MolecularGeometry, mm_env: MMEnvironment) -> di
     }
 
 
+def run_classical_hf(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, float]:
+    """Run classical Hartree-Fock calculations for vacuum and solvated systems."""
+    from pyscf import gto, qmmm, scf
+
+    print("[Step 2] Classical Hartree-Fock Reference")
+    print("-" * 70)
+
+    # Build atom string from geometry
+    atom_str = "; ".join(
+        f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(geometry.symbols, geometry.coords, strict=True)
+    )
+
+    # Vacuum HF
+    mol_vacuum = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
+    mf_vacuum = scf.RHF(mol_vacuum)
+    mf_vacuum.verbose = 0
+    mf_vacuum.run()
+    hf_vacuum = mf_vacuum.e_tot
+
+    # Solvated HF (with MM embedding)
+    mol_solvated = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
+    mf_solvated = scf.RHF(mol_solvated)
+    mf_solvated.verbose = 0
+    mm_coords_bohr = mm_env.coords * ANGSTROM_TO_BOHR
+    mf_solvated = qmmm.mm_charge(mf_solvated, mm_coords_bohr, mm_env.charges)
+    mf_solvated.run()
+    hf_solvated = mf_solvated.e_tot
+
+    hf_stabilization = compute_stabilization_kcal(hf_vacuum, hf_solvated)
+
+    print(f"  Vacuum HF:     {hf_vacuum:.8f} Ha")
+    print(f"  Solvated HF:   {hf_solvated:.8f} Ha")
+    print(f"  Stabilization: {hf_stabilization:.4f} kcal/mol")
+    print()
+
+    return {
+        "vacuum": hf_vacuum,
+        "solvated": hf_solvated,
+        "stabilization": hf_stabilization,
+    }
+
+
 def verify_expectation_values(
     hamiltonians: dict, hf_results: dict[str, float], device_type: str
 ) -> dict[str, float]:
     """Verify Hamiltonians via HF expectation values."""
     import pennylane as qml
 
-    print("[Step 4] Hamiltonian Expectation Value Verification")
+    print("[Step 3] Hamiltonian Expectation Value Verification")
     print("-" * 70)
 
     dev = qml.device(device_type, wires=hamiltonians["n_qubits"])
@@ -618,7 +323,7 @@ def run_qpe_estimation(
     """Run QPE energy estimation for vacuum and solvated systems."""
     from q2m3.core.qpe import QPEEngine
 
-    print("[Step 5] QPE Energy Estimation")
+    print("[Step 4] QPE Energy Estimation")
     print("-" * 70)
 
     if params is None:
@@ -774,74 +479,35 @@ def run_validation_checks(
 # Main Entry Point
 # =============================================================================
 def main():
+    """H2 QPE validation: vacuum vs solvated energy comparison."""
     print("=" * 70)
-    print("        H2 + MM Water: Minimal QPE Solvation Validation")
+    print("        H2 + MM Water: QPE Solvation Validation")
     print("=" * 70)
-    print()
 
-    # Device detection
     device_type = get_best_available_device()
-    print(f"Device: {device_type}")
-    if HAS_CATALYST:
-        catalyst_backend = get_catalyst_effective_backend()
-        print(f"Catalyst: Available (backend: {catalyst_backend})")
-        if not HAS_JAX_CUDA and HAS_LIGHTNING_GPU:
-            print("  Warning: Catalyst runs on CPU (JAX lacks CUDA)")
-    else:
-        print("Catalyst: Not available")
-    print()
+    print(f"Device: {device_type}\n")
 
-    # Setup molecular system
     geometry = create_h2_geometry()
     mm_env = create_tip3p_environment()
 
-    # Step 1: Build Hamiltonians (before any calculations)
+    # Step 1: Build Hamiltonians
     hamiltonians = build_hamiltonians(geometry, mm_env)
-
-    # Step 1.5: Circuit visualization (show circuit structure first)
     print_circuit_visualization(hamiltonians, device_type)
 
-    # Step 2: Resource estimation
-    run_resource_estimation(geometry, mm_env)
-
-    # Step 3: Classical HF reference
+    # Step 2: Classical HF reference
     hf_results = run_classical_hf(geometry, mm_env)
 
-    # Step 4: Verify expectation values
+    # Step 3: Verify expectation values
     exp_results = verify_expectation_values(hamiltonians, hf_results, device_type)
 
-    # Step 5: QPE estimation
+    # Step 4: QPE estimation
     qpe_results = run_qpe_estimation(hamiltonians, hf_results, device_type)
 
-    # Step 5.5: Catalyst benchmark (optional)
-    from q2m3.core.qmmm_system import Atom
-
-    h2_atoms = [Atom("H", geometry.coords[0]), Atom("H", geometry.coords[1])]
-    catalyst_results = run_catalyst_benchmark(h2_atoms, 2, hf_results)
-
-    # Step 6: Summary and validation
-    print("[Step 6] Summary and Validation")
+    # Step 5: Summary and validation
+    print("[Step 5] Summary and Validation")
     print("-" * 70)
     print_summary(hf_results, exp_results, qpe_results)
     run_validation_checks(hf_results, exp_results, qpe_results)
-
-    # Add Catalyst performance summary if benchmark was run
-    if catalyst_results is not None:
-        print()
-        print("Catalyst Performance Summary:")
-        print(f"  Device: {catalyst_results['device_type']}")
-        print(f"  Catalyst Backend: {catalyst_results['catalyst_backend']}")
-        print()
-        print("  Single Execution (includes JIT compilation):")
-        print(f"    Speedup: {catalyst_results['single_speedup']:.2f}x")
-        if catalyst_results["single_speedup"] < 1:
-            print("    (Slowdown expected due to JIT compilation overhead)")
-        print()
-        print(f"  Multi-Execution ({catalyst_results['n_iterations']} iterations):")
-        print(f"    Speedup: {catalyst_results['multi_speedup']:.2f}x")
-        if catalyst_results["multi_speedup"] > 1:
-            print("    (Speedup from reusing compiled circuits)")
-        print()
 
     print()
     print("=" * 70)

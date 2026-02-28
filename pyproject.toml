@@ -101,7 +101,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/h2_qpe_validation.py" = ["E402", "F821"]
+"examples/h2_qpe_validation.py" = ["E402"]
 "examples/h2_mc_solvation.py" = ["E402"]
 "examples/h2_three_mode_qpe_mc.py" = ["E402"]
 "examples/h3o_mc_solvation.py" = ["E402"]

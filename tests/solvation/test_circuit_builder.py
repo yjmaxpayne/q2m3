@@ -30,6 +30,7 @@ class TestQPECircuitBundle:
             active_orbitals=2,
             n_trotter_steps=3,
             measurement_mode="probs",
+            is_fixed_circuit=False,
         )
 
         assert bundle.base_time == 3.14
@@ -39,6 +40,7 @@ class TestQPECircuitBundle:
         assert bundle.active_orbitals == 2
         assert bundle.n_trotter_steps == 3
         assert bundle.measurement_mode == "probs"
+        assert bundle.is_fixed_circuit is False
         assert len(bundle.base_coeffs) == 3
         assert len(bundle.ops) == 3
 
@@ -58,6 +60,7 @@ class TestQPECircuitBundle:
             active_orbitals=1,
             n_trotter_steps=1,
             measurement_mode="probs",
+            is_fixed_circuit=False,
         )
 
         with pytest.raises(AttributeError):
@@ -250,6 +253,51 @@ class TestBuildQPECircuit:
 
         # Results should differ due to different coefficients
         assert not np.allclose(probs1, probs2)
+
+    def test_h2_fixed_mode_zero_arg(self, h2_molecule_config, h2_hf_energy):
+        """Fixed mode: circuit takes zero arguments (compile-time constant coefficients)."""
+        from q2m3.solvation.circuit_builder import build_qpe_circuit
+        from q2m3.solvation.config import QPEConfig, SolvationConfig
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=2, n_shots=0),
+            hamiltonian_mode="fixed",
+            n_waters=3,
+            n_mc_steps=10,
+        )
+
+        qm_coords = h2_molecule_config.coords_array
+        bundle = build_qpe_circuit(config, qm_coords, h2_hf_energy)
+
+        # Fixed mode: is_fixed_circuit should be True
+        assert bundle.is_fixed_circuit is True
+
+        # Zero-arg invocation
+        result = bundle.compiled_circuit()
+        probs = np.asarray(result)
+        expected_bins = 2**bundle.n_estimation_wires
+        assert probs.shape == (expected_bins,)
+        assert np.isclose(probs.sum(), 1.0, atol=1e-6)
+
+    def test_h2_dynamic_mode_is_not_fixed(self, h2_molecule_config, h2_hf_energy):
+        """Dynamic mode: is_fixed_circuit should be False."""
+        from q2m3.solvation.circuit_builder import build_qpe_circuit
+        from q2m3.solvation.config import QPEConfig, SolvationConfig
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=2),
+            hamiltonian_mode="dynamic",
+            n_waters=3,
+            n_mc_steps=10,
+        )
+
+        qm_coords = h2_molecule_config.coords_array
+        bundle = build_qpe_circuit(config, qm_coords, h2_hf_energy)
+
+        # Dynamic mode: is_fixed_circuit should be False
+        assert bundle.is_fixed_circuit is False
 
     def test_trotter_cap_warning(self, h2_molecule_config, h2_hf_energy):
         """Trotter steps exceeding MAX_TROTTER_STEPS_RUNTIME are capped with warning."""

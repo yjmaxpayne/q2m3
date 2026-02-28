@@ -55,6 +55,10 @@ def compute_cache_key(config: SolvationConfig) -> str:
     mol = config.molecule
     qpe = config.qpe_config
 
+    # Map hamiltonian_mode to circuit style for cache key.
+    # fixed → zero-arg circuit (different IR); hf_corrected/dynamic → parameterized (same IR).
+    circuit_style = "fixed" if config.hamiltonian_mode == "fixed" else "dynamic"
+
     key_parts = [
         mol.name,
         mol.basis,
@@ -63,6 +67,7 @@ def compute_cache_key(config: SolvationConfig) -> str:
         f"{qpe.n_estimation_wires}est",
         f"{qpe.n_trotter_steps}t",
         f"{qpe.n_shots}sh",
+        circuit_style,
     ]
 
     # base_time depends on target_resolution and energy_range — hash them
@@ -187,7 +192,10 @@ def _phase_a_worker(
         bundle = build_qpe_circuit(config, qm_coords, hf_energy, _keep_intermediate=True)
 
         # Trigger compilation by calling the circuit
-        bundle.compiled_circuit(jnp.array(bundle.base_coeffs))
+        if bundle.is_fixed_circuit:
+            bundle.compiled_circuit()  # Zero-arg
+        else:
+            bundle.compiled_circuit(jnp.array(bundle.base_coeffs))
 
         # Extract LLVM IR
         llvm_ir = get_compilation_stage(bundle.compiled_circuit, "LLVMIRTranslation")
@@ -320,7 +328,10 @@ def _apply_cached_ir(bundle: QPECircuitBundle, llvm_ir: str, work_dir: Path | No
         work_dir.mkdir(parents=True, exist_ok=True)
         os.chdir(str(work_dir))
     try:
-        bundle.compiled_circuit.jit_compile((jnp.array(bundle.base_coeffs),))
+        if bundle.is_fixed_circuit:
+            bundle.compiled_circuit.jit_compile(())  # Zero-arg
+        else:
+            bundle.compiled_circuit.jit_compile((jnp.array(bundle.base_coeffs),))
     finally:
         if work_dir is not None:
             os.chdir(original_cwd)

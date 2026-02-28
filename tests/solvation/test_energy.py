@@ -89,6 +89,7 @@ def mock_circuit_bundle(h2_vacuum_cache):
     bundle.base_time = 1.0
     bundle.active_orbitals = 2
     bundle.measurement_mode = "probs"
+    bundle.is_fixed_circuit = False  # Default: dynamic/hf_corrected style
     return bundle
 
 
@@ -260,13 +261,14 @@ class TestHfCorrectedStepCallback:
         self, solvation_config_hf_corrected, mock_circuit_bundle, h2_vacuum_cache
     ):
         """Non-QPE step returns NaN e_qpe and zero qpe_time."""
+        qm_coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
         step_cb = create_hf_corrected_step_callback(
-            mock_circuit_bundle, solvation_config_hf_corrected, h2_vacuum_cache
+            solvation_config_hf_corrected,
+            h2_vacuum_cache,
+            qm_coords,
+            h2_vacuum_cache["e_vacuum"],
+            circuit_bundle=mock_circuit_bundle,
         )
-        # Step 0 is NOT a QPE step (step % interval == 0 means QPE; but step 0 counts as QPE)
-        # Actually per plan: "step % qpe_interval == 0" triggers QPE
-        # Step 0: 0 % 3 == 0 → QPE step
-        # Step 1: 1 % 3 != 0 → non-QPE
         dummy_solvents = np.zeros((3, 6))
         dummy_coords = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])
 
@@ -282,8 +284,13 @@ class TestHfCorrectedStepCallback:
         self, solvation_config_hf_corrected, mock_circuit_bundle, h2_vacuum_cache
     ):
         """QPE step (at interval) returns valid e_qpe."""
+        qm_coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
         step_cb = create_hf_corrected_step_callback(
-            mock_circuit_bundle, solvation_config_hf_corrected, h2_vacuum_cache
+            solvation_config_hf_corrected,
+            h2_vacuum_cache,
+            qm_coords,
+            h2_vacuum_cache["e_vacuum"],
+            circuit_bundle=mock_circuit_bundle,
         )
         dummy_solvents = np.zeros((3, 6))
         dummy_coords = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])
@@ -297,8 +304,13 @@ class TestHfCorrectedStepCallback:
         self, solvation_config_hf_corrected, mock_circuit_bundle, h2_vacuum_cache
     ):
         """Closure counter correctly tracks steps: QPE at 0, 3, 6..."""
+        qm_coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
         step_cb = create_hf_corrected_step_callback(
-            mock_circuit_bundle, solvation_config_hf_corrected, h2_vacuum_cache
+            solvation_config_hf_corrected,
+            h2_vacuum_cache,
+            qm_coords,
+            h2_vacuum_cache["e_vacuum"],
+            circuit_bundle=mock_circuit_bundle,
         )
         dummy_solvents = np.zeros((3, 6))
         dummy_coords = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])
@@ -318,8 +330,13 @@ class TestHfCorrectedStepCallback:
         self, solvation_config_hf_corrected, mock_circuit_bundle, h2_vacuum_cache
     ):
         """e_hf_ref is always valid (never NaN), even on non-QPE steps."""
+        qm_coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
         step_cb = create_hf_corrected_step_callback(
-            mock_circuit_bundle, solvation_config_hf_corrected, h2_vacuum_cache
+            solvation_config_hf_corrected,
+            h2_vacuum_cache,
+            qm_coords,
+            h2_vacuum_cache["e_vacuum"],
+            circuit_bundle=mock_circuit_bundle,
         )
         dummy_solvents = np.zeros((3, 6))
         dummy_coords = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.74])

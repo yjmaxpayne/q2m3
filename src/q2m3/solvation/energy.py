@@ -235,16 +235,24 @@ def create_step_callback(
     n_estimation_wires = circuit_bundle.n_estimation_wires
     measurement_mode = circuit_bundle.measurement_mode
 
-    def _step(solvent_states: np.ndarray, qm_coords_flat: np.ndarray) -> StepResult:
-        # Step 1: Coefficient update
-        cb_start = _time.perf_counter()
-        new_coeffs = coeff_callback(solvent_states, qm_coords_flat)
-        cb_elapsed = _time.perf_counter() - cb_start
+    is_fixed = circuit_bundle.is_fixed_circuit
 
-        # Step 2: QPE circuit execution
-        qpe_start = _time.perf_counter()
-        measurement_result = compiled_circuit(jnp.array(new_coeffs))
-        qpe_elapsed = _time.perf_counter() - qpe_start
+    def _step(solvent_states: np.ndarray, qm_coords_flat: np.ndarray) -> StepResult:
+        if is_fixed:
+            # Fixed mode: zero-arg circuit, no coefficient update needed
+            cb_elapsed = 0.0
+            qpe_start = _time.perf_counter()
+            measurement_result = compiled_circuit()
+            qpe_elapsed = _time.perf_counter() - qpe_start
+        else:
+            # Dynamic mode: compute new coefficients, pass as JAX array
+            cb_start = _time.perf_counter()
+            new_coeffs = coeff_callback(solvent_states, qm_coords_flat)
+            cb_elapsed = _time.perf_counter() - cb_start
+
+            qpe_start = _time.perf_counter()
+            measurement_result = compiled_circuit(jnp.array(new_coeffs))
+            qpe_elapsed = _time.perf_counter() - qpe_start
 
         # Step 3: Phase extraction
         result_np = np.asarray(measurement_result)
@@ -280,22 +288,29 @@ def create_step_callback(
 
 
 def create_hf_corrected_step_callback(
-    circuit_bundle: QPECircuitBundle,  # noqa: F821
     config: SolvationConfig,
     vacuum_cache: dict,
+    qm_coords: np.ndarray,
+    e_vacuum: float,
+    circuit_bundle: QPECircuitBundle | None = None,  # noqa: F821
 ) -> Callable[[np.ndarray, np.ndarray], StepResult]:
     """
-    Factory: hf_corrected mode step callback.
+    Factory: hf_corrected mode step callback with deferred compilation.
 
     Every step: PySCF QMMM → e_hf_ref; compute_mm_energy → e_mm.
     Every qpe_interval steps: additionally run QPE circuit for diagnostics.
 
+    If circuit_bundle is None, QPE circuit is lazily built on the first
+    QPE step (deferred compilation — avoids startup compilation cost).
+
     Non-QPE steps return StepResult(e_qpe=NaN, qpe_time=0.0).
 
     Args:
-        circuit_bundle: QPE circuit bundle with compiled circuit
         config: Solvation configuration
         vacuum_cache: Pre-computed vacuum data
+        qm_coords: QM coordinates array for circuit building
+        e_vacuum: Vacuum HF energy for energy shift
+        circuit_bundle: Optional pre-built circuit bundle (None = deferred)
 
     Returns:
         Callable: (solvent_states, qm_coords_flat) -> StepResult
@@ -304,20 +319,15 @@ def create_hf_corrected_step_callback(
 
     from .solvent import SOLVENT_MODELS, state_array_to_molecules
 
-    compiled_circuit = circuit_bundle.compiled_circuit
-    base_coeffs = np.array(circuit_bundle.base_coeffs, dtype=np.float64)
-    base_time = circuit_bundle.base_time
-    energy_shift = circuit_bundle.energy_shift
-    n_estimation_wires = circuit_bundle.n_estimation_wires
-    measurement_mode = circuit_bundle.measurement_mode
     qpe_interval = config.qpe_config.qpe_interval
-
     mol_cfg = config.molecule
-    step_counter = [0]  # Mutable closure counter
+
+    # Mutable state: step counter + lazy bundle
+    _state = {"step_counter": 0, "bundle": circuit_bundle}
 
     def _step(solvent_states: np.ndarray, qm_coords_flat: np.ndarray) -> StepResult:
-        current_step = step_counter[0]
-        step_counter[0] += 1
+        current_step = _state["step_counter"]
+        _state["step_counter"] += 1
         is_qpe_step = current_step % qpe_interval == 0
 
         # Always: compute HF solvated energy and MM energy
@@ -338,19 +348,32 @@ def create_hf_corrected_step_callback(
                 qpe_time=0.0,
             )
 
-        # QPE step: run circuit with vacuum coefficients
+        # Lazy circuit build on first QPE step
+        bundle = _state["bundle"]
+        if bundle is None:
+            from .circuit_builder import build_qpe_circuit
+
+            qm_coords_2d = np.asarray(qm_coords).reshape(-1, 3)
+            bundle = build_qpe_circuit(config, qm_coords_2d, e_vacuum)
+            if config.ir_cache_enabled:
+                from .ir_cache import resolve_compiled_circuit
+
+                bundle, _ = resolve_compiled_circuit(config, bundle)
+            _state["bundle"] = bundle
+
+        # QPE step: run circuit with vacuum coefficients (dynamic-style)
         qpe_start = _time.perf_counter()
-        measurement_result = compiled_circuit(jnp.array(base_coeffs))
+        measurement_result = bundle.compiled_circuit(jnp.array(bundle.base_coeffs))
         qpe_elapsed = _time.perf_counter() - qpe_start
 
         result_np = np.asarray(measurement_result)
-        if measurement_mode == "probs":
+        if bundle.measurement_mode == "probs":
             e_corr = extract_energy_from_probs(
-                result_np, base_time, energy_shift, n_estimation_wires
+                result_np, bundle.base_time, bundle.energy_shift, bundle.n_estimation_wires
             )
         else:
             e_corr = extract_energy_from_shots(
-                result_np, base_time, energy_shift, n_estimation_wires
+                result_np, bundle.base_time, bundle.energy_shift, bundle.n_estimation_wires
             )
 
         # QPE energy: E_corr + e_vacuum + delta_e_mm

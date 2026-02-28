@@ -109,75 +109,93 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     if config.verbose:
         console.print(f"  Vacuum HF energy: {e_vacuum:.6f} Ha")
 
-    # === Step 3: Build QPE Circuit ===
-    # Redirect Catalyst @qjit compilation artifacts to cache directory.
-    # Catalyst captures os.getcwd() at decoration time for intermediate files.
-    if config.ir_cache_enabled:
-        from .ir_cache import cache_path_for_config
-
-        _cache_dir = cache_path_for_config(config).parent
-        _cache_dir.mkdir(parents=True, exist_ok=True)
-        _original_cwd = os.getcwd()
-        os.chdir(str(_cache_dir))
-    try:
-        circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
-    finally:
-        if config.ir_cache_enabled:
-            os.chdir(_original_cwd)
-
-    # === Step 3.5: IR Cache Resolution ===
+    # === Step 3: Build QPE Circuit (mode-dependent) ===
+    circuit_bundle = None
     cache_stats: dict = {"is_cache_hit": False}
-    if config.ir_cache_enabled:
-        from .ir_cache import resolve_compiled_circuit
-
-        circuit_bundle, cache_stats = resolve_compiled_circuit(config, circuit_bundle)
-        if config.verbose:
-            if cache_stats.get("is_cache_hit"):
-                t = cache_stats.get("phase_b_time_s", 0)
-                console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
-            elif cache_stats.get("fallback"):
-                console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
-            else:
-                ta = cache_stats.get("phase_a_time_s", 0)
-                tb = cache_stats.get("phase_b_time_s", 0)
-                console.print(
-                    f"  [cyan]IR cache miss[/cyan] " f"(Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
-                )
-
-    # Circuit metadata (all modes share same bundle structure)
-    n_trotter_requested = config.qpe_config.n_trotter_steps
     energy_formula_map = {
         "hf_corrected": "E_HF(R)+E_MM",
         "fixed": "E_QPE(H_vac)+E_MM",
         "dynamic": "E_QPE(H_eff)+E_MM",
     }
-    circuit_metadata = {
-        "hamiltonian_mode": mode,
-        "n_system_qubits": circuit_bundle.n_system_qubits,
-        "n_estimation_wires": circuit_bundle.n_estimation_wires,
-        "total_qubits": circuit_bundle.n_system_qubits + circuit_bundle.n_estimation_wires,
-        "n_hamiltonian_terms": len(circuit_bundle.base_coeffs),
-        "n_trotter_steps": circuit_bundle.n_trotter_steps,
-        "n_trotter_steps_requested": n_trotter_requested,
-        "base_time": circuit_bundle.base_time,
-        "energy_formula": energy_formula_map.get(mode, "unknown"),
-        "energy_shift": circuit_bundle.energy_shift,
-    }
 
-    if config.verbose:
-        n_bins = 2**circuit_bundle.n_estimation_wires
-        phase_res = 2 * np.pi / (circuit_bundle.base_time * n_bins)
-        console.print(
-            f"  Base time: {circuit_bundle.base_time:.6f} a.u. "
-            f"(resolution: {phase_res * 1000:.1f} mHa/bin, {n_bins} bins)"
-        )
+    if mode == "hf_corrected":
+        # Deferred compilation: skip circuit build at startup.
+        # The hf_corrected step callback will lazily build on first QPE step.
+        cache_stats["deferred"] = True
+        circuit_metadata = {
+            "hamiltonian_mode": mode,
+            "energy_formula": energy_formula_map[mode],
+            "deferred": True,
+        }
+        if config.verbose:
+            console.print("  [dim]QPE circuit build deferred to first QPE interval[/dim]")
+    else:
+        # Build circuit immediately (fixed or dynamic)
+        # Redirect Catalyst @qjit compilation artifacts to cache directory.
+        if config.ir_cache_enabled:
+            from .ir_cache import cache_path_for_config
+
+            _cache_dir = cache_path_for_config(config).parent
+            _cache_dir.mkdir(parents=True, exist_ok=True)
+            _original_cwd = os.getcwd()
+            os.chdir(str(_cache_dir))
+        try:
+            circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
+        finally:
+            if config.ir_cache_enabled:
+                os.chdir(_original_cwd)
+
+        # === Step 3.5: IR Cache Resolution ===
+        if config.ir_cache_enabled:
+            from .ir_cache import resolve_compiled_circuit
+
+            circuit_bundle, cache_stats = resolve_compiled_circuit(config, circuit_bundle)
+            if config.verbose:
+                if cache_stats.get("is_cache_hit"):
+                    t = cache_stats.get("phase_b_time_s", 0)
+                    console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
+                elif cache_stats.get("fallback"):
+                    console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
+                else:
+                    ta = cache_stats.get("phase_a_time_s", 0)
+                    tb = cache_stats.get("phase_b_time_s", 0)
+                    console.print(
+                        f"  [cyan]IR cache miss[/cyan] " f"(Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
+                    )
+
+        n_trotter_requested = config.qpe_config.n_trotter_steps
+        circuit_metadata = {
+            "hamiltonian_mode": mode,
+            "n_system_qubits": circuit_bundle.n_system_qubits,
+            "n_estimation_wires": circuit_bundle.n_estimation_wires,
+            "total_qubits": circuit_bundle.n_system_qubits + circuit_bundle.n_estimation_wires,
+            "n_hamiltonian_terms": len(circuit_bundle.base_coeffs),
+            "n_trotter_steps": circuit_bundle.n_trotter_steps,
+            "n_trotter_steps_requested": n_trotter_requested,
+            "base_time": circuit_bundle.base_time,
+            "energy_formula": energy_formula_map[mode],
+            "energy_shift": circuit_bundle.energy_shift,
+        }
+
+        if config.verbose:
+            n_bins = 2**circuit_bundle.n_estimation_wires
+            phase_res = 2 * np.pi / (circuit_bundle.base_time * n_bins)
+            console.print(
+                f"  Base time: {circuit_bundle.base_time:.6f} a.u. "
+                f"(resolution: {phase_res * 1000:.1f} mHa/bin, {n_bins} bins)"
+            )
 
     # === Step 4: Precompute Vacuum Cache ===
     vacuum_cache = precompute_vacuum_cache(config)
 
     # === Step 5: Create Step Callback (mode-dependent) ===
     if mode == "hf_corrected":
-        step_callback = create_hf_corrected_step_callback(circuit_bundle, config, vacuum_cache)
+        step_callback = create_hf_corrected_step_callback(
+            config,
+            vacuum_cache,
+            qm_coords,
+            e_vacuum,
+        )
     else:
         # fixed and dynamic both use create_step_callback
         step_callback = create_step_callback(circuit_bundle, config, vacuum_cache)

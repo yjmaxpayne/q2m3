@@ -51,7 +51,7 @@ class QPECircuitBundle:
     """All artifacts from QPE circuit compilation.
 
     Attributes:
-        compiled_circuit: @qjit function: (coeffs_arr) → probs or samples
+        compiled_circuit: @qjit function: () → result (fixed) or (coeffs_arr) → result (dynamic)
         base_coeffs: Initial vacuum + shift coefficients
         ops: PennyLane operators (compile-time constants)
         base_time: Evolution time for phase-to-energy conversion
@@ -62,6 +62,7 @@ class QPECircuitBundle:
         active_orbitals: Number of active spatial orbitals
         n_trotter_steps: Actual Trotter steps (may be capped)
         measurement_mode: "probs" or "shots"
+        is_fixed_circuit: True = zero-arg circuit (fixed mode); False = takes coeffs_arr
     """
 
     compiled_circuit: Callable
@@ -75,6 +76,7 @@ class QPECircuitBundle:
     active_orbitals: int
     n_trotter_steps: int
     measurement_mode: str
+    is_fixed_circuit: bool = False
 
 
 def build_qpe_circuit(
@@ -140,9 +142,10 @@ def build_qpe_circuit(
     coeffs[op_index_map["identity_idx"]] -= energy_shift
     base_coeffs = np.array(coeffs, dtype=np.float64)
 
-    # Step 5: Cap Trotter steps for OOM protection
+    # Step 5: Cap Trotter steps for OOM protection (runtime-parameterized circuits only)
+    is_fixed = config.hamiltonian_mode == "fixed"
     n_trotter = qpe.n_trotter_steps
-    if n_trotter > MAX_TROTTER_STEPS_RUNTIME:
+    if not is_fixed and n_trotter > MAX_TROTTER_STEPS_RUNTIME:
         warnings.warn(
             f"n_trotter_steps={n_trotter} exceeds runtime circuit ceiling "
             f"({MAX_TROTTER_STEPS_RUNTIME}). Capping to avoid OOM.",
@@ -156,13 +159,139 @@ def build_qpe_circuit(
     est_wires = list(range(n_system, n_system + n_estimation_wires))
     total_wires = n_system + n_estimation_wires
 
-    # Step 7: Build @qjit circuit
+    # Step 7: Build @qjit circuit (mode-dependent)
     _qjit_deco = qjit(keep_intermediate=True) if _keep_intermediate else qjit
 
-    if qpe.n_shots == 0:
-        # Probs mode: analytical probability distribution
+    if is_fixed:
+        # H_fixed: build Hamiltonian OUTSIDE @qjit with Python floats.
+        # Catalyst can constant-fold these → smaller IR, faster compilation.
+        compiled_circuit, measurement_mode = _build_fixed_circuit(
+            _qjit_deco,
+            base_coeffs,
+            ops,
+            hf_state,
+            system_wires,
+            est_wires,
+            total_wires,
+            n_estimation_wires,
+            base_time,
+            n_trotter,
+            qpe.n_shots,
+        )
+    else:
+        # H_dynamic: coefficients are JAX runtime parameters.
+        # Used by hf_corrected and dynamic modes.
+        compiled_circuit, measurement_mode = _build_dynamic_circuit(
+            _qjit_deco,
+            ops,
+            hf_state,
+            system_wires,
+            est_wires,
+            total_wires,
+            n_estimation_wires,
+            base_time,
+            n_trotter,
+            qpe.n_shots,
+        )
+
+    return QPECircuitBundle(
+        compiled_circuit=compiled_circuit,
+        base_coeffs=base_coeffs,
+        ops=ops,
+        base_time=base_time,
+        op_index_map=op_index_map,
+        energy_shift=energy_shift,
+        n_estimation_wires=n_estimation_wires,
+        n_system_qubits=n_system,
+        active_orbitals=mol.active_orbitals,
+        n_trotter_steps=n_trotter,
+        measurement_mode=measurement_mode,
+        is_fixed_circuit=is_fixed,
+    )
+
+
+def _build_fixed_circuit(
+    _qjit_deco,
+    base_coeffs,
+    ops,
+    hf_state,
+    system_wires,
+    est_wires,
+    total_wires,
+    n_estimation_wires,
+    base_time,
+    n_trotter,
+    n_shots,
+):
+    """Build H_fixed zero-arg circuit (compile-time constant coefficients)."""
+    # Hamiltonian built with Python floats BEFORE @qjit — enables constant-fold
+    H_fixed = qml.dot(list(base_coeffs), ops)
+
+    if n_shots == 0:
         dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
-        measurement_mode = "probs"
+
+        @_qjit_deco
+        def compiled_circuit():
+            @qml.qnode(dev)
+            def qnode():
+                for wire, occ in zip(system_wires, hf_state, strict=True):
+                    if occ == 1:
+                        qml.PauliX(wires=wire)
+                for w in est_wires:
+                    qml.Hadamard(wires=w)
+                for k, ew in enumerate(est_wires):
+                    t = (2 ** (n_estimation_wires - 1 - k)) * base_time
+                    qml.ctrl(
+                        qml.adjoint(qml.TrotterProduct(H_fixed, time=t, n=n_trotter, order=2)),
+                        control=ew,
+                    )
+                qml.adjoint(qml.QFT)(wires=est_wires)
+                return qml.probs(wires=est_wires)
+
+            return qnode()
+
+        return compiled_circuit, "probs"
+    else:
+        dev = qml.device("lightning.qubit", wires=total_wires, shots=n_shots)
+
+        @_qjit_deco
+        def compiled_circuit():
+            @qml.qnode(dev)
+            def qnode():
+                for wire, occ in zip(system_wires, hf_state, strict=True):
+                    if occ == 1:
+                        qml.PauliX(wires=wire)
+                for w in est_wires:
+                    qml.Hadamard(wires=w)
+                for k, ew in enumerate(est_wires):
+                    t = (2 ** (n_estimation_wires - 1 - k)) * base_time
+                    qml.ctrl(
+                        qml.adjoint(qml.TrotterProduct(H_fixed, time=t, n=n_trotter, order=2)),
+                        control=ew,
+                    )
+                qml.adjoint(qml.QFT)(wires=est_wires)
+                return qml.sample(wires=est_wires)
+
+            return qnode()
+
+        return compiled_circuit, "shots"
+
+
+def _build_dynamic_circuit(
+    _qjit_deco,
+    ops,
+    hf_state,
+    system_wires,
+    est_wires,
+    total_wires,
+    n_estimation_wires,
+    base_time,
+    n_trotter,
+    n_shots,
+):
+    """Build H_dynamic parameterized circuit (runtime JAX coefficient array)."""
+    if n_shots == 0:
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
 
         @_qjit_deco
         def compiled_circuit(coeffs_arr):
@@ -170,14 +299,11 @@ def build_qpe_circuit(
 
             @qml.qnode(dev)
             def qnode():
-                # HF state preparation via X gates (Catalyst-compatible)
                 for wire, occ in zip(system_wires, hf_state, strict=True):
                     if occ == 1:
                         qml.PauliX(wires=wire)
-                # Hadamard on estimation qubits
                 for w in est_wires:
                     qml.Hadamard(wires=w)
-                # Controlled time evolutions (MSB-first convention)
                 for k, ew in enumerate(est_wires):
                     t = (2 ** (n_estimation_wires - 1 - k)) * base_time
                     qml.ctrl(
@@ -188,16 +314,14 @@ def build_qpe_circuit(
                         ),
                         control=ew,
                     )
-                # Inverse QFT
                 qml.adjoint(qml.QFT)(wires=est_wires)
                 return qml.probs(wires=est_wires)
 
             return qnode()
 
+        return compiled_circuit, "probs"
     else:
-        # Shots mode: measurement samples
-        dev = qml.device("lightning.qubit", wires=total_wires, shots=qpe.n_shots)
-        measurement_mode = "shots"
+        dev = qml.device("lightning.qubit", wires=total_wires, shots=n_shots)
 
         @_qjit_deco
         def compiled_circuit(coeffs_arr):
@@ -225,16 +349,4 @@ def build_qpe_circuit(
 
             return qnode()
 
-    return QPECircuitBundle(
-        compiled_circuit=compiled_circuit,
-        base_coeffs=base_coeffs,
-        ops=ops,
-        base_time=base_time,
-        op_index_map=op_index_map,
-        energy_shift=energy_shift,
-        n_estimation_wires=n_estimation_wires,
-        n_system_qubits=n_system,
-        active_orbitals=mol.active_orbitals,
-        n_trotter_steps=n_trotter,
-        measurement_mode=measurement_mode,
-    )
+        return compiled_circuit, "shots"

@@ -28,6 +28,7 @@ from .qpe_profiler import (
     profile_qjit_compilation,
     profile_qjit_compilation_fixed,
 )
+from .timing import ProfilingStats, profile_function, profile_section
 
 __all__ = [
     # memory.py
@@ -52,4 +53,8 @@ __all__ = [
     "run_single_profile_in_subprocess",
     "run_sweep",
     "run_both_modes",
+    # timing.py
+    "ProfilingStats",
+    "profile_function",
+    "profile_section",
 ]

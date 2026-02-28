@@ -62,14 +62,3 @@ def test_build_operator_index_map_no_identity_raises():
     coeffs = [1.0]
     with pytest.raises(ValueError, match="Identity"):
         build_operator_index_map(ops, 1, coeffs)
-
-
-def test_hamiltonian_utils_re_export():
-    """Verify re-export returns the same function objects."""
-    from examples.mc_solvation.energy import build_operator_index_map as OldBuild
-    from examples.mc_solvation.energy import decompose_hamiltonian as OldDecompose
-    from q2m3.core.hamiltonian_utils import build_operator_index_map as NewBuild
-    from q2m3.core.hamiltonian_utils import decompose_hamiltonian as NewDecompose
-
-    assert OldDecompose is NewDecompose, "re-export must return same function"
-    assert OldBuild is NewBuild, "re-export must return same function"

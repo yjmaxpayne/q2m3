@@ -90,11 +90,3 @@ def test_molecule_config_validate_bad_coord_dims():
     )
     with pytest.raises(ValueError, match="3 components"):
         mol.validate()
-
-
-def test_molecule_config_re_export():
-    """Verify re-export returns the same class object."""
-    from examples.mc_solvation.config import MoleculeConfig as OldMoleculeConfig
-    from q2m3.molecule import MoleculeConfig as NewMoleculeConfig
-
-    assert OldMoleculeConfig is NewMoleculeConfig, "re-export must return the same class object"

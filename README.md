@@ -215,10 +215,10 @@ Catalyst's `@qjit` JIT compilation provides **~36x faster execution** but incurs
 
 ### Pre-compilation Strategy for Iterative Workflows
 
-For workflows with multiple QPE evaluations on the same molecular system, use the modular `mc_solvation` framework:
+For workflows with multiple QPE evaluations on the same molecular system, use the production `q2m3.solvation` package:
 
 ```python
-from examples.mc_solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
+from q2m3.solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
 config = SolvationConfig(
     molecule=MoleculeConfig(name="H2", symbols=["H", "H"], ...),
@@ -314,7 +314,7 @@ python examples/h2_mc_solvation.py
 **Test System**: H2 molecule + 10 TIP3P waters with Monte Carlo sampling
 
 **Key Features:**
-- Modular `mc_solvation` framework with configurable QPE modes
+- Production `q2m3.solvation` package with configurable QPE modes
 - 100 MC steps with QPE validation every 10 steps
 - Full Catalyst integration: `for_loop`, `cond`, `pure_callback`, `debug.print`
 - Rich console output with timing statistics
@@ -349,7 +349,7 @@ q2m3/
 |   +-- h2_mc_solvation.py            # H2 MC solvation with QJIT
 |   +-- h3o_mc_solvation.py           # H3O+ MC solvation
 |   +-- h3op_demo/                     # Sub-modules for h3op demo
-|   +-- mc_solvation/                  # Modular MC solvation framework
+|   +-- _archived/                     # Archived POC code (superseded by q2m3.solvation)
 |   +-- data/output/                   # Example output files (JSON results)
 +-- data/                      # Input data files
 ```

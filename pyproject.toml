@@ -84,6 +84,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = ["examples/_archived"]
 
 [tool.ruff.lint]
 select = [
@@ -103,9 +104,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "examples/h2_qpe_validation.py" = ["E402"]
 "examples/h2_mc_solvation.py" = ["E402"]
-"examples/h2_three_mode_qpe_mc.py" = ["E402"]
 "examples/h3o_mc_solvation.py" = ["E402"]
-"examples/h3o_qpe_full_demo.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-third-party = ["pyscf", "pennylane", "numpy", "scipy"]

@@ -252,10 +252,11 @@ def _build_fixed_circuit(
 
         return compiled_circuit, "probs"
     else:
-        dev = qml.device("lightning.qubit", wires=total_wires, shots=n_shots)
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
 
         @_qjit_deco
         def compiled_circuit():
+            @qml.set_shots(n_shots)
             @qml.qnode(dev)
             def qnode():
                 for wire, occ in zip(system_wires, hf_state, strict=True):
@@ -321,12 +322,13 @@ def _build_dynamic_circuit(
 
         return compiled_circuit, "probs"
     else:
-        dev = qml.device("lightning.qubit", wires=total_wires, shots=n_shots)
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
 
         @_qjit_deco
         def compiled_circuit(coeffs_arr):
             H_runtime = qml.dot(coeffs_arr, ops)
 
+            @qml.set_shots(n_shots)
             @qml.qnode(dev)
             def qnode():
                 for wire, occ in zip(system_wires, hf_state, strict=True):

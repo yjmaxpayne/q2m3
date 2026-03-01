@@ -218,6 +218,40 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
 
     if config.verbose:
         console.print(f"  Initial energy computation: {precompute_time:.2f}s")
+
+    # === Step 6.5: Update hf_corrected circuit_metadata from deferred build ===
+    if mode == "hf_corrected":
+        post_bundle = getattr(step_callback, "_state", {}).get("bundle")
+        if post_bundle is not None:
+            n_trotter_requested = config.qpe_config.n_trotter_steps
+            circuit_metadata.update(
+                {
+                    "n_system_qubits": post_bundle.n_system_qubits,
+                    "n_estimation_wires": post_bundle.n_estimation_wires,
+                    "total_qubits": post_bundle.n_system_qubits + post_bundle.n_estimation_wires,
+                    "n_hamiltonian_terms": len(post_bundle.base_coeffs),
+                    "n_trotter_steps": post_bundle.n_trotter_steps,
+                    "n_trotter_steps_requested": n_trotter_requested,
+                    "base_time": post_bundle.base_time,
+                    "energy_shift": post_bundle.energy_shift,
+                }
+            )
+        if config.verbose and config.ir_cache_enabled:
+            post_cs = getattr(step_callback, "_state", {}).get("cache_stats", {})
+            if post_cs:
+                if post_cs.get("is_cache_hit"):
+                    t = post_cs.get("phase_b_time_s", 0)
+                    console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
+                elif post_cs.get("fallback"):
+                    console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
+                else:
+                    ta = post_cs.get("phase_a_time_s", 0)
+                    tb = post_cs.get("phase_b_time_s", 0)
+                    console.print(
+                        f"  [cyan]IR cache miss[/cyan]" f" (Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
+                    )
+
+    if config.verbose:
         console.print(f"  Initial energy: {initial_energy:.6f} Ha")
 
     # === Step 7: Create MC Loop ===

@@ -358,7 +358,8 @@ def create_hf_corrected_step_callback(
             if config.ir_cache_enabled:
                 from .ir_cache import resolve_compiled_circuit
 
-                bundle, _ = resolve_compiled_circuit(config, bundle)
+                bundle, _cache_stats = resolve_compiled_circuit(config, bundle)
+                _state["cache_stats"] = _cache_stats
             _state["bundle"] = bundle
 
         # QPE step: run circuit with vacuum coefficients (dynamic-style)
@@ -388,6 +389,7 @@ def create_hf_corrected_step_callback(
             qpe_time=qpe_elapsed,
         )
 
+    _step._state = _state  # Expose internal state for orchestrator post-MC inspection
     return _step
 
 

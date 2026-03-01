@@ -24,6 +24,9 @@ q2m3 demonstrates the integration of QPE algorithms with molecular mechanics env
 - EFTQC resource estimation (Toffoli gates, logical qubits, 1-norm)
 - Circuit visualization via `qml.draw(decimals=None, level=0)`
 - Solvation effect analysis (vacuum vs explicit MM embedding)
+- Monte Carlo solvation sampling with three QPE modes (`fixed`/`hf_corrected`/`dynamic`)
+- Catalyst LLVM IR caching for compilation optimization across MC steps
+- δ_corr-pol (correlation-polarization coupling) analysis via `q2m3.solvation.analysis`
 
 ## Quick Start
 
@@ -62,8 +65,8 @@ source .venv/bin/activate
 # Run minimal validation (H2 + TIP3P waters, ~30s)
 python examples/h2_qpe_validation.py
 
-# Run full demo (H3O+ + 8 TIP3P waters, ~3min)
-python examples/h3o_qpe_full_demo.py
+# Run MC solvation (H2 + 10 TIP3P waters, Catalyst required)
+python examples/h2_mc_solvation.py
 ```
 
 ### Basic Usage
@@ -113,29 +116,35 @@ print(circuits["rdm"])  # RDM measurement circuit
 ## Architecture
 
 ```
-QuantumQMMM (main interface)
+QuantumQMMM (main interface)           SolvationOrchestrator (MC dynamics)
+    |                                      |
+    +-- QMMMSystem (system builder)        +-- MCLoop (Metropolis sampling)
+    |       +-- QM region: molecular atoms |       +-- Water move proposals
+    |       +-- MM region: TIP3P waters    |       +-- Acceptance/rejection
+    |       +-- Point charge embedding     |
+    |                                      +-- QPE Modes (three strategies)
+    +-- QPEEngine (quantum algorithm)      |       +-- fixed: pre-compiled vacuum QPE
+    |       +-- HF state preparation       |       +-- hf_corrected: HF + MM correction
+    |       +-- Controlled Trotter evolut. |       +-- dynamic: runtime JAX coefficients
+    |       +-- Inverse QFT                |
+    |       +-- Phase-to-energy extract.  +-- Analysis (q2m3.solvation.analysis)
+    |       +-- Device selection (GPU/CPU) |       +-- δ_corr-pol estimation
+    |                                      |       +-- run_mode_comparison()
+    +-- RDMEstimator (quantum measurement) |
+    |       +-- Batch Pauli expectations   +-- IRCache (LLVM IR caching)
+    |       +-- 1-RDM reconstruction              +-- Catalyst compile-once reuse
+    |       +-- MO-to-AO transformation
     |
-    +-- QMMMSystem (system builder)
-    |       +-- QM region: molecular atoms
-    |       +-- MM region: TIP3P water molecules
-    |       +-- Point charge embedding
+    +-- PySCFPennyLaneConverter (interface)
+    |       +-- Vacuum Hamiltonian (qml.qchem)
+    |       +-- MM correction terms
+    |       +-- HF state generation
     |
-    +-- QPEEngine (quantum algorithm)
-    |       +-- HF state preparation (X gates, Catalyst-compatible)
-    |       +-- Controlled Trotter evolution (qml.TrotterProduct)
-    |       +-- Inverse QFT (qml.adjoint(qml.QFT))
-    |       +-- Phase-to-energy extraction
-    |       +-- Device selection (GPU/CPU auto)
-    |
-    +-- RDMEstimator (quantum measurement)
-    |       +-- Batch Pauli expectation values
-    |       +-- 1-RDM reconstruction (diagonal + off-diagonal)
-    |       +-- Active space MO-to-AO transformation
-    |
-    +-- PySCFPennyLaneConverter (interface layer)
-            +-- Vacuum Hamiltonian (qml.qchem)
-            +-- MM correction terms (PySCF -> Pauli operators)
-            +-- HF state generation
+    +-- ProfilingTools (q2m3.profiling)
+            +-- timing.py: general timing utilities
+            +-- qpe_profiler.py: QPE compilation profiling
+            +-- memory.py: memory monitoring
+            +-- catalyst_ir.py: LLVM IR analysis
 ```
 
 ## QPE Circuit Implementation
@@ -262,62 +271,61 @@ print(f"Toffoli gates: {algo.gates:,}")
 print(f"Logical qubits: {algo.qubits}")
 ```
 
-**Documentation:**
-- Complete API guide: [dev/reports/catalyst_qpe_compilation_overhead_analysis.md](dev/reports/catalyst_qpe_compilation_overhead_analysis.md)
-- Pre-compilation optimization: [dev/reports/catalyst_qpe_precompilation_optimization_report.md](dev/reports/catalyst_qpe_precompilation_optimization_report.md)
-
 ## Examples
 
-### Example 1: H2 QPE Validation
+### Chapter 1: Static QPE (`q2m3.core` API)
 
-`examples/h2_qpe_validation.py` - Fast validation of QPE + MM embedding + Catalyst benchmark (~30s)
+Single-configuration QPE studies. Validates algorithm correctness and EFTQC hardware resource estimates.
+
+| Example | Description |
+|---------|-------------|
+| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 (~30s) |
+| `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) |
 
 ```bash
 python examples/h2_qpe_validation.py
+python examples/h2_resource_estimation.py
 ```
 
-**Test System**: H2 molecule + TIP3P waters (8 qubits: 4 system + 4 estimation)
+**Key results (H2, STO-3G)**:
+- QPE-HF energy gap: ~0.017 Ha (10.9 kcal/mol correlation energy)
+- MM solvation stabilization: -0.054 kcal/mol (2 TIP3P waters)
 
-| Method | Vacuum (Ha) | Solvated (Ha) | Stabilization |
-|--------|-------------|---------------|---------------|
-| PySCF HF | -1.116759 | -1.116674 | -0.054 kcal/mol |
-| QPE | -1.134209 | -1.134122 | -0.054 kcal/mol |
+### Chapter 2: MC Dynamics (`q2m3.solvation` API)
 
-### Example 2: H3O+ QPE Full Demo
+Monte Carlo solvation sampling. Each step changes the MM environment → different Hamiltonian.
 
-`examples/h3o_qpe_full_demo.py` - Complete workflow demonstration (~3min)
-
-```bash
-python examples/h3o_qpe_full_demo.py
-```
-
-**Test System**: H3O+ ion + 8 TIP3P waters (12 qubits)
-
-**Demo Steps:**
-1. System Configuration (QM/MM setup, device selection)
-1.5. Circuit Visualization
-2. EFTQC Resource Estimation
-3. Classical HF Solvation Analysis
-4. Standard QPE Solvation Analysis
-5. Catalyst QPE Solvation Analysis
-6. Results Comparison
-7. Save Results (JSON output)
-
-### Example 3: MC Solvation with Modular Framework
-
-`examples/h2_mc_solvation.py` - Modular MC solvation with Catalyst @qjit optimization
+| Example | Description |
+|---------|-------------|
+| `h2_mc_solvation.py` | H2 MC entry point: fixed-mode QPE (pre-compiled) |
+| `h3o_mc_solvation.py` | H3O+ ionic solvation: hf_corrected mode |
+| `h2_three_mode_comparison.py` | Full three-mode comparison + δ_corr-pol analysis |
 
 ```bash
 python examples/h2_mc_solvation.py
+python examples/h3o_mc_solvation.py
+python examples/h2_three_mode_comparison.py
 ```
 
-**Test System**: H2 molecule + 10 TIP3P waters with Monte Carlo sampling
+**Three QPE modes**:
 
-**Key Features:**
-- Production `q2m3.solvation` package with configurable QPE modes
-- 100 MC steps with QPE validation every 10 steps
-- Full Catalyst integration: `for_loop`, `cond`, `pure_callback`, `debug.print`
-- Rich console output with timing statistics
+| Mode | Physics |
+|------|---------|
+| `fixed` | Pre-compiled vacuum QPE + MM correction (fastest) |
+| `hf_corrected` | HF energy with runtime MM embedding |
+| `dynamic` | Runtime JAX-traceable coefficients (most rigorous, compile once) |
+
+### Profiling & Tools
+
+| Example | Description |
+|---------|-------------|
+| `catalyst_benchmark.py` | Catalyst JIT performance benchmark (single vs multi-execution) |
+| `qpe_memory_profile.py` | QPE compilation memory profiling |
+
+```bash
+python examples/catalyst_benchmark.py
+python examples/qpe_memory_profile.py
+```
 
 See [examples/README.md](examples/README.md) for detailed documentation.
 
@@ -329,29 +337,47 @@ q2m3/
 |   +-- core/
 |   |   +-- quantum_qmmm.py    # Main entry point
 |   |   +-- qpe.py             # QPE engine (real quantum circuits)
-|   |   +-- qmmm_system.py     # QM/MM system builder
-|   |   +-- rdm.py             # 1-RDM quantum measurement
-|   |   +-- device_utils.py    # Device selection utilities
+|   |   +-- qmmm_system.py       # QM/MM system builder
+|   |   +-- rdm.py               # 1-RDM quantum measurement
+|   |   +-- device_utils.py      # Device selection utilities
+|   |   +-- resource_estimation.py  # EFTQC resource estimation
+|   |   +-- hamiltonian_utils.py  # Hamiltonian decomposition utilities
 |   +-- interfaces/
-|   |   +-- pyscf_pennylane.py # PySCF-PennyLane converter + MM embedding
+|   |   +-- pyscf_pennylane.py   # PySCF-PennyLane converter + MM embedding
+|   +-- solvation/               # MC solvation framework (q2m3.solvation)
+|   |   +-- orchestrator.py      # run_solvation() entry point
+|   |   +-- energy.py            # Three QPE mode energy computation
+|   |   +-- circuit_builder.py   # Catalyst-compiled circuits
+|   |   +-- analysis.py          # δ_corr-pol analysis, run_mode_comparison()
+|   |   +-- ir_cache.py          # LLVM IR caching across MC steps
+|   |   +-- config.py            # MoleculeConfig, QPEConfig, SolvationConfig
+|   |   +-- mc_loop.py           # Monte Carlo loop
+|   |   +-- phase_extraction.py  # QPE phase-to-energy extraction
+|   |   +-- solvent.py           # Solvent environment utilities
+|   |   +-- statistics.py        # MC trajectory statistics
+|   +-- profiling/               # Performance analysis (q2m3.profiling)
+|   |   +-- timing.py            # General timing utilities
+|   |   +-- qpe_profiler.py      # QPE compilation profiling
+|   |   +-- memory.py            # Memory monitoring
+|   |   +-- catalyst_ir.py       # LLVM IR analysis
 |   +-- sampling/
-|   |   +-- mc_moves.py       # Monte Carlo move proposals
-|   |   +-- metropolis.py     # Metropolis acceptance criterion
-|   |   +-- mm_forcefield.py  # MM force field (TIP3P)
-|   |   +-- water_molecule.py # Water molecule representation
+|   |   +-- mc_moves.py          # Monte Carlo move proposals
+|   |   +-- metropolis.py        # Metropolis acceptance criterion
+|   |   +-- mm_forcefield.py     # MM force field (TIP3P)
+|   |   +-- water_molecule.py    # Water molecule representation
 |   +-- utils/
-|       +-- io.py              # File I/O utilities
-+-- dev/reports/               # Technical analysis reports
-+-- tests/                     # Test suite
-+-- examples/                  # Example scripts
-|   +-- h2_qpe_validation.py          # H2 QPE validation + Catalyst benchmark
-|   +-- h3o_qpe_full_demo.py          # H3O+ full demo
-|   +-- h2_mc_solvation.py            # H2 MC solvation with QJIT
-|   +-- h3o_mc_solvation.py           # H3O+ MC solvation
-|   +-- h3op_demo/                     # Sub-modules for h3op demo
-|   +-- _archived/                     # Archived POC code (superseded by q2m3.solvation)
-|   +-- data/output/                   # Example output files (JSON results)
-+-- data/                      # Input data files
+|       +-- io.py                # File I/O utilities
++-- tests/                       # Test suite
++-- examples/                    # Example scripts
+|   +-- h2_qpe_validation.py          # Chapter 1: H2 QPE validation
+|   +-- h2_resource_estimation.py     # Chapter 1: EFTQC resource estimation
+|   +-- h2_mc_solvation.py            # Chapter 2: H2 MC solvation (fixed mode)
+|   +-- h3o_mc_solvation.py           # Chapter 2: H3O+ MC solvation
+|   +-- h2_three_mode_comparison.py   # Chapter 2: Three-mode comparison + δ_corr-pol
+|   +-- catalyst_benchmark.py         # Profiling: Catalyst JIT benchmark
+|   +-- qpe_memory_profile.py         # Profiling: QPE memory profiling
+|   +-- _archived/                    # Archived POC code (superseded)
++-- data/                        # Input data files
 ```
 
 ## Development
@@ -390,14 +416,17 @@ pytest -m "gpu"           # Run only GPU tests
 
 **Core:**
 - `pyscf>=2.0.0` - Classical quantum chemistry
-- `pennylane>=0.33.0` - Quantum circuits (tested with 0.44.0)
-- `numpy>=1.21.0` - Numerical computing
+- `pennylane>=0.44.0` - Quantum circuits (minimum required)
+- `numpy>=2.0.0` - Numerical computing
 - `scipy>=1.7.0` - Scientific computing
+- `rich>=13.0.0` - Console output formatting
 
-**Optional:**
-- `pennylane-lightning[gpu]` - GPU acceleration (requires cuQuantum)
-- `pennylane-catalyst>=0.14.0` - JIT compilation
-- `cupy-cuda12x` - CUDA support
+**Optional extras** (install via `uv sync --extra <name>`):
+- `dev` - pytest, black, ruff, jupyter
+- `gpu` - `pennylane-lightning[gpu]>=0.44.0`, `cupy-cuda12x>=12.0.0`, `jax[cuda12]>=0.4.0`
+- `catalyst` - `pennylane-catalyst>=0.14.0`, `pennylane-lightning>=0.44.0`
+- `solvation` - `catalyst` extra + `jax>=0.4.20`, `jaxlib>=0.4.20`
+- `viz` - py3dmol, ase, nglview (molecular visualization)
 
 ## Known Issues
 

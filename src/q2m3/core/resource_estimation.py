@@ -169,3 +169,66 @@ def compare_vacuum_solvated(
         delta_lambda_percent=delta_lambda,
         delta_gates_percent=delta_gates,
     )
+
+
+# Standard Toffoli -> T decomposition cost (Nielsen & Chuang, Sec 4.3):
+# each Toffoli gate compiles to 7 T gates plus Clifford gates.
+T_PER_TOFFOLI = 7
+
+
+def derive_t_resources(toffoli_gates: int) -> dict[str, int]:
+    """Derive T-count and conservative T-depth from Toffoli count.
+
+    DoubleFactorization returns Toffoli count and logical qubits but not the
+    T-depth that surface-code-style analyses require. Use the standard
+    fault-tolerant relation T-count = 7 * Toffoli-count and a conservative
+    sequential upper bound for depth.
+
+    Args:
+        toffoli_gates: Total Toffoli gate count from DoubleFactorization.
+
+    Returns:
+        Dict with:
+            - t_count: 7 * toffoli_gates
+            - toffoli_depth: conservative sequential upper bound (= toffoli_gates)
+            - t_depth: T_PER_TOFFOLI * toffoli_depth (sequential upper bound)
+    """
+    toffoli_depth = int(toffoli_gates)
+    return {
+        "t_count": T_PER_TOFFOLI * toffoli_depth,
+        "toffoli_depth": toffoli_depth,
+        "t_depth": T_PER_TOFFOLI * toffoli_depth,
+    }
+
+
+def estimate_eftqc_runtime(
+    qpe_iterations: int,
+    toffoli_gates: int,
+    toffoli_cycle_microseconds: float = 1.0,
+) -> dict[str, float]:
+    """Estimate wall-clock runtime for an EFTQC QPE execution.
+
+    Assumes a fixed Toffoli cycle time and that QPE serially repeats the same
+    fault-tolerant block ``qpe_iterations`` times. This is a coarse upper
+    bound: real EFTQC implementations may amortize cost across iterations.
+
+    Args:
+        qpe_iterations: Number of QPE iterations (= ceil(lambda / target_error)).
+        toffoli_gates: Toffoli count per QPE iteration.
+        toffoli_cycle_microseconds: Wall-clock time per Toffoli (default 1 us,
+            commonly cited for fault-tolerant superconducting estimates).
+
+    Returns:
+        Dict with runtime in seconds, hours, and days.
+    """
+    total_microseconds = (
+        float(qpe_iterations) * float(toffoli_gates) * float(toffoli_cycle_microseconds)
+    )
+    runtime_seconds = total_microseconds * 1e-6
+    return {
+        "runtime_microseconds": total_microseconds,
+        "runtime_seconds": runtime_seconds,
+        "runtime_hours": runtime_seconds / 3600.0,
+        "runtime_days": runtime_seconds / 86400.0,
+        "toffoli_cycle_microseconds": float(toffoli_cycle_microseconds),
+    }

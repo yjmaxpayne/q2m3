@@ -17,6 +17,8 @@ from q2m3.core.resource_estimation import (
     EFTQCResources,
     ResourceComparisonResult,
     compare_vacuum_solvated,
+    derive_t_resources,
+    estimate_eftqc_runtime,
     estimate_resources,
 )
 
@@ -144,3 +146,105 @@ def test_delta_gates_percent_formula():
         * 100
     )
     assert result.delta_gates_percent == pytest.approx(expected)
+
+
+# ------------------------------------------------------------------
+# Active space support tests (Cycle 1)
+# ------------------------------------------------------------------
+
+
+# H3O+ in approximate Cs geometry (Angstrom). Charge +1, 10 electrons.
+H3OP_SYMBOLS = ["O", "H", "H", "H"]
+H3OP_COORDS = np.array(
+    [
+        [0.0, 0.0, 0.117],
+        [0.93, 0.0, -0.292],
+        [-0.465, 0.806, -0.292],
+        [-0.465, -0.806, -0.292],
+    ]
+)
+
+
+def test_active_space_reduces_qubit_count():
+    """Active space (4e,4o) reduces qubit count vs full STO-3G (10e,8o)."""
+    full = estimate_resources(H3OP_SYMBOLS, H3OP_COORDS, charge=1, basis="sto-3g")
+    active = estimate_resources(
+        H3OP_SYMBOLS,
+        H3OP_COORDS,
+        charge=1,
+        basis="sto-3g",
+        active_electrons=4,
+        active_orbitals=4,
+    )
+
+    # Active (4 spatial orbitals) → 8 system qubits (JW); full (8 orbitals) → 16
+    assert active.n_system_qubits == 8
+    assert full.n_system_qubits == 16
+    assert active.n_system_qubits < full.n_system_qubits
+
+
+def test_active_space_reduces_toffoli_count():
+    """Active space estimate uses fewer Toffoli gates than full space."""
+    full = estimate_resources(H3OP_SYMBOLS, H3OP_COORDS, charge=1, basis="sto-3g")
+    active = estimate_resources(
+        H3OP_SYMBOLS,
+        H3OP_COORDS,
+        charge=1,
+        basis="sto-3g",
+        active_electrons=4,
+        active_orbitals=4,
+    )
+
+    assert active.toffoli_gates < full.toffoli_gates
+
+
+def test_active_space_with_mm_embedding():
+    """Active space + MM embedding combines without raising."""
+    result = estimate_resources(
+        H2_SYMBOLS,
+        H2_COORDS,
+        active_electrons=2,
+        active_orbitals=2,
+        mm_charges=MM_CHARGES_1W,
+        mm_coords=MM_COORDS_1W,
+    )
+    assert result.n_mm_charges == 3
+    assert result.n_system_qubits == 4
+    assert result.toffoli_gates > 0
+
+
+# ------------------------------------------------------------------
+# Derived resource helpers (Cycle 2)
+# ------------------------------------------------------------------
+
+
+def test_derive_t_resources_uses_seven_t_per_toffoli():
+    """T count = 7 * Toffoli (standard fault-tolerant decomposition)."""
+    derived = derive_t_resources(toffoli_gates=1000)
+    assert derived["t_count"] == 7000
+    # Conservative T-depth upper bound: assume sequential Toffoli execution
+    assert derived["t_depth"] >= derived["toffoli_depth"]
+    assert derived["toffoli_depth"] == 1000
+
+
+def test_estimate_eftqc_runtime_uses_cycle_time():
+    """Runtime = qpe_iterations * toffoli_gates * cycle_time."""
+    runtime = estimate_eftqc_runtime(
+        qpe_iterations=10,
+        toffoli_gates=1_000_000,
+        toffoli_cycle_microseconds=1.0,
+    )
+    # 10 iters * 1e6 Toffoli * 1 us = 1e7 us = 10 s
+    assert runtime["runtime_seconds"] == pytest.approx(10.0)
+    assert runtime["runtime_hours"] == pytest.approx(10.0 / 3600)
+
+
+def test_estimate_eftqc_runtime_scales_linearly_with_cycle():
+    """Runtime scales linearly with toffoli_cycle_microseconds."""
+    fast = estimate_eftqc_runtime(
+        qpe_iterations=10, toffoli_gates=1000, toffoli_cycle_microseconds=0.1
+    )
+    slow = estimate_eftqc_runtime(
+        qpe_iterations=10, toffoli_gates=1000, toffoli_cycle_microseconds=10.0
+    )
+    assert slow["runtime_seconds"] == pytest.approx(fast["runtime_seconds"] * 100)

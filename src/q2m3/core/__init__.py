@@ -27,6 +27,8 @@ from .resource_estimation import (
     EFTQCResources,
     ResourceComparisonResult,
     compare_vacuum_solvated,
+    derive_t_resources,
+    estimate_eftqc_runtime,
     estimate_resources,
 )
 
@@ -38,6 +40,8 @@ __all__ = [
     "ResourceComparisonResult",
     "estimate_resources",
     "compare_vacuum_solvated",
+    "derive_t_resources",
+    "estimate_eftqc_runtime",
     "QPEEngine",
     "QMMMSystem",
     "QuantumQMMM",

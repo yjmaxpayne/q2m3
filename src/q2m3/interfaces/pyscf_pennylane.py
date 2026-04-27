@@ -536,8 +536,24 @@ class PySCFPennyLaneConverter:
             symbols=symbols, coordinates=coords_arr, charge=charge, basis_name=self.basis
         )
 
-        # Compute electron integrals (vacuum)
-        core, one_electron, two_electron = qml.qchem.electron_integrals(mol)()
+        # Compute electron integrals; route through PennyLane's active-space
+        # selector so the resulting (h1, h2) match its DoubleFactorization
+        # MO convention.
+        core_indices: list[int] | None = None
+        active_indices: list[int] | None = None
+        if active_electrons is not None and active_orbitals is not None:
+            if (mol.n_electrons - active_electrons) % 2 != 0:
+                raise ValueError(
+                    f"Active space requires (n_electrons - active_electrons) to be even; "
+                    f"got n_electrons={mol.n_electrons}, active_electrons={active_electrons}"
+                )
+            n_core = (mol.n_electrons - active_electrons) // 2
+            core_indices = list(range(n_core))
+            active_indices = list(range(n_core, n_core + active_orbitals))
+
+        core, one_electron, two_electron = qml.qchem.electron_integrals(
+            mol, core=core_indices, active=active_indices
+        )()
 
         # Convert to numpy for potential modification
         one_electron = np.asarray(one_electron)
@@ -600,6 +616,8 @@ class PySCFPennyLaneConverter:
         n_orbitals = one_electron.shape[0]
         trotter_steps = 10 * n_orbitals
 
+        reported_n_electrons = active_electrons if active_electrons is not None else mol.n_electrons
+
         return {
             "logical_qubits": algo.qubits,
             "toffoli_gates": algo.gates,
@@ -607,9 +625,11 @@ class PySCFPennyLaneConverter:
             "qpe_iterations": qpe_iterations,
             "trotter_steps": trotter_steps,
             "target_error": target_error,
-            "n_electrons": mol.n_electrons,
+            "n_electrons": reported_n_electrons,
             "n_orbitals": n_orbitals,
             "basis": self.basis,
             "mm_embedded": mm_embedded,
             "n_mm_charges": n_mm,
+            "active_electrons": active_electrons,
+            "active_orbitals": active_orbitals,
         }

@@ -11,9 +11,18 @@ a panel of molecular systems specified in the closing-plan §03b task 1
 
 System matrix:
     H2          (2e,2o)  STO-3G  — vacuum baseline
+    HeH+        (2e,2o)  STO-3G  — smallest charged heteronuclear control
+    H3+         (2e,3o)  STO-3G  — small cationic 6-qubit bridge system
+    H4 linear   (4e,4o)  STO-3G  — hydrogen-chain 8-qubit bridge system
+    LiH         (4e,4o)  STO-3G  — standard small-molecule benchmark
+    H2O (4e,4o) STO-3G  — reduced water active-space compile benchmark
     H3O+        (4e,4o)  STO-3G  — current POC chemistry
     H3O+        (4e,4o)  6-31G   — basis-set scaling probe
+    H2O         (8e,6o)  STO-3G  — NH3-scale closed-shell solvent molecule
+    CH4         (8e,7o)  STO-3G  — NH3-scale saturated neutral molecule
     NH3         (8e,7o)  STO-3G  — neutral closed-shell, 14 system qubits
+    NH4+        (8e,7o)  STO-3G  — NH3-scale cationic tetrahedral molecule
+    Formamide   (8e,8o)  STO-3G  — smaller-than-glycine organic fragment
     Glycine     (6e,6o)  STO-3G  — biomolecular fragment, SQD comparison
 
 Outputs (under data/output/):
@@ -68,10 +77,10 @@ def survey_systems() -> list[SystemSpec]:
     """Return the 5-system matrix from closing-plan §03b task 1."""
     h3op_coords = np.array(
         [
-            [0.000, 0.000, 0.117],
-            [0.930, 0.000, -0.292],
-            [-0.465, 0.806, -0.292],
-            [-0.465, -0.806, -0.292],
+            [0.0000, 0.0000, 0.1173],
+            [0.0000, 0.9572, -0.4692],
+            [0.8286, -0.4786, -0.4692],
+            [-0.8286, -0.4786, -0.4692],
         ]
     )
     return [
@@ -86,6 +95,64 @@ def survey_systems() -> list[SystemSpec]:
             geometry_source="HF/STO-3G equilibrium, R=0.74 A",
         ),
         SystemSpec(
+            label="HeH+",
+            symbols=["He", "H"],
+            coords=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.774]]),
+            charge=1,
+            basis="sto-3g",
+            active_electrons=2,
+            active_orbitals=2,
+            geometry_source="near-equilibrium HeH+ control, R=0.774 A",
+        ),
+        SystemSpec(
+            label="H3+",
+            symbols=["H", "H", "H"],
+            coords=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.9], [0.779, 0.0, 0.45]]),
+            charge=1,
+            basis="sto-3g",
+            active_electrons=2,
+            active_orbitals=3,
+            geometry_source="equilateral-like H3+ bridge geometry, H-H about 0.9 A",
+        ),
+        SystemSpec(
+            label="H4 linear",
+            symbols=["H", "H", "H", "H"],
+            coords=np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.74], [0.0, 0.0, 1.48], [0.0, 0.0, 2.22]]
+            ),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=4,
+            active_orbitals=4,
+            geometry_source="linear H4 chain, adjacent H-H=0.74 A",
+        ),
+        SystemSpec(
+            label="LiH",
+            symbols=["Li", "H"],
+            coords=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.60]]),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=4,
+            active_orbitals=4,
+            geometry_source="near-equilibrium LiH small-molecule benchmark, R=1.60 A",
+        ),
+        SystemSpec(
+            label="H2O (4e,4o)",
+            symbols=["O", "H", "H"],
+            coords=np.array(
+                [
+                    [0.000, 0.000, 0.000],
+                    [0.958, 0.000, 0.000],
+                    [-0.240, 0.927, 0.000],
+                ]
+            ),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=4,
+            active_orbitals=4,
+            geometry_source="gas-phase water reduced active-space compile benchmark",
+        ),
+        SystemSpec(
             label="H3O+ STO-3G",
             symbols=["O", "H", "H", "H"],
             coords=h3op_coords,
@@ -93,7 +160,7 @@ def survey_systems() -> list[SystemSpec]:
             basis="sto-3g",
             active_electrons=4,
             active_orbitals=4,
-            geometry_source="data/h3o_plus.xyz (HF/STO-3G optimized)",
+            geometry_source="pyramidal C3v H3O+ geometry used by h3o_mc_solvation.py",
         ),
         SystemSpec(
             label="H3O+ 6-31G",
@@ -103,7 +170,41 @@ def survey_systems() -> list[SystemSpec]:
             basis="6-31g",
             active_electrons=4,
             active_orbitals=4,
-            geometry_source="data/h3o_plus.xyz (HF/STO-3G optimized)",
+            geometry_source="pyramidal C3v H3O+ geometry used by h3o_mc_solvation.py",
+        ),
+        SystemSpec(
+            label="H2O",
+            symbols=["O", "H", "H"],
+            coords=np.array(
+                [
+                    [0.000, 0.000, 0.000],
+                    [0.958, 0.000, 0.000],
+                    [-0.240, 0.927, 0.000],
+                ]
+            ),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=8,
+            active_orbitals=6,
+            geometry_source="gas-phase equilibrium, O-H=0.958 A, angle=104.5 deg",
+        ),
+        SystemSpec(
+            label="CH4",
+            symbols=["C", "H", "H", "H", "H"],
+            coords=np.array(
+                [
+                    [0.000, 0.000, 0.000],
+                    [0.629, 0.629, 0.629],
+                    [-0.629, -0.629, 0.629],
+                    [-0.629, 0.629, -0.629],
+                    [0.629, -0.629, -0.629],
+                ]
+            ),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=8,
+            active_orbitals=7,
+            geometry_source="tetrahedral methane, C-H=1.089 A",
         ),
         SystemSpec(
             label="NH3",
@@ -121,6 +222,43 @@ def survey_systems() -> list[SystemSpec]:
             active_electrons=8,
             active_orbitals=7,
             geometry_source="CCCBDB experimental, N-H=1.012 A, ang=106.7 deg",
+        ),
+        SystemSpec(
+            label="NH4+",
+            symbols=["N", "H", "H", "H", "H"],
+            coords=np.array(
+                [
+                    [0.000, 0.000, 0.000],
+                    [0.641, 0.641, 0.641],
+                    [-0.641, -0.641, 0.641],
+                    [-0.641, 0.641, -0.641],
+                    [0.641, -0.641, -0.641],
+                ]
+            ),
+            charge=1,
+            basis="sto-3g",
+            active_electrons=8,
+            active_orbitals=7,
+            geometry_source="tetrahedral ammonium, N-H=1.110 A",
+        ),
+        SystemSpec(
+            label="Formamide",
+            symbols=["C", "O", "N", "H", "H", "H"],
+            coords=np.array(
+                [
+                    [0.0000, 0.0000, 0.0000],
+                    [-1.2170, 0.5560, 0.0000],
+                    [1.1190, 0.6580, 0.0000],
+                    [0.0000, -1.0930, 0.0000],
+                    [1.0430, 1.6420, 0.0000],
+                    [2.0280, 0.1620, 0.0000],
+                ]
+            ),
+            charge=0,
+            basis="sto-3g",
+            active_electrons=8,
+            active_orbitals=8,
+            geometry_source="planar formamide HCONH2 fragment; smaller-than-glycine organic control",
         ),
         SystemSpec(
             label="Glycine",

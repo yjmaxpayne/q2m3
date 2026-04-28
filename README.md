@@ -315,6 +315,28 @@ python examples/h2_three_mode_comparison.py
 | `hf_corrected` | HF energy with runtime MM embedding |
 | `dynamic` | Runtime JAX-traceable coefficients (most rigorous, compile once) |
 
+### Chapter 3: Resource & IR-QRE Studies
+
+EFTQC resource estimation across 8 molecular systems and compile-IR ↔ quantum-resource
+correlation analysis (closing-plan tasks 1-3).
+
+| Example | Description |
+|---------|-------------|
+| `resource_estimation_survey.py` | 8-system QRE survey (H2 / H2O / CH4 / NH4+ / NH3 / Formamide / H3O+ STO-3G / H3O+ 6-31G) |
+| `h2_8bit_qpe_benchmark.py` | H2 4/6/8-bit QPE resolution benchmark (baseline reference) |
+| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/6-bit QPE benchmark (8-bit downgraded due to Catalyst MLIR OOM) |
+| `ir_qre_correlation_analysis.py` | IR ↔ QRE correlation analysis (D1-D4 log-log power fit) |
+| `ir_qre_trotter5_compile_survey.py` | Standardised trotter=5 IR-QRE compile survey |
+
+```bash
+python examples/resource_estimation_survey.py
+python examples/ir_qre_correlation_analysis.py
+OMP_NUM_THREADS=8 python examples/h3o_8bit_qpe_benchmark.py
+```
+
+Generated artifacts: `data/output/qre_survey.csv`, `data/output/ir_qre_correlation.csv`,
+`data/output/ir_qre_correlation_cases.csv`, `data/output/ir_qre_correlation_report.md`.
+
 ### Profiling & Tools
 
 | Example | Description |
@@ -374,6 +396,11 @@ q2m3/
 |   +-- h2_mc_solvation.py            # Chapter 2: H2 MC solvation (fixed mode)
 |   +-- h3o_mc_solvation.py           # Chapter 2: H3O+ MC solvation
 |   +-- h2_three_mode_comparison.py   # Chapter 2: Three-mode comparison + δ_corr-pol
+|   +-- resource_estimation_survey.py     # Chapter 3: 8-system QRE survey
+|   +-- h2_8bit_qpe_benchmark.py          # Chapter 3: H2 QPE resolution benchmark
+|   +-- h3o_8bit_qpe_benchmark.py         # Chapter 3: H3O+ QPE resolution benchmark
+|   +-- ir_qre_correlation_analysis.py    # Chapter 3: IR ↔ QRE correlation
+|   +-- ir_qre_trotter5_compile_survey.py # Chapter 3: trotter=5 IR-QRE compile survey
 |   +-- catalyst_benchmark.py         # Profiling: Catalyst JIT benchmark
 |   +-- qpe_memory_profile.py         # Profiling: QPE memory profiling
 |   +-- _archived/                    # Archived POC code (superseded)

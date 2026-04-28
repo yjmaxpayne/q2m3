@@ -55,6 +55,36 @@ Compile once, run many times.
 
 ---
 
+## Chapter 3: Resource & IR-QRE Studies (closing-plan tasks 1-3)
+
+EFTQC resource estimation and compile-IR ↔ quantum-resource correlation studies.
+See `data/output/qre_*` and `data/output/ir_qre_*` for generated artifacts.
+
+| Example | Description | Lines |
+|---------|-------------|-------|
+| `resource_estimation_survey.py` | 8-system QRE survey (H2 / H2O / CH4 / NH4+ / NH3 / Formamide / H3O+ STO-3G / H3O+ 6-31G) | ~470 |
+| `h2_8bit_qpe_benchmark.py` | H2 4/6/8-bit QPE resolution benchmark (baseline reference) | ~450 |
+| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/6-bit QPE benchmark (8-bit downgraded to 6-bit due to Catalyst MLIR OOM) | ~520 |
+| `ir_qre_correlation_analysis.py` | IR ↔ QRE correlation (system-level + case sidecar, D1-D4 log-log power fit) | ~580 |
+| `ir_qre_trotter5_compile_survey.py` | Standardised trotter=5 IR-QRE compile survey | ~310 |
+
+```bash
+uv run python examples/resource_estimation_survey.py
+uv run python examples/ir_qre_correlation_analysis.py
+uv run python examples/ir_qre_trotter5_compile_survey.py
+# Note: 8-bit benchmarks have long wallclock; cap CPU threads to avoid lockup.
+OMP_NUM_THREADS=8 uv run python examples/h2_8bit_qpe_benchmark.py
+OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py
+```
+
+**Key artifacts**:
+- `data/output/qre_survey.csv` — 8-system EFTQC resource summary (Toffoli gates, logical qubits, lambda)
+- `data/output/ir_qre_correlation.csv` — system-level main table (1 measured + 7 projected)
+- `data/output/ir_qre_correlation_cases.csv` — 13-row detailed case sidecar
+- `data/output/ir_qre_correlation_report.md` — D1-D4 log-log power fit (R² ≈ 0.985 / 0.877 / 0.985)
+
+---
+
 ## Profiling & Tools
 
 | Example | Description | Lines |
@@ -84,7 +114,7 @@ production `q2m3.solvation` and `q2m3.core` packages.
 
 Notable archived files:
 - `h3op_demo/` → functionality migrated to `q2m3.profiling.timing` and `q2m3.core.resource_estimation`
-- `h3o_qpe_full_demo.py` → replaced by `h3o_mc_solvation.py`
+- `h3o_qpe_full_demo.py` → replaced by `h3o_mc_solvation.py` (task 4 acceptance entry for this script is verified through `h3o_mc_solvation.py`)
 - `h2_three_mode_qpe_mc.py` (890 lines) → replaced by `h2_three_mode_comparison.py` + `q2m3.solvation.analysis`
 
 ---

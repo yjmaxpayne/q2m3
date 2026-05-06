@@ -1,19 +1,40 @@
 ci:
   autofix_prs: true
+  autoupdate_schedule: monthly
+
 repos:
+  # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
       - id: debug-statements
+      - id: check-ast
+
+  # Black remains q2m3's source formatter.
   - repo: https://github.com/psf/black
     rev: 24.1.1
     hooks:
       - id: black
+
+  # Ruff handles linting and import ordering.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.9.10
     hooks:
       - id: ruff
         args: [--fix]
+
+  # Commit message linting (Conventional Commits)
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.13.6
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]

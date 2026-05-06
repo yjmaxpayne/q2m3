@@ -6,14 +6,30 @@ on:
     branches: [main, mvp]
   pull_request:
     branches: [main, mvp]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  quality:
+    name: quality (${{ matrix.python-version }})
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         python-version: ['3.11', '3.12']
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      VECLIB_MAXIMUM_THREADS: '1'
 
     steps:
       - uses: actions/checkout@v4
@@ -28,13 +44,16 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --extra dev --extra catalyst --extra solvation --extra viz
 
       - name: Run linting (ruff)
         run: uv run ruff check src/ tests/
 
       - name: Check formatting (black)
         run: uv run black --check src/ tests/ --line-length 100
+
+      - name: Verify pytest collection
+        run: uv run pytest tests/ --collect-only -q
 
       - name: Run tests with coverage
         run: |
@@ -47,7 +66,9 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
+          flags: pytest-${{ matrix.python-version }}
+          name: codecov-${{ matrix.python-version }}
           fail_ci_if_error: false
           verbose: true
         env:

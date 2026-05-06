@@ -41,6 +41,8 @@ dev = [
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    "pre-commit>=4.0.0",
+    "commitizen>=4.10.0",
     "ipython>=8.0.0",
     "jupyter>=1.0.0",
     "notebook>=6.5.0",
@@ -66,9 +68,9 @@ viz = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/quantum-qmmm/poc"
-"Documentation" = "https://github.com/quantum-qmmm/poc/docs"
-"Bug Tracker" = "https://github.com/quantum-qmmm/poc/issues"
+"Homepage" = "https://github.com/yjmaxpayne/q2m3"
+"Documentation" = "https://github.com/yjmaxpayne/q2m3#readme"
+"Bug Tracker" = "https://github.com/yjmaxpayne/q2m3/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -107,6 +109,7 @@ ignore = [
 "examples/h3o_mc_solvation.py" = ["E402"]
 
 [tool.ruff.lint.isort]
+known-first-party = ["q2m3"]
 known-third-party = ["pyscf", "pennylane", "numpy", "scipy"]
 
 [tool.pytest.ini_options]
@@ -134,3 +137,12 @@ omit = ["*/tests/*", "*/__init__.py"]
 precision = 2
 show_missing = true
 skip_covered = false
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+version_scheme = "semver"
+changelog_file = "CHANGELOG.md"
+update_changelog_on_bump = false
+changelog_incremental = true

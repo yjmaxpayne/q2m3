@@ -213,6 +213,24 @@ def test_active_space_with_mm_embedding():
     assert result.toffoli_gates > 0
 
 
+def test_active_space_with_mm_embedding_for_truncated_h3op_space():
+    """Active-space MM embedding works when the active space is smaller than full MO space."""
+    result = estimate_resources(
+        H3OP_SYMBOLS,
+        H3OP_COORDS,
+        charge=1,
+        basis="sto-3g",
+        active_electrons=4,
+        active_orbitals=4,
+        mm_charges=MM_CHARGES_1W,
+        mm_coords=MM_COORDS_1W,
+    )
+
+    assert result.n_mm_charges == 3
+    assert result.n_system_qubits == 8
+    assert result.toffoli_gates > 0
+
+
 # ------------------------------------------------------------------
 # Derived resource helpers (Cycle 2)
 # ------------------------------------------------------------------

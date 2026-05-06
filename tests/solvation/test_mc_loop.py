@@ -139,6 +139,7 @@ class TestMCResult:
             final_solvent_states=np.zeros((3, 6)),
             best_solvent_states=np.zeros((3, 6)),
             best_qpe_solvent_states=np.zeros((3, 6)),
+            trajectory_solvent_states=np.zeros((n, 3, 6)),
             n_quantum_evaluations=n,
             n_accepted=5,
         )
@@ -165,6 +166,7 @@ class TestMCResult:
             final_solvent_states=np.zeros((2, 6)),
             best_solvent_states=np.zeros((2, 6)),
             best_qpe_solvent_states=np.zeros((2, 6)),
+            trajectory_solvent_states=np.zeros((n, 2, 6)),
             n_quantum_evaluations=n,
             n_accepted=0,
             **arrs,
@@ -296,6 +298,10 @@ class TestCreateMCLoop:
         assert result.final_solvent_states.shape == (3, 6)
         assert result.best_solvent_states.shape == (3, 6)
         assert result.best_qpe_solvent_states.shape == (3, 6)
+        assert result.trajectory_solvent_states.shape == (n, 3, 6)
+        np.testing.assert_array_equal(
+            result.trajectory_solvent_states[-1], result.final_solvent_states
+        )
         # Scalar fields
         assert isinstance(result.initial_energy, float)
         assert isinstance(result.final_energy, float)

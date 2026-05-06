@@ -63,6 +63,7 @@ class QPEConfig:
         n_estimation_wires: Qubits for phase estimation register
         n_trotter_steps: Trotter steps for time evolution
         n_shots: Measurement shots (0 = analytical, >0 = shots)
+        device_seed: Optional seed for shot-based device sampling reproducibility
         target_resolution: Target energy resolution in Hartree
         energy_range: Energy range for shifted QPE in Hartree
         qpe_interval: MC step interval between QPE evaluations (hf_corrected mode)
@@ -71,6 +72,7 @@ class QPEConfig:
     n_estimation_wires: int = 4
     n_trotter_steps: int = 10
     n_shots: int = 0  # 0 = analytical (precision-first); shots mode is optional diagnostic
+    device_seed: int | None = None
     target_resolution: float = 0.003
     energy_range: float = 0.2
     qpe_interval: int = 10

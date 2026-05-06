@@ -27,7 +27,7 @@ uv run python examples/h2_resource_estimation.py
 
 ## Chapter 2: MC Dynamics (`q2m3.solvation` API)
 
-Monte Carlo solvation sampling. Each step changes the MM environment → different Hamiltonian.
+Monte Carlo solvation sampling. Each step changes the MM environment -> different Hamiltonian.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
@@ -113,9 +113,9 @@ See [`_archived/README.md`](./_archived/README.md) for code superseded by the
 production `q2m3.solvation` and `q2m3.core` packages.
 
 Notable archived files:
-- `h3op_demo/` → functionality migrated to `q2m3.profiling.timing` and `q2m3.core.resource_estimation`
-- `h3o_qpe_full_demo.py` → replaced by `h3o_mc_solvation.py` (task 4 acceptance entry for this script is verified through `h3o_mc_solvation.py`)
-- `h2_three_mode_qpe_mc.py` (890 lines) → replaced by `h2_three_mode_comparison.py` + `q2m3.solvation.analysis`
+- `h3op_demo/` -> functionality migrated to `q2m3.profiling.timing` and `q2m3.core.resource_estimation`
+- `h3o_qpe_full_demo.py` -> replaced by `h3o_mc_solvation.py` (task 4 acceptance entry for this script is verified through `h3o_mc_solvation.py`)
+- `h2_three_mode_qpe_mc.py` (890 lines) -> replaced by `h2_three_mode_comparison.py` + `q2m3.solvation.analysis`
 
 ---
 
@@ -129,13 +129,21 @@ $$E_{\mathrm{corr}}(H_{\mathrm{eff}}) \approx E_{\mathrm{corr}}(H_{\mathrm{vac}}
 The correlation-polarization coupling term:
 $$\delta_{\mathrm{corr-pol}} \equiv E_{\mathrm{corr}}(H_{\mathrm{eff}}) - E_{\mathrm{corr}}(H_{\mathrm{vac}})$$
 
-is non-zero (~10–30% of E_corr, 0.6–3 kcal/mol for H3O+) and comparable to the
-total solvation energy. The `dynamic` mode directly measures this quantity via
-`h2_three_mode_comparison.py`.
+is non-zero and can be comparable to the total solvation-energy scale. The
+`dynamic` mode samples this quantity via `h2_three_mode_comparison.py`.
 
-**Measured (H2, STO-3G, 500 MC steps, qpe_interval=1)**:
-- ⟨δ_corr-pol⟩ ≈ -0.10 kcal/mol
-- σ ≈ 7.14 kcal/mol (dominated by 4-bit QPE bin width ~12 mHa)
+**Current manuscript-facing H2 summary** (`collect_h2_three_mode_results.py`):
+- Canonical workflow: one `8-bit` analytical (`n_shots=0`) `dynamic`
+  `n_trotter=5` MC run for `1000` steps, saving the current solvent
+  configuration after every MC step
+- Replay scan at matched `n_trotter = 1, 2, 3, 4, 5` on those saved
+  configurations, without rerunning MC acceptance
+- `delta_corr-pol` spans `-16.38` to `+9.95 kcal/mol` across the replayed depths
+- The matched depth-5 replay point is `-16.38 kcal/mol` with
+  `95% CI = [-16.52, -16.25] kcal/mol`
+- Historical note: the older `+3.56 kcal/mol` progress-slide value came from a
+  mixed-depth comparison (`fixed n_trotter=10` vs `dynamic n_trotter=5`) and is
+  not the current manuscript-facing matched-depth result
 
 ### References
 

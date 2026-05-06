@@ -47,6 +47,67 @@ from .statistics import create_timing_data_from_result, print_time_statistics
 console = Console()
 
 
+def _build_runtime_qpe_assets(
+    config: SolvationConfig,
+    qm_coords: np.ndarray,
+    e_vacuum: float,
+    *,
+    verbose: bool,
+) -> tuple[Any, dict[str, Any], dict[str, Any]]:
+    """Build and resolve fixed or dynamic QPE assets."""
+    energy_formula_map = {
+        "hf_corrected": "E_HF(R)+E_MM",
+        "fixed": "E_QPE(H_vac)+E_MM",
+        "dynamic": "E_QPE(H_eff)+E_MM",
+    }
+
+    if config.ir_cache_enabled:
+        from .ir_cache import cache_path_for_config
+
+        cache_dir = cache_path_for_config(config).parent
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        original_cwd = os.getcwd()
+        os.chdir(str(cache_dir))
+    try:
+        circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
+    finally:
+        if config.ir_cache_enabled:
+            os.chdir(original_cwd)
+
+    cache_stats: dict[str, Any] = {"is_cache_hit": False}
+    if config.ir_cache_enabled:
+        from .ir_cache import resolve_compiled_circuit
+
+        circuit_bundle, cache_stats = resolve_compiled_circuit(config, circuit_bundle)
+        if verbose:
+            if cache_stats.get("is_cache_hit"):
+                t = cache_stats.get("phase_b_time_s", 0)
+                console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
+            elif cache_stats.get("fallback"):
+                console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
+            else:
+                ta = cache_stats.get("phase_a_time_s", 0)
+                tb = cache_stats.get("phase_b_time_s", 0)
+                console.print(
+                    f"  [cyan]IR cache miss[/cyan] (Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
+                )
+
+    n_trotter_requested = config.qpe_config.n_trotter_steps
+    circuit_metadata = {
+        "hamiltonian_mode": config.hamiltonian_mode,
+        "n_system_qubits": circuit_bundle.n_system_qubits,
+        "n_estimation_wires": circuit_bundle.n_estimation_wires,
+        "total_qubits": circuit_bundle.n_system_qubits + circuit_bundle.n_estimation_wires,
+        "n_hamiltonian_terms": len(circuit_bundle.base_coeffs),
+        "n_trotter_steps": circuit_bundle.n_trotter_steps,
+        "n_trotter_steps_requested": n_trotter_requested,
+        "base_time": circuit_bundle.base_time,
+        "energy_formula": energy_formula_map[config.hamiltonian_mode],
+        "energy_shift": circuit_bundle.energy_shift,
+    }
+    return circuit_bundle, cache_stats, circuit_metadata
+
+
 def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str, Any]:
     """
     Execute complete MC solvation workflow.
@@ -130,52 +191,12 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         if config.verbose:
             console.print("  [dim]QPE circuit build deferred to first QPE interval[/dim]")
     else:
-        # Build circuit immediately (fixed or dynamic)
-        # Redirect Catalyst @qjit compilation artifacts to cache directory.
-        if config.ir_cache_enabled:
-            from .ir_cache import cache_path_for_config
-
-            _cache_dir = cache_path_for_config(config).parent
-            _cache_dir.mkdir(parents=True, exist_ok=True)
-            _original_cwd = os.getcwd()
-            os.chdir(str(_cache_dir))
-        try:
-            circuit_bundle = build_qpe_circuit(config, qm_coords, e_vacuum)
-        finally:
-            if config.ir_cache_enabled:
-                os.chdir(_original_cwd)
-
-        # === Step 3.5: IR Cache Resolution ===
-        if config.ir_cache_enabled:
-            from .ir_cache import resolve_compiled_circuit
-
-            circuit_bundle, cache_stats = resolve_compiled_circuit(config, circuit_bundle)
-            if config.verbose:
-                if cache_stats.get("is_cache_hit"):
-                    t = cache_stats.get("phase_b_time_s", 0)
-                    console.print(f"  [green]IR cache hit[/green] ({t:.2f}s)")
-                elif cache_stats.get("fallback"):
-                    console.print("  [yellow]IR cache miss (fallback to normal compile)[/yellow]")
-                else:
-                    ta = cache_stats.get("phase_a_time_s", 0)
-                    tb = cache_stats.get("phase_b_time_s", 0)
-                    console.print(
-                        f"  [cyan]IR cache miss[/cyan] " f"(Phase A: {ta:.1f}s, Phase B: {tb:.2f}s)"
-                    )
-
-        n_trotter_requested = config.qpe_config.n_trotter_steps
-        circuit_metadata = {
-            "hamiltonian_mode": mode,
-            "n_system_qubits": circuit_bundle.n_system_qubits,
-            "n_estimation_wires": circuit_bundle.n_estimation_wires,
-            "total_qubits": circuit_bundle.n_system_qubits + circuit_bundle.n_estimation_wires,
-            "n_hamiltonian_terms": len(circuit_bundle.base_coeffs),
-            "n_trotter_steps": circuit_bundle.n_trotter_steps,
-            "n_trotter_steps_requested": n_trotter_requested,
-            "base_time": circuit_bundle.base_time,
-            "energy_formula": energy_formula_map[mode],
-            "energy_shift": circuit_bundle.energy_shift,
-        }
+        circuit_bundle, cache_stats, circuit_metadata = _build_runtime_qpe_assets(
+            config,
+            qm_coords,
+            e_vacuum,
+            verbose=config.verbose,
+        )
 
         if config.verbose:
             n_bins = 2**circuit_bundle.n_estimation_wires
@@ -291,6 +312,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         "final_solvent_states": mc_result.final_solvent_states,
         "best_solvent_states": mc_result.best_solvent_states,
         "best_qpe_solvent_states": mc_result.best_qpe_solvent_states,
+        "trajectory_solvent_states": mc_result.trajectory_solvent_states,
         "n_quantum_evaluations": mc_result.n_quantum_evaluations,
         "n_accepted": mc_result.n_accepted,
     }
@@ -331,4 +353,77 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
                 show=show_plots,
             )
 
+    return result
+
+
+def replay_quantum_trajectory(
+    config: SolvationConfig,
+    trajectory_solvent_states: np.ndarray,
+) -> dict[str, Any]:
+    """Replay fixed or dynamic quantum evaluations on a saved solvent trajectory."""
+    config.validate()
+    if config.hamiltonian_mode not in {"fixed", "dynamic"}:
+        raise ValueError("replay_quantum_trajectory only supports fixed or dynamic modes")
+
+    trajectory = np.asarray(trajectory_solvent_states, dtype=np.float64)
+    if trajectory.ndim != 3:
+        raise ValueError("trajectory_solvent_states must have shape (n_steps, n_waters, 6)")
+    if trajectory.shape[1] != config.n_waters or trajectory.shape[2] != 6:
+        raise ValueError(
+            "trajectory_solvent_states must have shape "
+            f"(n_steps, {config.n_waters}, 6), got {trajectory.shape}"
+        )
+
+    qm_coords = config.molecule.coords_array
+    qm_coords_flat = qm_coords.flatten().astype(np.float64)
+    e_vacuum = compute_hf_energy_vacuum(config.molecule)
+
+    build_start = time.perf_counter()
+    circuit_bundle, cache_stats, circuit_metadata = _build_runtime_qpe_assets(
+        config,
+        qm_coords,
+        e_vacuum,
+        verbose=False,
+    )
+    build_time = time.perf_counter() - build_start
+
+    vacuum_cache = precompute_vacuum_cache(config)
+    step_callback = create_step_callback(circuit_bundle, config, vacuum_cache)
+
+    n_steps = trajectory.shape[0]
+    quantum_energies = np.full(n_steps, np.nan)
+    hf_energies = np.zeros(n_steps)
+    callback_times = np.zeros(n_steps)
+    quantum_times = np.zeros(n_steps)
+
+    loop_start = time.perf_counter()
+    for step_idx, solvent_states in enumerate(trajectory):
+        step_result = step_callback(solvent_states, qm_coords_flat)
+        quantum_energies[step_idx] = step_result.e_qpe
+        hf_energies[step_idx] = step_result.e_hf_ref
+        callback_times[step_idx] = step_result.callback_time
+        quantum_times[step_idx] = step_result.qpe_time
+    loop_time = time.perf_counter() - loop_start
+
+    best_qpe_idx = int(np.nanargmin(quantum_energies)) if n_steps else 0
+    result: dict[str, Any] = {
+        "quantum_energies": quantum_energies,
+        "hf_energies": hf_energies,
+        "hf_times": callback_times,
+        "quantum_times": quantum_times,
+        "trajectory_solvent_states": trajectory.copy(),
+        "final_solvent_states": trajectory[-1].copy(),
+        "best_qpe_solvent_states": trajectory[best_qpe_idx].copy(),
+        "best_qpe_energy": float(np.nanmin(quantum_energies)),
+        "n_quantum_evaluations": int(np.sum(~np.isnan(quantum_energies))),
+        "e_vacuum": e_vacuum,
+        "circuit_metadata": circuit_metadata,
+        "cache_stats": cache_stats,
+    }
+    result["timing"] = create_timing_data_from_result(
+        result,
+        compile_time=build_time,
+        loop_time=loop_time,
+        hamiltonian_mode=config.hamiltonian_mode,
+    )
     return result

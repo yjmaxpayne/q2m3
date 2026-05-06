@@ -117,6 +117,7 @@ class TestQPEConfig:
         assert qpe.target_resolution == 0.003
         assert qpe.energy_range == 0.2
         assert qpe.qpe_interval == 10
+        assert qpe.device_seed is None
 
     def test_frozen(self):
         qpe = QPEConfig()
@@ -124,10 +125,11 @@ class TestQPEConfig:
             qpe.n_shots = 100
 
     def test_custom_values(self):
-        qpe = QPEConfig(n_estimation_wires=6, n_trotter_steps=20, n_shots=50)
+        qpe = QPEConfig(n_estimation_wires=6, n_trotter_steps=20, n_shots=50, device_seed=7)
         assert qpe.n_estimation_wires == 6
         assert qpe.n_trotter_steps == 20
         assert qpe.n_shots == 50
+        assert qpe.device_seed == 7
 
     def test_no_use_catalyst_field(self):
         """use_catalyst removed per ADR-004."""

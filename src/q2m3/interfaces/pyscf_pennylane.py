@@ -590,6 +590,8 @@ class PySCFPennyLaneConverter:
             # Transform to MO basis using canonical HF orbitals
             mf_vac.run()
             mo_coeff = mf_vac.mo_coeff
+            if active_indices is not None:
+                mo_coeff = mo_coeff[:, active_indices]
             delta_h1e_mo = mo_coeff.T @ delta_h1e_ao @ mo_coeff
 
             # Add MM correction to one-electron integrals

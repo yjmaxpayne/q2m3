@@ -37,6 +37,7 @@ class MCResult:
     final_solvent_states: np.ndarray
     best_solvent_states: np.ndarray
     best_qpe_solvent_states: np.ndarray  # Config at lowest QPE energy
+    trajectory_solvent_states: np.ndarray  # Current solvent configuration after each MC step
     n_quantum_evaluations: int  # Actual QPE call count
     n_accepted: int
 
@@ -114,6 +115,7 @@ def create_mc_loop(
         hf_energies = np.zeros(n_mc_steps)
         callback_times = np.zeros(n_mc_steps)
         quantum_times = np.zeros(n_mc_steps)
+        trajectory_solvent_states = np.zeros((n_mc_steps, n_waters, 6), dtype=solvents.dtype)
 
         # Best tracking
         best_energy = current_energy
@@ -165,6 +167,7 @@ def create_mc_loop(
             hf_energies[step] = result.e_hf_ref
             callback_times[step] = result.callback_time
             quantum_times[step] = result.qpe_time
+            trajectory_solvent_states[step] = solvents
             energy_sum += current_energy
 
         n_quantum_evaluations = int(np.sum(~np.isnan(quantum_energies)))
@@ -183,6 +186,7 @@ def create_mc_loop(
             final_solvent_states=solvents,
             best_solvent_states=best_solvents,
             best_qpe_solvent_states=best_qpe_solvents,
+            trajectory_solvent_states=trajectory_solvent_states,
             n_quantum_evaluations=n_quantum_evaluations,
             n_accepted=n_accepted,
         )

@@ -220,6 +220,42 @@ class TestBuildQPECircuit:
         assert samples.shape == (n_shots, bundle.n_estimation_wires)
         assert set(np.unique(samples)).issubset({0, 1})
 
+    def test_h2_shots_mode_passes_device_seed(self, h2_molecule_config, h2_hf_energy, monkeypatch):
+        """Shots-mode circuit building forwards the configured device seed."""
+        from q2m3.solvation import circuit_builder as cb
+        from q2m3.solvation.circuit_builder import build_qpe_circuit
+        from q2m3.solvation.config import QPEConfig, SolvationConfig
+
+        captured: list[int | None] = []
+        original_select_device = cb._select_device
+
+        def recording_select_device(device_type, n_wires, use_catalyst=False, seed=None):
+            captured.append(seed)
+            return original_select_device(
+                device_type, n_wires, use_catalyst=use_catalyst, seed=seed
+            )
+
+        monkeypatch.setattr(cb, "_select_device", recording_select_device)
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(
+                n_estimation_wires=2,
+                n_trotter_steps=2,
+                n_shots=30,
+                device_seed=123,
+            ),
+            n_waters=3,
+            n_mc_steps=10,
+        )
+
+        qm_coords = h2_molecule_config.coords_array
+        bundle = build_qpe_circuit(config, qm_coords, h2_hf_energy)
+
+        assert bundle.measurement_mode == "shots"
+        assert captured
+        assert captured[-1] == 123
+
     def test_compiled_circuit_reusable(self, h2_molecule_config, h2_hf_energy):
         """Compiled circuit can be called with different coefficient arrays."""
         from q2m3.solvation.circuit_builder import build_qpe_circuit

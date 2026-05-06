@@ -28,7 +28,7 @@ except ImportError:
 
 if _HAS_CATALYST:
     from q2m3.solvation.config import MoleculeConfig, QPEConfig, SolvationConfig
-    from q2m3.solvation.orchestrator import run_solvation
+    from q2m3.solvation.orchestrator import replay_quantum_trajectory, run_solvation
     from q2m3.solvation.solvent import SPC_E_WATER, TIP3P_WATER, SolventModel
 
 __all__ = [
@@ -45,6 +45,7 @@ __all__ = [
     "run_mode_comparison",
     # Catalyst-dependent MC simulation (only when Catalyst installed)
     "run_solvation",
+    "replay_quantum_trajectory",
     "MoleculeConfig",
     "QPEConfig",
     "SolvationConfig",

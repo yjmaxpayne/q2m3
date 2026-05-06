@@ -166,6 +166,7 @@ def select_device(
     device_type: str,
     n_wires: int,
     use_catalyst: bool = False,
+    seed: int | None = None,
 ):
     """
     Select quantum device based on device_type parameter.
@@ -186,6 +187,10 @@ def select_device(
     Returns:
         PennyLane device instance
     """
+    device_kwargs = {"wires": n_wires}
+    if seed is not None:
+        device_kwargs["seed"] = seed
+
     # Determine fallback device based on Catalyst compatibility
     # Catalyst only supports lightning.qubit and lightning.gpu, not default.qubit
     fallback_device = (
@@ -195,11 +200,11 @@ def select_device(
     if device_type == "auto":
         # Auto-select: GPU > lightning.qubit > default.qubit
         if HAS_LIGHTNING_GPU:
-            return qml.device("lightning.gpu", wires=n_wires)
+            return qml.device("lightning.gpu", **device_kwargs)
         elif HAS_LIGHTNING_QUBIT:
-            return qml.device("lightning.qubit", wires=n_wires)
+            return qml.device("lightning.qubit", **device_kwargs)
         else:
-            return qml.device("default.qubit", wires=n_wires)
+            return qml.device("default.qubit", **device_kwargs)
 
     elif device_type == "lightning.gpu":
         if not HAS_LIGHTNING_GPU:
@@ -208,8 +213,8 @@ def select_device(
                 UserWarning,
                 stacklevel=3,
             )
-            return qml.device(fallback_device, wires=n_wires)
-        return qml.device("lightning.gpu", wires=n_wires)
+            return qml.device(fallback_device, **device_kwargs)
+        return qml.device("lightning.gpu", **device_kwargs)
 
     elif device_type == "lightning.qubit":
         if not HAS_LIGHTNING_QUBIT:
@@ -218,9 +223,9 @@ def select_device(
                 UserWarning,
                 stacklevel=3,
             )
-            return qml.device("default.qubit", wires=n_wires)
-        return qml.device("lightning.qubit", wires=n_wires)
+            return qml.device("default.qubit", **device_kwargs)
+        return qml.device("lightning.qubit", **device_kwargs)
 
     else:
         # default.qubit or any unrecognized value
-        return qml.device("default.qubit", wires=n_wires)
+        return qml.device("default.qubit", **device_kwargs)

@@ -177,6 +177,7 @@ class TestPublicAPIExports:
         expected = {
             # Core orchestration
             "run_solvation",
+            "replay_quantum_trajectory",
             "MoleculeConfig",
             "QPEConfig",
             "SolvationConfig",
@@ -222,6 +223,7 @@ class TestResultDictCompleteness:
         "final_solvent_states",
         "best_solvent_states",
         "best_qpe_solvent_states",
+        "trajectory_solvent_states",
         "n_quantum_evaluations",
         "n_accepted",
     }
@@ -277,6 +279,8 @@ class TestResultDictCompleteness:
         assert isinstance(result["mulliken_charges"], dict)
         assert isinstance(result["quantum_energies"], np.ndarray)
         assert result["quantum_energies"].shape == (3,)
+        assert isinstance(result["trajectory_solvent_states"], np.ndarray)
+        assert result["trajectory_solvent_states"].shape == (3, 3, 6)
         assert 0.0 <= result["acceptance_rate"] <= 1.0
 
 
@@ -356,3 +360,83 @@ class TestEndToEndDynamic:
         assert "best_energy" in result
         assert 0.0 <= result["acceptance_rate"] <= 1.0
         assert result["quantum_energies"].shape == (5,)
+
+
+@pytest.mark.solvation
+class TestReplayQuantumTrajectory:
+    """End-to-end tests for fixed-configuration quantum replay."""
+
+    def test_replay_quantum_trajectory_fixed_keeps_constant_qpe(self, h2_molecule_config):
+        """Fixed-mode replay should keep QPE energy constant across solvent states."""
+        from q2m3.solvation import replay_quantum_trajectory
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2, n_shots=0),
+            hamiltonian_mode="fixed",
+            n_waters=3,
+            n_mc_steps=3,
+            verbose=False,
+        )
+        trajectory = np.array(
+            [
+                [
+                    [4.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [-2.0, 3.46, 0.0, 0.0, 0.0, 0.0],
+                    [-2.0, -3.46, 0.0, 0.0, 0.0, 0.0],
+                ],
+                [
+                    [4.2, 0.1, 0.0, 0.0, 0.0, 0.0],
+                    [-2.1, 3.40, 0.0, 0.0, 0.0, 0.0],
+                    [-1.9, -3.55, 0.0, 0.0, 0.0, 0.0],
+                ],
+                [
+                    [3.8, -0.1, 0.0, 0.0, 0.0, 0.0],
+                    [-2.0, 3.46, 0.0, 0.0, 0.0, 0.0],
+                    [-2.0, -3.46, 0.0, 0.0, 0.0, 0.0],
+                ],
+            ],
+            dtype=np.float64,
+        )
+
+        result = replay_quantum_trajectory(config, trajectory)
+
+        assert result["quantum_energies"].shape == (3,)
+        assert result["trajectory_solvent_states"].shape == trajectory.shape
+        assert result["n_quantum_evaluations"] == 3
+        assert np.allclose(result["quantum_energies"], result["quantum_energies"][0])
+
+    def test_replay_quantum_trajectory_dynamic_respects_duplicate_configs(self, h2_molecule_config):
+        """Dynamic replay should reproduce identical energies for identical states."""
+        from q2m3.solvation import replay_quantum_trajectory
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2, n_shots=0),
+            hamiltonian_mode="dynamic",
+            n_waters=3,
+            n_mc_steps=3,
+            verbose=False,
+        )
+        base_state = np.array(
+            [
+                [4.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [-2.0, 3.46, 0.0, 0.0, 0.0, 0.0],
+                [-2.0, -3.46, 0.0, 0.0, 0.0, 0.0],
+            ],
+            dtype=np.float64,
+        )
+        shifted_state = base_state.copy()
+        shifted_state[0, 0] += 0.5
+        trajectory = np.stack([base_state, base_state.copy(), shifted_state], axis=0)
+
+        result = replay_quantum_trajectory(config, trajectory)
+
+        assert result["quantum_energies"].shape == (3,)
+        assert result["hf_energies"].shape == (3,)
+        assert result["n_quantum_evaluations"] == 3
+        assert result["quantum_energies"][0] == pytest.approx(
+            result["quantum_energies"][1], abs=1e-10
+        )
+        assert result["hf_energies"][0] == pytest.approx(result["hf_energies"][1], abs=1e-10)
+        assert not np.isclose(result["quantum_energies"][0], result["quantum_energies"][2])

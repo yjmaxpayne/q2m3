@@ -177,6 +177,7 @@ def build_qpe_circuit(
             base_time,
             n_trotter,
             qpe.n_shots,
+            qpe.device_seed,
         )
     else:
         # H_dynamic: coefficients are JAX runtime parameters.
@@ -192,6 +193,7 @@ def build_qpe_circuit(
             base_time,
             n_trotter,
             qpe.n_shots,
+            qpe.device_seed,
         )
 
     return QPECircuitBundle(
@@ -222,6 +224,7 @@ def _build_fixed_circuit(
     base_time,
     n_trotter,
     n_shots,
+    device_seed,
 ):
     """Build H_fixed zero-arg circuit (compile-time constant coefficients)."""
     # Hamiltonian built with Python floats BEFORE @qjit — enables constant-fold
@@ -252,7 +255,7 @@ def _build_fixed_circuit(
 
         return compiled_circuit, "probs"
     else:
-        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True, seed=device_seed)
 
         @_qjit_deco
         def compiled_circuit():
@@ -289,6 +292,7 @@ def _build_dynamic_circuit(
     base_time,
     n_trotter,
     n_shots,
+    device_seed,
 ):
     """Build H_dynamic parameterized circuit (runtime JAX coefficient array)."""
     if n_shots == 0:
@@ -322,7 +326,7 @@ def _build_dynamic_circuit(
 
         return compiled_circuit, "probs"
     else:
-        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True)
+        dev = _select_device("lightning.qubit", total_wires, use_catalyst=True, seed=device_seed)
 
         @_qjit_deco
         def compiled_circuit(coeffs_arr):

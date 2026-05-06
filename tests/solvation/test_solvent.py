@@ -1,5 +1,7 @@
 """Tests for q2m3.solvation.solvent — solvent models and MM energy."""
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -188,6 +190,17 @@ class TestMMEnergy:
         e_near = compute_mm_energy([mol1, mol_near])
         e_far = compute_mm_energy([mol1, mol_far])
         assert abs(e_far) < abs(e_near)
+
+    def test_overlapping_molecules_return_inf_without_runtime_warning(self):
+        """Exact intermolecular overlap is rejected without divide-by-zero warnings."""
+        mol1 = SolventMolecule(model=TIP3P_WATER, position=np.array([0.0, 0.0, 0.0]))
+        mol2 = SolventMolecule(model=TIP3P_WATER, position=np.array([0.0, 0.0, 0.0]))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            energy = compute_mm_energy([mol1, mol2])
+
+        assert np.isposinf(energy)
 
 
 # =============================================================================

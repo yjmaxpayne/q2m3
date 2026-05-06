@@ -1,6 +1,7 @@
 """Tests for q2m3.solvation.energy module."""
 
 import math
+import warnings
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -370,6 +371,18 @@ class TestComputeHfEnergySolvated:
         e_vac = compute_hf_energy_vacuum(h2_molecule_config)
         e_sol = compute_hf_energy_solvated(h2_molecule_config, [])
         assert abs(e_sol - e_vac) < 1e-10
+
+    def test_qmmm_overlap_returns_inf_without_runtime_warning(self, h2_molecule_config):
+        """MM point charges on QM nuclei are rejected before PySCF QMMM evaluation."""
+        from q2m3.solvation.solvent import SOLVENT_MODELS, state_array_to_molecules
+
+        solvent_molecules = state_array_to_molecules(SOLVENT_MODELS["TIP3P"], np.zeros((1, 6)))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            energy = compute_hf_energy_solvated(h2_molecule_config, solvent_molecules)
+
+        assert math.isinf(energy)
 
 
 class TestComputeMullikenCharges:

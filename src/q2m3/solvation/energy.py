@@ -28,6 +28,8 @@ from .config import MoleculeConfig, SolvationConfig
 from .phase_extraction import extract_energy_from_probs, extract_energy_from_shots
 from .solvent import SolventMolecule, compute_mm_energy, get_mm_embedding_data
 
+_MIN_QMMM_DISTANCE_ANGSTROM = 1e-12
+
 
 @dataclass(frozen=True)
 class StepResult:
@@ -439,6 +441,8 @@ def compute_hf_energy_solvated(
 
     if solvent_molecules:
         mm_coords, mm_charges = get_mm_embedding_data(solvent_molecules)
+        if _has_qmmm_point_charge_overlap(mm_coords, np.asarray(molecule.coords, dtype=float)):
+            return float("inf")
         mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR
         mf = qmmm.mm_charge(mf, mm_coords_bohr, mm_charges)
 
@@ -491,3 +495,13 @@ def _build_atom_string(molecule: MoleculeConfig) -> str:
     return "; ".join(
         f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(molecule.symbols, molecule.coords, strict=True)
     )
+
+
+def _has_qmmm_point_charge_overlap(mm_coords: np.ndarray, qm_coords: np.ndarray) -> bool:
+    """Return True when an MM point charge is exactly on a QM atom."""
+    if mm_coords.size == 0 or qm_coords.size == 0:
+        return False
+
+    deltas = mm_coords[:, np.newaxis, :] - qm_coords[np.newaxis, :, :]
+    distances_sq = np.einsum("...i,...i->...", deltas, deltas)
+    return bool(np.any(distances_sq <= _MIN_QMMM_DISTANCE_ANGSTROM**2))

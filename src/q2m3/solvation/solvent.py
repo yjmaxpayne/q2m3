@@ -31,6 +31,8 @@ import numpy as np
 
 from q2m3.constants import ANGSTROM_TO_BOHR, COULOMB_CONSTANT, KCAL_TO_HARTREE
 
+_MIN_MM_DISTANCE_ANGSTROM = 1e-12
+
 # =============================================================================
 # Solvent Model Definition (Data-Driven)
 # =============================================================================
@@ -332,7 +334,8 @@ def compute_mm_energy(molecules: Sequence[SolventMolecule]) -> float:
         molecules: Sequence of SolventMolecule instances
 
     Returns:
-        Total MM energy in Hartree
+        Total MM energy in Hartree. Exact intermolecular atom overlap is
+        treated as a hard-core invalid configuration and returns +inf.
     """
     n_mol = len(molecules)
     if n_mol < 2:
@@ -367,6 +370,8 @@ def compute_mm_energy(molecules: Sequence[SolventMolecule]) -> float:
                         continue
 
                     r = np.linalg.norm(coords_j[aj] - coords_i[ai])
+                    if r <= _MIN_MM_DISTANCE_ANGSTROM:
+                        return float("inf")
 
                     # Lorentz-Berthelot combining rules
                     sigma = (sigma_i + sigma_j) / 2
@@ -380,6 +385,8 @@ def compute_mm_energy(molecules: Sequence[SolventMolecule]) -> float:
             for ai in range(model_i.n_atoms):
                 for aj in range(model_j.n_atoms):
                     r = np.linalg.norm(coords_j[aj] - coords_i[ai])
+                    if r <= _MIN_MM_DISTANCE_ANGSTROM:
+                        return float("inf")
                     e_coulomb_kcal += COULOMB_CONSTANT * charges_i[ai] * charges_j[aj] / r
 
     return (e_lj_kcal + e_coulomb_kcal) * KCAL_TO_HARTREE

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Tests for q2m3.profiling.memory module."""
 
 import sys

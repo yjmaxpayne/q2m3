@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """
 Configuration dataclasses for MC solvation simulations.
 

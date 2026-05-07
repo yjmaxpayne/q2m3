@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Solvation analysis functions for δ_corr-pol and related statistics.
 
 Pure NumPy module — no Catalyst or JAX dependency.

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Tests for orchestrator, statistics, and plotting modules."""
 
 from __future__ import annotations

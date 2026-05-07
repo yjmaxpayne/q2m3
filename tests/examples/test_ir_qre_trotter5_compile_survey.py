@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """Tests for examples/ir_qre_trotter5_compile_survey.py."""
 

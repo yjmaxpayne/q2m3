@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """
 Monte Carlo loop for QPE-driven solvation simulations.
 

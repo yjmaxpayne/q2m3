@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Tests for solvation analysis functions.
 
 Tests use synthetic data only — no Catalyst or PySCF required.

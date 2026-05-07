@@ -62,12 +62,19 @@ uv sync --extra catalyst   # Catalyst JIT support
 # Activate virtual environment
 source .venv/bin/activate
 
-# Run minimal validation (H2 + TIP3P waters, ~30s)
+# Run minimal validation (H2 + TIP3P waters)
 python examples/h2_qpe_validation.py
 
 # Run MC solvation (H2 + 10 TIP3P waters, Catalyst required)
 python examples/h2_mc_solvation.py
+
+# Optional heavier ionic example; use a 16 GB+ RAM machine
+python examples/h3o_mc_solvation.py
 ```
+
+See [`examples/README.md`](./examples/README.md) for the maintained split
+between first-run entry points, high-memory H3O+ examples, and longer
+reproducibility scripts that generate local `data/output/` artifacts.
 
 ### Basic Usage
 
@@ -89,7 +96,7 @@ qpe_config = {
     "use_real_qpe": True,
     "n_estimation_wires": 4,      # Precision bits
     "base_time": "auto",          # Auto-computed to avoid phase overflow
-    "n_trotter_steps": 10,
+    "n_trotter_steps": 3,         # Safe H3O+ example default
     "n_shots": 100,
     "active_electrons": 4,        # Active space
     "active_orbitals": 4,
@@ -178,6 +185,10 @@ System Register (n_sys qubits):
 | Qubit Mapping | Jordan-Wigner | Fermion-to-qubit encoding |
 | Trotter Steps | 10 | Time evolution accuracy |
 
+The public H3O+ MC example uses `n_trotter_steps=3` by default to keep Catalyst
+compile memory bounded. Treat larger H3O+ Trotter depths as profiling runs and
+use the memory-guarded diagnostics in `examples/` first.
+
 ## Device Selection
 
 The `device_type` parameter controls quantum device selection:
@@ -189,7 +200,7 @@ The `device_type` parameter controls quantum device selection:
 | `"lightning.qubit"` | CPU (optimized) | Fast (2.7x) | CPU-only, Catalyst JIT |
 | `"default.qubit"` | CPU (standard) | Baseline | Development, debugging |
 
-**Performance Benchmark** (H3O+ + 8 waters, 12 qubits, 10 Trotter steps):
+**Historical Performance Benchmark** (H3O+ + 8 waters, 12 qubits, 10 Trotter steps):
 
 | Configuration | Device | Time | Energy (Ha) |
 |---------------|--------|------|-------------|
@@ -200,6 +211,11 @@ The `device_type` parameter controls quantum device selection:
 **Note:** Catalyst `@qjit` now supports `lightning.gpu` as of PennyLane Lightning 0.44.0. GPU acceleration is available for Catalyst JIT compilation. See [Known Issues](#known-issues) for details.
 
 **Important:** Catalyst incurs significant compilation overhead for single-shot QPE. See [Catalyst Performance Guidelines](#catalyst-qjit-performance-guidelines) for when to use Catalyst.
+
+**Memory note:** H3O+ Catalyst examples compile much larger IR than H2. Use H2
+examples for first validation, use a 16 GB+ RAM machine for
+`examples/h3o_mc_solvation.py`, and reserve the 8-bit H3O+ / dynamic Trotter
+diagnostics for machines with roughly 30 GB+ RAM or equivalent job limits.
 
 ## Catalyst @qjit Performance Guidelines
 
@@ -230,9 +246,17 @@ For workflows with multiple QPE evaluations on the same molecular system, use th
 from q2m3.solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
 config = SolvationConfig(
-    molecule=MoleculeConfig(name="H2", symbols=["H", "H"], ...),
-    qpe_config=QPEConfig(use_catalyst=True, qpe_interval=10),
-    qpe_mode="vacuum_correction",  # Pre-compiled QPE, reused across MC steps
+    molecule=MoleculeConfig(
+        name="H2",
+        symbols=["H", "H"],
+        coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        charge=0,
+        active_electrons=2,
+        active_orbitals=2,
+        basis="sto-3g",
+    ),
+    qpe_config=QPEConfig(n_estimation_wires=4, n_trotter_steps=10, qpe_interval=10),
+    hamiltonian_mode="fixed",  # Compile-once vacuum QPE, reused across MC steps
     n_waters=10,
     n_mc_steps=100,
 )
@@ -279,17 +303,18 @@ Single-configuration QPE studies. Validates algorithm correctness and EFTQC hard
 
 | Example | Description |
 |---------|-------------|
-| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 (~30s) |
+| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 |
 | `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) |
 
 ```bash
-python examples/h2_qpe_validation.py
-python examples/h2_resource_estimation.py
+uv run python examples/h2_qpe_validation.py
+uv run python examples/h2_resource_estimation.py
 ```
 
 **Key results (H2, STO-3G)**:
-- QPE-HF energy gap: ~0.017 Ha (10.9 kcal/mol correlation energy)
-- MM solvation stabilization: -0.054 kcal/mol (2 TIP3P waters)
+- QPE-HF energy gap: 0.0174 Ha (10.9 kcal/mol correlation energy)
+- QPE solvation stabilization: -0.0543 kcal/mol (2 TIP3P waters)
+- EFTQC estimate: 1,224,608 Toffoli gates and 115 logical qubits
 
 ### Chapter 2: MC Dynamics (`q2m3.solvation` API)
 
@@ -298,13 +323,17 @@ Monte Carlo solvation sampling. Each step changes the MM environment → differe
 | Example | Description |
 |---------|-------------|
 | `h2_mc_solvation.py` | H2 MC entry point: fixed-mode QPE (pre-compiled) |
-| `h3o_mc_solvation.py` | H3O+ ionic solvation: hf_corrected mode |
+| `h3o_mc_solvation.py` | H3O+ ionic solvation: hf_corrected mode, safe default `n_trotter_steps=3` |
 | `h2_three_mode_comparison.py` | Full three-mode comparison + δ_corr-pol analysis |
 
 ```bash
-python examples/h2_mc_solvation.py
-python examples/h3o_mc_solvation.py
-python examples/h2_three_mode_comparison.py
+uv run python examples/h2_mc_solvation.py
+
+# Optional heavier run; use a 16 GB+ RAM machine.
+uv run python examples/h3o_mc_solvation.py
+
+# Longer comparison run.
+uv run python examples/h2_three_mode_comparison.py
 ```
 
 **Three QPE modes**:
@@ -315,27 +344,34 @@ python examples/h2_three_mode_comparison.py
 | `hf_corrected` | HF energy with runtime MM embedding |
 | `dynamic` | Runtime JAX-traceable coefficients (most rigorous, compile once) |
 
-### Chapter 3: Resource & IR-QRE Studies
+### Resource And IR-QRE Studies
 
-EFTQC resource estimation across 8 molecular systems and compile-IR ↔ quantum-resource
-correlation analysis (closing-plan tasks 1-3).
+EFTQC resource estimation across a small-molecule matrix and compile-IR ↔
+quantum-resource correlation analysis.
 
 | Example | Description |
 |---------|-------------|
-| `resource_estimation_survey.py` | 8-system QRE survey (H2 / H2O / CH4 / NH4+ / NH3 / Formamide / H3O+ STO-3G / H3O+ 6-31G) |
-| `h2_8bit_qpe_benchmark.py` | H2 4/6/8-bit QPE resolution benchmark (baseline reference) |
-| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/6-bit QPE benchmark (8-bit downgraded due to Catalyst MLIR OOM) |
-| `ir_qre_correlation_analysis.py` | IR ↔ QRE correlation analysis (D1-D4 log-log power fit) |
+| `resource_estimation_survey.py` | Small-molecule QRE matrix with explicit skip rows |
+| `h2_8bit_qpe_benchmark.py` | H2 4/8-bit QPE resolution benchmark |
+| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/8-bit benchmark with 6-bit fallback support |
 | `ir_qre_trotter5_compile_survey.py` | Standardised trotter=5 IR-QRE compile survey |
+| `ir_qre_correlation_analysis.py` | IR ↔ QRE correlation analysis (D1-D4 report) |
+| `h3o_dynamic_trotter_oom_scan.py` | Memory-guarded H3O+ dynamic Trotter scaling scan |
 
 ```bash
-python examples/resource_estimation_survey.py
-python examples/ir_qre_correlation_analysis.py
-OMP_NUM_THREADS=8 python examples/h3o_8bit_qpe_benchmark.py
+uv run python examples/resource_estimation_survey.py
+OMP_NUM_THREADS=2 uv run python examples/ir_qre_trotter5_compile_survey.py
+uv run python examples/ir_qre_correlation_analysis.py
+
+# High-memory diagnostics; prefer a 30 GB+ RAM machine.
+OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py --skip-8bit
+OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py
 ```
 
-Generated artifacts: `data/output/qre_survey.csv`, `data/output/ir_qre_correlation.csv`,
-`data/output/ir_qre_correlation_cases.csv`, `data/output/ir_qre_correlation_report.md`.
+Generated artifacts include `data/output/qre_survey.csv`,
+`data/output/ir_qre_trotter5_compile_survey.csv`,
+`data/output/ir_qre_correlation.csv`, and
+`data/output/ir_qre_correlation_report.md`.
 
 ### Profiling & Tools
 
@@ -345,8 +381,8 @@ Generated artifacts: `data/output/qre_survey.csv`, `data/output/ir_qre_correlati
 | `qpe_memory_profile.py` | QPE compilation memory profiling |
 
 ```bash
-python examples/catalyst_benchmark.py
-python examples/qpe_memory_profile.py
+uv run python examples/catalyst_benchmark.py
+uv run python examples/qpe_memory_profile.py --mode fixed
 ```
 
 See [examples/README.md](examples/README.md) for detailed documentation.
@@ -401,9 +437,9 @@ q2m3/
 |   +-- h3o_8bit_qpe_benchmark.py         # Chapter 3: H3O+ QPE resolution benchmark
 |   +-- ir_qre_correlation_analysis.py    # Chapter 3: IR ↔ QRE correlation
 |   +-- ir_qre_trotter5_compile_survey.py # Chapter 3: trotter=5 IR-QRE compile survey
+|   +-- h3o_dynamic_trotter_oom_scan.py   # Chapter 3: memory-guarded H3O+ scan
 |   +-- catalyst_benchmark.py         # Profiling: Catalyst JIT benchmark
 |   +-- qpe_memory_profile.py         # Profiling: QPE memory profiling
-|   +-- _archived/                    # Archived POC code (superseded)
 +-- data/                        # Input data files
 ```
 

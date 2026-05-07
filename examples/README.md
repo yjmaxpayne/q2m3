@@ -4,24 +4,42 @@
 
 ---
 
+This directory contains maintained examples for the q2m3 package. The scripts
+here are runnable, inspectable entry points for the public APIs and diagnostics
+that are useful to package users.
+
+## Runtime And Memory Tiers
+
+| Tier | Scripts | Expected environment |
+|------|---------|----------------------|
+| First run | `h2_qpe_validation.py`, `h2_resource_estimation.py` | CPU laptop or workstation |
+| Standard MC | `h2_mc_solvation.py` | Catalyst/JAX installed; 8 GB+ RAM recommended |
+| H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed; 16 GB+ RAM recommended |
+| High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended; use provided guards/options |
+
+Do not start by running every script in this directory. Catalyst compile memory
+scales with estimation wires, Trotter depth, and Hamiltonian term count. H3O+
+examples are intentionally separated from the H2 first-run path.
+
 ## Chapter 1: Static QPE (`q2m3.core` API)
 
 Single-configuration QPE studies. Validates algorithm correctness and hardware resource estimates.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
-| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 solvation | ~520 |
-| `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) | ~95 |
+| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 solvation | 517 |
+| `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) | 95 |
 
 ```bash
 uv run python examples/h2_qpe_validation.py
 uv run python examples/h2_resource_estimation.py
 ```
 
-**Key results (H2, STO-3G)**:
-- QPE-HF energy gap: ~0.017 Ha (10.9 kcal/mol correlation energy)
-- MM solvation stabilization: -0.054 kcal/mol (2 TIP3P waters)
-- PL↔PySCF agreement: < 0.001 kcal/mol
+**Verified H2 results from the current scripts**:
+- QPE-HF energy gap: `0.0174 Ha` (`10.9 kcal/mol` correlation energy)
+- QPE solvation stabilization: `-0.0543 kcal/mol` for 2 TIP3P waters
+- PennyLane `<HF|H|HF>` vs PySCF HF agreement: `<= 0.0001 kcal/mol`
+- H2 EFTQC resource estimate: `1,224,608` Toffoli gates and `115` logical qubits
 
 ---
 
@@ -31,15 +49,25 @@ Monte Carlo solvation sampling. Each step changes the MM environment -> differen
 
 | Example | Description | Lines |
 |---------|-------------|-------|
-| `h2_mc_solvation.py` | MC entry point: H2 with fixed-mode QPE (pre-compiled) | ~90 |
-| `h3o_mc_solvation.py` | Ionic solvation: H3O+ with hf_corrected mode | ~99 |
-| `h2_three_mode_comparison.py` | Full three-mode comparison + δ_corr-pol analysis | ~470 |
+| `h2_mc_solvation.py` | H2 fixed-mode MC with compile-once QPE | 90 |
+| `h3o_mc_solvation.py` | H3O+ hf_corrected MC with safe default `n_trotter_steps=3` | 98 |
+| `h2_three_mode_comparison.py` | H2 fixed / hf_corrected / dynamic comparison and δ_corr-pol analysis | 494 |
 
 ```bash
+# Recommended MC smoke path
 uv run python examples/h2_mc_solvation.py
+
+# Optional: heavier ionic example; use a 16 GB+ RAM machine
 uv run python examples/h3o_mc_solvation.py
+
+# Longer comparison run
 uv run python examples/h2_three_mode_comparison.py
 ```
+
+`h3o_mc_solvation.py` uses `n_trotter_steps=3` by default. Raising H3O+
+Trotter depth can substantially increase Catalyst IR size and memory pressure.
+Use `h3o_dynamic_trotter_oom_scan.py` before increasing this value on shared or
+low-memory machines.
 
 **Three QPE modes** (in `h2_three_mode_comparison.py`):
 
@@ -55,67 +83,60 @@ Compile once, run many times.
 
 ---
 
-## Chapter 3: Resource & IR-QRE Studies (closing-plan tasks 1-3)
+## Resource And IR-QRE Studies
 
 EFTQC resource estimation and compile-IR ↔ quantum-resource correlation studies.
-See `data/output/qre_*` and `data/output/ir_qre_*` for generated artifacts.
+These scripts generate local `data/output/qre_*` and `data/output/ir_qre_*`
+artifacts. Generated outputs are not part of the public examples contract and
+should be reproduced locally when needed.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
-| `resource_estimation_survey.py` | 8-system QRE survey (H2 / H2O / CH4 / NH4+ / NH3 / Formamide / H3O+ STO-3G / H3O+ 6-31G) | ~470 |
-| `h2_8bit_qpe_benchmark.py` | H2 4/6/8-bit QPE resolution benchmark (baseline reference) | ~450 |
-| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/6-bit QPE benchmark (8-bit downgraded to 6-bit due to Catalyst MLIR OOM) | ~520 |
-| `ir_qre_correlation_analysis.py` | IR ↔ QRE correlation (system-level + case sidecar, D1-D4 log-log power fit) | ~580 |
-| `ir_qre_trotter5_compile_survey.py` | Standardised trotter=5 IR-QRE compile survey | ~310 |
+| `resource_estimation_survey.py` | Small-molecule QRE matrix; 13 runnable rows plus an explicit Glycine skip row | 474 |
+| `h2_8bit_qpe_benchmark.py` | H2 4/8-bit QPE resolution benchmark | 140 |
+| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/8-bit fixed-mode benchmark with 6-bit fallback support | 288 |
+| `ir_qre_trotter5_compile_survey.py` | Standardized 4-bit, trotter=5 Catalyst compile survey | 403 |
+| `ir_qre_correlation_analysis.py` | Joins QRE and compile survey outputs; D1-D4 regression report | 625 |
+| `h3o_dynamic_trotter_oom_scan.py` | Memory-guarded H3O+ dynamic Trotter scaling scan | 459 |
 
 ```bash
 uv run python examples/resource_estimation_survey.py
+OMP_NUM_THREADS=2 uv run python examples/ir_qre_trotter5_compile_survey.py
 uv run python examples/ir_qre_correlation_analysis.py
-uv run python examples/ir_qre_trotter5_compile_survey.py
-# Note: 8-bit benchmarks have long wallclock; cap CPU threads to avoid lockup.
-OMP_NUM_THREADS=8 uv run python examples/h2_8bit_qpe_benchmark.py
-OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py
+
+# High-memory diagnostics. Prefer a 30 GB+ RAM machine.
+OMP_NUM_THREADS=4 uv run python examples/h2_8bit_qpe_benchmark.py
+OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py --skip-8bit
+OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py
 ```
 
 **Key artifacts**:
-- `data/output/qre_survey.csv` — 8-system EFTQC resource summary (Toffoli gates, logical qubits, lambda)
-- `data/output/ir_qre_correlation.csv` — system-level main table (1 measured + 7 projected)
-- `data/output/ir_qre_correlation_cases.csv` — 13-row detailed case sidecar
-- `data/output/ir_qre_correlation_report.md` — D1-D4 log-log power fit (R² ≈ 0.985 / 0.877 / 0.985)
+- `data/output/qre_survey.csv` and `.json` — QRE summary with success/skip rows
+- `data/output/ir_qre_trotter5_compile_survey.csv` and `.json` — measured compile rows
+- `data/output/ir_qre_correlation.csv` — currently 6 measured joined rows
+- `data/output/ir_qre_correlation_stats.csv` — D1-D4 fit statistics
+- `data/output/ir_qre_correlation_report.md` — text report
+
+Current checked-in local outputs show a strong descriptive D1 association
+(`R² ≈ 0.957`) and weak/null D2-D4 fits (`R² ≈ 0.072`, `0.145`, `0.002`).
+Treat these correlations as diagnostic evidence, not as predictive scaling laws.
 
 ---
 
-## Profiling & Tools
+## Profiling And Tools
 
 | Example | Description | Lines |
 |---------|-------------|-------|
-| `catalyst_benchmark.py` | Catalyst JIT performance benchmark (single vs multi-execution) | ~250 |
-| `qpe_memory_profile.py` | QPE compilation memory profiling | ~570 |
+| `catalyst_benchmark.py` | Catalyst JIT performance benchmark | 248 |
+| `qpe_memory_profile.py` | QPE compilation memory profiling for fixed/dynamic Hamiltonian modes | 572 |
 
 ```bash
 uv run python examples/catalyst_benchmark.py
-uv run python examples/qpe_memory_profile.py
+uv run python examples/qpe_memory_profile.py --mode fixed
 ```
 
-**Catalyst speedup summary**:
-
-| Scenario | Expected Speedup |
-|----------|-----------------|
-| Single QPE execution | ~1x (JIT overhead ≈ execution) |
-| Multi-execution (100+ iters) | 5–50x |
-| `qml.for_loop()` VQE-style | 10–100x |
-
----
-
-## Archived Code
-
-See [`_archived/README.md`](./_archived/README.md) for code superseded by the
-production `q2m3.solvation` and `q2m3.core` packages.
-
-Notable archived files:
-- `h3op_demo/` -> functionality migrated to `q2m3.profiling.timing` and `q2m3.core.resource_estimation`
-- `h3o_qpe_full_demo.py` -> replaced by `h3o_mc_solvation.py` (task 4 acceptance entry for this script is verified through `h3o_mc_solvation.py`)
-- `h2_three_mode_qpe_mc.py` (890 lines) -> replaced by `h2_three_mode_comparison.py` + `q2m3.solvation.analysis`
+`qpe_memory_profile.py --mode both` and `--sweep` can become memory intensive.
+Use the narrower `--mode fixed` or `--mode dynamic` commands first.
 
 ---
 
@@ -132,21 +153,7 @@ $$\delta_{\mathrm{corr-pol}} \equiv E_{\mathrm{corr}}(H_{\mathrm{eff}}) - E_{\ma
 is non-zero and can be comparable to the total solvation-energy scale. The
 `dynamic` mode samples this quantity via `h2_three_mode_comparison.py`.
 
-**Current manuscript-facing H2 summary** (`collect_h2_three_mode_results.py`):
-- Canonical workflow: one `8-bit` analytical (`n_shots=0`) `dynamic`
-  `n_trotter=5` MC run for `1000` steps, saving the current solvent
-  configuration after every MC step
-- Replay scan at matched `n_trotter = 1, 2, 3, 4, 5` on those saved
-  configurations, without rerunning MC acceptance
-- `delta_corr-pol` spans `-16.38` to `+9.95 kcal/mol` across the replayed depths
-- The matched depth-5 replay point is `-16.38 kcal/mol` with
-  `95% CI = [-16.52, -16.25] kcal/mol`
-- Historical note: the older `+3.56 kcal/mol` progress-slide value came from a
-  mixed-depth comparison (`fixed n_trotter=10` vs `dynamic n_trotter=5`) and is
-  not the current manuscript-facing matched-depth result
-
 ### References
 
 - [PennyLane QPE Tutorial](https://pennylane.ai/qml/demos/tutorial_qpe/)
 - [PennyLane Catalyst Documentation](https://docs.pennylane.ai/projects/catalyst/)
-- [q2m3 Technical Overview](../TECHNICAL_OVERVIEW.md)

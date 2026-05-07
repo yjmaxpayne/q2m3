@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Shared pytest fixtures for q2m3.solvation tests."""
 
 import numpy as np

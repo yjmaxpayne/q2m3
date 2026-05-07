@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Tests for internal finite-shell solvation structure-analysis helpers."""
 
 import numpy as np

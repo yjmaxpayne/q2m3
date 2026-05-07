@@ -1,9 +1,12 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """Internal structure-analysis helpers for finite-shell solvation outputs.
 
 The routines in this module are pure NumPy/CSV helpers around the solvent
 state arrays already returned by :func:`q2m3.solvation.run_solvation`. They are
-kept out of ``q2m3.solvation.__init__`` because they support manuscript-data
-collection scripts rather than the public solvation API.
+kept out of ``q2m3.solvation.__init__`` because they support optional
+post-processing workflows rather than the primary solvation API.
 """
 
 from __future__ import annotations

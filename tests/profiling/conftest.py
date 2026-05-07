@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# SPDX-License-Identifier: MIT
+
 """
 Fixtures for profiling tests.
 Restores working directory after each test to prevent os.chdir() pollution

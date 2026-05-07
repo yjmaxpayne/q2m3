@@ -90,6 +90,7 @@ copybutton_prompt_is_regexp = True
 
 html_theme = "furo"
 html_title = "q2m3 Documentation"
+html_logo = "_static/logo.svg"
 html_static_path = ["_static"]
 html_css_files = ["css/style.css"]
 

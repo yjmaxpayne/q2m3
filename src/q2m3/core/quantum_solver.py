@@ -8,7 +8,8 @@ Abstract base class for quantum solvers used in QM/MM simulations.
 Concrete implementations (QPE, VQE, etc.) are in separate modules.
 
 This is a self-contained module — not exported from core/__init__.py.
-Future VQE/QAOA solvers can import directly:
+Future VQE/QAOA solvers can import directly::
+
     from q2m3.core.quantum_solver import QuantumSolver, SolverResult
 """
 

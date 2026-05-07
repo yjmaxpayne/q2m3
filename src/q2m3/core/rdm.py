@@ -7,10 +7,12 @@ Reduced Density Matrix (RDM) estimation from quantum states.
 Implements 1-RDM measurement using Pauli expectation values after
 Jordan-Wigner transformation of fermionic operators.
 
-Key formulas:
-- Diagonal: γ_pp = <a_p†a_p> = (1 - <Z_p>) / 2
-- Off-diagonal (p < q): γ_pq = 1/4 * [<X_p Z... X_q> + <Y_p Z... Y_q>
-                                       + i(<X_p Z... Y_q> - <Y_p Z... X_q>)]
+Key formulas::
+
+    Diagonal: gamma_pp = <a_p†a_p> = (1 - <Z_p>) / 2
+    Off-diagonal (p < q):
+        gamma_pq = 1/4 * [<X_p Z... X_q> + <Y_p Z... Y_q>
+                          + i(<X_p Z... Y_q> - <Y_p Z... X_q>)]
 
 Performance optimization (Phase 7):
 - Batched measurement: single QNode returns all observables (120x → 1x execution)
@@ -189,7 +191,7 @@ class RDMEstimator:
         """
         Measure 1-RDM from Trotter-evolved state using batched measurement.
 
-        Prepares |HF⟩, applies TrotterProduct time evolution, then measures
+        Prepares ``|HF>`` , applies TrotterProduct time evolution, then measures
         all 1-RDM elements as Pauli expectation values in a single QNode.
 
         Args:

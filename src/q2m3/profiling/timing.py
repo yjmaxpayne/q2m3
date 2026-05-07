@@ -27,7 +27,8 @@ def profile_section(name: str, verbose: bool = True):
     Yields:
         dict: A timing info dictionary that gets updated with elapsed time
 
-    Example:
+    Example::
+
         with profile_section("QPE calculation") as timing:
             result = run_qpe()
         print(f"Elapsed: {timing['elapsed']:.3f}s")
@@ -55,7 +56,8 @@ def profile_function(func: Callable = None, *, verbose: bool = True) -> Callable
     Returns:
         Wrapped function that tracks execution time
 
-    Example:
+    Example::
+
         @profile_function
         def compute_energy():
             ...

@@ -1,6 +1,10 @@
 What is q2m3?
 =============
 
+.. image:: _static/logo.svg
+   :alt: q2m3 logo
+   :class: q2m3-home-logo
+
 q2m3 is a hybrid quantum-classical QM/MM framework for small-molecule
 quantum chemistry workflows that combine PySCF, PennyLane QPE circuits,
 explicit MM point charges, Monte Carlo solvation, and EFTQC resource

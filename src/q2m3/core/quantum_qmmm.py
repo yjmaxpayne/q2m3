@@ -113,7 +113,7 @@ class QuantumQMMM:
             Dictionary containing:
                 - energy: Ground state energy (Hartree)
                 - energy_hf: HF reference energy (Hartree)
-                - energy_difference: |E_QPE - E_HF| (Hartree)
+                - energy_difference: ``|E_QPE - E_HF|`` (Hartree)
                 - density_matrix: Electronic density matrix
                 - atomic_charges: Mulliken charges
                 - convergence: Convergence information

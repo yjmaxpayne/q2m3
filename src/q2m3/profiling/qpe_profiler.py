@@ -145,6 +145,10 @@ def profile_qjit_compilation(
     the IR workspace location.
 
     Args:
+        ops: PennyLane operators used to build the runtime Hamiltonian.
+        coeffs: Hamiltonian coefficients supplied at runtime.
+        hf_state: Hartree-Fock occupation vector for system-state preparation.
+        circuit_params: Circuit metadata from profile_hamiltonian_build().
         ir_dir: If provided, IR files are preserved at this path.
                 If None, a tempdir is used and auto-cleaned after IR analysis.
         keep_intermediate: If True, retain all 6 IR stages in memory for analysis.
@@ -251,6 +255,10 @@ def profile_qjit_compilation_fixed(
     because Catalyst captures os.getcwd() at decoration time.
 
     Args:
+        ops: PennyLane operators used to build the fixed Hamiltonian.
+        coeffs: Hamiltonian coefficients embedded as Python floats before @qjit.
+        hf_state: Hartree-Fock occupation vector for system-state preparation.
+        circuit_params: Circuit metadata from profile_hamiltonian_build().
         ir_dir: If provided, IR files are preserved at this path.
                 If None, a tempdir is used and auto-cleaned after IR analysis.
         keep_intermediate: If True, retain all 6 IR stages for analysis.

@@ -7,11 +7,12 @@ MC Solvation Orchestrator.
 End-to-end workflow for QPE-driven Monte Carlo solvation simulations.
 Supports three Hamiltonian modes:
 
-    - hf_corrected: E_HF + E_MM for acceptance, interval-based QPE diagnostics
-    - fixed: Compile-once vacuum Hamiltonian, QPE every step
-    - dynamic: Per-step MM-embedded Hamiltonian, QPE every step
+* hf_corrected: E_HF + E_MM for acceptance, interval-based QPE diagnostics
+* fixed: Compile-once vacuum Hamiltonian, QPE every step
+* dynamic: Per-step MM-embedded Hamiltonian, QPE every step
 
-Usage:
+Usage::
+
     from q2m3.solvation import SolvationConfig, MoleculeConfig, run_solvation
 
     config = SolvationConfig(

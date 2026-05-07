@@ -84,8 +84,8 @@ def estimate_resources(
         coords: Atomic coordinates in Angstrom, shape (n_atoms, 3).
         charge: Total molecular charge (default: 0).
         basis: Basis set name (default: "sto-3g").
-        active_electrons: Active space electrons (optional, reserved for future).
-        active_orbitals: Active space orbitals (optional, reserved for future).
+        active_electrons: Active space electrons (optional).
+        active_orbitals: Active space orbitals (optional).
         target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol).
         mm_charges: MM point charges array (optional, enables solvated Hamiltonian).
         mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3).

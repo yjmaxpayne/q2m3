@@ -4,9 +4,9 @@
 """
 H3O+ QPE Resolution Benchmark: 4-bit vs 8-bit (fixed mode)
 
-Companion experiment to h2_8bit_qpe_benchmark.py, scaling from H2 (15 Pauli
-terms) to H3O+ (~193 Pauli terms in fixed mode) to validate that the 8-bit
-resolution gain transfers to a charged ionic system.
+Companion experiment to h2_8bit_qpe_benchmark.py, scaling from H2 to the
+larger active-space H3O+ Hamiltonian to validate that the 8-bit resolution
+gain transfers to a charged ionic system.
 
 Configuration:
   - Molecule: H3O+ (STO-3G), active space (4e, 4o) → 8 system qubits
@@ -24,9 +24,9 @@ Metrics captured per configuration:
   - Resolution (mHa/bin) and bin count (2^n_estimation_wires)
 
 OOM safety:
-  - 8-bit run wrapped in try/except. If RSS > 25 GB during compile or any
+  - 8-bit run wrapped in try/except. If RSS > 22 GB during compile or any
     MemoryError / subprocess failure → automatic downgrade to 6-bit.
-  - Pre-flight estimate: H3O+ 4-bit ≈ 1.2 GB, 8-bit ≈ 2 GB (project memory).
+  - The script reports measured RSS so memory behavior comes from the run.
 
 Usage:
     OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py

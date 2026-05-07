@@ -10,9 +10,9 @@ Compares QPE estimation register size (4 vs 8 bits) across:
   - Phase resolution (bin width)
   - σ_QPE shot noise characterization
 
-Findings:
-  - 8-bit fixed: 13.3x per-QPE slowdown, 16x resolution gain
-  - 8-bit dynamic: safe at n_trotter ≤ 5 (OOM at ≥ 7 on 30GB)
+Checks:
+  - 8-bit fixed: 16x narrower phase bins than 4-bit
+  - 8-bit dynamic: bounded Trotter-depth run for memory safety
   - σ_QPE reduction requires shots ∝ 2^n_estimation_wires
 
 Usage:

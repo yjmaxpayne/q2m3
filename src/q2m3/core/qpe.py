@@ -311,8 +311,8 @@ class QPEEngine:
         """
         Compute optimal base_time to avoid phase overflow in QPE.
 
-        For QPE, the relationship is: phi = |E| * t / (2*pi)
-        To avoid overflow, we need phi < 1, i.e., t < 2*pi / |E|
+        For QPE, the relationship is: ``phi = |E| * t / (2*pi)``.
+        To avoid overflow, we need ``phi < 1``, i.e., ``t < 2*pi / |E|``.
 
         Args:
             energy_estimate: Estimated ground state energy (e.g., HF energy)
@@ -347,9 +347,9 @@ class QPEEngine:
         energy changes like MM embedding effects.
 
         Physics:
-        - QPE measures phase: φ = |ΔE| * t / (2π)
-        - For n-bit precision: resolution = 2π / (2^n * t)
-        - Energy range: ΔE_max = 2π / t (to avoid phase overflow)
+        - QPE measures phase: ``φ = |ΔE| * t / (2π)``
+        - For n-bit precision: ``resolution = 2π / (2^n * t)``
+        - Energy range: ``ΔE_max = 2π / t`` (to avoid phase overflow)
 
         This method calculates the optimal n_estimation_wires and base_time to achieve
         the target resolution while covering the expected energy range.
@@ -373,7 +373,9 @@ class QPEEngine:
             ...     energy_range=0.2,         # ±0.1 Ha range
             ... )
             >>> print(f"Use {params['n_estimation_wires']} estimation qubits")
+            Use 7 estimation qubits
             >>> print(f"base_time = {params['base_time']:.4f}")
+            base_time = 49.0874
         """
         if safety_margin is None:
             safety_margin = PHASE_SAFETY_MARGIN

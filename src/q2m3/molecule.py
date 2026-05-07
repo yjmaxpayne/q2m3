@@ -29,7 +29,8 @@ class MoleculeConfig:
         active_orbitals: Number of active orbitals for QPE active space
         basis: Basis set name (default: "sto-3g")
 
-    Example:
+    Example::
+
         # Water molecule
         water = MoleculeConfig(
             name="H2O",

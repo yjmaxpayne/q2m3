@@ -20,6 +20,18 @@ a {
   overflow-wrap: anywhere;
 }
 
+.sidebar-logo {
+  max-height: 5.25rem;
+  width: auto;
+}
+
+.q2m3-home-logo {
+  display: block;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  max-width: min(22rem, 100%);
+}
+
 table.docutils {
   width: 100%;
 }

@@ -5,9 +5,9 @@
 Catalyst @qjit Performance Benchmark
 
 Demonstrates when Catalyst JIT compilation provides speedup:
-- Single execution: JIT overhead ≈ execution time (no speedup expected)
-- Multi-execution: Compile once, reuse many times (5-50x speedup)
-- VQE-style loops: 10-100x speedup with qml.for_loop()
+- Single execution: JIT overhead can dominate (no speedup expected)
+- Multi-execution: compile once, reuse many times
+- VQE-style loops: amortize compilation across repeated circuit evaluations
 
 Key finding: For single QPE executions, JIT compilation overhead often
 equals or exceeds execution time. Significant speedup only appears in

@@ -183,6 +183,7 @@ def select_device(
         n_wires: Number of qubits
         use_catalyst: If True, ensure Catalyst-compatible fallback
                       (lightning.qubit instead of default.qubit)
+        seed: Optional device seed for reproducible shot-based sampling
 
     Returns:
         PennyLane device instance

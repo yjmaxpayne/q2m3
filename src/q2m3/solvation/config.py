@@ -104,6 +104,9 @@ class SolvationConfig:
         initial_water_distance: Initial water ring radius in Angstrom
         random_seed: Random seed for reproducibility
         verbose: Print progress information
+        ir_cache_dir: Directory for Catalyst LLVM IR cache, or None for the default cache path
+        ir_cache_enabled: Enable reuse of cached Catalyst LLVM IR
+        ir_cache_force_recompile: Ignore cached IR and force recompilation
     """
 
     molecule: MoleculeConfig

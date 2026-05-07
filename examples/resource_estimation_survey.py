@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """
-EFTQC Resource Estimation Survey: 5-system matrix.
+EFTQC Resource Estimation Survey: 14-system matrix.
 
 Quantifies fault-tolerant quantum computing resource requirements (Toffoli
 gates, logical qubits, T-depth, Hamiltonian 1-norm, runtime estimate) across
@@ -74,7 +74,7 @@ class SystemSpec:
 
 
 def survey_systems() -> list[SystemSpec]:
-    """Return the 5-system matrix from closing-plan §03b task 1."""
+    """Return the 14-system survey matrix."""
     h3op_coords = np.array(
         [
             [0.0000, 0.0000, 0.1173],

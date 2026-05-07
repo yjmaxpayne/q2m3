@@ -214,10 +214,10 @@ class PySCFPennyLaneConverter:
         This approach preserves the correct eigenspectrum structure from
         molecular_hamiltonian while adding MM electrostatic effects.
 
-        The energy_shift parameter enables "shifted QPE" where:
-            H' = H - E_ref * I
-        This allows QPE to measure ΔE = E - E_ref instead of absolute energy E,
-        enabling higher precision for detecting small energy changes (like MM effects)
+        The energy_shift parameter enables "shifted QPE", where
+        ``H' = H - E_ref * I``. This allows QPE to measure
+        ``ΔE = E - E_ref`` instead of absolute energy E, enabling higher
+        precision for detecting small energy changes (like MM effects)
         without phase overflow in QPE circuits.
 
         Args:
@@ -229,8 +229,8 @@ class PySCFPennyLaneConverter:
             active_electrons: Number of active electrons
             active_orbitals: Number of active orbitals
             energy_shift: Reference energy to subtract from Hamiltonian (optional).
-                          If provided, the returned Hamiltonian is H' = H - E_shift * I.
-                          This enables QPE to measure ΔE with higher precision.
+                If provided, the returned Hamiltonian is ``H' = H - E_shift * I``.
+                This enables QPE to measure ``ΔE`` with higher precision.
 
         Returns:
             tuple: (hamiltonian, n_qubits, hf_state)
@@ -472,8 +472,8 @@ class PySCFPennyLaneConverter:
             charge: Total molecular charge (default: 0 for neutral)
             mm_charges: MM point charges array (optional, for solvated Hamiltonian)
             mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3)
-            active_electrons: Number of electrons in active space (optional, for future)
-            active_orbitals: Number of spatial orbitals in active space (optional, for future)
+            active_electrons: Number of electrons in active space (optional)
+            active_orbitals: Number of spatial orbitals in active space (optional)
             target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)
 
         Returns:
@@ -489,6 +489,8 @@ class PySCFPennyLaneConverter:
                 - basis: Basis set used
                 - mm_embedded: Whether MM embedding was applied
                 - n_mm_charges: Number of MM point charges (0 if vacuum)
+                - active_electrons: Active-space electron count passed to the estimator
+                - active_orbitals: Active-space orbital count passed to the estimator
 
         Raises:
             ValueError: If coords shape does not match number of symbols

@@ -17,9 +17,9 @@ Designed to answer Xanadu's question:
     "4.2k IR operations is relatively small and isn't expected to drive
      such large memory requirements."
 
-Key fact: The ~16GB figure in energy.py:660-661 describes an OLD architecture
-bug (QPE IR double-inlined into MC loop MLIR). Current code pre-compiles QPE
-separately (orchestrator.py:656-673). This script measures ACTUAL memory.
+Historical high-memory reports came from an older architecture where QPE IR
+was inlined into MC loop MLIR. Current code builds QPE circuits separately via
+q2m3.solvation.circuit_builder. This script measures current memory behavior.
 
 Three measurement layers:
   - resource.getrusage(RUSAGE_SELF).ru_maxrss → process lifetime peak RSS

@@ -442,62 +442,6 @@ uv run python examples/qpe_memory_profile.py --mode fixed
 
 See [examples/README.md](examples/README.md) for detailed documentation.
 
-## Project Structure
-
-```
-q2m3/
-+-- src/q2m3/
-|   +-- core/
-|   |   +-- quantum_qmmm.py    # Main entry point
-|   |   +-- qpe.py             # QPE engine (real quantum circuits)
-|   |   +-- qmmm_system.py       # QM/MM system builder
-|   |   +-- rdm.py               # 1-RDM quantum measurement
-|   |   +-- device_utils.py      # Device selection utilities
-|   |   +-- resource_estimation.py  # EFTQC resource estimation
-|   |   +-- hamiltonian_utils.py  # Hamiltonian decomposition utilities
-|   +-- interfaces/
-|   |   +-- pyscf_pennylane.py   # PySCF-PennyLane converter + MM embedding
-|   +-- solvation/               # MC solvation framework (q2m3.solvation)
-|   |   +-- orchestrator.py      # run_solvation() entry point
-|   |   +-- energy.py            # Three QPE mode energy computation
-|   |   +-- circuit_builder.py   # Catalyst-compiled circuits
-|   |   +-- analysis.py          # δ_corr-pol analysis, run_mode_comparison()
-|   |   +-- ir_cache.py          # LLVM IR caching across MC steps
-|   |   +-- config.py            # MoleculeConfig, QPEConfig, SolvationConfig
-|   |   +-- mc_loop.py           # Monte Carlo loop
-|   |   +-- phase_extraction.py  # QPE phase-to-energy extraction
-|   |   +-- solvent.py           # Solvent environment utilities
-|   |   +-- statistics.py        # MC trajectory statistics
-|   +-- profiling/               # Performance analysis (q2m3.profiling)
-|   |   +-- timing.py            # General timing utilities
-|   |   +-- qpe_profiler.py      # QPE compilation profiling
-|   |   +-- memory.py            # Memory monitoring
-|   |   +-- catalyst_ir.py       # LLVM IR analysis
-|   +-- sampling/
-|   |   +-- mc_moves.py          # Monte Carlo move proposals
-|   |   +-- metropolis.py        # Metropolis acceptance criterion
-|   |   +-- mm_forcefield.py     # MM force field (TIP3P)
-|   |   +-- water_molecule.py    # Water molecule representation
-|   +-- utils/
-|       +-- io.py                # File I/O utilities
-+-- tests/                       # Test suite
-+-- examples/                    # Example scripts
-|   +-- h2_qpe_validation.py          # Chapter 1: H2 QPE validation
-|   +-- h2_resource_estimation.py     # Chapter 1: EFTQC resource estimation
-|   +-- h2_mc_solvation.py            # Chapter 2: H2 MC solvation (fixed mode)
-|   +-- h3o_mc_solvation.py           # Chapter 2: H3O+ MC solvation
-|   +-- h2_three_mode_comparison.py   # Chapter 2: Three-mode comparison + δ_corr-pol
-|   +-- resource_estimation_survey.py     # Chapter 3: 8-system QRE survey
-|   +-- h2_8bit_qpe_benchmark.py          # Chapter 3: H2 QPE resolution benchmark
-|   +-- h3o_8bit_qpe_benchmark.py         # Chapter 3: H3O+ QPE resolution benchmark
-|   +-- ir_qre_correlation_analysis.py    # Chapter 3: IR ↔ QRE correlation
-|   +-- ir_qre_trotter5_compile_survey.py # Chapter 3: trotter=5 IR-QRE compile survey
-|   +-- h3o_dynamic_trotter_oom_scan.py   # Chapter 3: memory-guarded H3O+ scan
-|   +-- catalyst_benchmark.py         # Profiling: Catalyst JIT benchmark
-|   +-- qpe_memory_profile.py         # Profiling: QPE memory profiling
-+-- data/                        # Input data files
-```
-
 ## Development
 
 ```bash
@@ -545,28 +489,6 @@ pytest -m "gpu"           # Run only GPU tests
 - `catalyst` - `pennylane-catalyst>=0.14.0`, `pennylane-lightning>=0.44.0`
 - `solvation` - `catalyst` extra + `jax>=0.4.20`, `jaxlib>=0.4.20`
 - `viz` - py3dmol, ase, nglview (molecular visualization)
-
-## Known Issues
-
-### Issue 1: BasisState + Controlled Operations under @qjit
-
-**Status**: Fixed (as of PennyLane 0.44.0, Catalyst 0.14.0) | **Tracking**: [Catalyst #2235](https://github.com/PennyLaneAI/catalyst/issues/2235) - Closed
-
-`qml.BasisState` now works correctly with `qml.ctrl()` under `@qjit`. Previous workaround (explicit X gates) can be kept or replaced with `qml.BasisState` for cleaner code.
-
-### Issue 2: Catalyst @qjit + lightning.gpu Incompatibility
-
-**Status**: Fixed (as of PennyLane Lightning 0.44.0) | **Tracking**: [pennylane-lightning #1298](https://github.com/PennyLaneAI/pennylane-lightning/pull/1298) - Merged
-
-Catalyst `@qjit` now supports `lightning.gpu` for `qml.ctrl(qml.TrotterProduct)`. GPU acceleration is now available for Catalyst JIT compilation.
-
-### Issue 3: Lightning Device + MM Hamiltonian Type
-
-**Status**: Fixed
-
-`qml.Hamiltonian` returns `LinearCombination` type which lightning devices don't support for controlled evolution. **Fix**: Use `qml.s_prod` + `qml.sum` to maintain `Sum` type (`pyscf_pennylane.py:316-340`).
-
-See [examples/README.md](examples/README.md) for detailed diagnosis and workarounds.
 
 ## Limitations
 

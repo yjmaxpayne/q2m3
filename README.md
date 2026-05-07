@@ -122,48 +122,103 @@ print(circuits["rdm"])  # RDM measurement circuit
 
 ## Architecture
 
-```
-QuantumQMMM (main interface)           SolvationOrchestrator (MC dynamics)
-    |                                      |
-    +-- QMMMSystem (system builder)        +-- MCLoop (Metropolis sampling)
-    |       +-- QM region: molecular atoms |       +-- Water move proposals
-    |       +-- MM region: TIP3P waters    |       +-- Acceptance/rejection
-    |       +-- Point charge embedding     |
-    |                                      +-- QPE Modes (three strategies)
-    +-- QPEEngine (quantum algorithm)      |       +-- fixed: pre-compiled vacuum QPE
-    |       +-- HF state preparation       |       +-- hf_corrected: HF + MM correction
-    |       +-- Controlled Trotter evolut. |       +-- dynamic: runtime JAX coefficients
-    |       +-- Inverse QFT                |
-    |       +-- Phase-to-energy extract.  +-- Analysis (q2m3.solvation.analysis)
-    |       +-- Device selection (GPU/CPU) |       +-- δ_corr-pol estimation
-    |                                      |       +-- run_mode_comparison()
-    +-- RDMEstimator (quantum measurement) |
-    |       +-- Batch Pauli expectations   +-- IRCache (LLVM IR caching)
-    |       +-- 1-RDM reconstruction              +-- Catalyst compile-once reuse
-    |       +-- MO-to-AO transformation
-    |
-    +-- PySCFPennyLaneConverter (interface)
-    |       +-- Vacuum Hamiltonian (qml.qchem)
-    |       +-- MM correction terms
-    |       +-- HF state generation
-    |
-    +-- ProfilingTools (q2m3.profiling)
-            +-- timing.py: general timing utilities
-            +-- qpe_profiler.py: QPE compilation profiling
-            +-- memory.py: memory monitoring
-            +-- catalyst_ir.py: LLVM IR analysis
+```mermaid
+flowchart TB
+    accTitle: q2m3 Layered Architecture
+    accDescr: Layered view of q2m3 showing the public QM/MM and solvation entry points, the shared quantum chemistry stack, Monte Carlo solvation workflow, and diagnostics modules.
+
+    user["User scripts and examples"]
+
+    subgraph public_api ["Public entry points"]
+        direction LR
+        quantum_qmmm["QuantumQMMM<br/>main QM/MM interface"]
+        run_solvation["run_solvation()<br/>MC solvation workflow"]
+    end
+
+    subgraph core_qmmm ["Core QM/MM stack"]
+        direction TB
+        qmmm_system["QMMMSystem<br/>QM atoms, TIP3P waters,<br/>point-charge embedding"]
+        converter["PySCFPennyLaneConverter<br/>PySCF Hamiltonian bridge,<br/>MM correction terms,<br/>HF state generation"]
+        qpe_engine["QPEEngine<br/>HF preparation,<br/>controlled Trotter evolution,<br/>inverse QFT,<br/>phase-to-energy extraction"]
+        rdm_estimator["RDMEstimator<br/>batch Pauli expectations,<br/>1-RDM reconstruction,<br/>MO-to-AO transformation"]
+        resource_estimation["Resource estimation<br/>logical qubits,<br/>Toffoli counts,<br/>Hamiltonian 1-norm"]
+    end
+
+    subgraph solvation_mc ["Solvation MC stack"]
+        direction TB
+        solvent_setup["solvent.py<br/>TIP3P initialization"]
+        circuit_builder["build_qpe_circuit()<br/>Catalyst QPE bundle"]
+        hamiltonian_mode{"Hamiltonian mode"}
+        fixed_mode["fixed<br/>E_QPE(H_vac) + E_MM"]
+        hf_corrected_mode["hf_corrected<br/>E_HF(R) + E_MM"]
+        dynamic_mode["dynamic<br/>E_QPE(H_eff) + E_MM"]
+        step_callback["energy.py callbacks<br/>mode-dependent step energy"]
+        mc_loop["create_mc_loop()<br/>Metropolis proposals,<br/>accept/reject trajectory"]
+        ir_cache["ir_cache.py<br/>LLVM IR cache,<br/>replace_ir + jit_compile"]
+    end
+
+    subgraph diagnostics ["Analysis and profiling"]
+        direction TB
+        analysis["q2m3.solvation.analysis<br/>delta_corr-pol estimation,<br/>run_mode_comparison()"]
+        profiling["q2m3.profiling<br/>timing.py, memory.py,<br/>qpe_profiler.py, catalyst_ir.py"]
+    end
+
+    user --> quantum_qmmm
+    user --> run_solvation
+
+    quantum_qmmm --> qmmm_system
+    qmmm_system --> converter
+    converter --> qpe_engine
+    qpe_engine --> rdm_estimator
+    converter --> resource_estimation
+
+    run_solvation --> solvent_setup
+    run_solvation --> circuit_builder
+    circuit_builder --> hamiltonian_mode
+    hamiltonian_mode --> fixed_mode
+    hamiltonian_mode --> hf_corrected_mode
+    hamiltonian_mode --> dynamic_mode
+    fixed_mode --> step_callback
+    hf_corrected_mode --> step_callback
+    dynamic_mode --> step_callback
+    step_callback --> mc_loop
+    circuit_builder --> ir_cache
+
+    mc_loop --> analysis
+    quantum_qmmm --> profiling
+    run_solvation --> profiling
+    circuit_builder -. uses .-> converter
+    circuit_builder -. uses .-> qpe_engine
+
+    classDef entry fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a5f
+    classDef core fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#3b0764
+    classDef solvation fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+    classDef diagnostics fill:#f3f4f6,stroke:#6b7280,stroke-width:2px,color:#1f2937
+
+    class user,quantum_qmmm,run_solvation entry
+    class qmmm_system,converter,qpe_engine,rdm_estimator,resource_estimation core
+    class solvent_setup,circuit_builder,hamiltonian_mode,fixed_mode,hf_corrected_mode,dynamic_mode,step_callback,mc_loop,ir_cache solvation
+    class analysis,profiling diagnostics
 ```
 
 ## QPE Circuit Implementation
 
-The QPE circuit follows the standard structure:
+The QPE circuit follows the standard PennyLane implementation in
+`QPEEngine._build_standard_qpe_circuit()`. Circuit visualization is available
+through `qmmm.draw_circuits()["qpe"]`, which uses
+`qml.draw(decimals=None, level=0)` for a high-level PennyLane view.
 
-```
-Estimation Register (n_est qubits):
-|0> --H--[ctrl-U^8]--[ctrl-U^4]--[ctrl-U^2]--[ctrl-U^1]--QFT†--Sample
-          |          |          |          |
-System Register (n_sys qubits):
-|HF> --------------------------------------------------------
+Representative H2 active-space QPE circuit with 4 system wires, 2 estimation
+wires, and 2 Trotter steps:
+
+```text
+PennyLane Circuit (decimals=None, level=0):
+0: ─╭|Ψ⟩─╭TrotterProduct†─╭TrotterProduct†───────┤
+1: ─├|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
+2: ─├|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
+3: ─╰|Ψ⟩─├TrotterProduct†─├TrotterProduct†───────┤
+4: ──H───╰●───────────────│────────────────╭QFT†─┤ ╭Sample
+5: ──H────────────────────╰●───────────────╰QFT†─┤ ╰Sample
 ```
 
 **Circuit Components:**

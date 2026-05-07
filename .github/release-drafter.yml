@@ -1,37 +1,36 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
+tag-prefix: 'v'
 categories:
+  - title: 'Breaking Changes'
+    labels:
+      - 'major'
   - title: 'Features'
     labels:
       - 'feat'
-      - 'feature'
-      - 'enhancement'
+      - 'minor'
   - title: 'Bug Fixes'
     labels:
       - 'fix'
-      - 'bugfix'
-      - 'bug'
+      - 'patch'
+  - title: 'Documentation'
+    labels:
+      - 'docs'
   - title: 'Tests'
     labels:
       - 'test'
-      - 'tests'
-  - title: 'Documentation'
-    labels:
-      - 'documentation'
-      - 'docs'
   - title: 'Performance'
     labels:
-      - 'performance'
-      - 'optimization'
       - 'perf'
+  - title: 'Refactoring'
+    labels:
+      - 'refactor'
+  - title: 'CI'
+    labels:
+      - 'ci'
   - title: 'Maintenance'
     labels:
       - 'chore'
-      - 'maintenance'
-      - 'ci'
-  - title: 'Security'
-    labels:
-      - 'security'
 exclude-labels:
   - 'skip-changelog'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
@@ -44,21 +43,21 @@ version-resolver:
     labels:
       - 'minor'
       - 'feat'
-      - 'feature'
-      - 'enhancement'
   patch:
     labels:
       - 'patch'
       - 'fix'
-      - 'bugfix'
-      - 'bug'
+      - 'docs'
+      - 'test'
+      - 'perf'
+      - 'refactor'
+      - 'ci'
+      - 'chore'
   default: patch
 template: |
   ## What's Changed
 
   $CHANGES
-
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
   ## Contributors
 

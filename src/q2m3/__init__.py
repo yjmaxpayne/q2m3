@@ -7,7 +7,8 @@ Quantum-QM/MM POC Framework
 A hybrid quantum-classical framework for QM/MM calculations using QPE algorithms.
 """
 
-__version__ = "0.1.0"
+from .version import __version__
+
 __author__ = "Ye Jun <yjmaxpayne@hotmail.com>"
 
 from .constants import (
@@ -36,6 +37,7 @@ from .molecule import MoleculeConfig
 from .utils import load_xyz, save_json_results
 
 __all__ = [
+    "__version__",
     "QuantumQMMM",
     "QPEEngine",
     "QMMMSystem",

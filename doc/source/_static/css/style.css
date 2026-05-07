@@ -1,0 +1,29 @@
+:root {
+  --q2m3-accent: #2f6f7e;
+  --q2m3-accent-dark: #1e4f5a;
+}
+
+a {
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+.admonition-title {
+  font-weight: 700;
+}
+
+.sig-name {
+  color: var(--q2m3-accent-dark);
+}
+
+.sidebar-brand-text {
+  overflow-wrap: anywhere;
+}
+
+table.docutils {
+  width: 100%;
+}
+
+.mermaid {
+  margin: 1.25rem 0;
+}

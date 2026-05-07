@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=65.0", "wheel"]
+requires = ["setuptools>=80", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "q2m3"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Quantum-Classical Hybrid QM/MM Framework POC with QPE for Early Fault-Tolerant Quantum Computers"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "IHPC Quantum Computing Team"},
 ]
@@ -47,6 +47,14 @@ dev = [
     "jupyter>=1.0.0",
     "notebook>=6.5.0",
 ]
+docs = [
+    "sphinx>=8.0.0",
+    "furo>=2024.8.6",
+    "myst-parser>=4.0.0",
+    "linkify-it-py>=2.0.0",
+    "sphinx-copybutton>=0.5.2",
+    "sphinxcontrib-mermaid>=1.0.0",
+]
 gpu = [
     "pennylane-lightning[gpu]>=0.44.0",
     "cupy-cuda12x>=12.0.0",  # CUDA 12/13 compatible
@@ -77,6 +85,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.json", "*.xyz"]
+
+[tool.setuptools_scm]
+fallback_version = "0.1.0.dev0"
 
 [tool.black]
 line-length = 100
@@ -140,7 +151,7 @@ skip_covered = false
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version_provider = "pep621"
+version_provider = "scm"
 tag_format = "v$version"
 version_scheme = "semver"
 changelog_file = "CHANGELOG.md"

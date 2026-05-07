@@ -54,9 +54,16 @@ cache/
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
+coverage.json
 htmlcov/
 .tox/
+.nox/
 .hypothesis/
+.ruff_cache/
+.mypy_cache/
+.cache/
 
 # Documentation
 docs/_build/
@@ -65,7 +72,9 @@ docs/_templates/
 
 # Others
 CLAUDE.md
+AGENTS.md
 .plan/
 .docs/
 .templates/
 .claude/
+dev/

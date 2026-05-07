@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 
 """
@@ -43,6 +43,23 @@ class TestSelectDevice:
         result = circuit()
         assert result is not None
         assert len(result) == 100  # Should return 100 samples
+
+    def test_select_device_accepts_seed(self):
+        """select_device forwards a reproducibility seed to the PennyLane device."""
+        from q2m3.core.device_utils import select_device
+
+        dev = select_device("default.qubit", n_wires=2, seed=42)
+
+        @qml.set_shots(20)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.sample(qml.PauliZ(0))
+
+        result_a = circuit()
+        result_b = circuit()
+        assert result_a is not None
+        assert result_b is not None
 
     def test_auto_selects_available_device(self):
         """auto mode should select an available device."""

@@ -1,0 +1,41 @@
+:root {
+  --q2m3-accent: #2f6f7e;
+  --q2m3-accent-dark: #1e4f5a;
+}
+
+a {
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+.admonition-title {
+  font-weight: 700;
+}
+
+.sig-name {
+  color: var(--q2m3-accent-dark);
+}
+
+.sidebar-brand-text {
+  overflow-wrap: anywhere;
+}
+
+.sidebar-logo {
+  max-height: 5.25rem;
+  width: auto;
+}
+
+.q2m3-home-logo {
+  display: block;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  max-width: min(22rem, 100%);
+}
+
+table.docutils {
+  width: 100%;
+}
+
+.mermaid {
+  margin: 1.25rem 0;
+}

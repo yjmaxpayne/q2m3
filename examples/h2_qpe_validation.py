@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
-# Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 """
-Minimal H2 + MM Water Example for QPE Validation
+H2 + MM Water: QPE Solvation Validation
 
-This script validates QPE + explicit MM solvation using the simplest
-possible molecular system: H2 molecule with 1-3 TIP3P water molecules.
+Validates QPE energy estimates for H2 with TIP3P water MM embedding.
+Compares vacuum vs solvated results to verify MM embedding correctness.
 
 Validation Strategy:
 1. Compare vacuum HF vs vacuum QPE (verify QPE correctness)
 2. Compare solvated HF vs solvated QPE (verify MM embedding in QPE)
 3. Compare stabilization effects (HF vs QPE should agree)
+
+Related examples:
+  h2_resource_estimation.py  - EFTQC hardware resource estimates
+  catalyst_benchmark.py      - Catalyst JIT compilation performance
 """
 
-import warnings
 from dataclasses import dataclass
 
 import numpy as np
 
-warnings.filterwarnings("ignore")
+from q2m3.constants import (
+    ANGSTROM_TO_BOHR,
+    HARTREE_TO_KCAL_MOL,
+    TIP3P_HYDROGEN_CHARGE,
+    TIP3P_OXYGEN_CHARGE,
+)
+from q2m3.core.device_utils import get_best_available_device
 
 # =============================================================================
-# Constants
+# Example-specific thresholds (POC validation, not general use)
 # =============================================================================
-HARTREE_TO_KCAL_MOL = 627.5094
-ANGSTROM_TO_BOHR = 1.8897259886
 CHEMICAL_ACCURACY_KCAL = 0.1  # kcal/mol
 QPE_ENERGY_TOLERANCE_HA = 2.0  # Hartree (POC validation threshold)
 
@@ -32,10 +39,6 @@ QPE_ENERGY_TOLERANCE_HA = 2.0  # Hartree (POC validation threshold)
 DEFAULT_N_ESTIMATION_WIRES = 4
 DEFAULT_N_TROTTER_STEPS = 20
 DEFAULT_N_SHOTS = 100
-
-# TIP3P water model charges
-TIP3P_OXYGEN_CHARGE = -0.834
-TIP3P_HYDROGEN_CHARGE = 0.417
 
 
 # =============================================================================
@@ -78,30 +81,6 @@ class ValidationResult:
 # =============================================================================
 # Utility Functions
 # =============================================================================
-def detect_device() -> str:
-    """Detect best available PennyLane device."""
-    import pennylane as qml
-
-    # Try lightning.gpu first
-    try:
-        dev = qml.device("lightning.gpu", wires=2)
-        del dev
-        return "lightning.gpu"
-    except Exception:
-        pass
-
-    # Fallback to lightning.qubit
-    try:
-        dev = qml.device("lightning.qubit", wires=2)
-        del dev
-        return "lightning.qubit"
-    except Exception:
-        pass
-
-    # Last resort
-    return "default.qubit"
-
-
 def compute_stabilization_kcal(e_vacuum: float, e_solvated: float) -> float:
     """Compute stabilization energy in kcal/mol."""
     return (e_vacuum - e_solvated) * HARTREE_TO_KCAL_MOL
@@ -166,110 +145,6 @@ def create_tip3p_environment() -> MMEnvironment:
 # =============================================================================
 # Core Computation Functions
 # =============================================================================
-def run_classical_hf(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, float]:
-    """Run classical Hartree-Fock calculations for vacuum and solvated systems."""
-    from pyscf import gto, qmmm, scf
-
-    print("[Step 3] Classical Hartree-Fock Reference")
-    print("-" * 70)
-
-    # Build atom string from geometry
-    atom_str = "; ".join(
-        f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(geometry.symbols, geometry.coords, strict=True)
-    )
-
-    # Vacuum HF
-    mol_vacuum = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
-    mf_vacuum = scf.RHF(mol_vacuum)
-    mf_vacuum.verbose = 0
-    mf_vacuum.run()
-    hf_vacuum = mf_vacuum.e_tot
-
-    # Solvated HF (with MM embedding)
-    mol_solvated = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
-    mf_solvated = scf.RHF(mol_solvated)
-    mf_solvated.verbose = 0
-    mm_coords_bohr = mm_env.coords * ANGSTROM_TO_BOHR
-    mf_solvated = qmmm.mm_charge(mf_solvated, mm_coords_bohr, mm_env.charges)
-    mf_solvated.run()
-    hf_solvated = mf_solvated.e_tot
-
-    hf_stabilization = compute_stabilization_kcal(hf_vacuum, hf_solvated)
-
-    print(f"  Vacuum HF:     {hf_vacuum:.8f} Ha")
-    print(f"  Solvated HF:   {hf_solvated:.8f} Ha")
-    print(f"  Stabilization: {hf_stabilization:.4f} kcal/mol")
-    print()
-
-    return {
-        "vacuum": hf_vacuum,
-        "solvated": hf_solvated,
-        "stabilization": hf_stabilization,
-    }
-
-
-def run_resource_estimation(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, dict]:
-    """Run EFTQC resource estimation for vacuum and solvated Hamiltonians."""
-    from q2m3.interfaces import PySCFPennyLaneConverter
-
-    print("[Step 2] EFTQC Resource Estimation (Vacuum vs Solvated)")
-    print("-" * 70)
-
-    converter = PySCFPennyLaneConverter(basis="sto-3g", mapping="jordan_wigner")
-
-    # Vacuum Hamiltonian resource estimation
-    eftqc_vacuum = converter.estimate_qpe_resources(
-        symbols=geometry.symbols,
-        coords=geometry.coords,
-        charge=0,
-        target_error=0.0016,  # Chemical accuracy (1 kcal/mol)
-    )
-
-    # Solvated Hamiltonian resource estimation
-    eftqc_solvated = converter.estimate_qpe_resources(
-        symbols=geometry.symbols,
-        coords=geometry.coords,
-        charge=0,
-        mm_charges=mm_env.charges,
-        mm_coords=mm_env.coords,
-        target_error=0.0016,
-    )
-
-    # Print results
-    print("  Vacuum Hamiltonian (no MM):")
-    print(f"    Hamiltonian 1-norm:  {eftqc_vacuum['hamiltonian_1norm']:.2f} Ha")
-    print(f"    Logical Qubits:      {eftqc_vacuum['logical_qubits']}")
-    print(f"    Toffoli Gates:       {eftqc_vacuum['toffoli_gates']:,}")
-    print()
-
-    delta_lambda = (
-        (eftqc_solvated["hamiltonian_1norm"] - eftqc_vacuum["hamiltonian_1norm"])
-        / eftqc_vacuum["hamiltonian_1norm"]
-        * 100
-    )
-    delta_gates = (
-        (eftqc_solvated["toffoli_gates"] - eftqc_vacuum["toffoli_gates"])
-        / eftqc_vacuum["toffoli_gates"]
-        * 100
-    )
-
-    print(f"  Solvated Hamiltonian (2 TIP3P waters, {eftqc_solvated['n_mm_charges']} MM charges):")
-    print(
-        f"    Hamiltonian 1-norm:  {eftqc_solvated['hamiltonian_1norm']:.2f} Ha (Δλ = {delta_lambda:+.1f}%)"
-    )
-    print(f"    Logical Qubits:      {eftqc_solvated['logical_qubits']}")
-    print(
-        f"    Toffoli Gates:       {eftqc_solvated['toffoli_gates']:,} (ΔG = {delta_gates:+.1f}%)"
-    )
-    print()
-    print("  Note: MM embedding only modifies 1-electron integrals (QM-MM electrostatics).")
-    print("        Resource estimates are dominated by 2-electron integrals, which remain")
-    print("        unchanged. Thus, MM embedding has minimal impact on EFTQC resources.")
-    print()
-
-    return {"vacuum": eftqc_vacuum, "solvated": eftqc_solvated}
-
-
 def build_hamiltonians(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict:
     """Build PennyLane Hamiltonians for vacuum and solvated systems."""
     from q2m3.interfaces import PySCFPennyLaneConverter
@@ -312,13 +187,55 @@ def build_hamiltonians(geometry: MolecularGeometry, mm_env: MMEnvironment) -> di
     }
 
 
+def run_classical_hf(geometry: MolecularGeometry, mm_env: MMEnvironment) -> dict[str, float]:
+    """Run classical Hartree-Fock calculations for vacuum and solvated systems."""
+    from pyscf import gto, qmmm, scf
+
+    print("[Step 2] Classical Hartree-Fock Reference")
+    print("-" * 70)
+
+    # Build atom string from geometry
+    atom_str = "; ".join(
+        f"{s} {c[0]} {c[1]} {c[2]}" for s, c in zip(geometry.symbols, geometry.coords, strict=True)
+    )
+
+    # Vacuum HF
+    mol_vacuum = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
+    mf_vacuum = scf.RHF(mol_vacuum)
+    mf_vacuum.verbose = 0
+    mf_vacuum.run()
+    hf_vacuum = mf_vacuum.e_tot
+
+    # Solvated HF (with MM embedding)
+    mol_solvated = gto.M(atom=atom_str, basis="sto-3g", unit="Angstrom")
+    mf_solvated = scf.RHF(mol_solvated)
+    mf_solvated.verbose = 0
+    mm_coords_bohr = mm_env.coords * ANGSTROM_TO_BOHR
+    mf_solvated = qmmm.mm_charge(mf_solvated, mm_coords_bohr, mm_env.charges)
+    mf_solvated.run()
+    hf_solvated = mf_solvated.e_tot
+
+    hf_stabilization = compute_stabilization_kcal(hf_vacuum, hf_solvated)
+
+    print(f"  Vacuum HF:     {hf_vacuum:.8f} Ha")
+    print(f"  Solvated HF:   {hf_solvated:.8f} Ha")
+    print(f"  Stabilization: {hf_stabilization:.4f} kcal/mol")
+    print()
+
+    return {
+        "vacuum": hf_vacuum,
+        "solvated": hf_solvated,
+        "stabilization": hf_stabilization,
+    }
+
+
 def verify_expectation_values(
     hamiltonians: dict, hf_results: dict[str, float], device_type: str
 ) -> dict[str, float]:
     """Verify Hamiltonians via HF expectation values."""
     import pennylane as qml
 
-    print("[Step 4] Hamiltonian Expectation Value Verification")
+    print("[Step 3] Hamiltonian Expectation Value Verification")
     print("-" * 70)
 
     dev = qml.device(device_type, wires=hamiltonians["n_qubits"])
@@ -406,7 +323,7 @@ def run_qpe_estimation(
     """Run QPE energy estimation for vacuum and solvated systems."""
     from q2m3.core.qpe import QPEEngine
 
-    print("[Step 5] QPE Energy Estimation")
+    print("[Step 4] QPE Energy Estimation")
     print("-" * 70)
 
     if params is None:
@@ -562,39 +479,32 @@ def run_validation_checks(
 # Main Entry Point
 # =============================================================================
 def main():
+    """H2 QPE validation: vacuum vs solvated energy comparison."""
     print("=" * 70)
-    print("        H2 + MM Water: Minimal QPE Solvation Validation")
+    print("        H2 + MM Water: QPE Solvation Validation")
     print("=" * 70)
-    print()
 
-    device_type = detect_device()
-    print(f"Device: {device_type}")
-    print()
+    device_type = get_best_available_device()
+    print(f"Device: {device_type}\n")
 
-    # Setup molecular system
     geometry = create_h2_geometry()
     mm_env = create_tip3p_environment()
 
-    # Step 1: Build Hamiltonians (before any calculations)
+    # Step 1: Build Hamiltonians
     hamiltonians = build_hamiltonians(geometry, mm_env)
-
-    # Step 1.5: Circuit visualization (show circuit structure first)
     print_circuit_visualization(hamiltonians, device_type)
 
-    # Step 2: Resource estimation
-    run_resource_estimation(geometry, mm_env)
-
-    # Step 3: Classical HF reference
+    # Step 2: Classical HF reference
     hf_results = run_classical_hf(geometry, mm_env)
 
-    # Step 4: Verify expectation values
+    # Step 3: Verify expectation values
     exp_results = verify_expectation_values(hamiltonians, hf_results, device_type)
 
-    # Step 5: QPE estimation
+    # Step 4: QPE estimation
     qpe_results = run_qpe_estimation(hamiltonians, hf_results, device_type)
 
-    # Step 6: Summary and validation
-    print("[Step 6] Summary and Validation")
+    # Step 5: Summary and validation
+    print("[Step 5] Summary and Validation")
     print("-" * 70)
     print_summary(hf_results, exp_results, qpe_results)
     run_validation_checks(hf_results, exp_results, qpe_results)

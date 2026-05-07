@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 
 """
@@ -200,6 +200,7 @@ class PySCFPennyLaneConverter:
         mm_coords: np.ndarray | None = None,
         active_electrons: int | None = None,
         active_orbitals: int | None = None,
+        energy_shift: float | None = None,
     ) -> tuple[Any, int, np.ndarray]:
         """
         Build PennyLane Hamiltonian with MM point charge embedding.
@@ -208,9 +209,16 @@ class PySCFPennyLaneConverter:
         1. Get vacuum Hamiltonian from molecular_hamiltonian (correct eigenspectrum)
         2. Compute MM corrections to single-electron integrals
         3. Add MM correction as Pauli operators to the vacuum Hamiltonian
+        4. Optionally apply energy shift for QPE precision enhancement
 
         This approach preserves the correct eigenspectrum structure from
         molecular_hamiltonian while adding MM electrostatic effects.
+
+        The energy_shift parameter enables "shifted QPE", where
+        ``H' = H - E_ref * I``. This allows QPE to measure
+        ``ΔE = E - E_ref`` instead of absolute energy E, enabling higher
+        precision for detecting small energy changes (like MM effects)
+        without phase overflow in QPE circuits.
 
         Args:
             symbols: List of atomic symbols ['O', 'H', 'H', 'H']
@@ -220,6 +228,9 @@ class PySCFPennyLaneConverter:
             mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3)
             active_electrons: Number of active electrons
             active_orbitals: Number of active orbitals
+            energy_shift: Reference energy to subtract from Hamiltonian (optional).
+                If provided, the returned Hamiltonian is ``H' = H - E_shift * I``.
+                This enables QPE to measure ``ΔE`` with higher precision.
 
         Returns:
             tuple: (hamiltonian, n_qubits, hf_state)
@@ -248,7 +259,7 @@ class PySCFPennyLaneConverter:
 
         H_vacuum, n_qubits = qml.qchem.molecular_hamiltonian(**mol_kwargs)
 
-        # If no MM charges, return vacuum Hamiltonian
+        # If no MM charges, return vacuum Hamiltonian (with optional energy shift)
         if mm_charges is None or len(mm_charges) == 0:
             hf_state = qml.qchem.hf_state(
                 (
@@ -258,6 +269,10 @@ class PySCFPennyLaneConverter:
                 ),
                 n_qubits,
             )
+            # Apply energy shift if requested
+            if energy_shift is not None:
+                shift_term = qml.s_prod(-energy_shift, qml.Identity(wires=list(range(n_qubits))))
+                H_vacuum = qml.sum(*list(H_vacuum.operands), shift_term)
             return H_vacuum, n_qubits, hf_state
 
         # Step 2: Compute MM corrections using PySCF
@@ -323,6 +338,15 @@ class PySCFPennyLaneConverter:
         # Step 4: Combine using qml.sum to preserve Sum type for lightning compatibility
         all_operands = list(H_vacuum.operands) + mm_terms
         H_solvated = qml.sum(*all_operands)
+
+        # Step 5: Apply energy shift if requested (for high-precision QPE)
+        # H' = H - E_shift * I allows QPE to measure ΔE with higher precision
+        if energy_shift is not None:
+            # Subtract energy_shift from Identity term
+            # This shifts the entire spectrum: E' = E - E_shift
+            shift_term = qml.s_prod(-energy_shift, qml.Identity(wires=list(range(n_qubits))))
+            H_shifted = qml.sum(*list(H_solvated.operands), shift_term)
+            H_solvated = H_shifted
 
         # Generate HF reference state
         hf_state = qml.qchem.hf_state(active_electrons, n_qubits)
@@ -434,7 +458,7 @@ class PySCFPennyLaneConverter:
         """
         Estimate EFTQC resources for QPE algorithm using PennyLane.
 
-        Uses PennyLane's qml.resource.DoubleFactorization to estimate quantum
+        Uses PennyLane's qml.estimator.DoubleFactorization to estimate quantum
         computing resources (Toffoli gates and logical qubits) required for
         Quantum Phase Estimation on molecular systems.
 
@@ -448,8 +472,8 @@ class PySCFPennyLaneConverter:
             charge: Total molecular charge (default: 0 for neutral)
             mm_charges: MM point charges array (optional, for solvated Hamiltonian)
             mm_coords: MM charge coordinates in Angstrom, shape (n_mm, 3)
-            active_electrons: Number of electrons in active space (optional, for future)
-            active_orbitals: Number of spatial orbitals in active space (optional, for future)
+            active_electrons: Number of electrons in active space (optional)
+            active_orbitals: Number of spatial orbitals in active space (optional)
             target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)
 
         Returns:
@@ -465,6 +489,8 @@ class PySCFPennyLaneConverter:
                 - basis: Basis set used
                 - mm_embedded: Whether MM embedding was applied
                 - n_mm_charges: Number of MM point charges (0 if vacuum)
+                - active_electrons: Active-space electron count passed to the estimator
+                - active_orbitals: Active-space orbital count passed to the estimator
 
         Raises:
             ValueError: If coords shape does not match number of symbols
@@ -482,7 +508,7 @@ class PySCFPennyLaneConverter:
             ...     symbols, coords, mm_charges=mm_charges, mm_coords=mm_coords
             ... )
         """
-        from pennylane.resource import DoubleFactorization
+        from pennylane.estimator import DoubleFactorization
 
         ANGSTROM_TO_BOHR = 1.8897259886
 
@@ -512,8 +538,24 @@ class PySCFPennyLaneConverter:
             symbols=symbols, coordinates=coords_arr, charge=charge, basis_name=self.basis
         )
 
-        # Compute electron integrals (vacuum)
-        core, one_electron, two_electron = qml.qchem.electron_integrals(mol)()
+        # Compute electron integrals; route through PennyLane's active-space
+        # selector so the resulting (h1, h2) match its DoubleFactorization
+        # MO convention.
+        core_indices: list[int] | None = None
+        active_indices: list[int] | None = None
+        if active_electrons is not None and active_orbitals is not None:
+            if (mol.n_electrons - active_electrons) % 2 != 0:
+                raise ValueError(
+                    f"Active space requires (n_electrons - active_electrons) to be even; "
+                    f"got n_electrons={mol.n_electrons}, active_electrons={active_electrons}"
+                )
+            n_core = (mol.n_electrons - active_electrons) // 2
+            core_indices = list(range(n_core))
+            active_indices = list(range(n_core, n_core + active_orbitals))
+
+        core, one_electron, two_electron = qml.qchem.electron_integrals(
+            mol, core=core_indices, active=active_indices
+        )()
 
         # Convert to numpy for potential modification
         one_electron = np.asarray(one_electron)
@@ -550,6 +592,8 @@ class PySCFPennyLaneConverter:
             # Transform to MO basis using canonical HF orbitals
             mf_vac.run()
             mo_coeff = mf_vac.mo_coeff
+            if active_indices is not None:
+                mo_coeff = mo_coeff[:, active_indices]
             delta_h1e_mo = mo_coeff.T @ delta_h1e_ao @ mo_coeff
 
             # Add MM correction to one-electron integrals
@@ -576,6 +620,8 @@ class PySCFPennyLaneConverter:
         n_orbitals = one_electron.shape[0]
         trotter_steps = 10 * n_orbitals
 
+        reported_n_electrons = active_electrons if active_electrons is not None else mol.n_electrons
+
         return {
             "logical_qubits": algo.qubits,
             "toffoli_gates": algo.gates,
@@ -583,9 +629,11 @@ class PySCFPennyLaneConverter:
             "qpe_iterations": qpe_iterations,
             "trotter_steps": trotter_steps,
             "target_error": target_error,
-            "n_electrons": mol.n_electrons,
+            "n_electrons": reported_n_electrons,
             "n_orbitals": n_orbitals,
             "basis": self.basis,
             "mm_embedded": mm_embedded,
             "n_mm_charges": n_mm,
+            "active_electrons": active_electrons,
+            "active_orbitals": active_orbitals,
         }

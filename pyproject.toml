@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=65.0", "wheel"]
+requires = ["setuptools>=80", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "q2m3"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Quantum-Classical Hybrid QM/MM Framework POC with QPE for Early Fault-Tolerant Quantum Computers"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "IHPC Quantum Computing Team"},
 ]
@@ -25,13 +25,14 @@ classifiers = [
 
 dependencies = [
     "pyscf>=2.0.0",
-    "pennylane>=0.33.0",
-    "numpy>=1.21.0,<2.0.0",
+    "pennylane>=0.44.0",
+    "numpy>=2.0.0",
     "scipy>=1.7.0",
     "pyyaml>=6.0",
     "matplotlib>=3.5.0",
     "tqdm>=4.65.0",
     "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
@@ -40,18 +41,33 @@ dev = [
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    "pre-commit>=4.0.0",
+    "commitizen>=4.10.0",
     "ipython>=8.0.0",
     "jupyter>=1.0.0",
     "notebook>=6.5.0",
 ]
+docs = [
+    "sphinx>=8.0.0",
+    "furo>=2024.8.6",
+    "myst-parser>=4.0.0",
+    "linkify-it-py>=2.0.0",
+    "sphinx-copybutton>=0.5.2",
+    "sphinxcontrib-mermaid>=1.0.0",
+]
 gpu = [
-    "pennylane-lightning[gpu]>=0.33.0",
+    "pennylane-lightning[gpu]>=0.44.0",
     "cupy-cuda12x>=12.0.0",  # CUDA 12/13 compatible
     "jax[cuda12]>=0.4.0",    # JAX with CUDA support
 ]
 catalyst = [
-    "pennylane-catalyst>=0.5.0",
-    "pennylane-lightning>=0.33.0",
+    "pennylane-catalyst>=0.14.0",
+    "pennylane-lightning>=0.44.0",
+]
+solvation = [
+    "q2m3[catalyst]",
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
 ]
 viz = [
     "py3dmol>=2.0.0",
@@ -60,15 +76,18 @@ viz = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/quantum-qmmm/poc"
-"Documentation" = "https://github.com/quantum-qmmm/poc/docs"
-"Bug Tracker" = "https://github.com/quantum-qmmm/poc/issues"
+"Homepage" = "https://github.com/yjmaxpayne/q2m3"
+"Documentation" = "https://github.com/yjmaxpayne/q2m3#readme"
+"Bug Tracker" = "https://github.com/yjmaxpayne/q2m3/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.json", "*.xyz"]
+
+[tool.setuptools_scm]
+fallback_version = "0.1.0.dev0"
 
 [tool.black]
 line-length = 100
@@ -78,6 +97,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = ["examples/_archived"]
 
 [tool.ruff.lint]
 select = [
@@ -94,7 +114,13 @@ ignore = [
     "B904",  # raise from
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"examples/h2_qpe_validation.py" = ["E402"]
+"examples/h2_mc_solvation.py" = ["E402"]
+"examples/h3o_mc_solvation.py" = ["E402"]
+
 [tool.ruff.lint.isort]
+known-first-party = ["q2m3"]
 known-third-party = ["pyscf", "pennylane", "numpy", "scipy"]
 
 [tool.pytest.ini_options]
@@ -108,6 +134,7 @@ addopts = [
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "solvation: marks tests requiring solvation dependencies (Catalyst + JAX)",
     "catalyst: marks tests requiring Catalyst (skip if not installed)",
     "gpu: marks tests requiring lightning.gpu (skip if not available)",
     "rdm: marks tests related to 1-RDM measurement functionality",
@@ -121,3 +148,12 @@ omit = ["*/tests/*", "*/__init__.py"]
 precision = 2
 show_missing = true
 skip_covered = false
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "scm"
+tag_format = "v$version"
+version_scheme = "semver"
+changelog_file = "CHANGELOG.md"
+update_changelog_on_bump = false
+changelog_incremental = true

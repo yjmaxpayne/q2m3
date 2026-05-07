@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Ye Jun <yjmaxpayne@hotmail.com>
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
 
 """
@@ -6,6 +6,7 @@ Main Quantum-QM/MM interface combining all components.
 """
 
 import logging
+import time
 from typing import Any
 
 import numpy as np
@@ -112,14 +113,20 @@ class QuantumQMMM:
             Dictionary containing:
                 - energy: Ground state energy (Hartree)
                 - energy_hf: HF reference energy (Hartree)
-                - energy_difference: |E_QPE - E_HF| (Hartree)
+                - energy_difference: ``|E_QPE - E_HF|`` (Hartree)
                 - density_matrix: Electronic density matrix
                 - atomic_charges: Mulliken charges
                 - convergence: Convergence information
                 - eftqc_resources: (optional) EFTQC resource estimation if requested
+                - timing: Fine-grained timing breakdown for performance analysis
         """
+        # Initialize timing collection
+        timing = {}
+
         # Build QM/MM Hamiltonian (includes PennyLane Hamiltonian)
+        t_start = time.perf_counter()
         hamiltonian_data = self._build_qmmm_hamiltonian()
+        timing["hamiltonian_build_s"] = time.perf_counter() - t_start
 
         # Select QPE mode based on configuration
         use_real_qpe = self.qpe_config.get("use_real_qpe", True)
@@ -130,11 +137,17 @@ class QuantumQMMM:
             # Fallback to classical HF simulation
             qpe_result = self.qpe_engine.estimate_ground_state_energy(hamiltonian_data)
 
+        # Merge timing from QPE result if available
+        if "timing" in qpe_result:
+            timing.update(qpe_result["timing"])
+
         # Extract density matrix
         density_matrix = qpe_result["density_matrix"]
 
         # Perform Mulliken charge analysis
+        t_start = time.perf_counter()
         atomic_charges = self._mulliken_analysis(density_matrix, hamiltonian_data["mol"])
+        timing["mulliken_analysis_s"] = time.perf_counter() - t_start
 
         # Build result dictionary
         result = {
@@ -143,6 +156,7 @@ class QuantumQMMM:
             "rdm_source": qpe_result.get("rdm_source", "hartree_fock"),
             "atomic_charges": atomic_charges,
             "convergence": qpe_result["convergence"],
+            "timing": timing,
         }
 
         # Add QPE-specific fields if available
@@ -232,8 +246,11 @@ class QuantumQMMM:
             hamiltonian_data: Dictionary containing PennyLane Hamiltonian and HF state
 
         Returns:
-            Dictionary containing QPE results
+            Dictionary containing QPE results with fine-grained timing
         """
+        # Initialize timing collection
+        timing = {}
+
         H = hamiltonian_data["pennylane_hamiltonian"]
         hf_state = hamiltonian_data["hf_state"]
         n_qubits = hamiltonian_data["n_qubits"]
@@ -268,7 +285,8 @@ class QuantumQMMM:
                     f"base_time='auto' or a smaller value."
                 )
 
-        # Build and execute QPE circuit
+        # Build QPE circuit (includes JIT compilation for Catalyst)
+        t_start = time.perf_counter()
         qpe_circuit = self.qpe_engine._build_standard_qpe_circuit(
             H,
             hf_state,
@@ -277,8 +295,13 @@ class QuantumQMMM:
             n_trotter_steps=n_trotter_steps,
             n_shots=n_shots,
         )
+        timing["qpe_circuit_build_s"] = time.perf_counter() - t_start
 
+        # Execute QPE circuit
+        t_start = time.perf_counter()
         samples = qpe_circuit()
+        timing["qpe_circuit_exec_s"] = time.perf_counter() - t_start
+
         energy = self.qpe_engine._extract_energy_from_samples(samples, base_time)
 
         # HF energy as reference
@@ -310,6 +333,7 @@ class QuantumQMMM:
             device_type = self.qpe_config.get("device_type", "default.qubit")
 
             # Measure 1-RDM in spin-orbital basis (now supports GPU + batched measurement)
+            t_start = time.perf_counter()
             spin_rdm = rdm_estimator.measure_1rdm(
                 hamiltonian=H,
                 hf_state=hf_state,
@@ -318,8 +342,10 @@ class QuantumQMMM:
                 device_type=device_type,
                 use_catalyst=self.use_catalyst,
             )
+            timing["rdm_measurement_s"] = time.perf_counter() - t_start
 
             # Convert spin-orbital RDM to spatial-orbital RDM
+            t_start = time.perf_counter()
             spatial_rdm = rdm_estimator.spin_to_spatial_rdm(spin_rdm)
 
             # Check if active space was used - need to convert to AO basis
@@ -340,6 +366,7 @@ class QuantumQMMM:
             else:
                 # Full space: spatial RDM is already in MO basis matching AO dimensions
                 density_matrix = spatial_rdm
+            timing["rdm_postprocess_s"] = time.perf_counter() - t_start
             rdm_source = "quantum_measurement"
         else:
             # Fallback to HF density matrix
@@ -359,6 +386,7 @@ class QuantumQMMM:
                 "n_shots": n_shots,
                 "rdm_enabled": self.rdm_config.get("enabled", True),
             },
+            "timing": timing,
         }
 
     def _mulliken_analysis(self, density_matrix: np.ndarray, mol: Any) -> dict[str, float]:

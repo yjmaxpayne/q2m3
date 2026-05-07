@@ -8,11 +8,19 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 1%
+        threshold: 0.5%
     patch:
       default:
         target: auto
-        threshold: 1%
+        threshold: 0.5%
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
 
 comment:
   layout: "reach,diff,flags,tree"

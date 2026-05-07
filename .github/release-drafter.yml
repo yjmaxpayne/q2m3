@@ -1,0 +1,64 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+tag-prefix: 'v'
+categories:
+  - title: 'Breaking Changes'
+    labels:
+      - 'major'
+  - title: 'Features'
+    labels:
+      - 'feat'
+      - 'minor'
+  - title: 'Bug Fixes'
+    labels:
+      - 'fix'
+      - 'patch'
+  - title: 'Documentation'
+    labels:
+      - 'docs'
+  - title: 'Tests'
+    labels:
+      - 'test'
+  - title: 'Performance'
+    labels:
+      - 'perf'
+  - title: 'Refactoring'
+    labels:
+      - 'refactor'
+  - title: 'CI'
+    labels:
+      - 'ci'
+  - title: 'Maintenance'
+    labels:
+      - 'chore'
+exclude-labels:
+  - 'skip-changelog'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+      - 'feat'
+  patch:
+    labels:
+      - 'patch'
+      - 'fix'
+      - 'docs'
+      - 'test'
+      - 'perf'
+      - 'refactor'
+      - 'ci'
+      - 'chore'
+  default: patch
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS

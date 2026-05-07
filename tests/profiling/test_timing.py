@@ -3,7 +3,6 @@
 
 """Tests for profiling/timing.py - general-purpose timing utilities."""
 
-
 from q2m3.profiling.timing import ProfilingStats, profile_function, profile_section
 
 

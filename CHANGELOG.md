@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.0 (2026-05-08)
 
 ### Feat
 
@@ -60,6 +60,7 @@
 
 ### Fix
 
+- revised release-drafter workflow to avoid draft release on PR
 - **solvation**: resolved warnings due to problematic solvent placement
 - **solvation**: propagate hf_corrected deferred circuit metadata and IR cache status
 - **solvation**: replace deprecated device shots with qml.set_shots transform

@@ -88,6 +88,9 @@ for reuse when the structural cache key is unchanged.
 The cache key is structural: molecule, basis, active space, QPE wire count,
 Trotter depth, and circuit style matter. Runtime solvent coordinates and the
 number of waters do not change the circuit topology in the same way.
+`embedding_mode` is also part of the key because `full_oneelectron` fixed-MO
+embedding can introduce off-diagonal one-electron operator support that is not
+present in a diagonal coefficient update.
 
 ## Key Design Decisions
 
@@ -99,6 +102,7 @@ number of waters do not change the circuit topology in the same way.
 | Keep energies in Hartree internally | Unit conversion is visible and avoids mixed-unit mistakes |
 | Preserve classical fallback paths | They test QM/MM plumbing when quantum execution is unavailable |
 | Separate sampling from quantum execution | MC proposal logic remains testable without Catalyst |
+| Keep full-one-electron embedding fixed-only | Runtime coefficient updates are diagonal-only; full active-space `Delta h_pq` changes operator support |
 
 ## Extension Points
 

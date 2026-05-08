@@ -92,10 +92,16 @@ class SolvationConfig:
         - "fixed": Compile-once vacuum Hamiltonian (medium)
         - "dynamic": Per-step MM-embedded Hamiltonian (slow, most complete)
 
+    The embedding_mode field selects the MM embedding operator boundary:
+        - "diagonal": Identity/Z coefficient update compatibility mode
+        - "full_oneelectron": Fixed-MO full one-electron operator support,
+          available only with hamiltonian_mode="fixed"
+
     Attributes:
         molecule: Molecular system configuration
         qpe_config: QPE parameters
         hamiltonian_mode: Energy evaluation strategy
+        embedding_mode: MM embedding mode for QPE Hamiltonian construction
         n_waters: Number of TIP3P water molecules
         n_mc_steps: Total MC sampling steps
         temperature: Simulation temperature in Kelvin
@@ -112,6 +118,7 @@ class SolvationConfig:
     molecule: MoleculeConfig
     qpe_config: QPEConfig = field(default_factory=QPEConfig)
     hamiltonian_mode: Literal["hf_corrected", "fixed", "dynamic"] = "dynamic"
+    embedding_mode: Literal["diagonal", "full_oneelectron"] = "diagonal"
     n_waters: int = 10
     n_mc_steps: int = 500
     temperature: float = 300.0
@@ -155,6 +162,18 @@ class SolvationConfig:
         if self.hamiltonian_mode not in _valid_modes:
             raise ValueError(
                 f"hamiltonian_mode must be one of {_valid_modes}, " f"got {self.hamiltonian_mode!r}"
+            )
+
+        _valid_embedding_modes = ("diagonal", "full_oneelectron")
+        embedding_mode = getattr(self, "embedding_mode", "diagonal")
+        if embedding_mode not in _valid_embedding_modes:
+            raise ValueError(
+                f"embedding_mode must be one of {_valid_embedding_modes}, "
+                f"got {embedding_mode!r}"
+            )
+        if embedding_mode == "full_oneelectron" and self.hamiltonian_mode != "fixed":
+            raise ValueError(
+                "full_oneelectron embedding is supported only for fixed Hamiltonian mode"
             )
 
         if (

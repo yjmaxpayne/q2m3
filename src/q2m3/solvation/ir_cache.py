@@ -8,9 +8,10 @@ Implements two-phase compilation caching:
   Phase A (cache miss): Subprocess full @qjit(keep_intermediate=True) -> save LLVM IR
   Phase B (cache hit):  replace_ir + jit_compile -> skip MLIR pipeline (~5x faster)
 
-Cache key = circuit topology parameters only. Hamiltonian coefficients are JAX
-runtime parameters that don't affect LLVM IR structure, so IR compiled for
-n_waters=5 is valid for n_waters=20.
+Cache key = circuit topology parameters only. Runtime Hamiltonian coefficients
+do not affect LLVM IR structure, so IR compiled for n_waters=5 is valid for
+n_waters=20. Fixed full-one-electron embedding can change operator support, so
+embedding_mode is part of the key.
 """
 
 from __future__ import annotations
@@ -51,6 +52,7 @@ def compute_cache_key(config: SolvationConfig) -> str:
     The key encodes parameters that affect LLVM IR structure:
     - Molecule identity (name, basis, active space)
     - QPE circuit parameters (estimation wires, Trotter steps, shots)
+    - Hamiltonian circuit style and embedding operator support
 
     Parameters that only affect runtime coefficient values (n_waters,
     temperature, coordinates) are NOT included.
@@ -71,6 +73,7 @@ def compute_cache_key(config: SolvationConfig) -> str:
         f"{qpe.n_trotter_steps}t",
         f"{qpe.n_shots}sh",
         circuit_style,
+        config.embedding_mode,
     ]
 
     # base_time depends on target_resolution and energy_range — hash them
@@ -122,6 +125,7 @@ def _serialize_config_for_subprocess(config: SolvationConfig) -> dict[str, Any]:
             "qpe_interval": config.qpe_config.qpe_interval,
         },
         "hamiltonian_mode": config.hamiltonian_mode,
+        "embedding_mode": config.embedding_mode,
         "n_waters": config.n_waters,
         "n_mc_steps": config.n_mc_steps,
         "temperature": config.temperature,
@@ -142,6 +146,7 @@ def _reconstruct_config(d: dict[str, Any]) -> SolvationConfig:
         molecule=MoleculeConfig(**d["molecule"]),
         qpe_config=QPEConfig(**d["qpe_config"]),
         hamiltonian_mode=d["hamiltonian_mode"],
+        embedding_mode=d.get("embedding_mode", "diagonal"),
         n_waters=d["n_waters"],
         n_mc_steps=d["n_mc_steps"],
         temperature=d["temperature"],

@@ -10,6 +10,7 @@ profiling scripts.
 
    h2-qpe-validation
    h2-resource-estimation
+   full-oneelectron-embedding
    h2-mc-solvation
    three-mode-solvation
 

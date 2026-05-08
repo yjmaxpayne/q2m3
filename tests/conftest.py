@@ -5,6 +5,12 @@
 Shared pytest fixtures for q2m3 tests.
 """
 
+import os
+
+# Keep JAX-based tests on CPU even when q2m3[gpu] is installed; explicit
+# lightning.gpu tests still exercise the PennyLane GPU backend.
+os.environ.setdefault("JAX_PLATFORMS", "cpu")
+
 import numpy as np
 import pennylane as qml
 import pytest

@@ -64,6 +64,8 @@ def _build_runtime_qpe_assets(
         "fixed": "E_QPE(H_vac)+E_MM",
         "dynamic": "E_QPE(H_eff)+E_MM",
     }
+    if config.embedding_mode == "full_oneelectron":
+        energy_formula_map["fixed"] = "E_QPE(H_fixed_full_oneelectron)+E_MM"
 
     if config.ir_cache_enabled:
         from .ir_cache import cache_path_for_config
@@ -99,6 +101,7 @@ def _build_runtime_qpe_assets(
     n_trotter_requested = config.qpe_config.n_trotter_steps
     circuit_metadata = {
         "hamiltonian_mode": config.hamiltonian_mode,
+        "embedding_mode": config.embedding_mode,
         "n_system_qubits": circuit_bundle.n_system_qubits,
         "n_estimation_wires": circuit_bundle.n_estimation_wires,
         "total_qubits": circuit_bundle.n_system_qubits + circuit_bundle.n_estimation_wires,
@@ -182,6 +185,8 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         "fixed": "E_QPE(H_vac)+E_MM",
         "dynamic": "E_QPE(H_eff)+E_MM",
     }
+    if config.embedding_mode == "full_oneelectron":
+        energy_formula_map["fixed"] = "E_QPE(H_fixed_full_oneelectron)+E_MM"
 
     if mode == "hf_corrected":
         # Deferred compilation: skip circuit build at startup.
@@ -189,6 +194,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
         cache_stats["deferred"] = True
         circuit_metadata = {
             "hamiltonian_mode": mode,
+            "embedding_mode": config.embedding_mode,
             "energy_formula": energy_formula_map[mode],
             "deferred": True,
         }

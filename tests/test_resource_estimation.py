@@ -11,6 +11,15 @@ import pytest
 from q2m3.interfaces import PySCFPennyLaneConverter
 
 
+def _base_operator(op):
+    """Return the non-scaled PennyLane operator for support checks."""
+    return getattr(op, "base", op)
+
+
+def _operator_name(op) -> str:
+    return getattr(_base_operator(op), "name", type(_base_operator(op)).__name__)
+
+
 class TestResourceEstimation:
     """Test EFTQC resource estimation functionality."""
 
@@ -170,6 +179,198 @@ class TestResourceEstimation:
         assert result_solvated["hamiltonian_1norm"] > 0
         assert result_solvated["mm_embedded"] is True
         assert result_vacuum["mm_embedded"] is False
+
+    def test_mm_embedding_mode_selects_diagonal_or_full_delta_h(self, converter):
+        """Resource estimates expose diagonal and full one-electron embedding rows."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+        mm_charges = np.array([0.25])
+        mm_coords = np.array([[2.2, 0.7, 0.3]])
+
+        diagonal = converter.estimate_qpe_resources(
+            symbols,
+            coords,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="diagonal",
+        )
+        full = converter.estimate_qpe_resources(
+            symbols,
+            coords,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="full_oneelectron",
+        )
+
+        assert diagonal["embedding_mode"] == "diagonal"
+        assert full["embedding_mode"] == "full_oneelectron"
+        assert diagonal["requested_embedding_mode"] == "diagonal"
+        assert full["requested_embedding_mode"] == "full_oneelectron"
+        assert diagonal["active_indices"] == [0, 1]
+        assert full["active_indices"] == [0, 1]
+        assert diagonal["fixed_mo"] is True
+        assert full["two_electron_tensor_fixed"] is True
+        assert full["delta_h_offdiag_fro"] > 0.0
+        assert abs(full["hamiltonian_1norm"] - diagonal["hamiltonian_1norm"]) > 1e-10
+
+    def test_default_mm_resource_mode_matches_explicit_full_oneelectron(self, converter):
+        """Historical default MM resource rows are explicit full-oneelectron rows."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+        mm_charges = np.array([-0.834, 0.417, 0.417])
+        mm_coords = np.array([[3.0, 0.0, 0.0], [3.5, 0.8, 0.0], [3.5, -0.8, 0.0]])
+
+        default = converter.estimate_qpe_resources(
+            symbols,
+            coords,
+            active_electrons=2,
+            active_orbitals=2,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+        )
+        explicit = converter.estimate_qpe_resources(
+            symbols,
+            coords,
+            active_electrons=2,
+            active_orbitals=2,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            embedding_mode="full_oneelectron",
+        )
+
+        assert default["embedding_mode"] == "full_oneelectron"
+        assert default["hamiltonian_1norm"] == pytest.approx(explicit["hamiltonian_1norm"])
+        assert default["toffoli_gates"] == explicit["toffoli_gates"]
+        assert default["delta_h_diag_fro"] == pytest.approx(explicit["delta_h_diag_fro"])
+        assert default["delta_h_offdiag_fro"] == pytest.approx(explicit["delta_h_offdiag_fro"])
+
+    def test_vacuum_resource_estimate_records_no_embedding_state(self, converter):
+        """Vacuum resource rows record the effective embedding state as none."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+
+        result = converter.estimate_qpe_resources(symbols, coords)
+
+        assert result["embedding_mode"] == "none"
+        assert result["requested_embedding_mode"] is None
+        assert result["fixed_mo"] is False
+        assert result["two_electron_tensor_fixed"] is True
+        assert result["delta_h_diag_fro"] == pytest.approx(0.0)
+        assert result["delta_h_offdiag_fro"] == pytest.approx(0.0)
+
+    def test_invalid_embedding_mode_raises(self, converter):
+        """Unsupported embedding modes fail with a clear ValueError."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+
+        with pytest.raises(ValueError, match="embedding_mode"):
+            converter.estimate_qpe_resources(
+                symbols,
+                coords,
+                embedding_mode="offdiag_only",
+            )
+
+    def test_full_oneelectron_mm_hamiltonian_adds_offdiagonal_operator_support(self, converter):
+        """The full one-electron MM Hamiltonian exposes fixed off-diagonal Pauli support."""
+        from q2m3.core.hamiltonian_utils import decompose_hamiltonian
+
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+        mm_charges = np.array([0.25])
+        mm_coords = np.array([[2.2, 0.7, 0.3]])
+
+        diagonal, n_qubits_diag, hf_diag = converter.pyscf_to_pennylane_hamiltonian_with_mm(
+            symbols,
+            coords,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="diagonal",
+        )
+        full, n_qubits_full, hf_full = converter.pyscf_to_pennylane_hamiltonian_with_mm(
+            symbols,
+            coords,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="full_oneelectron",
+        )
+
+        _, diagonal_ops = decompose_hamiltonian(diagonal)
+        _, full_ops = decompose_hamiltonian(full)
+
+        assert n_qubits_full == n_qubits_diag == 4
+        np.testing.assert_array_equal(hf_full, hf_diag)
+        assert len(full_ops) > len(diagonal_ops)
+        assert any("X" in str(op) or "Y" in str(op) for op in full_ops)
+
+    def test_diagonal_mm_hamiltonian_appends_only_identity_and_z_corrections(self, converter):
+        """Diagonal MM mode preserves the historical Identity/Z correction boundary."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+        mm_charges = np.array([0.25])
+        mm_coords = np.array([[2.2, 0.7, 0.3]])
+
+        vacuum, _, _ = converter.pyscf_to_pennylane_hamiltonian(
+            symbols,
+            coords,
+            active_electrons=2,
+            active_orbitals=2,
+        )
+        diagonal, _, _ = converter.pyscf_to_pennylane_hamiltonian_with_mm(
+            symbols,
+            coords,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="diagonal",
+        )
+
+        correction_ops = list(diagonal.operands)[len(vacuum.operands) :]
+        assert correction_ops
+        assert {_operator_name(op) for op in correction_ops}.issubset({"Identity", "PauliZ"})
+
+    def test_full_oneelectron_hamiltonian_without_mm_charges_returns_vacuum_shape(self, converter):
+        """No-MM Hamiltonian calls ignore embedding mode and keep vacuum register shape."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+
+        vacuum, n_qubits_vac, hf_vac = converter.pyscf_to_pennylane_hamiltonian(
+            symbols,
+            coords,
+            active_electrons=2,
+            active_orbitals=2,
+        )
+        no_mm, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian_with_mm(
+            symbols,
+            coords,
+            active_electrons=2,
+            active_orbitals=2,
+            embedding_mode="full_oneelectron",
+        )
+
+        assert n_qubits == n_qubits_vac
+        np.testing.assert_array_equal(hf_state, hf_vac)
+        assert len(no_mm.operands) == len(vacuum.operands)
+
+    def test_invalid_hamiltonian_embedding_mode_raises(self, converter):
+        """Hamiltonian construction validates the requested embedding mode."""
+        symbols = ["H", "H"]
+        coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+
+        with pytest.raises(ValueError, match="embedding_mode"):
+            converter.pyscf_to_pennylane_hamiltonian_with_mm(
+                symbols,
+                coords,
+                embedding_mode="offdiag_only",
+            )
 
 
 class TestQuantumQMMMResourceEstimation:

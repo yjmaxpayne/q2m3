@@ -15,6 +15,7 @@ import pytest
 
 from q2m3.core.resource_estimation import (
     EFTQCResources,
+    EmbeddingDiagnostics,
     ResourceComparisonResult,
     compare_vacuum_solvated,
     derive_t_resources,
@@ -88,6 +89,59 @@ def test_estimate_resources_with_mm_charges():
 
     assert result.n_mm_charges == 3
     assert result.hamiltonian_1norm > 0
+    assert result.embedding_mode == "full_oneelectron"
+    assert isinstance(result.embedding_diagnostics, EmbeddingDiagnostics)
+    assert result.embedding_diagnostics.delta_h_hermitian_max_abs < 1e-10
+
+
+def test_estimate_resources_accepts_diagonal_embedding_mode():
+    """estimate_resources() forwards diagonal embedding mode to the converter."""
+    result = estimate_resources(
+        H2_SYMBOLS,
+        H2_COORDS,
+        active_electrons=2,
+        active_orbitals=2,
+        mm_charges=np.array([0.25]),
+        mm_coords=np.array([[2.2, 0.7, 0.3]]),
+        embedding_mode="diagonal",
+    )
+
+    assert result.embedding_mode == "diagonal"
+    assert result.embedding_diagnostics is not None
+    assert result.embedding_diagnostics.active_indices == (0, 1)
+    assert result.embedding_diagnostics.delta_h_offdiag_fro > 0.0
+
+
+def test_h2_one_water_diagonal_and_full_modes_return_finite_resources():
+    """H2 + one TIP3P water returns finite resources in both MM modes."""
+    diagonal = estimate_resources(
+        H2_SYMBOLS,
+        H2_COORDS,
+        active_electrons=2,
+        active_orbitals=2,
+        mm_charges=MM_CHARGES_1W,
+        mm_coords=MM_COORDS_1W,
+        embedding_mode="diagonal",
+    )
+    full = estimate_resources(
+        H2_SYMBOLS,
+        H2_COORDS,
+        active_electrons=2,
+        active_orbitals=2,
+        mm_charges=MM_CHARGES_1W,
+        mm_coords=MM_COORDS_1W,
+        embedding_mode="full_oneelectron",
+    )
+
+    for result in (diagonal, full):
+        assert np.isfinite(result.hamiltonian_1norm)
+        assert result.logical_qubits > 0
+        assert result.toffoli_gates > 0
+        assert result.embedding_diagnostics is not None
+        assert result.embedding_diagnostics.delta_h_hermitian_max_abs < 1e-10
+
+    assert diagonal.embedding_mode == "diagonal"
+    assert full.embedding_mode == "full_oneelectron"
 
 
 # ------------------------------------------------------------------
@@ -109,20 +163,40 @@ def test_compare_vacuum_solvated_h2():
     assert isinstance(result.solvated, EFTQCResources)
     assert result.vacuum.n_mm_charges == 0
     assert result.solvated.n_mm_charges == 3
+    assert result.vacuum.embedding_mode == "none"
+    assert result.solvated.embedding_mode == "full_oneelectron"
+
+
+def test_compare_vacuum_solvated_forwards_embedding_mode():
+    """compare_vacuum_solvated() can compare diagonal resource rows."""
+    result = compare_vacuum_solvated(
+        H2_SYMBOLS,
+        H2_COORDS,
+        active_electrons=2,
+        active_orbitals=2,
+        mm_charges=np.array([0.25]),
+        mm_coords=np.array([[2.2, 0.7, 0.3]]),
+        embedding_mode="diagonal",
+    )
+
+    assert result.vacuum.embedding_mode == "none"
+    assert result.solvated.embedding_mode == "diagonal"
+    assert result.solvated.embedding_diagnostics is not None
 
 
 def test_delta_lambda_positive():
-    """MM charges generally increase Hamiltonian 1-norm (delta_lambda_percent != 0)."""
+    """Explicit full-oneelectron comparison uses the documented delta formula."""
     result = compare_vacuum_solvated(
         H2_SYMBOLS,
         H2_COORDS,
         mm_charges=MM_CHARGES_1W,
         mm_coords=MM_COORDS_1W,
+        embedding_mode="full_oneelectron",
     )
 
-    # delta_lambda_percent should be non-zero when MM charges are present
     assert result.delta_lambda_percent != pytest.approx(0.0)
-    # Verify the formula is correct
+    assert result.solvated.embedding_mode == "full_oneelectron"
+
     expected = (
         (result.solvated.hamiltonian_1norm - result.vacuum.hamiltonian_1norm)
         / result.vacuum.hamiltonian_1norm

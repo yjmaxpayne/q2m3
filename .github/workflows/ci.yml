@@ -53,7 +53,7 @@ jobs:
         run: uv run black --check src/ tests/ --line-length 100
 
       - name: Verify pytest collection
-        run: uv run pytest tests/ --collect-only -q
+        run: uv run pytest tests/ --collect-only -q --no-cov
 
       - name: Run tests with coverage
         run: |

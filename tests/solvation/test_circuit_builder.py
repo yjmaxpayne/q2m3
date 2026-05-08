@@ -145,16 +145,32 @@ class TestBuildOperatorIndexMap:
 
 
 # ============================================================================
-# Integration Tests: build_qpe_circuit (requires Catalyst + PySCF)
+# Integration Tests: build_qpe_circuit (real PySCF; qjit compilation disabled)
 # ============================================================================
 
 
 @pytest.mark.solvation
 class TestBuildQPECircuit:
-    """Integration tests for build_qpe_circuit with real H2 system."""
+    """Integration tests for build_qpe_circuit with a real H2 system."""
+
+    @pytest.fixture(autouse=True)
+    def _disable_qjit_compile(self, monkeypatch):
+        """Exercise builder/QNode behavior without paying Catalyst compile cost."""
+        from q2m3.solvation import circuit_builder as cb
+
+        def identity_qjit(*args, **_kwargs):
+            if args and callable(args[0]):
+                return args[0]
+
+            def decorator(fn):
+                return fn
+
+            return decorator
+
+        monkeypatch.setattr(cb, "qjit", identity_qjit)
 
     def test_h2_probs_mode(self, h2_molecule_config, h2_hf_energy):
-        """build_qpe_circuit compiles H2/STO-3G circuit in probs mode."""
+        """build_qpe_circuit builds H2/STO-3G circuit in probs mode."""
         from q2m3.solvation.circuit_builder import QPECircuitBundle, build_qpe_circuit
         from q2m3.solvation.config import QPEConfig, SolvationConfig
 
@@ -162,11 +178,11 @@ class TestBuildQPECircuit:
             molecule=h2_molecule_config,
             qpe_config=QPEConfig(
                 n_estimation_wires=2,
-                n_trotter_steps=2,
+                n_trotter_steps=1,
                 n_shots=0,  # probs mode
             ),
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -193,20 +209,20 @@ class TestBuildQPECircuit:
         assert np.all(probs >= 0)
 
     def test_h2_shots_mode(self, h2_molecule_config, h2_hf_energy):
-        """build_qpe_circuit compiles H2/STO-3G circuit in shots mode."""
+        """build_qpe_circuit builds H2/STO-3G circuit in shots mode."""
         from q2m3.solvation.circuit_builder import build_qpe_circuit
         from q2m3.solvation.config import QPEConfig, SolvationConfig
 
-        n_shots = 100
+        n_shots = 8
         config = SolvationConfig(
             molecule=h2_molecule_config,
             qpe_config=QPEConfig(
                 n_estimation_wires=2,
-                n_trotter_steps=2,
+                n_trotter_steps=1,
                 n_shots=n_shots,
             ),
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -244,12 +260,12 @@ class TestBuildQPECircuit:
             molecule=h2_molecule_config,
             qpe_config=QPEConfig(
                 n_estimation_wires=2,
-                n_trotter_steps=2,
+                n_trotter_steps=1,
                 n_shots=30,
                 device_seed=123,
             ),
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -260,15 +276,15 @@ class TestBuildQPECircuit:
         assert captured[-1] == 123
 
     def test_compiled_circuit_reusable(self, h2_molecule_config, h2_hf_energy):
-        """Compiled circuit can be called with different coefficient arrays."""
+        """Circuit callable can be reused with different coefficient arrays."""
         from q2m3.solvation.circuit_builder import build_qpe_circuit
         from q2m3.solvation.config import QPEConfig, SolvationConfig
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=2),
-            n_waters=3,
-            n_mc_steps=10,
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -300,10 +316,10 @@ class TestBuildQPECircuit:
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=2, n_shots=0),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, n_shots=0),
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -326,10 +342,10 @@ class TestBuildQPECircuit:
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="dynamic",
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array
@@ -352,8 +368,8 @@ class TestBuildQPECircuit:
                 n_estimation_wires=2,
                 n_trotter_steps=MAX_TROTTER_STEPS_RUNTIME + 5,
             ),
-            n_waters=3,
-            n_mc_steps=10,
+            n_waters=1,
+            n_mc_steps=2,
         )
 
         qm_coords = h2_molecule_config.coords_array

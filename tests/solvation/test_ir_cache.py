@@ -318,15 +318,15 @@ class TestSerializeConfig:
 
 
 # ==========================================================================
-# Integration Tests (require Catalyst)
+# Integration Tests with deterministic cache/runtime doubles
 # ==========================================================================
 
 
 @pytest.mark.solvation
 class TestCacheIntegration:
-    """Integration tests that require Catalyst compilation."""
+    """Integration tests for cache hit/miss orchestration."""
 
-    def test_cache_miss_then_hit(self, tmp_path):
+    def test_cache_miss_then_hit(self, tmp_path, fast_ir_cache_runtime):
         """First run writes cache, second run hits cache."""
         from q2m3.solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
@@ -337,10 +337,10 @@ class TestCacheIntegration:
                 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
                 charge=0,
             ),
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=2,
             ir_cache_dir=str(tmp_path / "cache"),
             verbose=False,
         )
@@ -356,7 +356,7 @@ class TestCacheIntegration:
         # Energies should be close (same config, same seed)
         assert abs(r1["best_energy"] - r2["best_energy"]) < 1e-6
 
-    def test_force_recompile_bypasses_cache(self, tmp_path):
+    def test_force_recompile_bypasses_cache(self, tmp_path, fast_ir_cache_runtime):
         """force_recompile=True should recompile even if cache exists."""
         from q2m3.solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
@@ -367,10 +367,10 @@ class TestCacheIntegration:
                 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
                 charge=0,
             ),
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=2,
             ir_cache_dir=str(tmp_path / "cache"),
             verbose=False,
         )
@@ -384,8 +384,8 @@ class TestCacheIntegration:
             molecule=config.molecule,
             qpe_config=config.qpe_config,
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=2,
             ir_cache_dir=str(tmp_path / "cache"),
             ir_cache_force_recompile=True,
             verbose=False,
@@ -393,7 +393,7 @@ class TestCacheIntegration:
         r2 = run_solvation(config_force, show_plots=False)
         assert not r2["cache_stats"]["is_cache_hit"]
 
-    def test_cache_disabled_no_file(self, tmp_path):
+    def test_cache_disabled_no_file(self, tmp_path, fast_ir_cache_runtime):
         """ir_cache_enabled=False should not create cache files."""
         from q2m3.solvation import MoleculeConfig, QPEConfig, SolvationConfig, run_solvation
 
@@ -404,10 +404,10 @@ class TestCacheIntegration:
                 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
                 charge=0,
             ),
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=2,
             ir_cache_dir=str(tmp_path / "cache"),
             ir_cache_enabled=False,
             verbose=False,

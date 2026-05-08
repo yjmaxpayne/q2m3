@@ -32,7 +32,13 @@ from .core import (
     get_best_available_device,
     get_catalyst_effective_backend,
 )
-from .interfaces import PySCFPennyLaneConverter, UnifiedDensityMatrix
+from .interfaces import (
+    FixedMOEmbeddingDiagnostics,
+    FixedMOEmbeddingResult,
+    PySCFPennyLaneConverter,
+    UnifiedDensityMatrix,
+    build_fixed_mo_embedding_integrals,
+)
 from .molecule import MoleculeConfig
 from .utils import load_xyz, save_json_results
 
@@ -41,8 +47,11 @@ __all__ = [
     "QuantumQMMM",
     "QPEEngine",
     "QMMMSystem",
+    "FixedMOEmbeddingDiagnostics",
+    "FixedMOEmbeddingResult",
     "PySCFPennyLaneConverter",
     "UnifiedDensityMatrix",
+    "build_fixed_mo_embedding_integrals",
     "load_xyz",
     "save_json_results",
     # Molecule config

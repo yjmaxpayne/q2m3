@@ -39,6 +39,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.6.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
     "pre-commit>=4.0.0",
@@ -128,6 +129,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = [
     "--verbose",
+    "-n",
+    "auto",
+    "--dist",
+    "loadfile",
     "--cov=src/q2m3",
     "--cov-report=term-missing",
     "--cov-report=html",

@@ -14,6 +14,12 @@ matplotlib.use("Agg")  # Headless backend for CI
 from q2m3.solvation.config import QPEConfig, SolvationConfig
 from q2m3.solvation.statistics import TimingData, create_timing_data_from_result
 
+
+@pytest.fixture
+def fast_qpe_runtime(fast_solvation_qpe):
+    """Use deterministic QPE doubles for orchestrator integration tests."""
+
+
 # ============================================================================
 # statistics.py tests
 # ============================================================================
@@ -251,15 +257,15 @@ class TestResultDictCompleteness:
     }
 
     @pytest.mark.solvation
-    def test_result_dict_fixed_h2(self, h2_molecule_config):
+    def test_result_dict_fixed_h2(self, h2_molecule_config, fast_qpe_runtime):
         """Result dict contains all required fields (fixed mode, minimal H2)."""
         from q2m3.solvation import run_solvation
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="fixed",
-            n_waters=3,
+            n_waters=1,
             n_mc_steps=3,
             verbose=False,
         )
@@ -283,12 +289,12 @@ class TestResultDictCompleteness:
         assert isinstance(result["quantum_energies"], np.ndarray)
         assert result["quantum_energies"].shape == (3,)
         assert isinstance(result["trajectory_solvent_states"], np.ndarray)
-        assert result["trajectory_solvent_states"].shape == (3, 3, 6)
+        assert result["trajectory_solvent_states"].shape == (3, 1, 6)
         assert 0.0 <= result["acceptance_rate"] <= 1.0
 
 
 # ============================================================================
-# End-to-end tests (require Catalyst @qjit compilation)
+# End-to-end orchestration tests with deterministic QPE doubles
 # ============================================================================
 
 
@@ -296,16 +302,16 @@ class TestResultDictCompleteness:
 class TestEndToEndHfCorrected:
     """End-to-end test: hf_corrected mode."""
 
-    def test_run_solvation_hf_corrected_h2(self, h2_molecule_config):
+    def test_run_solvation_hf_corrected_h2(self, h2_molecule_config, fast_qpe_runtime):
         """Complete hf_corrected workflow on H2."""
         from q2m3.solvation import run_solvation
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2, qpe_interval=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, qpe_interval=2),
             hamiltonian_mode="hf_corrected",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=4,
             verbose=False,
         )
         result = run_solvation(config, show_plots=False)
@@ -313,9 +319,9 @@ class TestEndToEndHfCorrected:
         assert "best_energy" in result
         assert "acceptance_rate" in result
         assert 0.0 <= result["acceptance_rate"] <= 1.0
-        assert result["quantum_energies"].shape == (5,)
+        assert result["quantum_energies"].shape == (4,)
         # hf_corrected: orchestrator initial call consumes step_counter=0,
-        # MC loop steps use counter 1..5, QPE at counter 2,4 → 2 evals in loop
+        # MC loop steps use counter 1..4, QPE at counter 2,4 → 2 evals in loop
         assert result["n_quantum_evaluations"] == 2
 
 
@@ -323,59 +329,61 @@ class TestEndToEndHfCorrected:
 class TestEndToEndFixed:
     """End-to-end test: fixed mode."""
 
-    def test_run_solvation_fixed_h2(self, h2_molecule_config):
+    def test_run_solvation_fixed_h2(self, h2_molecule_config, fast_qpe_runtime):
         """Complete fixed workflow on H2."""
         from q2m3.solvation import run_solvation
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="fixed",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=3,
             verbose=False,
         )
         result = run_solvation(config, show_plots=False)
 
         assert "best_energy" in result
         assert 0.0 <= result["acceptance_rate"] <= 1.0
-        assert result["quantum_energies"].shape == (5,)
+        assert result["quantum_energies"].shape == (3,)
 
 
 @pytest.mark.solvation
 class TestEndToEndDynamic:
     """End-to-end test: dynamic mode."""
 
-    def test_run_solvation_dynamic_h2(self, h2_molecule_config):
+    def test_run_solvation_dynamic_h2(self, h2_molecule_config, fast_qpe_runtime):
         """Complete dynamic workflow on H2."""
         from q2m3.solvation import run_solvation
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1),
             hamiltonian_mode="dynamic",
-            n_waters=3,
-            n_mc_steps=5,
+            n_waters=1,
+            n_mc_steps=3,
             verbose=False,
         )
         result = run_solvation(config, show_plots=False)
 
         assert "best_energy" in result
         assert 0.0 <= result["acceptance_rate"] <= 1.0
-        assert result["quantum_energies"].shape == (5,)
+        assert result["quantum_energies"].shape == (3,)
 
 
 @pytest.mark.solvation
 class TestReplayQuantumTrajectory:
     """End-to-end tests for fixed-configuration quantum replay."""
 
-    def test_replay_quantum_trajectory_fixed_keeps_constant_qpe(self, h2_molecule_config):
+    def test_replay_quantum_trajectory_fixed_keeps_constant_qpe(
+        self, h2_molecule_config, fast_qpe_runtime
+    ):
         """Fixed-mode replay should keep QPE energy constant across solvent states."""
         from q2m3.solvation import replay_quantum_trajectory
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2, n_shots=0),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, n_shots=0),
             hamiltonian_mode="fixed",
             n_waters=3,
             n_mc_steps=3,
@@ -409,13 +417,15 @@ class TestReplayQuantumTrajectory:
         assert result["n_quantum_evaluations"] == 3
         assert np.allclose(result["quantum_energies"], result["quantum_energies"][0])
 
-    def test_replay_quantum_trajectory_dynamic_respects_duplicate_configs(self, h2_molecule_config):
+    def test_replay_quantum_trajectory_dynamic_respects_duplicate_configs(
+        self, h2_molecule_config, fast_qpe_runtime
+    ):
         """Dynamic replay should reproduce identical energies for identical states."""
         from q2m3.solvation import replay_quantum_trajectory
 
         config = SolvationConfig(
             molecule=h2_molecule_config,
-            qpe_config=QPEConfig(n_estimation_wires=3, n_trotter_steps=2, n_shots=0),
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, n_shots=0),
             hamiltonian_mode="dynamic",
             n_waters=3,
             n_mc_steps=3,

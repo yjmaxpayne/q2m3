@@ -251,8 +251,12 @@ tests, Ruff for linting, and Black for formatting.
 ```bash
 uv sync --extra dev --extra catalyst --extra solvation --extra viz
 
+# Optional: install GPU test/runtime extras for local CUDA machines.
+uv sync --extra dev --extra catalyst --extra solvation --extra viz --extra gpu
+
 uv run pytest tests/ -v
 uv run pytest tests/ -v -m "not slow and not gpu"
+uv run pytest tests/path/to/test_file.py -v -n 0
 
 uv run ruff check src/ tests/
 uv run black --check src/ tests/ --line-length 100
@@ -268,6 +272,8 @@ Useful references:
 
 Use the narrowest useful test command first, and avoid committing generated
 coverage, build, benchmark, or temporary profiling output.
+Pytest uses `pytest-xdist` by default for full-suite parallelism. Add `-n 0`
+for single-file debugging or other narrow runs where worker startup dominates.
 
 ## Citation
 

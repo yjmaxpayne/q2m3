@@ -66,6 +66,7 @@ class QPECircuitBundle:
         n_trotter_steps: Actual Trotter steps (may be capped)
         measurement_mode: "probs" or "shots"
         is_fixed_circuit: True = zero-arg circuit (fixed mode); False = takes coeffs_arr
+        embedding_mode: MM embedding mode used to build the fixed operator support
     """
 
     compiled_circuit: Callable
@@ -80,6 +81,7 @@ class QPECircuitBundle:
     n_trotter_steps: int
     measurement_mode: str
     is_fixed_circuit: bool = False
+    embedding_mode: str = "diagonal"
 
 
 def build_qpe_circuit(
@@ -89,18 +91,13 @@ def build_qpe_circuit(
     *,
     _keep_intermediate: bool = False,
 ) -> QPECircuitBundle:
-    """
-    Build parameterized QPE circuit accepting runtime coefficients.
+    """Build parameterized QPE circuit accepting runtime coefficients.
 
-    Steps:
-    1. Build vacuum Hamiltonian via PySCFPennyLaneConverter
-    2. Decompose H → (coeffs, ops)
-    3. Build operator index map (Identity + Z wire indices)
-    4. Apply energy shift: coeffs[identity_idx] -= hf_energy
-    5. Compute shifted QPE params (base_time, n_estimation_wires)
-    6. Cap Trotter steps if exceeding MAX_TROTTER_STEPS_RUNTIME
-    7. Build @qjit circuit: circuit(coeffs_arr) → probs or samples
-    8. Return QPECircuitBundle
+    The circuit builder constructs the base Hamiltonian, decomposes it into
+    coefficients and PennyLane operators, applies the HF energy shift, derives
+    shifted QPE parameters, caps runtime Trotter depth when needed, and returns
+    a ``QPECircuitBundle``. In diagonal mode the base Hamiltonian is vacuum
+    operator support; in ``full_oneelectron`` mode it is a fixed MM operator.
 
     Args:
         config: Solvation configuration
@@ -110,18 +107,32 @@ def build_qpe_circuit(
     Returns:
         QPECircuitBundle with compiled circuit and metadata
     """
+    config.validate()
     mol = config.molecule
     qpe = config.qpe_config
 
-    # Step 1: Build vacuum Hamiltonian
+    # Step 1: Build base Hamiltonian
     converter = PySCFPennyLaneConverter(basis=mol.basis, mapping="jordan_wigner")
-    H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(
-        symbols=mol.symbols,
-        coords=qm_coords,
-        charge=mol.charge,
-        active_electrons=mol.active_electrons,
-        active_orbitals=mol.active_orbitals,
-    )
+    if config.embedding_mode == "full_oneelectron":
+        mm_coords, mm_charges = _initial_solvent_mm_embedding(config, qm_coords)
+        H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian_with_mm(
+            symbols=mol.symbols,
+            coords=qm_coords,
+            charge=mol.charge,
+            mm_charges=mm_charges,
+            mm_coords=mm_coords,
+            active_electrons=mol.active_electrons,
+            active_orbitals=mol.active_orbitals,
+            embedding_mode="full_oneelectron",
+        )
+    else:
+        H, n_qubits, hf_state = converter.pyscf_to_pennylane_hamiltonian(
+            symbols=mol.symbols,
+            coords=qm_coords,
+            charge=mol.charge,
+            active_electrons=mol.active_electrons,
+            active_orbitals=mol.active_orbitals,
+        )
 
     # Step 2: Decompose H into coefficients and operators
     coeffs, ops = decompose_hamiltonian(H)
@@ -212,7 +223,23 @@ def build_qpe_circuit(
         n_trotter_steps=n_trotter,
         measurement_mode=measurement_mode,
         is_fixed_circuit=is_fixed,
+        embedding_mode=config.embedding_mode,
     )
+
+
+def _initial_solvent_mm_embedding(config: SolvationConfig, qm_coords: np.ndarray):
+    """Return deterministic initial TIP3P MM embedding data for fixed Hamiltonian mode."""
+    from .solvent import TIP3P_WATER, get_mm_embedding_data, initialize_solvent_ring
+
+    qm_center = np.asarray(qm_coords, dtype=float).reshape(-1, 3).mean(axis=0)
+    solvent_molecules = initialize_solvent_ring(
+        model=TIP3P_WATER,
+        n_molecules=config.n_waters,
+        center=qm_center,
+        radius=config.initial_water_distance,
+        random_seed=config.random_seed,
+    )
+    return get_mm_embedding_data(solvent_molecules)
 
 
 def _build_fixed_circuit(

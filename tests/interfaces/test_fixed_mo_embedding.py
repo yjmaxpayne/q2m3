@@ -8,7 +8,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from q2m3.interfaces.fixed_mo_embedding import build_fixed_mo_embedding_integrals
+from q2m3.interfaces.fixed_mo_embedding import (
+    FixedMOEmbeddingDiagnostics,
+    FixedMOEmbeddingResult,
+    build_fixed_mo_embedding_integrals,
+)
 
 
 @pytest.fixture(scope="module")
@@ -44,6 +48,25 @@ def test_h2_tip3p_returns_hermitian_active_delta(h2_tip3p_embedding):
     assert result.delta_h_active.shape == (2, 2)
     np.testing.assert_allclose(result.delta_h_active, result.delta_h_active.T, atol=1e-10)
     assert result.diagnostics.delta_h_hermitian_max_abs < 1e-10
+
+
+def test_h2_tip3p_result_types_and_dtypes(h2_tip3p_embedding):
+    """Fixed-MO embedding returns typed dataclasses and float tensors."""
+    result = h2_tip3p_embedding
+
+    assert isinstance(result, FixedMOEmbeddingResult)
+    assert isinstance(result.diagnostics, FixedMOEmbeddingDiagnostics)
+    assert isinstance(result.active_indices, tuple)
+    assert isinstance(result.n_core_orbitals, int)
+
+    tensor_fields = (
+        result.one_electron_vacuum,
+        result.two_electron,
+        result.delta_h_active,
+        result.delta_h_diag,
+        result.delta_h_offdiag,
+    )
+    assert all(tensor.dtype.kind == "f" for tensor in tensor_fields)
 
 
 def test_active_delta_splits_into_diag_and_offdiag(h2_tip3p_embedding):
@@ -127,6 +150,19 @@ def test_partial_active_space_request_raises():
             mm_charges=np.array([0.1]),
             mm_coords=np.array([[3.0, 0.0, 0.0]]),
             active_electrons=2,
+        )
+
+
+def test_active_space_exceeding_available_orbitals_raises():
+    """Active-space orbital requests cannot exceed the available MO block."""
+    with pytest.raises(ValueError, match="only .* molecular orbitals"):
+        build_fixed_mo_embedding_integrals(
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]]),
+            mm_charges=np.array([0.1]),
+            mm_coords=np.array([[3.0, 0.0, 0.0]]),
+            active_electrons=2,
+            active_orbitals=3,
         )
 
 

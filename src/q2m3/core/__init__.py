@@ -25,6 +25,7 @@ from .quantum_qmmm import QuantumQMMM
 from .rdm import RDMEstimator, measure_rdm_from_qpe_state
 from .resource_estimation import (
     EFTQCResources,
+    EmbeddingDiagnostics,
     ResourceComparisonResult,
     compare_vacuum_solvated,
     derive_t_resources,
@@ -37,6 +38,7 @@ __all__ = [
     "build_operator_index_map",
     # Resource estimation
     "EFTQCResources",
+    "EmbeddingDiagnostics",
     "ResourceComparisonResult",
     "estimate_resources",
     "compare_vacuum_solvated",

@@ -94,6 +94,23 @@ The H2 resource example demonstrates that MM point charges mainly modify
 one-electron terms. For small H2/STO-3G runs, the two-electron integrals
 dominate the resource estimate, so vacuum and solvated estimates are close.
 
+## Fixed-MO Full-One-Electron Embedding
+
+Explicit MM point charges perturb the one-electron Hamiltonian. q2m3 exposes
+two public resource-estimation modes for this perturbation:
+
+| Mode | Included active-space perturbation | Intended use |
+| --- | --- | --- |
+| `diagonal` | Diagonal `Delta h_pp` terms only | Compatibility row for dynamic coefficient-update workflows |
+| `full_oneelectron` | Full fixed-MO `Delta h_pq` matrix | Resource rows and fixed-Hamiltonian operator support |
+
+Both modes are fixed-MO models. The vacuum molecular-orbital frame is reused,
+the two-electron tensor is held at its vacuum value, and no orbital relaxation,
+polarizable MM response, or relaxed solvation energy is computed. The
+diagnostic `delta_h_offdiag_fro` reports the Frobenius norm of the off-diagonal
+active-space perturbation that is omitted by `diagonal` mode and included by
+`full_oneelectron` mode.
+
 ## Catalyst Guidance
 
 Catalyst is most useful when the workflow can compile once and execute many
@@ -106,6 +123,7 @@ compiled circuit structure when only coefficients change at runtime.
 | H2 first validation | Standard PennyLane or existing example script |
 | MC with fixed vacuum Hamiltonian | Catalyst fixed mode with IR cache |
 | MC with runtime MM embedding | Catalyst dynamic mode, treated as a heavier diagnostic |
+| Fixed full-one-electron embedding | Fixed Hamiltonian/operator path only |
 | H3O+ high precision or Trotter scans | Optional diagnostics on high-memory machines |
 
 ## Three Solvation Modes
@@ -118,3 +136,8 @@ compiled circuit structure when only coefficients change at runtime.
 
 The difference between fixed and dynamic correlation behavior is used to study
 `delta_corr-pol`, the correlation-polarization coupling term.
+
+The current dynamic runtime coefficient path updates diagonal coefficients. It
+does not accept `embedding_mode="full_oneelectron"` because off-diagonal
+one-electron terms can alter the operator support that Catalyst compiled for a
+given circuit.

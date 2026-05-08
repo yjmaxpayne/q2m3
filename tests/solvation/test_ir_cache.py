@@ -146,6 +146,17 @@ class TestComputeCacheKey:
         )
         assert compute_cache_key(h2_config) != compute_cache_key(config_dynamic)
 
+    def test_fixed_full_oneelectron_has_distinct_cache_key(self, h2_config):
+        """Full one-electron fixed mode can add operator support, so cache key differs."""
+        config_full = SolvationConfig(
+            molecule=h2_config.molecule,
+            qpe_config=h2_config.qpe_config,
+            hamiltonian_mode="fixed",
+            embedding_mode="full_oneelectron",
+            verbose=False,
+        )
+        assert compute_cache_key(h2_config) != compute_cache_key(config_full)
+
     def test_hf_corrected_shares_dynamic_key(self, h2_config):
         """hf_corrected and dynamic share the same cache key (same IR structure)."""
         config_hf = SolvationConfig(
@@ -305,6 +316,18 @@ class TestSerializeConfig:
         assert qpe["n_trotter_steps"] == 2
         assert qpe["n_shots"] == 0
 
+    def test_embedding_mode_preserved(self, h2_config):
+        """Embedding mode participates in subprocess serialization."""
+        config = SolvationConfig(
+            molecule=h2_config.molecule,
+            qpe_config=h2_config.qpe_config,
+            hamiltonian_mode="fixed",
+            embedding_mode="full_oneelectron",
+            verbose=False,
+        )
+        d = _serialize_config_for_subprocess(config)
+        assert d["embedding_mode"] == "full_oneelectron"
+
     def test_roundtrip(self, h2_config):
         """Serialize -> reconstruct should produce equivalent config."""
         from q2m3.solvation.ir_cache import _reconstruct_config
@@ -313,6 +336,7 @@ class TestSerializeConfig:
         config2 = _reconstruct_config(d)
         assert config2.molecule.name == h2_config.molecule.name
         assert config2.qpe_config.n_estimation_wires == h2_config.qpe_config.n_estimation_wires
+        assert config2.embedding_mode == h2_config.embedding_mode
         assert config2.verbose is False
         assert config2.ir_cache_enabled is False
 

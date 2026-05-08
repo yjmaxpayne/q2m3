@@ -5,10 +5,17 @@
 PySCF-PennyLane bidirectional conversion interface.
 """
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, Literal
 
 import numpy as np
 import pennylane as qml
+
+from .fixed_mo_embedding import build_fixed_mo_embedding_integrals
+
+EmbeddingMode = Literal["diagonal", "full_oneelectron"]
+VALID_EMBEDDING_MODES: tuple[str, ...] = ("diagonal", "full_oneelectron")
 
 
 class UnifiedDensityMatrix:
@@ -201,6 +208,7 @@ class PySCFPennyLaneConverter:
         active_electrons: int | None = None,
         active_orbitals: int | None = None,
         energy_shift: float | None = None,
+        embedding_mode: EmbeddingMode = "diagonal",
     ) -> tuple[Any, int, np.ndarray]:
         """
         Build PennyLane Hamiltonian with MM point charge embedding.
@@ -231,6 +239,10 @@ class PySCFPennyLaneConverter:
             energy_shift: Reference energy to subtract from Hamiltonian (optional).
                 If provided, the returned Hamiltonian is ``H' = H - E_shift * I``.
                 This enables QPE to measure ``ΔE`` with higher precision.
+            embedding_mode: MM embedding mode. ``"diagonal"`` preserves the
+                historical Identity/Z coefficient update path.
+                ``"full_oneelectron"`` adds the full fixed-MO one-electron
+                perturbation as a fixed operator Hamiltonian.
 
         Returns:
             tuple: (hamiltonian, n_qubits, hf_state)
@@ -238,6 +250,11 @@ class PySCFPennyLaneConverter:
         from pyscf import gto, qmmm, scf
 
         ANGSTROM_TO_BOHR = 1.8897259886
+
+        if embedding_mode not in VALID_EMBEDDING_MODES:
+            raise ValueError(
+                f"embedding_mode must be one of {VALID_EMBEDDING_MODES}, got " f"{embedding_mode!r}"
+            )
 
         # Prepare coordinates in Bohr for PennyLane
         coords_arr = np.asarray(coords).reshape(-1, 3)
@@ -274,6 +291,40 @@ class PySCFPennyLaneConverter:
                 shift_term = qml.s_prod(-energy_shift, qml.Identity(wires=list(range(n_qubits))))
                 H_vacuum = qml.sum(*list(H_vacuum.operands), shift_term)
             return H_vacuum, n_qubits, hf_state
+
+        if mm_coords is None:
+            raise ValueError("mm_coords must be provided when mm_charges are present")
+
+        if embedding_mode == "full_oneelectron":
+            fixed_mo_embedding = build_fixed_mo_embedding_integrals(
+                symbols,
+                coords_arr,
+                mm_charges=np.asarray(mm_charges, dtype=float),
+                mm_coords=np.asarray(mm_coords, dtype=float),
+                charge=charge,
+                basis=self.basis,
+                active_electrons=active_electrons,
+                active_orbitals=active_orbitals,
+            )
+
+            correction = self._fixed_mo_oneelectron_correction_observable(
+                constant=fixed_mo_embedding.delta_core_constant,
+                one_electron=fixed_mo_embedding.delta_h_active,
+                n_qubits=n_qubits,
+            )
+            H_solvated = qml.sum(*list(H_vacuum.operands), *list(correction.operands))
+
+            if energy_shift is not None:
+                shift_term = qml.s_prod(-energy_shift, qml.Identity(wires=list(range(n_qubits))))
+                H_solvated = qml.sum(*list(H_solvated.operands), shift_term)
+
+            hf_electrons = (
+                active_electrons
+                if active_electrons is not None
+                else sum(self._get_atomic_numbers(symbols)) - charge
+            )
+            hf_state = qml.qchem.hf_state(hf_electrons, n_qubits)
+            return H_solvated, n_qubits, hf_state
 
         # Step 2: Compute MM corrections using PySCF
         atom_str = "\n".join(
@@ -352,6 +403,33 @@ class PySCFPennyLaneConverter:
         hf_state = qml.qchem.hf_state(active_electrons, n_qubits)
 
         return H_solvated, n_qubits, hf_state
+
+    def _fixed_mo_oneelectron_correction_observable(
+        self,
+        *,
+        constant: float,
+        one_electron: np.ndarray,
+        n_qubits: int,
+    ) -> Any:
+        """Build a fixed one-electron MM correction as a PennyLane qubit operator."""
+        fermionic = qml.qchem.fermionic_observable(
+            np.array([constant], dtype=float),
+            one=np.asarray(one_electron, dtype=float),
+        )
+        qubit_observable = qml.qchem.qubit_observable(fermionic, mapping=self.mapping)
+        if not hasattr(qubit_observable, "operands"):
+            return qml.sum(qubit_observable)
+
+        # Ensure the Identity term spans the full system register. PennyLane may
+        # preserve a wire-free identity when the one-electron correction is tiny.
+        if not any(
+            isinstance(getattr(op, "base", op), qml.Identity) for op in qubit_observable.operands
+        ):
+            return qml.sum(
+                *list(qubit_observable.operands),
+                qml.s_prod(0.0, qml.Identity(wires=list(range(n_qubits)))),
+            )
+        return qubit_observable
 
     def _get_atomic_numbers(self, symbols: list[str]) -> list[int]:
         """Get atomic numbers for a list of element symbols."""
@@ -454,6 +532,7 @@ class PySCFPennyLaneConverter:
         active_electrons: int | None = None,
         active_orbitals: int | None = None,
         target_error: float = 0.0016,
+        embedding_mode: EmbeddingMode = "full_oneelectron",
     ) -> dict[str, Any]:
         """
         Estimate EFTQC resources for QPE algorithm using PennyLane.
@@ -464,7 +543,11 @@ class PySCFPennyLaneConverter:
 
         Supports both vacuum Hamiltonian and MM-embedded (solvated) Hamiltonian.
         When mm_charges/mm_coords are provided, the single-electron integrals
-        include QM-MM electrostatic interaction terms.
+        include QM-MM electrostatic interaction terms. The default
+        ``embedding_mode="full_oneelectron"`` preserves the historical
+        resource-estimation behavior by adding the full fixed-MO active-space
+        ``Delta h`` matrix. Use ``embedding_mode="diagonal"`` to request the
+        diagonal-only compatibility row used by the current QPE coefficient path.
 
         Args:
             symbols: List of atomic symbols (e.g., ['O', 'H', 'H', 'H'])
@@ -475,6 +558,10 @@ class PySCFPennyLaneConverter:
             active_electrons: Number of electrons in active space (optional)
             active_orbitals: Number of spatial orbitals in active space (optional)
             target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)
+            embedding_mode: MM embedding mode for resource rows. ``"full_oneelectron"``
+                adds the full active-space perturbation; ``"diagonal"`` adds only
+                its diagonal. Ignored when no MM charges are provided, but still
+                validated.
 
         Returns:
             Dictionary containing:
@@ -491,6 +578,12 @@ class PySCFPennyLaneConverter:
                 - n_mm_charges: Number of MM point charges (0 if vacuum)
                 - active_electrons: Active-space electron count passed to the estimator
                 - active_orbitals: Active-space orbital count passed to the estimator
+                - embedding_mode: Effective embedding state ("none" for vacuum)
+                - requested_embedding_mode: Requested MM mode, or None for vacuum
+                - fixed_mo: Whether a fixed-MO MM perturbation was used
+                - two_electron_tensor_fixed: Whether the two-electron tensor is vacuum
+                - active_indices: Vacuum MO indices included in the active space
+                - delta_h_* diagnostics for the MM one-electron perturbation
 
         Raises:
             ValueError: If coords shape does not match number of symbols
@@ -510,7 +603,10 @@ class PySCFPennyLaneConverter:
         """
         from pennylane.estimator import DoubleFactorization
 
-        ANGSTROM_TO_BOHR = 1.8897259886
+        if embedding_mode not in VALID_EMBEDDING_MODES:
+            raise ValueError(
+                f"embedding_mode must be one of {VALID_EMBEDDING_MODES}, got " f"{embedding_mode!r}"
+            )
 
         # Validate and prepare coordinates
         coords_arr = np.asarray(coords)
@@ -531,7 +627,10 @@ class PySCFPennyLaneConverter:
             raise ValueError(f"coords must be 1D or 2D array, got {coords_arr.ndim}D")
 
         # Check if MM embedding is requested
-        mm_embedded = mm_charges is not None and len(mm_charges) > 0
+        mm_charges_arr = None if mm_charges is None else np.asarray(mm_charges, dtype=float)
+        mm_embedded = mm_charges_arr is not None and mm_charges_arr.size > 0
+        if mm_embedded and mm_coords is None:
+            raise ValueError("mm_coords must be provided when mm_charges are present")
 
         # Build molecular object using PennyLane qchem
         mol = qml.qchem.Molecule(
@@ -562,44 +661,58 @@ class PySCFPennyLaneConverter:
         two_electron = np.asarray(two_electron)
 
         n_mm = 0
+        effective_embedding_mode = "none"
+        requested_embedding_mode = None
+        fixed_mo = False
+        selected_active_indices = (
+            list(active_indices)
+            if active_indices is not None
+            else list(range(one_electron.shape[0]))
+        )
+        embedding_diagnostics = {
+            "delta_h_diag_fro": 0.0,
+            "delta_h_offdiag_fro": 0.0,
+            "delta_h_offdiag_to_diag": None,
+            "delta_h_hermitian_max_abs": 0.0,
+            "delta_h_trace_ha": 0.0,
+            "delta_nuclear_mm_ha": 0.0,
+            "delta_core_constant_ha": 0.0,
+        }
         if mm_embedded:
-            # Add MM contribution to single-electron integrals using PySCF
-            from pyscf import gto, qmmm, scf
-
-            # Build PySCF molecule
-            atom_str = "\n".join(
-                f"{s} {c[0]:.6f} {c[1]:.6f} {c[2]:.6f}"
-                for s, c in zip(symbols, coords_arr, strict=True)
+            fixed_mo_embedding = build_fixed_mo_embedding_integrals(
+                symbols,
+                coords_arr,
+                mm_charges=mm_charges_arr,
+                mm_coords=np.asarray(mm_coords, dtype=float),
+                charge=charge,
+                basis=self.basis,
+                active_electrons=active_electrons,
+                active_orbitals=active_orbitals,
             )
-            pyscf_mol = gto.M(atom=atom_str, basis=self.basis, charge=charge, unit="Angstrom")
+            delta_h = (
+                fixed_mo_embedding.delta_h_diag
+                if embedding_mode == "diagonal"
+                else fixed_mo_embedding.delta_h_active
+            )
+            # Keep PennyLane's vacuum tensors for backward-compatible DF rows;
+            # the fixed-MO helper owns only the MM perturbation and diagnostics here.
+            one_electron = one_electron + delta_h
 
-            # Compute vacuum h1e (AO basis)
-            mf_vac = scf.RHF(pyscf_mol)
-            mf_vac.verbose = 0
-            h1e_vac_ao = mf_vac.get_hcore()
-
-            # Compute solvated h1e with MM embedding (AO basis)
-            mf_sol = scf.RHF(pyscf_mol)
-            mf_sol.verbose = 0
-            mm_coords_arr = np.asarray(mm_coords)
-            mm_coords_bohr = mm_coords_arr * ANGSTROM_TO_BOHR
-            mf_sol = qmmm.mm_charge(mf_sol, mm_coords_bohr, np.asarray(mm_charges))
-            h1e_sol_ao = mf_sol.get_hcore()
-
-            # Compute MM correction in AO basis
-            delta_h1e_ao = h1e_sol_ao - h1e_vac_ao
-
-            # Transform to MO basis using canonical HF orbitals
-            mf_vac.run()
-            mo_coeff = mf_vac.mo_coeff
-            if active_indices is not None:
-                mo_coeff = mo_coeff[:, active_indices]
-            delta_h1e_mo = mo_coeff.T @ delta_h1e_ao @ mo_coeff
-
-            # Add MM correction to one-electron integrals
-            one_electron = one_electron + delta_h1e_mo
-
-            n_mm = len(mm_charges)
+            diagnostics = fixed_mo_embedding.diagnostics
+            n_mm = diagnostics.n_mm_charges
+            effective_embedding_mode = embedding_mode
+            requested_embedding_mode = embedding_mode
+            fixed_mo = diagnostics.fixed_mo
+            selected_active_indices = list(fixed_mo_embedding.active_indices)
+            embedding_diagnostics = {
+                "delta_h_diag_fro": diagnostics.delta_h_diag_fro,
+                "delta_h_offdiag_fro": diagnostics.delta_h_offdiag_fro,
+                "delta_h_offdiag_to_diag": diagnostics.delta_h_offdiag_to_diag,
+                "delta_h_hermitian_max_abs": diagnostics.delta_h_hermitian_max_abs,
+                "delta_h_trace_ha": diagnostics.delta_h_trace_ha,
+                "delta_nuclear_mm_ha": diagnostics.delta_nuclear_mm_ha,
+                "delta_core_constant_ha": diagnostics.delta_core_constant_ha,
+            }
 
         # Estimate resources using Double Factorization
         algo = DoubleFactorization(
@@ -636,4 +749,10 @@ class PySCFPennyLaneConverter:
             "n_mm_charges": n_mm,
             "active_electrons": active_electrons,
             "active_orbitals": active_orbitals,
+            "embedding_mode": effective_embedding_mode,
+            "requested_embedding_mode": requested_embedding_mode,
+            "fixed_mo": fixed_mo,
+            "two_electron_tensor_fixed": True,
+            "active_indices": selected_active_indices,
+            **embedding_diagnostics,
         }

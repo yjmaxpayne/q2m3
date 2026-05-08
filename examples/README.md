@@ -12,7 +12,7 @@ that are useful to package users.
 
 | Tier | Scripts | Expected environment |
 |------|---------|----------------------|
-| First run | `h2_qpe_validation.py`, `h2_resource_estimation.py` | CPU laptop or workstation |
+| First run | `h2_qpe_validation.py`, `h2_resource_estimation.py`, `full_oneelectron_embedding.py` | CPU laptop or workstation |
 | Standard MC | `h2_mc_solvation.py` | Catalyst/JAX installed; 8 GB+ RAM recommended |
 | H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed; 16 GB+ RAM recommended |
 | High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended; use provided guards/options |
@@ -29,10 +29,12 @@ Single-configuration QPE studies. Validates algorithm correctness and hardware r
 |---------|-------------|-------|
 | `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 solvation | 517 |
 | `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) | 95 |
+| `full_oneelectron_embedding.py` | H2 + one TIP3P water fixed-MO diagonal vs full one-electron resource rows | 120 |
 
 ```bash
 uv run python examples/h2_qpe_validation.py
 uv run python examples/h2_resource_estimation.py
+uv run python examples/full_oneelectron_embedding.py
 ```
 
 **Verified H2 results from the current scripts**:
@@ -40,6 +42,20 @@ uv run python examples/h2_resource_estimation.py
 - QPE solvation stabilization: `-0.0543 kcal/mol` for 2 TIP3P waters
 - PennyLane `<HF|H|HF>` vs PySCF HF agreement: `<= 0.0001 kcal/mol`
 - H2 EFTQC resource estimate: `1,224,608` Toffoli gates and `115` logical qubits
+
+**Fixed-MO full-one-electron embedding**:
+
+`full_oneelectron_embedding.py` compares three resource rows:
+
+| Row | Meaning |
+|-----|---------|
+| `vacuum` | No MM point charges |
+| `diagonal` | Adds only active-space `Delta h_pp` point-charge terms |
+| `full_oneelectron` | Adds the full fixed-MO active-space `Delta h_pq` matrix |
+
+The script prints `delta_h_offdiag_fro`, Hamiltonian `lambda`, Toffoli gates,
+and logical qubits. It is not a relaxed solvation energy calculation; the MO
+frame and two-electron tensor stay fixed at their vacuum values.
 
 ---
 
@@ -80,6 +96,10 @@ low-memory machines.
 **Key finding**: `dynamic` mode uses JAX-traceable Hamiltonian coefficients via
 `TrotterProduct(..., check_hermitian=False)` to solve the Catalyst recompilation bottleneck.
 Compile once, run many times.
+
+Runtime coefficient updates remain diagonal-only. Full-one-electron embedding
+can change fixed operator support, so it is exposed through the fixed-MO
+resource and fixed-Hamiltonian paths rather than the dynamic coefficient path.
 
 ---
 

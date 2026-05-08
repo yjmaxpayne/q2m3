@@ -239,6 +239,32 @@ class TestBuildQPECircuit:
         assert samples.shape == (n_shots, bundle.n_estimation_wires)
         assert set(np.unique(samples)).issubset({0, 1})
 
+    def test_h2_fixed_full_oneelectron_mode_zero_arg(self, h2_molecule_config, h2_hf_energy):
+        """Fixed full-oneelectron mode builds a zero-arg QPE circuit with MM support."""
+        from q2m3.solvation.circuit_builder import build_qpe_circuit
+        from q2m3.solvation.config import QPEConfig, SolvationConfig
+
+        config = SolvationConfig(
+            molecule=h2_molecule_config,
+            qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, n_shots=0),
+            hamiltonian_mode="fixed",
+            embedding_mode="full_oneelectron",
+            n_waters=1,
+            n_mc_steps=2,
+        )
+
+        qm_coords = h2_molecule_config.coords_array
+        bundle = build_qpe_circuit(config, qm_coords, h2_hf_energy)
+
+        assert bundle.is_fixed_circuit is True
+        assert bundle.embedding_mode == "full_oneelectron"
+
+        result = bundle.compiled_circuit()
+        probs = np.asarray(result)
+        expected_bins = 2**bundle.n_estimation_wires
+        assert probs.shape == (expected_bins,)
+        assert np.isclose(probs.sum(), 1.0, atol=1e-6)
+
     def test_h2_shots_mode_passes_device_seed(self, h2_molecule_config, h2_hf_energy, monkeypatch):
         """Shots-mode circuit building forwards the configured device seed."""
         from q2m3.solvation import circuit_builder as cb

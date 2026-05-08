@@ -95,6 +95,7 @@ Start with the maintained H2 smoke path.
 ```bash
 uv run python examples/h2_qpe_validation.py
 uv run python examples/h2_resource_estimation.py
+uv run python examples/full_oneelectron_embedding.py
 ```
 
 Then read the tiered guides before moving to heavier workflows:
@@ -161,6 +162,7 @@ use:
 
 - [examples/h2_qpe_validation.py](examples/h2_qpe_validation.py)
 - [examples/h2_resource_estimation.py](examples/h2_resource_estimation.py)
+- [examples/full_oneelectron_embedding.py](examples/full_oneelectron_embedding.py)
 - [examples/h2_mc_solvation.py](examples/h2_mc_solvation.py)
 
 ## How It Fits Together
@@ -225,7 +227,35 @@ compile take?"
 The maintained entry points are:
 
 - [examples/h2_resource_estimation.py](examples/h2_resource_estimation.py)
+- [examples/full_oneelectron_embedding.py](examples/full_oneelectron_embedding.py)
 - [examples/resource_estimation_survey.py](examples/resource_estimation_survey.py)
+
+### Fixed-MO Full-One-Electron Embedding
+
+The resource-estimation API exposes explicit-MM embedding modes for fixed-MO
+one-electron perturbations:
+
+| Mode | One-electron MM terms | Boundary |
+|------|------------------------|----------|
+| `diagonal` | Adds only active-space `Delta h_pp` terms | Matches the current dynamic coefficient-update path |
+| `full_oneelectron` | Adds the full active-space `Delta h_pq` matrix | Fixed operator support only |
+
+Both modes keep the vacuum MO frame and vacuum two-electron tensor fixed. They
+are resource-estimation and fixed-Hamiltonian operator tools, not relaxed
+orbital, correlated-solvent, or polarizable-MM solvation energies.
+
+```bash
+uv run python examples/full_oneelectron_embedding.py
+```
+
+To reproduce a tagged release, cite the tag and run:
+
+```bash
+git checkout <release-tag>
+uv sync --extra dev --extra catalyst --extra solvation --extra viz
+uv run python examples/full_oneelectron_embedding.py
+uv run pytest tests/examples/test_full_oneelectron_embedding.py -x -q -n 0
+```
 
 ## Project Status
 

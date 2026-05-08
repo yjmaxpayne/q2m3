@@ -159,6 +159,7 @@ class TestSolvationConfig:
     def test_creation_defaults(self, h2_mol):
         cfg = SolvationConfig(molecule=h2_mol)
         assert cfg.hamiltonian_mode == "dynamic"
+        assert cfg.embedding_mode == "diagonal"
         assert cfg.n_waters == 10
         assert cfg.n_mc_steps == 500
         assert cfg.temperature == 300.0
@@ -184,6 +185,14 @@ class TestSolvationConfig:
     def test_hamiltonian_mode_dynamic(self, h2_mol):
         cfg = SolvationConfig(molecule=h2_mol, hamiltonian_mode="dynamic")
         assert cfg.hamiltonian_mode == "dynamic"
+
+    def test_fixed_full_oneelectron_embedding_mode_validates(self, h2_mol):
+        cfg = SolvationConfig(
+            molecule=h2_mol,
+            hamiltonian_mode="fixed",
+            embedding_mode="full_oneelectron",
+        )
+        assert cfg.validate() is cfg
 
     # --- n_qpe_evaluations property ---
 
@@ -247,6 +256,7 @@ class TestSolvationConfig:
         object.__setattr__(cfg, "molecule", h2_mol)
         object.__setattr__(cfg, "qpe_config", QPEConfig())
         object.__setattr__(cfg, "hamiltonian_mode", "invalid_mode")
+        object.__setattr__(cfg, "embedding_mode", "diagonal")
         object.__setattr__(cfg, "n_waters", 10)
         object.__setattr__(cfg, "n_mc_steps", 500)
         object.__setattr__(cfg, "temperature", 300.0)
@@ -277,3 +287,33 @@ class TestSolvationConfig:
             qpe_config=QPEConfig(qpe_interval=10),
         )
         cfg.validate()  # should not raise
+
+    def test_validate_invalid_embedding_mode(self, h2_mol):
+        cfg = SolvationConfig.__new__(SolvationConfig)
+        object.__setattr__(cfg, "molecule", h2_mol)
+        object.__setattr__(cfg, "qpe_config", QPEConfig())
+        object.__setattr__(cfg, "hamiltonian_mode", "fixed")
+        object.__setattr__(cfg, "embedding_mode", "offdiag_only")
+        object.__setattr__(cfg, "n_waters", 10)
+        object.__setattr__(cfg, "n_mc_steps", 500)
+        object.__setattr__(cfg, "temperature", 300.0)
+        object.__setattr__(cfg, "translation_step", 0.3)
+        object.__setattr__(cfg, "rotation_step", 0.2618)
+        object.__setattr__(cfg, "initial_water_distance", 4.0)
+        object.__setattr__(cfg, "random_seed", 42)
+        object.__setattr__(cfg, "verbose", True)
+        with pytest.raises(ValueError, match="embedding_mode"):
+            cfg.validate()
+
+    @pytest.mark.parametrize("mode", ["hf_corrected", "dynamic"])
+    def test_validate_full_oneelectron_requires_fixed_hamiltonian_mode(self, h2_mol, mode):
+        cfg = SolvationConfig(
+            molecule=h2_mol,
+            hamiltonian_mode=mode,
+            embedding_mode="full_oneelectron",
+        )
+        with pytest.raises(
+            ValueError,
+            match="full_oneelectron embedding is supported only for fixed Hamiltonian mode",
+        ):
+            cfg.validate()

@@ -1,4 +1,4 @@
-# q2m3: Quantum-Classical QM/MM with QPE
+# q2m3: A Framework for Quantum QM/MM Simulation Workflows
 
 <p align="center">
   <img src="doc/source/_static/logo.svg" alt="q2m3 logo" width="360">

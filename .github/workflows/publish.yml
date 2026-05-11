@@ -1,0 +1,96 @@
+name: Publish to PyPI
+
+# Two trigger paths:
+#   1. release.published — future tags create a GitHub Release, which auto-publishes.
+#   2. workflow_dispatch — manual trigger; lets us publish an *existing* tag
+#      (e.g. v0.1.1, whose Release predates this workflow) by passing its ref.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build and publish (tag, branch, or commit SHA)"
+        required: true
+        default: "v0.1.1"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source at ref
+        uses: actions/checkout@v4
+        with:
+          # release.published carries github.ref = refs/tags/<tag>;
+          # workflow_dispatch supplies the ref via inputs.
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          # Full history + tags are required by setuptools-scm for the
+          # dynamic version to resolve to the tag (e.g. 0.1.1, not 0.1.1.devN).
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Verify metadata
+        run: twine check --strict dist/*
+
+      - name: Verify version matches the checked-out ref
+        run: |
+          python - <<'PY'
+          import os, pathlib, re, sys
+          ref = os.environ["RUNTIME_REF"].removeprefix("refs/tags/")
+          want = re.sub(r"^v", "", ref)
+          got = sorted(pathlib.Path("dist").glob("*.whl"))[-1].name.split("-")[1]
+          if got != want:
+              print(f"::error::version drift: built {got}, expected {want} from ref {ref}")
+              sys.exit(1)
+          print(f"OK: built version {got} matches ref {ref}")
+          PY
+        env:
+          RUNTIME_REF: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI (Trusted Publisher)
+    needs: build
+    runs-on: ubuntu-latest
+    # The "pypi" environment matches the Environment name registered in PyPI's
+    # Trusted Publisher form. Create it under repo Settings -> Environments
+    # if you want manual approval gates; otherwise the name alone is enough
+    # to pin OIDC audience.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/q2m3
+    permissions:
+      id-token: write   # required for OIDC trusted publishing
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true   # PEP 740 provenance via sigstore
+          print-hash: true

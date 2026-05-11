@@ -36,3 +36,27 @@ Project Links
 
 * Source repository: https://github.com/yjmaxpayne/q2m3
 * Issue tracker: https://github.com/yjmaxpayne/q2m3/issues
+* Zenodo archive (concept DOI): https://doi.org/10.5281/zenodo.20114945
+
+Citation
+--------
+
+If you use q2m3 in research, please cite the Zenodo archive. The concept
+DOI `10.5281/zenodo.20114945 <https://doi.org/10.5281/zenodo.20114945>`_
+always resolves to the latest published release. Use a version-specific
+DOI (for example
+`10.5281/zenodo.20114946 <https://doi.org/10.5281/zenodo.20114946>`_ for
+``v0.1.1``) when you need to reference the exact code behind a result.
+``CITATION.cff`` in the repository root lists both DOIs and powers
+GitHub's "Cite this repository" button.
+
+.. code-block:: bibtex
+
+   @software{q2m3_2026,
+     title     = {q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations},
+     author    = {Ye Jun},
+     year      = {2026},
+     publisher = {Zenodo},
+     doi       = {10.5281/zenodo.20114945},
+     url       = {https://doi.org/10.5281/zenodo.20114945}
+   }

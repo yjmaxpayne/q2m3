@@ -308,15 +308,23 @@ for single-file debugging or other narrow runs where worker startup dominates.
 
 ## Citation
 
-If you use q2m3 in research, cite the repository or adapt the BibTeX entry
-below to your publication format.
+If you use q2m3 in research, please cite the Zenodo archive. The concept
+DOI [10.5281/zenodo.20114945](https://doi.org/10.5281/zenodo.20114945)
+always resolves to the latest published release; switch to a
+version-specific DOI (for example
+[10.5281/zenodo.20114946](https://doi.org/10.5281/zenodo.20114946) for
+`v0.1.1`) when you need to reference the exact code that produced a
+result. GitHub's "Cite this repository" button reads `CITATION.cff`,
+which lists both DOIs.
 
 ```bibtex
 @software{q2m3_2026,
-  title = {q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations},
-  author = {Ye Jun},
-  year = {2026},
-  url = {https://github.com/yjmaxpayne/q2m3}
+  title     = {q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations},
+  author    = {Ye Jun},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20114945},
+  url       = {https://doi.org/10.5281/zenodo.20114945}
 }
 ```
 

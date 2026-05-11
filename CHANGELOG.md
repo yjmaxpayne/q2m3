@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.1.2 (2026-05-11)
+
+Documentation and release-infrastructure patch. No source-code changes; upgrade is drop-in.
+
+### Docs
+
+- README: add CI/docs/PyPI/DOI badges and refresh prose
+- Citation: point DOI badge and CITATION.cff to the resolved Zenodo concept DOI
+- Examples: refresh README and chapter ordering
+- Sphinx: publish HTML docs to GitHub Pages via `doc/source/index.rst` + `.nojekyll`
+
+### CI
+
+- Add `publish.yml` PyPI Trusted Publisher workflow (OIDC, attestations) triggered on Release
+- Attach wheel and sdist as Release assets after PyPI publish succeeds
+- Add `docs.yml` to build and deploy Sphinx documentation to GitHub Pages
+- Simplify `ci.yml` after extracting docs/publish jobs
+
 ## v0.1.1 (2026-05-11)
 
 ### Feat

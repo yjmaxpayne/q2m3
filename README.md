@@ -1,4 +1,4 @@
-# q2m3: A Framework for Quantum QM/MM Simulation Workflows
+# q2m3: A Hybrid Quantum-Classical QM/MM Simulation Framework
 
 <p align="center">
   <img src="doc/source/_static/logo.svg" alt="q2m3 logo" width="360">
@@ -18,7 +18,7 @@ q2m3 is a hybrid quantum-classical QM/MM proof-of-concept that couples PySCF,
 PennyLane Quantum Phase Estimation (QPE), and explicit MM point-charge
 environments inside one Python package.
 
-This is research scaffolding, not production chemistry. The maintained entry
+This is research scaffolding, not production chemistry at this moment. The maintained entry
 points are narrow on purpose: H2 first-run validation, Catalyst-backed
 solvation Monte Carlo, and EFTQC resource estimation for active-space
 Hamiltonians. Everything else in the repo is diagnostic.

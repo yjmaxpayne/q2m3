@@ -4,9 +4,9 @@
 
 ---
 
-This directory contains maintained examples for the q2m3 package. The scripts
-here are runnable, inspectable entry points for the public APIs and diagnostics
-that are useful to package users.
+This directory holds the maintained example scripts for the q2m3 package.
+They are runnable entry points for the public APIs and for the diagnostics
+worth pointing package users at.
 
 ## Runtime And Memory Tiers
 
@@ -17,13 +17,15 @@ that are useful to package users.
 | H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed; 16 GB+ RAM recommended |
 | High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended; use provided guards/options |
 
-Do not start by running every script in this directory. Catalyst compile memory
-scales with estimation wires, Trotter depth, and Hamiltonian term count. H3O+
-examples are intentionally separated from the H2 first-run path.
+Running every script in this directory in one go is a bad idea. Catalyst
+compile memory grows with estimation wires, Trotter depth, and Hamiltonian
+term count, so H3O+ examples sit on a separate track from the H2 first-run
+path.
 
 ## Chapter 1: Static QPE (`q2m3.core` API)
 
-Single-configuration QPE studies. Validates algorithm correctness and hardware resource estimates.
+Single-configuration QPE runs. These scripts check algorithm correctness and
+produce hardware resource estimates for a fixed Hamiltonian.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
@@ -61,7 +63,8 @@ frame and two-electron tensor stay fixed at their vacuum values.
 
 ## Chapter 2: MC Dynamics (`q2m3.solvation` API)
 
-Monte Carlo solvation sampling. Each step changes the MM environment -> different Hamiltonian.
+Monte Carlo solvation sampling, where each MC step shuffles the MM
+environment and hands the QPE a different Hamiltonian.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
@@ -93,22 +96,23 @@ low-memory machines.
 | `hf_corrected` | E_HF(R) + E_MM | Intermediate (HF-level MM embedding) |
 | `dynamic` | E_QPE(H_eff with MM) + E_MM | Most rigorous (runtime coefficient parameterization) |
 
-**Key finding**: `dynamic` mode uses JAX-traceable Hamiltonian coefficients via
-`TrotterProduct(..., check_hermitian=False)` to solve the Catalyst recompilation bottleneck.
-Compile once, run many times.
+**Key finding**: `dynamic` mode uses JAX-traceable Hamiltonian coefficients
+via `TrotterProduct(..., check_hermitian=False)`, which removes the Catalyst
+recompilation bottleneck — the circuit compiles once and is reused across
+MC steps with updated coefficients.
 
-Runtime coefficient updates remain diagonal-only. Full-one-electron embedding
-can change fixed operator support, so it is exposed through the fixed-MO
-resource and fixed-Hamiltonian paths rather than the dynamic coefficient path.
+Runtime coefficient updates are diagonal-only. Full-one-electron embedding
+can change fixed operator support, so it lives in the fixed-MO resource and
+fixed-Hamiltonian paths rather than the dynamic coefficient path.
 
 ---
 
 ## Resource And IR-QRE Studies
 
-EFTQC resource estimation and compile-IR ↔ quantum-resource correlation studies.
-These scripts generate local `data/output/qre_*` and `data/output/ir_qre_*`
-artifacts. Generated outputs are not part of the public examples contract and
-should be reproduced locally when needed.
+EFTQC resource estimation plus compile-IR ↔ quantum-resource correlation
+studies. These scripts write `data/output/qre_*` and `data/output/ir_qre_*`
+artifacts locally. The generated outputs are not part of the public examples
+contract; reproduce them on your machine when you need them.
 
 | Example | Description | Lines |
 |---------|-------------|-------|
@@ -139,7 +143,8 @@ OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py
 
 Current checked-in local outputs show a strong descriptive D1 association
 (`R² ≈ 0.957`) and weak/null D2-D4 fits (`R² ≈ 0.072`, `0.145`, `0.002`).
-Treat these correlations as diagnostic evidence, not as predictive scaling laws.
+The numbers describe the small sample on hand; do not read them as predictive
+scaling laws.
 
 ---
 
@@ -155,8 +160,9 @@ uv run python examples/catalyst_benchmark.py
 uv run python examples/qpe_memory_profile.py --mode fixed
 ```
 
-`qpe_memory_profile.py --mode both` and `--sweep` can become memory intensive.
-Use the narrower `--mode fixed` or `--mode dynamic` commands first.
+`qpe_memory_profile.py --mode both` and `--sweep` can be memory hungry. Run
+the narrower `--mode fixed` or `--mode dynamic` form first to see how the
+machine holds up.
 
 ---
 

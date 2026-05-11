@@ -6,18 +6,20 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml/badge.svg)](https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/gh/yjmaxpayne/q2m3/graph/badge.svg)](https://codecov.io/gh/yjmaxpayne/q2m3)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20114945.svg)](https://doi.org/10.5281/zenodo.20114945)
 [![PennyLane](https://img.shields.io/badge/PennyLane-%3E%3D0.44.0-01A982?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=)](https://pennylane.ai/)
 [![PySCF](https://img.shields.io/badge/PySCF-%3E%3D2.0.0-blue)](https://pyscf.org/)
 
-q2m3 is a hybrid quantum-classical QM/MM proof-of-concept for coupling PySCF,
+q2m3 is a hybrid quantum-classical QM/MM proof-of-concept that couples PySCF,
 PennyLane Quantum Phase Estimation (QPE), and explicit MM point-charge
-environments in a single Python package.
+environments inside one Python package.
 
-It is designed as a research and workflow framework, not a polished end-user
-chemistry application. The maintained entry points focus on small first-run
-validations, compile-once/run-many solvation experiments, and EFTQC resource
-estimation for active-space Hamiltonians.
+This is research scaffolding, not production chemistry. The maintained entry
+points are narrow on purpose: H2 first-run validation, Catalyst-backed
+solvation Monte Carlo, and EFTQC resource estimation for active-space
+Hamiltonians. Everything else in the repo is diagnostic.
 
 ## Overview
 
@@ -28,11 +30,11 @@ q2m3 connects four things that are usually scattered across separate scripts:
 - QM/MM point-charge embedding with explicit water environments
 - EFTQC-oriented resource estimation, profiling, and solvation workflows
 
-The repository is intentionally tiered. Start with H2 validation on a laptop,
-then move to Catalyst-backed Monte Carlo solvation or heavier H3O+ diagnostics
-only when you need them.
+The repository is tiered. Start with H2 validation on a laptop, then move to
+Catalyst-backed Monte Carlo solvation or heavier H3O+ diagnostics when you
+need them.
 
-Useful next stops:
+See also:
 
 - [Getting started](doc/source/getting-started.md)
 - [Core concepts](doc/source/core-concepts.md)
@@ -42,22 +44,74 @@ Useful next stops:
 
 ## Why q2m3
 
-- It keeps the scientific boundary explicit. Energies stay in Hartree
-  internally, active spaces are part of the workflow configuration, and QPE
-  results stay separated from EFTQC resource-planning outputs.
-- It exposes a real PennyLane QPE path instead of reducing the repository to
-  classical placeholders. The package also keeps a fallback path for data-pipeline
-  validation when a circuit-backed route is not the right tool for a given check.
-- It treats solvation as a workflow problem as well as a circuit problem. The
-  package includes compile-once/run-many Catalyst-oriented paths for Monte Carlo
-  sampling and profiling.
-- It keeps first-run and high-memory tasks separate. The root README stays small,
-  while detailed script coverage lives in [examples/README.md](examples/README.md)
-  and the Sphinx docs.
+- The scientific boundary stays explicit. Energies live in Hartree internally,
+  active spaces are part of the workflow configuration, and QPE outputs do
+  not bleed into EFTQC resource-planning outputs.
+- The QPE path runs real PennyLane circuits, not classical placeholders. A
+  fallback path exists for data-pipeline validation when a circuit-backed
+  route is the wrong tool for a given check.
+- Solvation gets treated as a workflow problem as much as a circuit problem.
+  Catalyst compile-once/run-many paths for Monte Carlo sampling and profiling
+  ship with the package.
+- First-run material and high-memory diagnostics live on separate tracks.
+  This README stays short on purpose; detailed script coverage sits in
+  [examples/README.md](examples/README.md) and the Sphinx docs.
 
 ## Install
 
-q2m3 targets Python 3.11+ and uses `uv` for environment management.
+q2m3 targets Python 3.11+ and is published on PyPI as
+[`q2m3`](https://pypi.org/project/q2m3/). Pick the path that matches what you
+want to do.
+
+### From PyPI (recommended for library use)
+
+Use this path when you want to import `QuantumQMMM` or `estimate_resources`
+from your own code without cloning the repository.
+
+```bash
+# Core package only
+pip install q2m3
+
+# Solvation workflows with Catalyst/JAX
+pip install "q2m3[catalyst,solvation]"
+
+# Full optional set used by the maintained examples and docs
+pip install "q2m3[catalyst,solvation,viz]"
+```
+
+The `[...]` extras syntax must be quoted in most shells (zsh/bash treat
+unquoted brackets as glob patterns).
+
+Equivalent commands with `uv`:
+
+```bash
+uv pip install q2m3
+uv pip install "q2m3[catalyst,solvation,viz]"
+```
+
+Or, to track q2m3 inside an existing `uv`-managed project, add it as a
+dependency from PyPI:
+
+```bash
+uv add q2m3
+uv add "q2m3[catalyst,solvation]"
+```
+
+GPU support is optional. Add the `gpu` extra only on machines with compatible
+NVIDIA drivers and a CUDA runtime: `pip install "q2m3[gpu]"`.
+
+Verify the install:
+
+```bash
+python -c "import q2m3; print(q2m3.__version__)"
+```
+
+### From source (recommended for examples and development)
+
+The maintained example scripts (`examples/`), the Sphinx docs, and the
+development tooling live in the repository, so clone the source if you plan
+to run those flows or contribute changes. The source workflow uses `uv` for
+environment management.
 
 ```bash
 git clone https://github.com/yjmaxpayne/q2m3.git
@@ -86,10 +140,19 @@ Documentation-only dependencies are separate:
 uv sync --extra docs --extra catalyst --extra solvation --extra viz
 ```
 
-GPU support is optional. Add the `gpu` extra only on machines with compatible
-NVIDIA drivers, CUDA runtime support, and a reason to run GPU-backed circuits.
+To reproduce a tagged release, check out the tag before syncing:
+
+```bash
+git checkout v0.1.1
+uv sync --extra dev --extra catalyst --extra solvation --extra viz
+```
 
 ## First Run
+
+The maintained smoke-test scripts live under `examples/` in the repository, so
+this section assumes the [from-source install](#from-source-recommended-for-examples-and-development).
+If you installed q2m3 from PyPI, jump to [Python API](#python-api) for an
+equivalent inline snippet.
 
 Start with the maintained H2 smoke path.
 
@@ -168,13 +231,13 @@ use:
 
 ## How It Fits Together
 
-At a high level, q2m3 moves through this stack:
+The pipeline goes:
 
 1. Build a QM/MM system and MM point-charge environment.
 2. Convert the PySCF molecular problem into a PennyLane-compatible Hamiltonian.
-3. Run real QPE when the circuit-backed path is available, or use the fallback
-   route for validation-oriented checks.
-4. Measure derived quantities such as 1-RDM observables and Mulliken charges.
+3. Run real QPE when the circuit-backed path is available, or fall back to
+   the classical route for data-pipeline checks.
+4. Measure derived quantities like 1-RDM observables and Mulliken charges.
 5. Optionally estimate EFTQC resources or reuse compiled circuits in solvation
    workflows.
 
@@ -220,10 +283,9 @@ Current canonical survey rows:
 | H2 `(2e,2o)` STO-3G | 4 system qubits | `115` | `1,224,608` |
 | H3O+ `(4e,4o)` STO-3G | 8 system qubits | `131` | `6,511,085` |
 
-These are EFTQC resource estimates, not runtime benchmarks. They help answer
-questions such as "what does this active-space Hamiltonian imply for logical
-qubits and non-Clifford cost?" rather than "how long will this local Catalyst
-compile take?"
+These are EFTQC resource estimates, not runtime benchmarks. They answer
+"what does this active-space Hamiltonian imply for logical qubits and
+non-Clifford cost?" — not "how long will this local Catalyst compile take?"
 
 The maintained entry points are:
 
@@ -271,8 +333,8 @@ uv run pytest tests/examples/test_full_oneelectron_embedding.py -x -q -n 0
   file
 
 q2m3 is useful today if you are exploring workflow integration, active-space
-resource planning, and QM/MM + QPE research scaffolding. It is not positioned
-as a production-ready general-purpose QM/MM engine.
+resource planning, or QM/MM + QPE research scaffolding. It is not a
+production-ready general-purpose QM/MM engine.
 
 ## Development
 

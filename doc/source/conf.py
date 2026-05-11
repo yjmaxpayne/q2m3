@@ -93,6 +93,8 @@ html_title = "q2m3 Documentation"
 html_logo = "_static/logo.svg"
 html_static_path = ["_static"]
 html_css_files = ["css/style.css"]
+# Ensure GitHub Pages serves _static/_*.js etc. untouched (no Jekyll filtering).
+html_extra_path = [".nojekyll"]
 
 html_theme_options = {
     "sidebar_hide_name": False,

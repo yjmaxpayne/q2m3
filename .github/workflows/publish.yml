@@ -94,3 +94,27 @@ jobs:
         with:
           attestations: true   # PEP 740 provenance via sigstore
           print-hash: true
+
+  attach-release:
+    name: Attach distributions to GitHub Release
+    needs: publish-pypi
+    # Only meaningful when the trigger is a published GitHub Release.
+    # workflow_dispatch runs do not have a Release to attach to.
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to update Release assets
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Upload wheel and sdist to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --clobber lets reruns overwrite stale assets safely.
+          gh release upload "$GITHUB_REF_NAME" dist/*.whl dist/*.tar.gz \
+            --repo "$GITHUB_REPOSITORY" --clobber

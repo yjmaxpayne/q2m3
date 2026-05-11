@@ -5,6 +5,46 @@ What is q2m3?
    :alt: q2m3 logo
    :class: q2m3-home-logo
 
+.. Badge block — keep in sync with README.md (manual sync).
+
+.. |badge-python| image:: https://img.shields.io/badge/python-3.11%2B-blue.svg
+   :target: https://www.python.org/downloads/
+   :alt: Python 3.11+
+
+.. |badge-license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
+   :target: https://opensource.org/licenses/MIT
+   :alt: License: MIT
+
+.. |badge-docs-ci| image:: https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml/badge.svg
+   :target: https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml
+   :alt: Documentation
+
+.. |badge-docs-site| image:: https://img.shields.io/badge/docs-latest-blue
+   :target: https://yjmaxpayne.github.io/q2m3/
+   :alt: Docs latest
+
+.. |badge-codecov| image:: https://codecov.io/gh/yjmaxpayne/q2m3/graph/badge.svg
+   :target: https://codecov.io/gh/yjmaxpayne/q2m3
+   :alt: codecov
+
+.. |badge-doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.20114945.svg
+   :target: https://doi.org/10.5281/zenodo.20114945
+   :alt: DOI
+
+.. |badge-pennylane| image:: https://img.shields.io/badge/PennyLane-%3E%3D0.44.0-01A982
+   :target: https://pennylane.ai/
+   :alt: PennyLane
+
+.. |badge-catalyst| image:: https://img.shields.io/badge/Catalyst-%3E%3D0.14.0-01A982
+   :target: https://github.com/PennyLaneAI/catalyst
+   :alt: Catalyst
+
+.. |badge-pyscf| image:: https://img.shields.io/badge/PySCF-%3E%3D2.0.0-blue
+   :target: https://pyscf.org/
+   :alt: PySCF
+
+|badge-python| |badge-license| |badge-docs-ci| |badge-docs-site| |badge-codecov| |badge-doi| |badge-pennylane| |badge-catalyst| |badge-pyscf|
+
 q2m3 is a hybrid quantum-classical QM/MM framework for small-molecule
 quantum chemistry workflows that combine PySCF, PennyLane QPE circuits,
 explicit MM point charges, Monte Carlo solvation, and EFTQC resource

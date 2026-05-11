@@ -7,9 +7,11 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml/badge.svg)](https://github.com/yjmaxpayne/q2m3/actions/workflows/docs.yml)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://yjmaxpayne.github.io/q2m3/)
 [![codecov](https://codecov.io/gh/yjmaxpayne/q2m3/graph/badge.svg)](https://codecov.io/gh/yjmaxpayne/q2m3)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20114945.svg)](https://doi.org/10.5281/zenodo.20114945)
-[![PennyLane](https://img.shields.io/badge/PennyLane-%3E%3D0.44.0-01A982?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=)](https://pennylane.ai/)
+[![PennyLane](https://img.shields.io/badge/PennyLane-%3E%3D0.44.0-01A982)](https://pennylane.ai/)
+[![Catalyst](https://img.shields.io/badge/Catalyst-%3E%3D0.14.0-01A982)](https://github.com/PennyLaneAI/catalyst)
 [![PySCF](https://img.shields.io/badge/PySCF-%3E%3D2.0.0-blue)](https://pyscf.org/)
 
 q2m3 is a hybrid quantum-classical QM/MM proof-of-concept that couples PySCF,
@@ -36,11 +38,12 @@ need them.
 
 See also:
 
-- [Getting started](doc/source/getting-started.md)
-- [Core concepts](doc/source/core-concepts.md)
+- [Documentation site](https://yjmaxpayne.github.io/q2m3/) — full rendered docs with search and navigation
+- [Getting started](https://yjmaxpayne.github.io/q2m3/getting-started.html)
+- [Core concepts](https://yjmaxpayne.github.io/q2m3/core-concepts.html)
 - [Examples](examples/README.md)
-- [API reference index](doc/source/api-reference/index.rst)
-- [Development guide](doc/source/development.md)
+- [API reference index](https://yjmaxpayne.github.io/q2m3/api-reference/index.html)
+- [Development guide](doc/source/development.md) (contributor-facing, repo-local)
 
 ## Why q2m3
 
@@ -165,10 +168,10 @@ uv run python examples/full_oneelectron_embedding.py
 Then read the tiered guides before moving to heavier workflows:
 
 - [examples/README.md](examples/README.md) for the maintained script matrix
-- [doc/source/getting-started.md](doc/source/getting-started.md) for install and
-  runtime tiers
-- [doc/source/core-concepts.md](doc/source/core-concepts.md) for the QM/MM, QPE,
-  and solvation model
+- [Getting started](https://yjmaxpayne.github.io/q2m3/getting-started.html) for
+  install and runtime tiers
+- [Core concepts](https://yjmaxpayne.github.io/q2m3/core-concepts.html) for the
+  QM/MM, QPE, and solvation model
 
 If you want a Monte Carlo solvation smoke test after the H2 path:
 
@@ -253,9 +256,9 @@ The package layout mirrors that flow:
 
 Read more in:
 
-- [doc/source/core-concepts.md](doc/source/core-concepts.md)
-- [doc/source/architecture.md](doc/source/architecture.md)
-- [doc/source/api-reference/index.rst](doc/source/api-reference/index.rst)
+- [Core concepts](https://yjmaxpayne.github.io/q2m3/core-concepts.html)
+- [Architecture](https://yjmaxpayne.github.io/q2m3/architecture.html)
+- [API reference](https://yjmaxpayne.github.io/q2m3/api-reference/index.html)
 
 ## Runtime Notes
 

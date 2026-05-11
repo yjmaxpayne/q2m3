@@ -1,0 +1,35 @@
+# YAML 1.2
+# Citation File Format -- https://citation-file-format.github.io/
+# GitHub renders a "Cite this repository" button from this file.
+cff-version: 1.2.0
+title: "q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations"
+message: >-
+  If you use q2m3 in your research, please cite it using the metadata
+  from this file. After the first Zenodo release, prefer the
+  version-specific DOI to reference the exact code used.
+type: software
+authors:
+  - given-names: Jun
+    family-names: Ye
+    email: yjmaxpayne@hotmail.com
+    orcid: "https://orcid.org/0000-0003-1963-0865"
+repository-code: "https://github.com/yjmaxpayne/q2m3"
+url: "https://github.com/yjmaxpayne/q2m3"
+abstract: >-
+  q2m3 is a research and workflow framework that bridges PySCF classical
+  quantum chemistry, PennyLane Quantum Phase Estimation circuits, and
+  explicit MM point-charge environments. It targets Early Fault-Tolerant
+  Quantum Computers (EFTQC) and provides compile-once / run-many
+  solvation experiments, fixed-MO one-electron embedding, and EFTQC
+  resource estimation for active-space Hamiltonians.
+keywords:
+  - quantum computing
+  - quantum chemistry
+  - QM/MM
+  - quantum phase estimation
+  - PySCF
+  - PennyLane
+  - EFTQC
+license: MIT
+version: 0.1.1
+date-released: "2026-05-11"

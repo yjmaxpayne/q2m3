@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
-    {name = "IHPC Quantum Computing Team"},
+    {name = "Ye Jun", email = "yjmaxpayne@hotmail.com"},
 ]
 keywords = ["quantum computing", "quantum chemistry", "QM/MM", "QPE", "PySCF", "PennyLane"]
 classifiers = [

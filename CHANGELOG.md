@@ -1,18 +1,11 @@
 # Changelog
 
-## Unreleased
+## v0.1.1 (2026-05-11)
 
 ### Feat
 
-- **interfaces**: expose fixed-MO `full_oneelectron` embedding mode through the
-  public resource and fixed-Hamiltonian APIs
-- **examples**: add H2 full-one-electron embedding tutorial with diagonal and
-  full resource rows
-
-### Docs
-
-- document the fixed-MO boundary, dynamic coefficient limitation, and
-  release-readiness commands for full-one-electron embedding
+- expose full one-electron embedding API
+- add fixed-MO embedding and fast parallel tests
 
 ## v0.1.0 (2026-05-08)
 

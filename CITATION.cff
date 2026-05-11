@@ -33,3 +33,10 @@ keywords:
 license: MIT
 version: 0.1.1
 date-released: "2026-05-11"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.20114945
+    description: Concept DOI for all q2m3 versions on Zenodo
+  - type: doi
+    value: 10.5281/zenodo.20114946
+    description: Version-specific DOI for q2m3 v0.1.1

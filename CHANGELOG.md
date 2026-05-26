@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.3 (2026-05-26)
+
+Documentation and tooling patch. No source-code changes; upgrade is drop-in.
+
+### Docs
+
+- README: revise to reflect the hybrid quantum-classical QM/MM framework
+- README: update project title
+
+### Chore
+
+- Add CodeGraph support for semantic code-graph exploration
+
 ## v0.1.2 (2026-05-11)
 
 Documentation and release-infrastructure patch. No source-code changes; upgrade is drop-in.

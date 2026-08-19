@@ -53,7 +53,8 @@ class EFTQCResources:
     Attributes:
         hamiltonian_1norm: Lambda (1-norm) of the Hamiltonian in Hartree.
         logical_qubits: Number of logical qubits required.
-        toffoli_gates: Non-Clifford (Toffoli) gate count.
+        toffoli_gates: Total non-Clifford (Toffoli) gate count for the whole
+            QPE run (PennyLane ``DoubleFactorization.gates``).
         n_terms: Number of Hamiltonian terms. None when DoubleFactorization
             resource estimation is used (it does not construct the full
             PennyLane Hamiltonian object).
@@ -65,6 +66,10 @@ class EFTQCResources:
             "full_oneelectron").
         embedding_diagnostics: Optional scalar diagnostics for fixed-MO
             one-electron embedding.
+        walk_operator_calls: Number of qubitized walk-operator calls in QPE,
+            ``ceil(pi * lambda / (2 * target_error))`` (PennyLane
+            ``DoubleFactorization.estimation_cost``). Informational only: it is
+            already included in ``toffoli_gates``.
     """
 
     hamiltonian_1norm: float
@@ -77,6 +82,7 @@ class EFTQCResources:
     n_mm_charges: int
     embedding_mode: str = "none"
     embedding_diagnostics: EmbeddingDiagnostics | None = None
+    walk_operator_calls: int | None = None
 
 
 @dataclass(frozen=True)
@@ -154,6 +160,7 @@ def estimate_resources(
         n_mm_charges=int(raw["n_mm_charges"]),
         embedding_mode=str(raw["embedding_mode"]),
         embedding_diagnostics=_embedding_diagnostics_from_raw(raw),
+        walk_operator_calls=int(raw["qpe_iterations"]),
     )
 
 
@@ -268,34 +275,93 @@ def derive_t_resources(toffoli_gates: int) -> dict[str, int]:
     }
 
 
-def estimate_eftqc_runtime(
-    qpe_iterations: int,
+def surface_code_distance(
+    logical_qubits: int,
     toffoli_gates: int,
-    toffoli_cycle_microseconds: float = 1.0,
-) -> dict[str, float]:
-    """Estimate wall-clock runtime for an EFTQC QPE execution.
+    p_phys: float = 1e-3,
+    failure_budget: float = 0.01,
+) -> int:
+    """Smallest odd surface-code distance keeping the whole run below ``failure_budget``.
 
-    Assumes a fixed Toffoli cycle time and that QPE serially repeats the same
-    fault-tolerant block ``qpe_iterations`` times. This is a coarse upper
-    bound: real EFTQC implementations may amortize cost across iterations.
+    Uses the Litinski (Quantum 3, 128 (2019), Eq. 10) logical error model
+    ``p_L(d) = 0.1 * (100 * p_phys) ** ((d + 1) / 2)`` per logical qubit per code
+    cycle, and assumes each Toffoli occupies one logical time step of ``d``
+    code cycles for every logical qubit.
 
     Args:
-        qpe_iterations: Number of QPE iterations (= ceil(lambda / target_error)).
-        toffoli_gates: Toffoli count per QPE iteration.
-        toffoli_cycle_microseconds: Wall-clock time per Toffoli (default 1 us,
-            commonly cited for fault-tolerant superconducting estimates).
+        logical_qubits: Number of logical (data) qubits.
+        toffoli_gates: Total sequential Toffoli count of the algorithm.
+        p_phys: Physical error rate per gate / code cycle.
+        failure_budget: Accepted total logical failure probability.
 
     Returns:
-        Dict with runtime in seconds, hours, and days.
+        Code distance ``d`` (odd integer in [3, 99]).
+
+    Raises:
+        ValueError: If no distance below 101 meets the budget.
     """
-    total_microseconds = (
-        float(qpe_iterations) * float(toffoli_gates) * float(toffoli_cycle_microseconds)
-    )
+    for d in range(3, 101, 2):
+        p_logical = 0.1 * (100.0 * p_phys) ** ((d + 1) / 2)
+        if logical_qubits * toffoli_gates * d * p_logical < failure_budget:
+            return d
+    raise ValueError("No surface-code distance below 101 meets the failure budget")
+
+
+def estimate_eftqc_runtime(
+    toffoli_gates: int,
+    logical_qubits: int,
+    p_phys: float = 1e-3,
+    t_cycle_microseconds: float = 1.0,
+    t_react_microseconds: float = 10.0,
+    n_factories: int = 1,
+    failure_budget: float = 0.01,
+) -> dict[str, float | int | str]:
+    """Estimate wall-clock runtime and physical footprint of an EFTQC QPE run.
+
+    Surface-code model: ``runtime = toffoli_gates * tick`` with
+    ``tick = max(t_react, 5.5 * d * t_cycle / n_factories)`` — one CCZ per
+    ``5.5 d`` code cycles per factory (Gidney & Fowler, Quantum 3, 135 (2019);
+    Babbush et al., PRX Quantum 2, 010103 (2021), Eq. 6), floored by the
+    classical reaction time (Lee et al., PRX Quantum 2, 030305 (2021)).
+
+    ``toffoli_gates`` is the **total** count for the whole algorithm, exactly
+    what PennyLane ``DoubleFactorization.gates`` / ``EFTQCResources.toffoli_gates``
+    report; it already contains the ``ceil(pi*lambda/(2*eps))`` phase-estimation
+    repetitions, so no iteration count is multiplied in here.
+
+    Args:
+        toffoli_gates: Total Toffoli count of the algorithm.
+        logical_qubits: Number of logical qubits (sets the code distance).
+        p_phys: Physical error rate (default 1e-3, superconducting assumption).
+        t_cycle_microseconds: Surface-code cycle time (default 1 us).
+        t_react_microseconds: Classical reaction time floor (default 10 us).
+        n_factories: Number of parallel CCZ factories (default 1, sequential
+            upper bound; Lee 2021 FeMoco uses 4).
+        failure_budget: Accepted total logical failure probability.
+
+    Returns:
+        Dict with ``code_distance``, ``tick_microseconds``, ``regime``
+        ("factory" or "reaction"), ``runtime_{microseconds,seconds,hours,days}``,
+        ``physical_qubits`` (2(d+1)^2 per logical qubit + 15d x 8d per factory),
+        and the input assumptions echoed back.
+    """
+    d = surface_code_distance(logical_qubits, toffoli_gates, p_phys, failure_budget)
+    t_factory = 5.5 * d * float(t_cycle_microseconds) / float(n_factories)
+    tick = max(float(t_react_microseconds), t_factory)
+    total_microseconds = float(toffoli_gates) * tick
     runtime_seconds = total_microseconds * 1e-6
+    physical_qubits = int(logical_qubits) * 2 * (d + 1) ** 2 + int(n_factories) * 15 * 8 * d * d
     return {
+        "code_distance": d,
+        "tick_microseconds": tick,
+        "regime": "factory" if t_factory > float(t_react_microseconds) else "reaction",
         "runtime_microseconds": total_microseconds,
         "runtime_seconds": runtime_seconds,
         "runtime_hours": runtime_seconds / 3600.0,
         "runtime_days": runtime_seconds / 86400.0,
-        "toffoli_cycle_microseconds": float(toffoli_cycle_microseconds),
+        "physical_qubits": physical_qubits,
+        "p_phys": float(p_phys),
+        "t_cycle_microseconds": float(t_cycle_microseconds),
+        "t_react_microseconds": float(t_react_microseconds),
+        "n_factories": int(n_factories),
     }

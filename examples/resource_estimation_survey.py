@@ -55,7 +55,11 @@ from q2m3.core import (
 
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "data" / "output"
 DEFAULT_TARGET_ERROR = 0.0016  # Hartree, ~1 kcal/mol (chemical accuracy)
-DEFAULT_TOFFOLI_CYCLE_US = 1.0  # us per Toffoli, common EFTQC assumption
+# Physical-layer assumptions for the runtime column (surface code, superconducting):
+DEFAULT_P_PHYS = 1e-3  # physical error rate
+DEFAULT_T_CYCLE_US = 1.0  # surface-code cycle time (Lee 2021 / Babbush 2021)
+DEFAULT_T_REACT_US = 10.0  # classical reaction-time floor per Toffoli
+DEFAULT_N_FACTORIES = 1  # CCZ factories; 1 = sequential upper bound (Babbush 2021 Eq. 6)
 
 
 @dataclass(frozen=True)
@@ -305,13 +309,16 @@ def estimate_one(spec: SystemSpec) -> dict:
     )
     elapsed = time.perf_counter() - t0
 
-    # Derived T-resources and runtime estimate
+    # Derived T-resources and runtime estimate. res.toffoli_gates is the DF
+    # total for the whole QPE (already includes ceil(pi*lambda/2eps) walk calls).
     t_res = derive_t_resources(toffoli_gates=res.toffoli_gates)
-    qpe_iters = int(np.ceil(res.hamiltonian_1norm / DEFAULT_TARGET_ERROR))
     runtime = estimate_eftqc_runtime(
-        qpe_iterations=qpe_iters,
         toffoli_gates=res.toffoli_gates,
-        toffoli_cycle_microseconds=DEFAULT_TOFFOLI_CYCLE_US,
+        logical_qubits=res.logical_qubits,
+        p_phys=DEFAULT_P_PHYS,
+        t_cycle_microseconds=DEFAULT_T_CYCLE_US,
+        t_react_microseconds=DEFAULT_T_REACT_US,
+        n_factories=DEFAULT_N_FACTORIES,
     )
 
     return {
@@ -327,11 +334,13 @@ def estimate_one(spec: SystemSpec) -> dict:
         "t_depth": t_res["t_depth"],
         "hamiltonian_1norm_Ha": res.hamiltonian_1norm,
         "target_error_Ha": res.target_error,
-        "qpe_iterations": qpe_iters,
+        "walk_operator_calls": res.walk_operator_calls,
+        "code_distance": runtime["code_distance"],
+        "tick_us": runtime["tick_microseconds"],
         "runtime_seconds": runtime["runtime_seconds"],
         "runtime_hours": runtime["runtime_hours"],
         "runtime_days": runtime["runtime_days"],
-        "toffoli_cycle_us": runtime["toffoli_cycle_microseconds"],
+        "physical_qubits": runtime["physical_qubits"],
         "geometry_source": spec.geometry_source,
         "estimation_wallclock_s": round(elapsed, 3),
     }
@@ -358,7 +367,11 @@ def write_outputs(records: list[dict], output_dir: Path) -> tuple[Path, Path]:
         "metadata": {
             "tool": "pennylane.estimator.DoubleFactorization",
             "target_error_Hartree": DEFAULT_TARGET_ERROR,
-            "toffoli_cycle_us": DEFAULT_TOFFOLI_CYCLE_US,
+            "runtime_model": "N_Toffoli(total) x max(t_react, 5.5*d*t_cycle/n_factories)",
+            "p_phys": DEFAULT_P_PHYS,
+            "t_cycle_us": DEFAULT_T_CYCLE_US,
+            "t_react_us": DEFAULT_T_REACT_US,
+            "n_factories": DEFAULT_N_FACTORIES,
             "t_count_formula": "7 * Toffoli (Nielsen-Chuang)",
             "t_depth_formula": "7 * Toffoli (sequential upper bound)",
             "active_space_path": "qml.qchem.electron_integrals(mol, core=, active=)",
@@ -421,11 +434,13 @@ def _failure_record(spec: SystemSpec, error: BaseException | str) -> dict:
         "t_depth": None,
         "hamiltonian_1norm_Ha": None,
         "target_error_Ha": DEFAULT_TARGET_ERROR,
-        "qpe_iterations": None,
+        "walk_operator_calls": None,
+        "code_distance": None,
+        "tick_us": None,
         "runtime_seconds": None,
         "runtime_hours": None,
         "runtime_days": None,
-        "toffoli_cycle_us": DEFAULT_TOFFOLI_CYCLE_US,
+        "physical_qubits": None,
         "geometry_source": spec.geometry_source,
         "estimation_wallclock_s": None,
         "error": err,

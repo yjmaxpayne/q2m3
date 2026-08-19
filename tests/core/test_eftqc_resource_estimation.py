@@ -319,24 +319,81 @@ def test_derive_t_resources_uses_seven_t_per_toffoli():
     assert derived["toffoli_depth"] == 1000
 
 
-def test_estimate_eftqc_runtime_uses_cycle_time():
-    """Runtime = qpe_iterations * toffoli_gates * cycle_time."""
-    runtime = estimate_eftqc_runtime(
-        qpe_iterations=10,
-        toffoli_gates=1_000_000,
-        toffoli_cycle_microseconds=1.0,
+def test_estimate_eftqc_runtime_takes_total_toffoli_count():
+    """BUG-QRE-RUNTIME-001: runtime must NOT re-multiply the DF total by ceil(lambda/eps).
+
+    PennyLane ``DoubleFactorization.gates`` already equals
+    ``estimation_cost(lambda, eps) * unitary_cost`` (whole-QPE Toffoli count).
+    Passing it together with a separate iteration count double-counted the
+    lambda/eps factor (x3821 for H3O+ (4e,4o)). With the physical tick model
+    (Babbush 2021 Eq. 6, single CCZ factory, p=1e-3) the H3O+ row is ~0.23 h,
+    not the 6.9 h the survey used to report.
+    """
+    # H3O+ (4e,4o) STO-3G, eps = 1.6 mHa: DF total Toffoli and logical qubits
+    runtime = estimate_eftqc_runtime(toffoli_gates=6_511_100, logical_qubits=131)
+
+    assert runtime["runtime_hours"] < 1.0
+    assert runtime["code_distance"] == 23
+    assert runtime["tick_microseconds"] == pytest.approx(126.5, rel=0.05)
+    # Contract: runtime = N_Toffoli(total) x tick, nothing else
+    assert runtime["runtime_seconds"] == pytest.approx(
+        6_511_100 * runtime["tick_microseconds"] * 1e-6
     )
-    # 10 iters * 1e6 Toffoli * 1 us = 1e7 us = 10 s
-    assert runtime["runtime_seconds"] == pytest.approx(10.0)
-    assert runtime["runtime_hours"] == pytest.approx(10.0 / 3600)
+
+
+def test_estimate_eftqc_runtime_reproduces_lee2021_femoco():
+    """Lee et al. PRX Quantum 2, 030305 (2021) FeMoco regression.
+
+    1908 logical qubits, 6.7e9 Toffoli, p_phys=1e-3, 4 CCZ factories ->
+    paper: d=31, ~40 us/Toffoli (25 kHz), 3-3.5 days, ~4e6 physical qubits.
+    """
+    runtime = estimate_eftqc_runtime(
+        toffoli_gates=6_700_000_000,
+        logical_qubits=1908,
+        p_phys=1e-3,
+        n_factories=4,
+    )
+
+    assert runtime["code_distance"] == 31
+    assert runtime["tick_microseconds"] == pytest.approx(40.0, rel=0.2)
+    assert 3.0 <= runtime["runtime_days"] <= 3.5
+    assert 3.5e6 <= runtime["physical_qubits"] <= 5.0e6
+    assert runtime["regime"] == "factory"
+
+
+def test_estimate_eftqc_runtime_tick_is_floored_by_reaction_time():
+    """Many factories cannot beat the classical reaction limit (~10 us)."""
+    runtime = estimate_eftqc_runtime(
+        toffoli_gates=10_000,
+        logical_qubits=10,
+        n_factories=64,
+        t_react_microseconds=10.0,
+    )
+
+    assert runtime["regime"] == "reaction"
+    assert runtime["tick_microseconds"] == pytest.approx(10.0)
 
 
 def test_estimate_eftqc_runtime_scales_linearly_with_cycle():
-    """Runtime scales linearly with toffoli_cycle_microseconds."""
+    """In the factory-limited regime runtime scales linearly with t_cycle.
+
+    Code distance depends only on (p_phys, logical_qubits, toffoli_gates), so
+    changing t_cycle changes the tick but not d.
+    """
     fast = estimate_eftqc_runtime(
-        qpe_iterations=10, toffoli_gates=1000, toffoli_cycle_microseconds=0.1
+        toffoli_gates=6_511_100, logical_qubits=131, t_cycle_microseconds=1.0
     )
     slow = estimate_eftqc_runtime(
-        qpe_iterations=10, toffoli_gates=1000, toffoli_cycle_microseconds=10.0
+        toffoli_gates=6_511_100, logical_qubits=131, t_cycle_microseconds=10.0
     )
-    assert slow["runtime_seconds"] == pytest.approx(fast["runtime_seconds"] * 100)
+
+    assert slow["code_distance"] == fast["code_distance"]
+    assert slow["runtime_seconds"] == pytest.approx(fast["runtime_seconds"] * 10)
+
+
+def test_estimate_resources_exposes_walk_operator_calls():
+    """walk_operator_calls = DF.estimation_cost = ceil(pi*lambda/(2*eps)), informational only."""
+    result = estimate_resources(symbols=H2_SYMBOLS, coords=H2_COORDS, target_error=0.0016)
+
+    expected = int(np.ceil(np.pi * result.hamiltonian_1norm / (2 * 0.0016)))
+    assert result.walk_operator_calls == expected

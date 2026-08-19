@@ -566,9 +566,11 @@ class PySCFPennyLaneConverter:
         Returns:
             Dictionary containing:
                 - logical_qubits: Number of logical qubits for EFTQC
-                - toffoli_gates: Toffoli gate count (non-Clifford gates)
+                - toffoli_gates: Total Toffoli count for the whole QPE run
+                  (DoubleFactorization.gates = estimation_cost * unitary_cost)
                 - hamiltonian_1norm: Lambda (1-norm of Hamiltonian) in Hartree
-                - qpe_iterations: Estimated QPE iterations (= ceil(λ/ε))
+                - qpe_iterations: Walk-operator calls (= ceil(πλ/2ε)); already
+                  included in toffoli_gates (informational only)
                 - trotter_steps: Recommended Trotter steps (heuristic: 10 × n_orbitals)
                 - target_error: Target error in Hartree
                 - n_electrons: Number of electrons in the system
@@ -726,8 +728,9 @@ class PySCFPennyLaneConverter:
         # Extract Hamiltonian 1-norm (Lambda)
         hamiltonian_1norm = float(np.asarray(algo.lamb).item())
 
-        # Calculate QPE iterations: ceil(Lambda / error)
-        qpe_iterations = int(np.ceil(hamiltonian_1norm / target_error))
+        # Walk-operator calls in QPE: ceil(pi * Lambda / (2 * error)); already
+        # included in algo.gates (gates = estimation_cost * unitary_cost).
+        qpe_iterations = int(DoubleFactorization.estimation_cost(hamiltonian_1norm, target_error))
 
         # Heuristic Trotter step recommendation: 10 × n_orbitals
         n_orbitals = one_electron.shape[0]

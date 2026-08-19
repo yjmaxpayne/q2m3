@@ -67,14 +67,17 @@ class TestResourceEstimation:
         assert result["trotter_steps"] <= 200
 
     def test_qpe_iterations_formula(self, converter):
-        """QPE iterations should be ceil(lambda / error)."""
+        """qpe_iterations must match PennyLane DF.estimation_cost = ceil(pi*lambda/(2*error)).
+
+        BUG-QRE-RUNTIME-001 (A3): the old ceil(lambda/error) differed from the
+        factor already baked into ``DoubleFactorization.gates`` by pi/2.
+        """
         symbols = ["H", "H"]
         coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
 
         result = converter.estimate_qpe_resources(symbols, coords, target_error=0.0016)
 
-        # qpe_iterations = ceil(lambda / error)
-        expected_iterations = int(np.ceil(result["hamiltonian_1norm"] / 0.0016))
+        expected_iterations = int(np.ceil(np.pi * result["hamiltonian_1norm"] / (2 * 0.0016)))
         assert result["qpe_iterations"] == expected_iterations
 
     def test_error_scaling(self, converter):

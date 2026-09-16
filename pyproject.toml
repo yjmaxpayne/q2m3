@@ -36,6 +36,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sqd = ["ffsim>=0.0.83", "qiskit-addon-sqd>=0.12.1"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -138,6 +139,7 @@ addopts = [
     "--cov-report=html",
 ]
 markers = [
+    "sqd: marks tests requiring the optional SQD dependencies",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "solvation: marks tests requiring solvation dependencies (Catalyst + JAX)",
     "catalyst: marks tests requiring Catalyst (skip if not installed)",

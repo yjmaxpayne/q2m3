@@ -6,6 +6,8 @@ Input/Output utilities for molecular data and results.
 """
 
 import json
+from collections.abc import Mapping
+from dataclasses import fields, is_dataclass
 from pathlib import Path
 from typing import Any
 
@@ -66,14 +68,20 @@ def load_xyz(filepath: str) -> list[Atom]:
     return atoms
 
 
-def save_json_results(results: dict[str, Any], filepath: str, indent: int = 2) -> None:
+def save_json_results(results: Any, filepath: str | Path, indent: int = 2) -> None:
     """
-    Save calculation results to JSON file.
+    Save calculation results as strict JSON, including immutable dataclasses.
 
     Args:
-        results: Dictionary of results
+        results: Results mapping or dataclass instance. Nested dataclasses,
+            mappings, numpy values, and tuples are converted recursively.
+            Complex numbers use dictionaries with real and imag fields.
         filepath: Output file path
         indent: JSON indentation level
+
+    Raises:
+        ValueError: A numeric value is NaN or infinite.
+        TypeError: A value cannot be represented in JSON.
     """
     path = Path(filepath)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +90,7 @@ def save_json_results(results: dict[str, Any], filepath: str, indent: int = 2) -
     serializable_results = _make_json_serializable(results)
 
     with open(path, "w") as f:
-        json.dump(serializable_results, f, indent=indent)
+        json.dump(serializable_results, f, indent=indent, allow_nan=False)
 
 
 def load_config(filepath: str) -> dict[str, Any]:
@@ -125,8 +133,12 @@ def _make_json_serializable(obj: Any) -> Any:
     Returns:
         JSON-serializable object
     """
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
+    if is_dataclass(obj) and not isinstance(obj, type):
+        return {
+            field.name: _make_json_serializable(getattr(obj, field.name)) for field in fields(obj)
+        }
+    elif isinstance(obj, np.ndarray):
+        return _make_json_serializable(obj.tolist())
     # Handle numpy boolean types (compatible with NumPy 1.x and 2.x)
     # Note: np.bool_ is the scalar type, check it first before generic bool
     elif isinstance(obj, np.bool_):
@@ -140,11 +152,13 @@ def _make_json_serializable(obj: Any) -> Any:
     elif isinstance(obj, np.floating):
         return float(obj)
     # Handle other numpy number types
+    elif isinstance(obj, np.complexfloating):
+        return _make_json_serializable(complex(obj))
     elif isinstance(obj, np.number):
         return float(obj)
     elif isinstance(obj, complex):
         return {"real": obj.real, "imag": obj.imag}
-    elif isinstance(obj, dict):
+    elif isinstance(obj, Mapping):
         return {key: _make_json_serializable(value) for key, value in obj.items()}
     elif isinstance(obj, list | tuple):
         return [_make_json_serializable(item) for item in obj]

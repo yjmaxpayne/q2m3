@@ -7,6 +7,11 @@ Quantum-QM/MM POC Framework
 A hybrid quantum-classical framework for QM/MM calculations using QPE algorithms.
 """
 
+from typing import Any as _Any
+
+from q2m3._lazy import available_exports as _available_exports
+from q2m3._lazy import lazy_getattr as _lazy_getattr
+
 from .version import __version__
 
 __author__ = "Ye Jun <yjmaxpayne@hotmail.com>"
@@ -73,3 +78,14 @@ __all__ = [
     "get_best_available_device",
     "get_catalyst_effective_backend",
 ]
+
+_LAZY_EXPORTS = {"run_solvation": ("q2m3.solvation.orchestrator", "catalyst")}
+__all__ += _available_exports(_LAZY_EXPORTS)
+
+
+def __getattr__(name: str) -> _Any:
+    return _lazy_getattr(__name__, globals(), _LAZY_EXPORTS, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_LAZY_EXPORTS))

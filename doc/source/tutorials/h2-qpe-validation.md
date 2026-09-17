@@ -34,18 +34,24 @@ example small while still exercising the MM embedding path.
 
 ## Interpreting Results
 
-The maintained example README records these current H2 checks:
+Use the current script's `run_validation_checks` and printed results as the
+integration check. Its example-specific thresholds are `0.1 kcal/mol` for
+PennyLane HF expectation values versus PySCF HF, and `2.0 Ha` for absolute
+QPE–HF differences. These deliberately loose POC checks do not establish
+chemical accuracy. The script prints failures without setting a failing exit
+status, so inspect every `[OK]` / `[FAIL]` line.
 
-| Quantity | Current reference |
-| --- | --- |
-| QPE-HF signed energy offset | `-0.0174 Ha` (QPE lower than HF) |
-| Absolute offset equivalent | `10.9 kcal/mol` |
-| QPE solvation stabilization | `-0.0543 kcal/mol` for 2 TIP3P waters |
-| PennyLane HF vs PySCF HF agreement | `<= 0.0001 kcal/mol` |
+The signed offset is `E_QPE - E_HF`; it includes finite phase resolution,
+Trotter error, and sampling effects and must not be identified directly with
+correlation energy. The default run uses 100 shots, so QPE results can vary.
+The script defines stabilization as `(E_vacuum - E_solvated)` converted to
+kcal/mol: a positive value means the solvated system has lower energy.
+Its sign check is bypassed when the absolute QPE stabilization is at most
+`0.01 kcal/mol`.
 
-Treat the H2 script as an integration validation, not as a broad chemistry
-benchmark. The thresholds are example-specific and intentionally relaxed for
-the POC scale.
+For a regression comparison, save the output together with the source
+revision, dependency versions, device, and QPE parameters. Historical README
+numbers are not acceptance thresholds.
 
 ## Common Adjustments
 

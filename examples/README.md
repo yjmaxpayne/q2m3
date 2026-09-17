@@ -1,37 +1,13 @@
 # q2m3 Examples
 
-> Hybrid Quantum-Classical QM/MM for Early Fault-Tolerant Quantum Computers (EFTQC)
+## Before running
 
----
+Use the [source installation](../README.md#from-source) and run commands from
+the repository root. The H₂ starters use core dependencies; MC and Catalyst
+profiling require the `solvation` extra (which includes Catalyst and JAX).
+GPU and visualization extras are optional for the commands below.
 
-This directory holds the maintained example scripts for the q2m3 package.
-They are runnable entry points for the public APIs and for the diagnostics
-worth pointing package users at.
-
-## Runtime And Memory Tiers
-
-| Tier | Scripts | Expected environment |
-|------|---------|----------------------|
-| First run | `h2_qpe_validation.py`, `h2_resource_estimation.py`, `full_oneelectron_embedding.py` | CPU laptop or workstation |
-| Standard MC | `h2_mc_solvation.py` | Catalyst/JAX installed; 8 GB+ RAM recommended |
-| H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed; 16 GB+ RAM recommended |
-| High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended; use provided guards/options |
-
-Running every script in this directory in one go is a bad idea. Catalyst
-compile memory grows with estimation wires, Trotter depth, and Hamiltonian
-term count, so H3O+ examples sit on a separate track from the H2 first-run
-path.
-
-## Chapter 1: Static QPE (`q2m3.core` API)
-
-Single-configuration QPE runs. These scripts check algorithm correctness and
-produce hardware resource estimates for a fixed Hamiltonian.
-
-| Example | Description | Lines |
-|---------|-------------|-------|
-| `h2_qpe_validation.py` | QPE correctness: vacuum vs MM-embedded H2 solvation | 517 |
-| `h2_resource_estimation.py` | EFTQC hardware resource estimation (Toffoli, qubits, 1-norm) | 95 |
-| `full_oneelectron_embedding.py` | H2 + one TIP3P water fixed-MO diagonal vs full one-electron resource rows | 120 |
+## Start with H₂
 
 ```bash
 uv run python examples/h2_qpe_validation.py
@@ -39,147 +15,66 @@ uv run python examples/h2_resource_estimation.py
 uv run python examples/full_oneelectron_embedding.py
 ```
 
-**Verified H2 results from the current scripts**:
-- QPE-HF energy gap: `0.0174 Ha` (`10.9 kcal/mol` correlation energy)
-- QPE solvation stabilization: `-0.0543 kcal/mol` for 2 TIP3P waters
-- PennyLane `<HF|H|HF>` vs PySCF HF agreement: `<= 0.0001 kcal/mol`
-- H2 EFTQC resource estimate: `1,224,608` Toffoli gates and `115` logical qubits
+These cover vacuum/MM QPE, EFTQC resource estimates, and fixed-MO diagonal
+versus full one-electron embedding. H₂/STO-3G uses `(2e, 2o)`, or four system
+qubits; the QPE validation adds four estimation wires. Check its printed
+validation results as well as the exit status.
 
-**Fixed-MO full-one-electron embedding**:
-
-`full_oneelectron_embedding.py` compares three resource rows:
-
-| Row | Meaning |
-|-----|---------|
-| `vacuum` | No MM point charges |
-| `diagonal` | Adds only active-space `Delta h_pp` point-charge terms |
-| `full_oneelectron` | Adds the full fixed-MO active-space `Delta h_pq` matrix |
-
-The script prints `delta_h_offdiag_fro`, Hamiltonian `lambda`, Toffoli gates,
-and logical qubits. It is not a relaxed solvation energy calculation; the MO
-frame and two-electron tensor stay fixed at their vacuum values.
-
----
-
-## Chapter 2: MC Dynamics (`q2m3.solvation` API)
-
-Monte Carlo solvation sampling, where each MC step shuffles the MM
-environment and hands the QPE a different Hamiltonian.
-
-| Example | Description | Lines |
-|---------|-------------|-------|
-| `h2_mc_solvation.py` | H2 fixed-mode MC with compile-once QPE | 90 |
-| `h3o_mc_solvation.py` | H3O+ hf_corrected MC with safe default `n_trotter_steps=3` | 98 |
-| `h2_three_mode_comparison.py` | H2 fixed / hf_corrected / dynamic comparison and δ_corr-pol analysis | 494 |
+For the H₂ MC example (ten waters, 100 steps, `fixed` mode):
 
 ```bash
-# Recommended MC smoke path
+uv sync --extra solvation
 uv run python examples/h2_mc_solvation.py
-
-# Optional: heavier ionic example; use a 16 GB+ RAM machine
-uv run python examples/h3o_mc_solvation.py
-
-# Longer comparison run
-uv run python examples/h2_three_mode_comparison.py
 ```
 
-`h3o_mc_solvation.py` uses `n_trotter_steps=3` by default. Raising H3O+
-Trotter depth can substantially increase Catalyst IR size and memory pressure.
-Use `h3o_dynamic_trotter_oom_scan.py` before increasing this value on shared or
-low-memory machines.
+## Script index
 
-**Three QPE modes** (in `h2_three_mode_comparison.py`):
+| Category | Script | Purpose |
+| --- | --- | --- |
+| H₂ starter | [h2_qpe_validation.py](h2_qpe_validation.py) | Vacuum/MM QPE integration checks |
+| H₂ starter | [h2_resource_estimation.py](h2_resource_estimation.py) | Vacuum/MM resource comparison |
+| H₂ starter | [full_oneelectron_embedding.py](full_oneelectron_embedding.py) | Fixed-MO embedding resource rows |
+| MC | [h2_mc_solvation.py](h2_mc_solvation.py) | H₂ fixed-Hamiltonian sampling |
+| MC | [h3o_mc_solvation.py](h3o_mc_solvation.py) | H₃O⁺ `(4e, 4o)`, `hf_corrected`, three Trotter steps |
+| MC comparison | [h2_three_mode_comparison.py](h2_three_mode_comparison.py) | Three modes and correlation–polarization diagnostics |
+| Resources | [resource_estimation_survey.py](resource_estimation_survey.py) | Small-molecule EFTQC survey |
+| QPE benchmark | [h2_8bit_qpe_benchmark.py](h2_8bit_qpe_benchmark.py) | H₂ 4/8-bit resolution and sampling study |
+| QPE benchmark | [h3o_8bit_qpe_benchmark.py](h3o_8bit_qpe_benchmark.py) | H₃O⁺ resolution study; skip/fallback options |
+| Compile survey | [ir_qre_trotter5_compile_survey.py](ir_qre_trotter5_compile_survey.py) | Four estimation wires, five Trotter steps |
+| Analysis | [ir_qre_correlation_analysis.py](ir_qre_correlation_analysis.py) | Join resource and compile survey outputs |
+| Memory scan | [h3o_dynamic_trotter_oom_scan.py](h3o_dynamic_trotter_oom_scan.py) | H₃O⁺ Trotter scan with memory guard |
+| Profiling | [catalyst_benchmark.py](catalyst_benchmark.py) | Catalyst compilation/execution comparison |
+| Profiling | [qpe_memory_profile.py](qpe_memory_profile.py) | Fixed/dynamic QPE compilation memory |
 
-| Mode | Energy Formula | Physics |
-|------|---------------|---------|
-| `fixed` | E_QPE(H_vac) + E_MM | Approximate (ignores δ_corr-pol) |
-| `hf_corrected` | E_HF(R) + E_MM | Intermediate (HF-level MM embedding) |
-| `dynamic` | E_QPE(H_eff with MM) + E_MM | Most rigorous (runtime coefficient parameterization) |
+The [sqd/ probes](sqd/README.md) provide dependency/integration evidence;
+they are not a production SQD engine.
 
-**Key finding**: `dynamic` mode uses JAX-traceable Hamiltonian coefficients
-via `TrotterProduct(..., check_hermitian=False)`, which removes the Catalyst
-recompilation bottleneck — the circuit compiles once and is reused across
-MC steps with updated coefficients.
+## Scientific and runtime boundaries
 
-Runtime coefficient updates are diagonal-only. Full-one-electron embedding
-can change fixed operator support, so it lives in the fixed-MO resource and
-fixed-Hamiltonian paths rather than the dynamic coefficient path.
+For the default `embedding_mode="diagonal"`, MC acceptance uses:
 
----
+| Mode | Acceptance energy | Hamiltonian behavior |
+| --- | --- | --- |
+| `fixed` | `E_QPE(H_vac) + E_MM` | Vacuum coefficients remain fixed |
+| `hf_corrected` | `E_HF(R) + E_MM` | Embedded HF each step; vacuum QPE at diagnostic intervals |
+| `dynamic` | `E_QPE(H_diag(R)) + E_MM` | Update diagonal MM terms and nuclear constant each step |
 
-## Resource And IR-QRE Studies
+Here `R` is the solvent configuration and `E_MM` is solvent–solvent energy.
+Catalyst circuits are compiled and reused across steps. Dynamic updates keep
+the vacuum MO frame and two-electron tensor fixed. Full one-electron
+`Delta h_pq` embedding is available for resource estimates and fixed
+Hamiltonians; it is not supported by the dynamic coefficient-update path.
+These models do not include polarizable MM or correlated orbital relaxation.
 
-EFTQC resource estimation plus compile-IR ↔ quantum-resource correlation
-studies. These scripts write `data/output/qre_*` and `data/output/ir_qre_*`
-artifacts locally. The generated outputs are not part of the public examples
-contract; reproduce them on your machine when you need them.
+QPE–HF gaps are not direct correlation-energy measurements: finite phase
+resolution, Trotter approximation, and sampling can affect them. Energies are
+in Hartree internally; kcal/mol values require explicit conversion.
+See the [H₂ tutorial](../doc/source/tutorials/h2-qpe-validation.md) for checks
+and sign conventions, and the [PennyLane QPE introduction](https://pennylane.ai/demos/tutorial_qpe/).
 
-| Example | Description | Lines |
-|---------|-------------|-------|
-| `resource_estimation_survey.py` | Small-molecule QRE matrix; 13 runnable rows plus an explicit Glycine skip row | 474 |
-| `h2_8bit_qpe_benchmark.py` | H2 4/8-bit QPE resolution benchmark | 140 |
-| `h3o_8bit_qpe_benchmark.py` | H3O+ 4/8-bit fixed-mode benchmark with 6-bit fallback support | 288 |
-| `ir_qre_trotter5_compile_survey.py` | Standardized 4-bit, trotter=5 Catalyst compile survey | 403 |
-| `ir_qre_correlation_analysis.py` | Joins QRE and compile survey outputs; D1-D4 regression report | 625 |
-| `h3o_dynamic_trotter_oom_scan.py` | Memory-guarded H3O+ dynamic Trotter scaling scan | 459 |
-
-```bash
-uv run python examples/resource_estimation_survey.py
-OMP_NUM_THREADS=2 uv run python examples/ir_qre_trotter5_compile_survey.py
-uv run python examples/ir_qre_correlation_analysis.py
-
-# High-memory diagnostics. Prefer a 30 GB+ RAM machine.
-OMP_NUM_THREADS=4 uv run python examples/h2_8bit_qpe_benchmark.py
-OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py --skip-8bit
-OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py
-```
-
-**Key artifacts**:
-- `data/output/qre_survey.csv` and `.json` — QRE summary with success/skip rows
-- `data/output/ir_qre_trotter5_compile_survey.csv` and `.json` — measured compile rows
-- `data/output/ir_qre_correlation.csv` — currently 6 measured joined rows
-- `data/output/ir_qre_correlation_stats.csv` — D1-D4 fit statistics
-- `data/output/ir_qre_correlation_report.md` — text report
-
-Current checked-in local outputs show a strong descriptive D1 association
-(`R² ≈ 0.957`) and weak/null D2-D4 fits (`R² ≈ 0.072`, `0.145`, `0.002`).
-The numbers describe the small sample on hand; do not read them as predictive
-scaling laws.
-
----
-
-## Profiling And Tools
-
-| Example | Description | Lines |
-|---------|-------------|-------|
-| `catalyst_benchmark.py` | Catalyst JIT performance benchmark | 248 |
-| `qpe_memory_profile.py` | QPE compilation memory profiling for fixed/dynamic Hamiltonian modes | 572 |
-
-```bash
-uv run python examples/catalyst_benchmark.py
-uv run python examples/qpe_memory_profile.py --mode fixed
-```
-
-`qpe_memory_profile.py --mode both` and `--sweep` can be memory hungry. Run
-the narrower `--mode fixed` or `--mode dynamic` form first to see how the
-machine holds up.
-
----
-
-## Scientific Background
-
-### The Missing Physics: δ_corr-pol
-
-The `fixed` and `hf_corrected` modes assume:
-$$E_{\mathrm{corr}}(H_{\mathrm{eff}}) \approx E_{\mathrm{corr}}(H_{\mathrm{vac}})$$
-
-The correlation-polarization coupling term:
-$$\delta_{\mathrm{corr-pol}} \equiv E_{\mathrm{corr}}(H_{\mathrm{eff}}) - E_{\mathrm{corr}}(H_{\mathrm{vac}})$$
-
-is non-zero and can be comparable to the total solvation-energy scale. The
-`dynamic` mode samples this quantity via `h2_three_mode_comparison.py`.
-
-### References
-
-- [PennyLane QPE Tutorial](https://pennylane.ai/qml/demos/tutorial_qpe/)
-- [PennyLane Catalyst Documentation](https://docs.pennylane.ai/projects/catalyst/)
+Run larger MC, benchmark, and profiling scripts individually after inspecting
+their configuration and available guards. Compile time and memory depend on
+the system and circuit settings; no fixed RAM budget guarantees success.
+Surveys generate local files under `data/output/`; the correlation analysis
+requires both resource and compile survey inputs. Generated files are not
+versioned reference results or evidence for predictive scaling laws.

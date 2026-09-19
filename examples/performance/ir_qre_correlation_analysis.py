@@ -9,7 +9,7 @@ estimates from ``qre_survey.json``. All compile rows must use 4 estimation wires
 and ``n_trotter=5``; older fixed-10 and reduced-shape dynamic rows are rejected.
 
 Usage:
-    OMP_NUM_THREADS=4 uv run python examples/ir_qre_correlation_analysis.py
+    OMP_NUM_THREADS=4 uv run python examples/performance/ir_qre_correlation_analysis.py
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import matplotlib
 import numpy as np
 from scipy import stats as scipy_stats
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_QRE_JSON = PROJECT_ROOT / "data" / "output" / "qre_survey.json"
 DEFAULT_COMPILE_JSON = PROJECT_ROOT / "data" / "output" / "ir_qre_trotter5_compile_survey.json"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data" / "output"

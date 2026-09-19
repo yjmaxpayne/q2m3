@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Smoke tests for examples/full_oneelectron_embedding.py."""
+"""Smoke tests for examples/qmmm/full_oneelectron_embedding.py."""
 
 from types import SimpleNamespace
 
@@ -31,7 +31,7 @@ def _resource(mode: str, lambda_ha: float, toffoli_gates: int, offdiag: float):
 
 def test_full_oneelectron_embedding_main_smoke(monkeypatch, capsys):
     """The tutorial script prints all embedding resource rows and boundaries."""
-    from examples import full_oneelectron_embedding as example
+    from examples.qmmm import full_oneelectron_embedding as example
 
     rows = {
         "none": _resource("none", 1.20, 1_200_000, 0.0),

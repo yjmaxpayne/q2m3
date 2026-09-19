@@ -21,7 +21,7 @@ def test_optional_sqd_sampling_preserves_support_and_seed(sqd_modules):
     import numpy as np
 
     replay = load_local_module(
-        "sqd_optional_replay", Path(__file__).resolve().parents[2] / "examples/sqd/replay.py"
+        "sqd_optional_replay", Path(__file__).resolve().parents[2] / "tools/sqd/replay/replay.py"
     )
 
     ffsim, _ = sqd_modules

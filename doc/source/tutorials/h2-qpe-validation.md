@@ -7,7 +7,7 @@ in kcal/mol after explicit conversion from Hartree.
 ## Run The Script
 
 ```bash
-uv run python examples/h2_qpe_validation.py
+uv run python examples/qpe/h2_qpe_validation.py
 ```
 
 The script performs four steps:

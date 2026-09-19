@@ -42,8 +42,8 @@ Start with the H2 examples. They are intentionally small and exercise the
 same public APIs used by the larger workflows.
 
 ```bash
-uv run python examples/h2_qpe_validation.py
-uv run python examples/h2_resource_estimation.py
+uv run python examples/qpe/h2_qpe_validation.py
+uv run python examples/resources/h2_resource_estimation.py
 ```
 
 The maintained H2 validation script checks vacuum and MM-embedded Hamiltonians,
@@ -75,7 +75,7 @@ scales with estimation wires, Trotter depth, and Hamiltonian term count.
 ## Basic Solvation Run
 
 ```bash
-uv run python examples/h2_mc_solvation.py
+uv run python examples/qmmm/h2_mc_solvation.py
 ```
 
 This runs a fixed-mode H2 MC solvation workflow with IR caching enabled. The

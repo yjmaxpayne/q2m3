@@ -113,4 +113,4 @@ clean:
 
 run-example:
 	@echo "Running H2 QPE validation..."
-	@uv run python examples/h2_qpe_validation.py
+	@uv run python examples/qpe/h2_qpe_validation.py

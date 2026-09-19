@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Tests for examples/h3o_dynamic_trotter_oom_scan.py."""
+"""Tests for examples/performance/h3o_dynamic_trotter_oom_scan.py."""
 
 import csv
 import json
@@ -8,7 +8,7 @@ import json
 
 def test_scan_trotter_values_stops_on_memory_guard():
     """The scan stops before trying larger Trotter counts after guard trip."""
-    from examples.h3o_dynamic_trotter_oom_scan import scan_trotter_values
+    from examples.performance.h3o_dynamic_trotter_oom_scan import scan_trotter_values
 
     calls = []
 
@@ -39,7 +39,7 @@ def test_scan_trotter_values_stops_on_memory_guard():
 
 def test_write_outputs_writes_json_and_csv(tmp_path):
     """Output files retain scan metadata and flat per-Trotter records."""
-    from examples.h3o_dynamic_trotter_oom_scan import write_outputs
+    from examples.performance.h3o_dynamic_trotter_oom_scan import write_outputs
 
     json_path = tmp_path / "scan.json"
     csv_path = tmp_path / "scan.csv"

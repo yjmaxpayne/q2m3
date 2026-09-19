@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""QA tests for examples/qpe_memory_profile.py after refactoring.
+"""QA tests for examples/performance/qpe_memory_profile.py after refactoring.
 
 Four-layer test strategy:
   Layer 1: Import & re-export verification (pure Python, no deps)
@@ -29,8 +29,8 @@ class TestImportIntegrity:
     """Verify script importability and re-export chain completeness."""
 
     def test_script_importable(self):
-        """examples/qpe_memory_profile.py can be imported as a module."""
-        import examples.qpe_memory_profile as mod
+        """examples/performance/qpe_memory_profile.py can be imported as a module."""
+        import examples.performance.qpe_memory_profile as mod
 
         assert hasattr(mod, "main")
         assert hasattr(mod, "console")
@@ -47,7 +47,7 @@ class TestOutputFormatting:
     def test_print_circuit_params(self, mock_result, capture_console):
         """Circuit parameters panel includes molecule and qubit count."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_circuit_params
+        from examples.performance.qpe_memory_profile import print_circuit_params
 
         print_circuit_params(mock_result)
         output = buf.getvalue()
@@ -57,7 +57,7 @@ class TestOutputFormatting:
     def test_print_memory_table(self, mock_result, capture_console):
         """Memory table renders all three phase rows."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_memory_table
+        from examples.performance.qpe_memory_profile import print_memory_table
 
         print_memory_table(mock_result)
         output = buf.getvalue()
@@ -66,7 +66,7 @@ class TestOutputFormatting:
     def test_print_ir_analysis_with_data(self, mock_result, capture_console):
         """IR analysis table shows stage names from ir_analysis list."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_ir_analysis
+        from examples.performance.qpe_memory_profile import print_ir_analysis
 
         print_ir_analysis(mock_result.ir_analysis)
         output = buf.getvalue()
@@ -76,7 +76,7 @@ class TestOutputFormatting:
     def test_print_ir_analysis_empty(self, capture_console):
         """Empty ir_analysis triggers 'No IR analysis' message."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_ir_analysis
+        from examples.performance.qpe_memory_profile import print_ir_analysis
 
         print_ir_analysis([])
         output = buf.getvalue()
@@ -85,7 +85,7 @@ class TestOutputFormatting:
     def test_print_memory_timeline_with_samples(self, capture_console):
         """4+ samples render ASCII timeline with Peak RSS summary."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_memory_timeline
+        from examples.performance.qpe_memory_profile import print_memory_timeline
 
         samples = [(0.0, 100.0), (1.0, 200.0), (2.0, 250.0), (3.0, 180.0)]
         print_memory_timeline(samples)
@@ -95,7 +95,7 @@ class TestOutputFormatting:
     def test_print_memory_timeline_too_few_samples(self, capture_console):
         """Fewer than 3 samples silently skipped (no output)."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_memory_timeline
+        from examples.performance.qpe_memory_profile import print_memory_timeline
 
         print_memory_timeline([(0.0, 100.0), (1.0, 200.0)])
         output = buf.getvalue()
@@ -104,7 +104,7 @@ class TestOutputFormatting:
     def test_print_mode_comparison(self, mock_result, capture_console):
         """Mode comparison table includes H_fixed and H_dynamic columns."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_mode_comparison
+        from examples.performance.qpe_memory_profile import print_mode_comparison
 
         fixed = replace(mock_result, mode="fixed")
         dynamic = replace(mock_result, mode="dynamic")
@@ -116,7 +116,7 @@ class TestOutputFormatting:
     def test_print_sweep_table(self, mock_result, capture_console):
         """Sweep table renders OK status and error message for mixed results."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_sweep_table
+        from examples.performance.qpe_memory_profile import print_sweep_table
 
         ok_result = replace(mock_result, mode="fixed")
         err_result = replace(mock_result, error="OOM", phase_b=None, mode="dynamic")
@@ -128,7 +128,7 @@ class TestOutputFormatting:
     def test_print_summary(self, mock_result, capture_console):
         """Summary panel includes molecule name and 'Summary' in title."""
         _, buf = capture_console
-        from examples.qpe_memory_profile import print_summary
+        from examples.performance.qpe_memory_profile import print_summary
 
         print_summary(mock_result)
         output = buf.getvalue()
@@ -150,9 +150,9 @@ class TestMainFlowRouting:
         fixed = replace(mock_result, mode="fixed")
         dynamic = replace(mock_result, mode="dynamic")
 
-        with patch("examples.qpe_memory_profile.run_both_modes") as m:
+        with patch("examples.performance.qpe_memory_profile.run_both_modes") as m:
             m.return_value = (fixed, dynamic, parent_data, parent_data)
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -169,9 +169,9 @@ class TestMainFlowRouting:
         monkeypatch.setattr("sys.argv", ["prog", "--mode", "fixed", "--n-trotter", "3"])
         result = replace(mock_result, mode="fixed")
 
-        with patch("examples.qpe_memory_profile.run_single_profile") as m:
+        with patch("examples.performance.qpe_memory_profile.run_single_profile") as m:
             m.return_value = result
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -187,9 +187,9 @@ class TestMainFlowRouting:
         monkeypatch.setattr("sys.argv", ["prog", "--mode", "dynamic"])
         result = replace(mock_result, mode="dynamic")
 
-        with patch("examples.qpe_memory_profile.run_single_profile") as m:
+        with patch("examples.performance.qpe_memory_profile.run_single_profile") as m:
             m.return_value = result
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -201,9 +201,9 @@ class TestMainFlowRouting:
         """--sweep (default mode=both) → run_sweep called twice (fixed + dynamic)."""
         monkeypatch.setattr("sys.argv", ["prog", "--sweep"])
 
-        with patch("examples.qpe_memory_profile.run_sweep") as m:
+        with patch("examples.performance.qpe_memory_profile.run_sweep") as m:
             m.return_value = {(2, 1): mock_result}
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -213,9 +213,9 @@ class TestMainFlowRouting:
         """--sweep --mode fixed → run_sweep called once."""
         monkeypatch.setattr("sys.argv", ["prog", "--sweep", "--mode", "fixed"])
 
-        with patch("examples.qpe_memory_profile.run_sweep") as m:
+        with patch("examples.performance.qpe_memory_profile.run_sweep") as m:
             m.return_value = {(2, 1): mock_result}
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -226,9 +226,9 @@ class TestMainFlowRouting:
         monkeypatch.setattr("sys.argv", ["prog", "--molecule", "h3o", "--mode", "fixed"])
         result = replace(mock_result, mode="fixed", molecule="H3O+")
 
-        with patch("examples.qpe_memory_profile.run_single_profile") as m:
+        with patch("examples.performance.qpe_memory_profile.run_single_profile") as m:
             m.return_value = result
-            from examples.qpe_memory_profile import main
+            from examples.performance.qpe_memory_profile import main
 
             main()
 
@@ -276,7 +276,7 @@ class TestEndToEnd:
         assert result.n_terms > 0
 
         # Output formatting doesn't crash
-        from examples.qpe_memory_profile import _print_single_result
+        from examples.performance.qpe_memory_profile import _print_single_result
 
         _print_single_result(result)
 

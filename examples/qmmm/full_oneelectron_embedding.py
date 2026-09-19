@@ -15,7 +15,7 @@ The output is an EFTQC resource-planning table. It is not a relaxed solvation
 energy calculation.
 
 Usage:
-    uv run python examples/full_oneelectron_embedding.py
+    uv run python examples/qmmm/full_oneelectron_embedding.py
 """
 
 from __future__ import annotations

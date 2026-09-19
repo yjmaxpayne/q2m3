@@ -61,6 +61,7 @@ because they can require substantially more memory and compile time.
    getting-started
    core-concepts
    architecture
+   sqd
    tutorials/index
    development
    glossary

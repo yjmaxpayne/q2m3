@@ -31,13 +31,13 @@ Core profiling logic has been migrated to ``q2m3.profiling`` subpackage.
 This script retains only the CLI interface and Rich output formatting.
 
 Usage:
-    uv run python examples/qpe_memory_profile.py                          # both modes
-    uv run python examples/qpe_memory_profile.py --mode fixed             # H_fixed only
-    uv run python examples/qpe_memory_profile.py --mode dynamic           # H_dynamic only
-    uv run python examples/qpe_memory_profile.py --mode both --n-est 2    # compare modes
-    uv run python examples/qpe_memory_profile.py --sweep                  # parameter sweep
-    uv run python examples/qpe_memory_profile.py --sweep --mode fixed     # sweep H_fixed
-    uv run python examples/qpe_memory_profile.py --ir-dir ./tmp           # preserve IR files
+    uv run python examples/performance/qpe_memory_profile.py                          # both modes
+    uv run python examples/performance/qpe_memory_profile.py --mode fixed             # H_fixed only
+    uv run python examples/performance/qpe_memory_profile.py --mode dynamic           # H_dynamic only
+    uv run python examples/performance/qpe_memory_profile.py --mode both --n-est 2    # compare modes
+    uv run python examples/performance/qpe_memory_profile.py --sweep                  # parameter sweep
+    uv run python examples/performance/qpe_memory_profile.py --sweep --mode fixed     # sweep H_fixed
+    uv run python examples/performance/qpe_memory_profile.py --ir-dir ./tmp           # preserve IR files
 """
 
 import argparse
@@ -47,7 +47,7 @@ import tracemalloc
 from pathlib import Path
 
 # Ensure project root is in sys.path for direct script execution
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parents[2]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 

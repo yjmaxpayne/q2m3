@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_replay():
-    spec = importlib.util.spec_from_file_location("sqd_replay", ROOT / "examples/sqd/replay.py")
+    spec = importlib.util.spec_from_file_location("sqd_replay", ROOT / "tools/sqd/replay/replay.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -17,7 +17,7 @@ def load_replay():
 
 def test_manifest_covers_all_probes():
     module = load_replay()
-    manifest = module.validate_manifest(ROOT / "examples/sqd")
+    manifest = module.validate_manifest(ROOT / "tools/sqd/replay")
     assert set(manifest["probes"]) == {"h2", "reference", "transpose", "lazy"}
 
 
@@ -26,7 +26,7 @@ def test_manifest_rejects_bad_source(tmp_path, mutation):
     import shutil
 
     module = load_replay()
-    shutil.copytree(ROOT / "examples/sqd", tmp_path / "bundle")
+    shutil.copytree(ROOT / "tools/sqd/replay", tmp_path / "bundle")
     source = tmp_path / "bundle" / "reference_history.py"
     if mutation == "missing":
         source.unlink()
@@ -43,7 +43,7 @@ def test_manifest_rejects_incomplete_or_escaping_inventory(tmp_path, mutation):
 
     module = load_replay()
     bundle = tmp_path / "bundle"
-    shutil.copytree(ROOT / "examples/sqd", bundle)
+    shutil.copytree(ROOT / "tools/sqd/replay", bundle)
     manifest_path = bundle / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
     if mutation == "empty":
@@ -72,11 +72,11 @@ def test_lazy_oracle_rejects_degenerate_helpers(tmp_path, mutation):
     import sys
 
     replay = load_replay()
-    lazy = replay.load_file("lazy_oracle_test", ROOT / "examples/sqd/lazy_replay.py")
+    lazy = replay.load_file("lazy_oracle_test", ROOT / "tools/sqd/replay/lazy_replay.py")
     package = tmp_path / "replay_package"
     package.mkdir()
     (package / "__init__.py").write_text(lazy.PACKAGE)
-    helper = (ROOT / "examples/sqd/lazy_helpers.py").read_text()
+    helper = (ROOT / "tools/sqd/replay/lazy_helpers.py").read_text()
     if mutation in ("empty_exports", "empty_and_hint"):
         helper += "\ndef available_exports(lazy):\n    return []\n"
     if mutation in ("always_hint", "empty_and_hint"):
@@ -103,7 +103,7 @@ def test_lazy_profiles_preserve_shared_jax(tmp_path, monkeypatch):
     import subprocess
 
     replay = load_replay()
-    lazy = replay.load_file("lazy_profiles_test", ROOT / "examples/sqd/lazy_replay.py")
+    lazy = replay.load_file("lazy_profiles_test", ROOT / "tools/sqd/replay/lazy_replay.py")
     actual_run = subprocess.run
 
     def run_with_dependency_stubs(command, **kwargs):
@@ -125,7 +125,7 @@ def test_lazy_child_failure_prints_stderr(monkeypatch, capsys):
     import subprocess
 
     replay = load_replay()
-    lazy = replay.load_file("lazy_failure_test", ROOT / "examples/sqd/lazy_replay.py")
+    lazy = replay.load_file("lazy_failure_test", ROOT / "tools/sqd/replay/lazy_replay.py")
 
     def fail(command, **kwargs):
         raise subprocess.CalledProcessError(1, command, stderr="diagnostic-sentinel")

@@ -17,7 +17,8 @@
 q2m3 is a research framework for hybrid quantum-classical QM/MM
 (quantum mechanics / molecular mechanics). It connects PySCF molecular
 integrals and Hartree–Fock references with PennyLane Quantum Phase Estimation
-(QPE) circuits, explicit MM point charges, and Monte Carlo solvation.
+(QPE) circuits, explicit MM point charges, Monte Carlo solvation, and sample-based quantum
+diagonalization (SQD).
 
 Use it to explore small-molecule QPE workflows and early fault-tolerant
 quantum computing (EFTQC) resource estimates. The project is an alpha
@@ -61,7 +62,7 @@ The core install supports the three H₂ starter scripts in the
 | `gpu` | GPU dependencies; requires compatible NVIDIA/CUDA setup |
 | `viz` | Molecular visualization tools |
 | `dev` / `docs` | Tests and code quality tools / Sphinx documentation |
-| `sqd` | Dependencies for the [SQD integration probes](examples/sqd/README.md) |
+| `sqd` | ffsim/Qiskit SQD workflows; see the [SQD guide](doc/source/sqd.md) |
 
 For example, use `uv sync --extra solvation` in a checkout, or
 `python -m pip install "q2m3[solvation]"` in a library environment.
@@ -96,6 +97,26 @@ print("Toffoli gates:", resources.toffoli_gates)
 Toffoli gates describe an algorithmic cost model; they do not predict local
 simulator runtime or Catalyst compilation memory.
 
+## SQD workflows
+
+In this source checkout, run `uv sync --locked --extra sqd`. Catalyst is
+optional for SQD. The unified lock also moves core-only PySCF to 2.14.0;
+the measured resource profile is Linux x86_64/Python 3.12.3.
+
+Use `from q2m3 import run_sqd` for molecular geometry, or
+`from q2m3.sqd import run_sqd_from_integrals` for an authenticated integral
+Hamiltonian and same-frame CCSD seed. Both require an explicit closed-shell
+active space and return the complete `SQDResult`. The [SQD guide](doc/source/sqd.md)
+provides runnable examples for both, fixed-frame MM semantics, reference
+tiers, installation boundaries and resource caps.
+
+Current evidence supports the default two-repetition/100000-shot benchmark
+scope. H₂/H₃O⁺ are full-space regressions; Glycine is worse than CCSD for
+all five seeds, and N₂ is worse than both CCSD and matched-size SCI. The
+original orbital-basis (E1) and connectivity (E6) studies remain inconclusive;
+historical four-repetition runs remain out of the certified resource domain.
+These results do not establish SQD superiority or quantum hardware readiness.
+
 ## Examples and documentation
 
 Start with the [example guide](examples/README.md) for runnable H₂ commands
@@ -106,7 +127,7 @@ diagnostics.
 | --- | --- |
 | Validate vacuum and MM-embedded QPE | [H₂ QPE tutorial](doc/source/tutorials/h2-qpe-validation.md) |
 | Compare resource estimates | [H₂ resource tutorial](doc/source/tutorials/h2-resource-estimation.md) |
-| Explore fixed-MO embedding | [Full one-electron example](examples/full_oneelectron_embedding.py) |
+| Explore fixed-MO embedding | [Full one-electron example](examples/qmmm/full_oneelectron_embedding.py) |
 | Run Monte Carlo solvation | [H₂ MC tutorial](doc/source/tutorials/h2-mc-solvation.md) |
 | Understand the model and API | [Documentation site](https://yjmaxpayne.github.io/q2m3/) |
 
@@ -124,3 +145,18 @@ Keep generated coverage, caches, and benchmark outputs out of commits.
 
 For research use, cite the release that produced your results using
 [CITATION.cff](CITATION.cff). q2m3 is released under the [MIT License](LICENSE).
+
+### Runnable capability map
+
+| Goal | Learning path |
+|---|---|
+| QPE validation and resolution | [QPE examples](examples/qpe/README.md) |
+| SQD ground states and scaling | [H₂ → glycine CAS 6/8/10 → integrals](examples/sqd/README.md) |
+| Fixed-MO embedding and QPE–MC | [QM/MM examples](examples/qmmm/README.md) |
+| Quantum resource estimates | [Resource examples](examples/resources/README.md) |
+| Catalyst and compilation costs | [Performance examples](examples/performance/README.md) |
+
+SQD tutorials save complete results, CSV and PNG/SVG figures to unique runs under
+`data/output/examples/`. The default glycine scan runs 15 actual points in serial
+fresh processes. Calibration, audits and dependency replays are documented in
+[Development tools](tools/sqd/README.md).

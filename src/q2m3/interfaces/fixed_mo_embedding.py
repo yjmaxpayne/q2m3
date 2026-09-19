@@ -9,8 +9,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from q2m3.constants import ANGSTROM_TO_BOHR
-
 
 @dataclass(frozen=True)
 class FixedMOEmbeddingDiagnostics:
@@ -56,6 +54,9 @@ class FixedMOEmbeddingResult:
         active_indices: Vacuum MO indices included in the active space.
         n_core_orbitals: Number of frozen doubly occupied core orbitals.
         diagnostics: Scalar diagnostics for logging and public API metadata.
+        mo_coeff: Complete sign-canonicalized vacuum MO snapshot, read-only.
+        vacuum_core_constant: Nuclear plus frozen-core vacuum energy in Hartree.
+            The two optional defaults preserve older manually constructed results.
     """
 
     one_electron_vacuum: np.ndarray
@@ -68,6 +69,8 @@ class FixedMOEmbeddingResult:
     active_indices: tuple[int, ...]
     n_core_orbitals: int
     diagnostics: FixedMOEmbeddingDiagnostics
+    mo_coeff: np.ndarray | None = None
+    vacuum_core_constant: float | None = None
 
 
 def build_fixed_mo_embedding_integrals(
@@ -127,13 +130,13 @@ def build_fixed_mo_embedding_integrals(
 
     mf_mm = scf.RHF(mol)
     mf_mm.verbose = 0
-    mf_mm = qmmm.mm_charge(mf_mm, mm_coords_arr * ANGSTROM_TO_BOHR, mm_charges_arr)
+    mf_mm = qmmm.mm_charge(mf_mm, mm_coords_arr, mm_charges_arr, unit="Angstrom")
     mf_mm.run()
     _ensure_converged(mf_mm, "MM-embedded")
 
     mo_coeff = _canonicalize_mo_signs(np.asarray(mf_vac.mo_coeff, dtype=float))
     n_orbitals = mo_coeff.shape[1]
-    active_indices, n_core = _resolve_active_space(
+    active_indices, n_core = resolve_active_space(
         n_electrons=mol.nelectron,
         n_orbitals=n_orbitals,
         active_electrons=active_electrons,
@@ -165,6 +168,14 @@ def build_fixed_mo_embedding_integrals(
     delta_h_offdiag = delta_h_active - delta_h_diag
     delta_nuclear_mm = float(mf_mm.energy_nuc() - mol.energy_nuc())
     delta_core_constant = _delta_core_constant(delta_h_mo, core_indices, delta_nuclear_mm)
+    vacuum_core_constant = float(mol.energy_nuc())
+    for i in core_indices:
+        vacuum_core_constant += 2.0 * h_vac_mo[i, i]
+        for j in core_indices:
+            vacuum_core_constant += (
+                2.0 * two_electron_chemist[i, i, j, j] - two_electron_chemist[i, j, j, i]
+            )
+    mo_snapshot = np.frombuffer(mo_coeff.tobytes(), dtype=mo_coeff.dtype).reshape(mo_coeff.shape)
 
     diagnostics = _build_diagnostics(
         delta_h_active=delta_h_active,
@@ -186,6 +197,8 @@ def build_fixed_mo_embedding_integrals(
         active_indices=active_indices,
         n_core_orbitals=n_core,
         diagnostics=diagnostics,
+        mo_coeff=mo_snapshot,
+        vacuum_core_constant=float(vacuum_core_constant),
     )
 
 
@@ -250,13 +263,27 @@ def _canonicalize_mo_signs(mo_coeff: np.ndarray) -> np.ndarray:
     return canonical
 
 
-def _resolve_active_space(
+def resolve_active_space(
     *,
     n_electrons: int,
     n_orbitals: int,
     active_electrons: int | None,
     active_orbitals: int | None,
 ) -> tuple[tuple[int, ...], int]:
+    """Resolve the contiguous active block, preserving legacy spin semantics.
+
+    Args:
+        n_electrons: Total molecular electrons.
+        n_orbitals: Available spatial molecular orbitals.
+        active_electrons: Active electrons, or None for the full space.
+        active_orbitals: Active orbitals, paired with active_electrons.
+
+    Returns:
+        Ordered active orbital indices and the doubly occupied frozen-core count.
+
+    Raises:
+        ValueError: Counts do not define a valid frozen-core active space.
+    """
     if (active_electrons is None) != (active_orbitals is None):
         raise ValueError("active_electrons and active_orbitals must be provided together")
 
@@ -292,6 +319,9 @@ def _resolve_active_space(
 
     active_indices = tuple(range(n_core, n_core + active_orbitals))
     return active_indices, n_core
+
+
+_resolve_active_space = resolve_active_space
 
 
 def _active_one_electron_with_core(
@@ -354,4 +384,5 @@ __all__ = [
     "FixedMOEmbeddingDiagnostics",
     "FixedMOEmbeddingResult",
     "build_fixed_mo_embedding_integrals",
+    "resolve_active_space",
 ]

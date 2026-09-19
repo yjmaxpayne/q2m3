@@ -293,14 +293,13 @@ def test_molecular_electron_capacity_and_closed_shell(updates):
         SQDConfig(molecule(**updates)).validate()
 
 
-def test_package_exports_only_implemented_types():
+def test_package_exports_data_contracts():
     import q2m3.sqd as sqd
 
     assert sqd.SQDConfig is SQDConfig
     assert sqd.SQDResult.__name__ == "SQDResult"
     assert sqd.CCSDSeed is CCSDSeed
-    assert not hasattr(sqd, "run_sqd")
-    assert not hasattr(sqd, "run_sqd_from_integrals")
+    assert {"SQDConfig", "SQDResult", "CCSDSeed"} <= set(sqd.__all__)
 
 
 @pytest.mark.parametrize(
@@ -361,7 +360,7 @@ def test_pure_type_import_and_use_with_optional_backend_imports_blocked():
         class BlockBackends(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path=None, target=None):
                 if fullname.split(".")[0] in forbidden:
-                    raise AssertionError("SQD imported optional backend: " + fullname)
+                    raise ModuleNotFoundError("blocked backend: " + fullname, name=fullname)
 
         sys.meta_path.insert(0, BlockBackends())
         from q2m3.molecule import MoleculeConfig
@@ -372,6 +371,7 @@ def test_pure_type_import_and_use_with_optional_backend_imports_blocked():
         assert config.snapshot()["molecule"]["active_electrons"] == 2
         assert all(hasattr(sqd, name) for name in sqd.__all__)
         assert "run_sqd" not in sqd.__all__
+        assert "run_sqd_from_integrals" not in sqd.__all__
         added = set(sys.modules) - before
         assert not {name for name in added if name.split(".")[0] in forbidden}
     """

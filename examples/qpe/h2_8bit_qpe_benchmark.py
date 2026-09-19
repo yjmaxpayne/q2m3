@@ -16,8 +16,8 @@ Checks:
   - σ_QPE reduction requires shots ∝ 2^n_estimation_wires
 
 Usage:
-    OMP_NUM_THREADS=4 uv run python examples/h2_8bit_qpe_benchmark.py
-    OMP_NUM_THREADS=4 uv run python examples/h2_8bit_qpe_benchmark.py --json
+    OMP_NUM_THREADS=4 uv run python examples/qpe/h2_8bit_qpe_benchmark.py
+    OMP_NUM_THREADS=4 uv run python examples/qpe/h2_8bit_qpe_benchmark.py --json
 """
 
 import argparse

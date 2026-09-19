@@ -6,7 +6,7 @@ hardware resources for H2 and to compare vacuum versus MM-embedded Hamiltonians.
 ## Run The Script
 
 ```bash
-uv run python examples/h2_resource_estimation.py
+uv run python examples/resources/h2_resource_estimation.py
 ```
 
 ## Minimal API Pattern

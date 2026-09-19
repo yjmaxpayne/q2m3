@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 BUNDLE = Path(__file__).resolve().parent
-ROOT = BUNDLE.parents[1]
+ROOT = BUNDLE.parents[2]
 
 
 def digest(path: Path) -> str:

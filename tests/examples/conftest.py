@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Shared fixtures for examples/qpe_memory_profile.py tests."""
+"""Shared fixtures for examples/performance/qpe_memory_profile.py tests."""
 
 import os
 from io import StringIO
@@ -57,13 +57,13 @@ def mock_result(mock_snapshot):
 
 @pytest.fixture
 def capture_console(monkeypatch):
-    """Redirect examples.qpe_memory_profile.console output to StringIO.
+    """Redirect examples.performance.qpe_memory_profile.console output to StringIO.
 
     Returns (console, buf) tuple. All Rich output goes to buf.
     """
     buf = StringIO()
     console = Console(file=buf, width=120)
-    monkeypatch.setattr("examples.qpe_memory_profile.console", console)
+    monkeypatch.setattr("examples.performance.qpe_memory_profile.console", console)
     return console, buf
 
 

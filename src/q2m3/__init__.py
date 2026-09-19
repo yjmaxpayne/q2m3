@@ -79,7 +79,10 @@ __all__ = [
     "get_catalyst_effective_backend",
 ]
 
-_LAZY_EXPORTS = {"run_solvation": ("q2m3.solvation.orchestrator", "catalyst")}
+_LAZY_EXPORTS = {
+    "run_solvation": ("q2m3.solvation.orchestrator", "catalyst"),
+    "run_sqd": ("q2m3.sqd.orchestrator", "sqd"),
+}
 __all__ += _available_exports(_LAZY_EXPORTS)
 
 

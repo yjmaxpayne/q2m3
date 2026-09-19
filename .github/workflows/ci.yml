@@ -2,6 +2,11 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      run_benchmarks:
+        description: 'Run slow tests and the default-domain N2 SQD benchmark'
+        type: boolean
+        default: false
   push:
     branches: [main, mvp]
   pull_request:
@@ -17,14 +22,23 @@ concurrency:
 
 jobs:
   quality:
-    name: quality (${{ matrix.python-version }})
+    name: quality (${{ matrix.python-version }}, ${{ matrix.profile.name }})
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.11', '3.12']
+        profile:
+          - name: core
+            extras: ''
+          - name: sqd
+            extras: '--extra sqd'
+          - name: sqd-catalyst
+            extras: '--extra sqd --extra catalyst --extra solvation'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      PYTHONPATH: src
+      JAX_PLATFORMS: cpu
       OMP_NUM_THREADS: '1'
       OPENBLAS_NUM_THREADS: '1'
       MKL_NUM_THREADS: '1'
@@ -44,34 +58,89 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --extra dev --extra catalyst --extra solvation --extra viz
+        run: uv sync --frozen --python ${{ matrix.python-version }} --extra dev ${{ matrix.profile.extras }}
 
       - name: Run linting (ruff)
-        run: uv run ruff check src/ tests/
+        if: matrix.profile.name == 'core'
+        run: uvx ruff@0.9.10 check src/ tests/ examples/ tools/
 
       - name: Check formatting (black)
-        run: uv run black --check src/ tests/ --line-length 100
+        if: matrix.profile.name == 'core'
+        run: uvx black@24.1.1 --check src/ tests/ examples/ tools/ --line-length 100
 
-      - name: Verify pytest collection
-        run: uv run pytest tests/ --collect-only -q --no-cov
+      - name: Verify pytest collection and installed profile
+        run: uv run --no-sync python tools/sqd/ci_profile.py --profile ${{ matrix.profile.name }} --collect-only
 
-      - name: Run tests with coverage
-        run: |
-          uv run pytest tests/ \
-            --cov=src/q2m3 \
-            --cov-report=xml \
-            --cov-report=term \
-            -m "not slow and not gpu"
+      - name: Run profile tests with coverage
+        run: uv run --no-sync python tools/sqd/ci_profile.py --profile ${{ matrix.profile.name }} --coverage
+
+      - name: Run the H2 user tutorial
+        if: matrix.profile.name == 'sqd'
+        run: uv run --no-sync python -m examples.sqd.h2_ground_state --output data/output/examples/ci-h2
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
-          flags: pytest-${{ matrix.python-version }}
-          name: codecov-${{ matrix.python-version }}
+          flags: pytest-${{ matrix.python-version }}-${{ matrix.profile.name }}
+          name: codecov-${{ matrix.python-version }}-${{ matrix.profile.name }}
           fail_ci_if_error: false
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  slow-science:
+    name: manual slow science and N2 benchmark
+    if: github.event_name == 'workflow_dispatch' && inputs.run_benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: src
+      JAX_PLATFORMS: cpu
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install 3.12
+      - run: uv sync --frozen --python 3.12 --extra dev --extra sqd --extra catalyst --extra solvation
+      - name: Run complete non-GPU profile including slow tests
+        run: uv run --no-sync python tools/sqd/ci_profile.py --profile sqd-catalyst --include-slow
+      - name: Run end-to-end SQD tutorials
+        run: |
+          uv run --no-sync python -m examples.sqd.glycine_active_space_scan --output data/output/examples/ci-scan
+          uv run --no-sync python -m examples.sqd.glycine_from_integrals --output data/output/examples/ci-integrals
+          uv run --no-sync python -m examples.qmmm.glycine_sqd_embedding --output data/output/examples/ci-embedding
+          uv run --no-sync python -m tools.sqd.check_showcase --scan data/output/examples/ci-scan --integrals data/output/examples/ci-integrals --embedding data/output/examples/ci-embedding
+      - name: Preserve showcase artifacts including partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqd-showcase
+          path: data/output/examples/
+
+      - name: Run N2 default-domain benchmark
+        run: uv run --no-sync python tools/sqd/molecular_benchmark.py --system n2 --output tmp/ci-n2
+      - name: Require completed default-domain benchmark
+        run: |
+          uv run --no-sync python - <<'PYTHON'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("tmp/ci-n2/report.json").read_text())
+          rows = [row for row in report["records"] if row["profile"] == "default"]
+          if not rows or not report["g2b_registered_default_cases"] or any(
+              row["status"] != "completed" or row["memory_verdict"] != "pass" for row in rows
+          ):
+              raise SystemExit("Default-domain N2 benchmark did not pass; inspect artifacts")
+          PYTHON
+      - name: Preserve benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqd-n2-default-domain
+          path: tmp/ci-n2
+          if-no-files-found: warn
 
 # Documentation build & GitHub Pages deployment live in .github/workflows/docs.yml.

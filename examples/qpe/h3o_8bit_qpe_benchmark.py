@@ -29,9 +29,9 @@ OOM safety:
   - The script reports measured RSS so memory behavior comes from the run.
 
 Usage:
-    OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py
-    OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py --json
-    OMP_NUM_THREADS=8 uv run python examples/h3o_8bit_qpe_benchmark.py --skip-8bit  # debug
+    OMP_NUM_THREADS=8 uv run python examples/qpe/h3o_8bit_qpe_benchmark.py
+    OMP_NUM_THREADS=8 uv run python examples/qpe/h3o_8bit_qpe_benchmark.py --json
+    OMP_NUM_THREADS=8 uv run python examples/qpe/h3o_8bit_qpe_benchmark.py --skip-8bit  # debug
 """
 
 import argparse

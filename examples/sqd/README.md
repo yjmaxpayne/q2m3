@@ -2,7 +2,9 @@
 
 These tutorials call the public production API directly. Energies are Hartree,
 geometry is Angstrom, and signed solver differences are mHa. Install from a fresh
-checkout with `uv sync --frozen --extra sqd --extra dev` (Linux, Python 3.11+).
+checkout with `uv sync --frozen --extra sqd --extra dev` (Linux x86_64,
+Python 3.11+). The supervisor rejects other platforms because its resource
+accounting uses `/proc` and `fork`.
 The frozen dependencies match the current calibrated domain; no Catalyst extra
 is required. Set threads before Python starts:
 

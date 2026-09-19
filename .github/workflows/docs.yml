@@ -52,7 +52,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Install documentation dependencies
-        run: uv sync --extra docs --extra catalyst --extra solvation --extra viz
+        run: uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz
 
       - name: Build HTML with warnings as errors
         run: uv run sphinx-build -W --keep-going -b html doc/source doc/build/html

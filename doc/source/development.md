@@ -6,15 +6,16 @@ Black for formatting, and pytest for tests.
 ## Environment Setup
 
 ```bash
-uv sync --extra dev --extra catalyst --extra solvation --extra viz
+uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz
 ```
 
 Use narrower extras when working on isolated parts of the project:
 
 ```bash
 uv sync --extra dev
+uv sync --frozen --extra dev --extra sqd
 uv sync --extra catalyst --extra solvation
-uv sync --extra docs --extra catalyst --extra solvation --extra viz
+uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz
 ```
 
 ## Testing
@@ -28,8 +29,24 @@ uv run pytest tests/ --collect-only -q --no-cov
 uv run pytest tests/ --cov=src/q2m3 --cov-report=term-missing
 ```
 
-Registered markers include `slow`, `solvation`, `catalyst`, `gpu`, and `rdm`.
+Registered markers include `slow`, `solvation`, `catalyst`, `gpu`, `rdm`, and `sqd`.
 The standard CI path skips slow and GPU tests.
+
+The SQD-only installed-profile check must run without Catalyst. Provision a
+separate ignored environment so that a previously installed full environment
+cannot contaminate the dependency check:
+
+```bash
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+UV_PROJECT_ENVIRONMENT=.cache/venvs/sqd uv sync --frozen --extra dev --extra sqd
+UV_PROJECT_ENVIRONMENT=.cache/venvs/sqd uv run --no-sync python tools/sqd/ci_profile.py --profile sqd --collect-only
+UV_PROJECT_ENVIRONMENT=.cache/venvs/sqd uv run --no-sync pytest -o addopts='' tests/sqd tests/examples -q
+UV_PROJECT_ENVIRONMENT=.cache/venvs/sqd uv run --no-sync python -m examples.sqd.h2_ground_state
+```
+
+Larger tutorial campaigns are serial by design and belong in the manual
+slow-science workflow. CI provisions the same dependency isolation through its
+profile matrix.
 
 ## Linting And Formatting
 
@@ -57,7 +74,7 @@ make docs-doctest
 The equivalent explicit build command is:
 
 ```bash
-uv run --extra docs --extra catalyst --extra solvation --extra viz sphinx-build -W --keep-going -b html doc/source doc/build/html
+uv run --extra docs --extra sqd --extra catalyst --extra solvation --extra viz sphinx-build -W --keep-going -b html doc/source doc/build/html
 ```
 
 Documentation examples should be lightweight by default. H3O+, 8-bit QPE,

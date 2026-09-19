@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- Add optional geometry- and authenticated-integral SQD workflows with immutable
+  run contracts, CCSD-seeded LUCJ sampling, same-Hamiltonian references, and
+  calibrated resource guards.
+- Add fixed-frame point-charge embedding for SQD and complete H₂, water, and
+  glycine end-to-end examples with auditable JSON/CSV/figure artifacts.
+
+### Docs
+
+- Add the SQD user guide, API reference, architecture description, glossary
+  entries, troubleshooting, and H₂-to-glycine tutorial.
+
 ## v0.1.3 (2026-05-26)
 
 Documentation and tooling patch. No source-code changes; upgrade is drop-in.

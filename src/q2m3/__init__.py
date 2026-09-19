@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 """
-Quantum-QM/MM POC Framework
+Hybrid quantum-classical chemistry framework.
 
-A hybrid quantum-classical framework for QM/MM calculations using QPE algorithms.
+q2m3 provides QPE, QM/MM solvation, resource-estimation, and optional
+sample-based quantum diagonalization workflows.
 """
 
 from typing import Any as _Any

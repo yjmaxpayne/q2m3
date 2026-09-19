@@ -8,14 +8,16 @@ not demonstrate quantum advantage or execution on quantum hardware.
 
 ## Installation and platform
 
-Use this source checkout for the SQD implementation and examples:
+Use this source checkout on Linux x86_64 for the SQD implementation and examples:
 
 ```bash
-uv sync --locked --extra sqd
+uv sync --frozen --extra sqd
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 export JAX_PLATFORMS=cpu
 ```
 
+The public supervisor requires Linux x86_64 because it uses `/proc` and
+`multiprocessing` with `fork`; other platforms are rejected before execution.
 SQD requires ffsim and qiskit-addon-sqd; Catalyst is optional. Add
 `--extra catalyst` only when also using Catalyst workflows. The unified
 `uv.lock` resolves PySCF 2.14.0 even for a core-only locked checkout; the prior
@@ -27,6 +29,10 @@ certification does not extend to other platforms or arbitrary versions.
 Catalyst may be absent; when installed, its version must still match the
 calibration environment. All required numerical packages remain version checked.
 
+For a guided progression through every maintained example, use the
+[](tutorials/sqd-showcase.md). Public signatures and typed contracts are listed
+in [](api-reference/sqd.rst).
+
 Ordinary `import q2m3` retains the existing PennyLane import cost. SQD's
 algorithm does not call PennyLane or Catalyst. Its workflow exports are lazy;
 missing the extra raises `ImportError` with the installation command. Check
@@ -35,7 +41,7 @@ trigger that error. Configuration/result types do not import ffsim or Qiskit.
 
 ## Two runnable public entry points
 
-Save either Python block as a file and run `uv run --locked python FILE.py`
+Save either Python block as a file and run `uv run --no-sync python FILE.py`
 after the installation above. Both use H₂ at 0.74 Å/STO-3G, explicitly
 `(2 electrons, 2 spatial orbitals)`, or four system qubits. The small
 128-shot smoke case uses seed 31 and two LUCJ repetitions. It reaches the

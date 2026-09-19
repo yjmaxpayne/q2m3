@@ -13,7 +13,7 @@ dependencies and cost. Numerical outputs are generated locally, not checked in.
 | [Resources](resources/README.md) | H₂ resource estimate | Multimolecule survey |
 | [Performance](performance/README.md) | Catalyst benchmark | QPE memory, Trotter scans, IR compilation and correlation |
 
-Use `uv sync --frozen --extra dev --extra sqd` for SQD, and add
+Use `uv sync --frozen --extra dev --extra sqd` for SQD on Linux x86_64, and add
 `--extra catalyst --extra solvation` for QPE–MC/JIT work. Scientific SQD runs
 require serial native libraries, set **before starting Python**:
 

@@ -10,6 +10,7 @@ exports, then use the module pages for implementation-specific entry points.
    package
    core
    interfaces
+   sqd
    solvation
    sampling
    profiling
@@ -29,6 +30,9 @@ Package Groups
      - QPE, QM/MM orchestration, RDM, resource estimation, and device utilities.
    * - :doc:`interfaces`
      - PySCF/PennyLane conversion and density matrix bridge.
+   * - :doc:`sqd`
+     - Sample-based diagonalization workflows, contracts, integral assembly,
+       and resource policy.
    * - :doc:`solvation`
      - MC solvation workflow, Catalyst circuit bundles, IR cache, and analysis.
    * - :doc:`sampling`

@@ -99,9 +99,10 @@ simulator runtime or Catalyst compilation memory.
 
 ## SQD workflows
 
-In this source checkout, run `uv sync --locked --extra sqd`. Catalyst is
-optional for SQD. The unified lock also moves core-only PySCF to 2.14.0;
-the measured resource profile is Linux x86_64/Python 3.12.3.
+In this source checkout, run `uv sync --frozen --extra sqd`. Catalyst is
+optional for SQD. The public supervisor requires Linux x86_64 and serial native
+threads. The unified lock also moves core-only PySCF to 2.14.0; the calibrated
+resource profile uses Python 3.12.3.
 
 Use `from q2m3 import run_sqd` for molecular geometry, or
 `from q2m3.sqd import run_sqd_from_integrals` for an authenticated integral
@@ -109,6 +110,8 @@ Hamiltonian and same-frame CCSD seed. Both require an explicit closed-shell
 active space and return the complete `SQDResult`. The [SQD guide](doc/source/sqd.md)
 provides runnable examples for both, fixed-frame MM semantics, reference
 tiers, installation boundaries and resource caps.
+The [SQD API reference](doc/source/api-reference/sqd.rst) lists the public
+contracts, authenticated integral producers, and resource-policy functions.
 
 Current evidence supports the default two-repetition/100000-shot benchmark
 scope. H₂/H₃O⁺ are full-space regressions; Glycine is worse than CCSD for
@@ -129,6 +132,7 @@ diagnostics.
 | Compare resource estimates | [H₂ resource tutorial](doc/source/tutorials/h2-resource-estimation.md) |
 | Explore fixed-MO embedding | [Full one-electron example](examples/qmmm/full_oneelectron_embedding.py) |
 | Run Monte Carlo solvation | [H₂ MC tutorial](doc/source/tutorials/h2-mc-solvation.md) |
+| Run sampled diagonalization end to end | [SQD H₂-to-glycine tutorial](doc/source/tutorials/sqd-showcase.md) |
 | Understand the model and API | [Documentation site](https://yjmaxpayne.github.io/q2m3/) |
 
 Energies are computed in Hartree and converted explicitly for kcal/mol

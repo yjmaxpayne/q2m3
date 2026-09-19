@@ -4,13 +4,13 @@
 """Measure standardized IR-QRE compile rows with n_trotter=5.
 
 The output is the single measured compile source consumed by
-``examples/ir_qre_correlation_analysis.py``. Each successful row uses the same
+``examples/performance/ir_qre_correlation_analysis.py``. Each successful row uses the same
 4-bit estimation register and 5 Trotter steps so that compile-side data can be
 joined to QRE rows without mixing incompatible circuit shapes.
 
 Usage:
-    OMP_NUM_THREADS=2 uv run python examples/ir_qre_trotter5_compile_survey.py
-    OMP_NUM_THREADS=2 uv run python examples/ir_qre_trotter5_compile_survey.py --systems H2,HeH+
+    OMP_NUM_THREADS=2 uv run python examples/performance/ir_qre_trotter5_compile_survey.py
+    OMP_NUM_THREADS=2 uv run python examples/performance/ir_qre_trotter5_compile_survey.py --systems H2,HeH+
 """
 
 from __future__ import annotations
@@ -26,11 +26,11 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from examples.resource_estimation_survey import survey_systems  # noqa: E402
+from examples.resources.resource_estimation_survey import survey_systems  # noqa: E402
 from q2m3.molecule import MoleculeConfig  # noqa: E402
 from q2m3.profiling import ParentSideMonitor, ProfileResult, run_single_profile  # noqa: E402
 

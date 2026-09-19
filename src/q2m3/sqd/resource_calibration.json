@@ -1,0 +1,95 @@
+{
+  "schema": "sqd.rss.v1",
+  "status": "validated_holdout",
+  "model_id": "serial-active-space-20260917-v1",
+  "versions": {
+    "numpy": "2.4.1",
+    "scipy": "1.16.3",
+    "pyscf": "2.14.0",
+    "ffsim": "0.0.84",
+    "qiskit": "2.5.2",
+    "qiskit-addon-sqd": "0.13.1",
+    "pennylane": "0.44.0",
+    "pennylane-catalyst": "0.14.0",
+    "jax": "0.7.1",
+    "jaxlib": "0.7.1"
+  },
+  "profile": {
+    "shots": 100000,
+    "n_reps": 2,
+    "num_batches": 2,
+    "max_iterations": 2,
+    "max_space": 12,
+    "threads": 1,
+    "schedule": "serial-retained-inputs-v1",
+    "integrals": "active-orthonormal-synthetic",
+    "carryover_threshold": "0",
+    "sci_cutoffs": "1e-4,1e-5"
+  },
+  "domain": {
+    "max_norb": 10,
+    "max_ci_dim": 63504,
+    "max_sector_dim": 252
+  },
+  "coefficients": {
+    "integrals": [
+      677.03808,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "ccsd": [
+      677.35552,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "prepare": [
+      682.8032000000001,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "sample": [
+      707.25056,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "diagonalize": [
+      692.781,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "reference": [
+      692.8704,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "comparison": [
+      692.9836799999999,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ]
+  },
+  "method": "NNLS over training maxima; allocation floors; max positive residual + 64 MB; times 1.25",
+  "preregistration_sha256": "3961e6182f009923a9cb5d8dee63cd4ed521d52e796d8e2a6abf3706d7efa097",
+  "validation": {
+    "fit_points": 6,
+    "holdout_points": 3,
+    "repeats": 3,
+    "all_passed": true,
+    "minimum_margin_mb": 199.503872,
+    "observations_sha256": "d2d86c94662a0b3d31d08253b7c9e71efb42e3f6b87908ec43a8e741cbdf82e4"
+  }
+}

@@ -107,6 +107,7 @@ class QPEEngine:
 
         This is a classical simulation that mimics QPE behavior for POC purposes.
         Uses PySCF Hartree-Fock results as approximation.
+        Both the result and its simulated convergence are labeled hf_reference.
 
         Args:
             hamiltonian_data: Dictionary containing molecular data from PySCF
@@ -117,6 +118,7 @@ class QPEEngine:
                 - energy: Ground state energy in Hartree
                 - convergence: Convergence information
                 - density_matrix: Electronic density matrix
+                - method: hf_reference (no phase-estimation measurement)
         """
         # Extract HF energy from hamiltonian data
         energy_hf = hamiltonian_data.get("energy_hf", 0.0)
@@ -126,6 +128,7 @@ class QPEEngine:
         convergence_info = self._simulate_qpe_convergence()
 
         return {
+            "method": "hf_reference",
             "energy": energy_hf,
             "convergence": convergence_info,
             "density_matrix": scf_result.make_rdm1(),
@@ -133,7 +136,7 @@ class QPEEngine:
 
     def _simulate_qpe_convergence(self) -> dict[str, Any]:
         """
-        Simulate QPE convergence behavior.
+        Simulate convergence behavior, labeled hf_reference rather than measured QPE.
 
         Returns:
             Dictionary with convergence information
@@ -143,6 +146,7 @@ class QPEEngine:
         iterations_used = min(self.n_iterations, MAX_EARLY_CONVERGENCE_ITERATIONS)
 
         return {
+            "method": "hf_reference",
             "converged": True,
             "iterations": iterations_used,
             "error_estimate": DEFAULT_ERROR_ESTIMATE,

@@ -6,7 +6,7 @@ H2 Monte Carlo example. It is the recommended MC smoke path.
 ## Run The Script
 
 ```bash
-uv run python examples/h2_mc_solvation.py
+uv run python examples/qmmm/h2_mc_solvation.py
 ```
 
 The script builds a `SolvationConfig`, runs `run_solvation()`, and reports

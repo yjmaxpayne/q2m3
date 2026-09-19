@@ -36,6 +36,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sqd = ["ffsim>=0.0.83", "qiskit-addon-sqd>=0.12.1"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -116,9 +117,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/h2_qpe_validation.py" = ["E402"]
-"examples/h2_mc_solvation.py" = ["E402"]
-"examples/h3o_mc_solvation.py" = ["E402"]
+"examples/qpe/h2_qpe_validation.py" = ["E402"]
+"examples/qmmm/h2_mc_solvation.py" = ["E402"]
+"examples/qmmm/h3o_mc_solvation.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["q2m3"]
@@ -138,6 +139,7 @@ addopts = [
     "--cov-report=html",
 ]
 markers = [
+    "sqd: marks tests requiring the optional SQD dependencies",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "solvation: marks tests requiring solvation dependencies (Catalyst + JAX)",
     "catalyst: marks tests requiring Catalyst (skip if not installed)",

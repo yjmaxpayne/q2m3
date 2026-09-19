@@ -1,9 +1,9 @@
 # Core Concepts
 
 q2m3 connects classical quantum chemistry with quantum phase-estimation
-circuits and explicit MM point-charge environments. The framework is small
-enough for H2 validation while exposing the same architectural issues that
-appear in larger EFTQC-oriented studies.
+circuits, sample-based quantum diagonalization, and explicit MM point-charge
+environments. The framework is small enough for H2 validation while exposing
+the same architectural issues that appear in larger EFTQC-oriented studies.
 
 ## QM/MM Partitioning
 
@@ -52,9 +52,29 @@ qubits.
 | --- | --- | --- | --- |
 | H2 | 2 electrons, 2 orbitals | 4 | First-run validation path |
 | H3O+ | 4 electrons, 4 orbitals | 8 | Optional ionic solvation diagnostics |
+| Glycine | 6, 8, or 10 electrons in the same number of orbitals | 12, 16, or 20 | SQD scaling tutorial; each space has its own Hamiltonian and reference |
 
 The full H3O+ STO-3G space is larger than the default examples. The public H3O+
 scripts therefore use conservative active-space and Trotter settings.
+
+## Sample-Based Quantum Diagonalization
+
+The SQD path prepares a CCSD-seeded LUCJ state in a classical ffsim simulation,
+samples alpha/beta occupation strings, and diagonalizes the Hamiltonian in the
+recovered determinant subspace. It reports the sampled result beside HF,
+active-space CCSD, same-size selected-CI and random-subspace controls, and a
+tiered reference computed for the same Hamiltonian.
+
+The signed primary error is
+`1000 * (E_SQD - E_reference)` in mHa, so a positive value places SQD above the
+reference. Only a T0 exact-active-space result supports an exact-error claim.
+Seed spread is descriptive; it is not a confidence interval. The sampled
+determinant fraction also does not equal simulator-memory savings because ffsim
+still represents the full fixed-particle-number state.
+
+The current implementation is a classical simulator workflow. It provides
+algorithm integration and scientific controls, not quantum hardware execution
+or evidence of quantum advantage.
 
 ## Phase Decoding And Energy Shifts
 

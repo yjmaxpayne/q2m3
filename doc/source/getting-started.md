@@ -7,16 +7,17 @@ starting the high-memory Catalyst diagnostics by accident.
 
 q2m3 targets Python 3.11 or newer and uses `uv` for environment management.
 The core package uses PySCF, PennyLane, NumPy, SciPy, Matplotlib, and Rich.
-Optional workflows add Catalyst/JAX, GPU backends, and molecular visualization
-tools.
+Optional workflows add SQD, Catalyst/JAX, GPU backends, and molecular
+visualization tools.
 
 | Need | Install command |
 | --- | --- |
 | Core package only | `uv sync` |
 | Development tools | `uv sync --extra dev` |
+| Sample-based quantum diagonalization | `uv sync --frozen --extra sqd` |
 | Catalyst solvation workflow | `uv sync --extra catalyst --extra solvation` |
-| Documentation build | `uv sync --extra docs --extra catalyst --extra solvation --extra viz` |
-| Full local development set | `uv sync --extra dev --extra catalyst --extra solvation --extra viz` |
+| Documentation build | `uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz` |
+| Full local development set | `uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz` |
 
 ```{note}
 GPU support is optional. The `gpu` extra installs CUDA-oriented packages and
@@ -30,7 +31,7 @@ runtime support.
 git clone https://github.com/yjmaxpayne/q2m3.git
 cd q2m3
 
-uv sync --extra dev --extra catalyst --extra solvation --extra viz
+uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz
 ```
 
 `uv run` automatically uses the managed `.venv`, so activating the environment
@@ -42,8 +43,8 @@ Start with the H2 examples. They are intentionally small and exercise the
 same public APIs used by the larger workflows.
 
 ```bash
-uv run python examples/h2_qpe_validation.py
-uv run python examples/h2_resource_estimation.py
+uv run python examples/qpe/h2_qpe_validation.py
+uv run python examples/resources/h2_resource_estimation.py
 ```
 
 The maintained H2 validation script checks vacuum and MM-embedded Hamiltonians,
@@ -75,18 +76,38 @@ scales with estimation wires, Trotter depth, and Hamiltonian term count.
 ## Basic Solvation Run
 
 ```bash
-uv run python examples/h2_mc_solvation.py
+uv run python examples/qmmm/h2_mc_solvation.py
 ```
 
 This runs a fixed-mode H2 MC solvation workflow with IR caching enabled. The
 first run may compile Catalyst IR; later runs can reuse the cache when the
 circuit structure is unchanged.
 
+## First SQD Run
+
+SQD currently requires Linux x86_64 and a source checkout. Native numerical
+thread counts must be set before Python starts because the calibrated resource
+model covers serial execution.
+
+```bash
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1 JAX_PLATFORMS=cpu
+uv run --no-sync python -m examples.sqd.h2_ground_state
+```
+
+This four-qubit H₂ case is a convention and integration regression: its sampled
+subspace reaches all four determinants. Continue with the
+[](tutorials/sqd-showcase.md) for sparse glycine runs, authenticated integral
+input, and fixed point-charge embedding.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Action |
 | --- | --- | --- |
 | Import error for `catalyst` or `jax` | Solvation extras are missing | Run `uv sync --extra catalyst --extra solvation` |
+| Import error for `ffsim` or `qiskit_addon_sqd` | SQD extra is missing | Run `uv sync --frozen --extra sqd` |
+| SQD rejects the platform or thread settings | The calibrated executor requires Linux x86_64 and serial BLAS/OpenMP | Set all documented thread variables to `1` before Python starts; use a supported host |
+| SQD rejects a size or memory request | The request is outside the calibrated domain or reaches a host/user/hard cap | Reduce the documented active-space profile or budget; `allow_large` cannot bypass hard/domain limits |
 | Very slow first MC run | Catalyst is compiling QPE IR | Let the first compile finish, then reuse the cache |
 | H3O+ example is killed or times out | H3O+ IR is much larger than H2 IR | Use the H2 examples first; lower Trotter depth or run on a larger machine |
 | GPU device is not selected | CUDA, Lightning GPU, and JAX CUDA availability are separate checks | Inspect `q2m3.core.device_utils` and fall back to `lightning.qubit` or `default.qubit` |

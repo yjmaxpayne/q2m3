@@ -1,7 +1,7 @@
 .PHONY: help install install-dev install-gpu sync test test-fast test-cov test-collect test-serial format format-check lint pre-commit docs docs-clean docs-doctest changelog-dry changelog build version release-check clean run-example
 
 DEV_EXTRAS := --extra dev --extra catalyst --extra solvation --extra viz
-DOCS_EXTRAS := --extra docs --extra catalyst --extra solvation --extra viz
+DOCS_EXTRAS := --extra docs --extra sqd --extra catalyst --extra solvation --extra viz
 
 help:
 	@echo "Available commands:"
@@ -113,4 +113,4 @@ clean:
 
 run-example:
 	@echo "Running H2 QPE validation..."
-	@uv run python examples/h2_qpe_validation.py
+	@uv run python examples/qpe/h2_qpe_validation.py

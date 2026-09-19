@@ -34,7 +34,7 @@ QRE results are dominated by the 2-electron integral structure, so few-pm
 geometric uncertainty has negligible effect on the reported counts.
 
 Usage:
-    OMP_NUM_THREADS=4 uv run python examples/resource_estimation_survey.py
+    OMP_NUM_THREADS=4 uv run python examples/resources/resource_estimation_survey.py
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ from q2m3.core import (
     estimate_resources,
 )
 
-OUTPUT_DIR = Path(__file__).resolve().parents[1] / "data" / "output"
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "output"
 DEFAULT_TARGET_ERROR = 0.0016  # Hartree, ~1 kcal/mol (chemical accuracy)
 # Physical-layer assumptions for the runtime column (surface code, superconducting):
 DEFAULT_P_PHYS = 1e-3  # physical error rate

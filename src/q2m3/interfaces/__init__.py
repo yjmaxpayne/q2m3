@@ -9,6 +9,7 @@ from .fixed_mo_embedding import (
     FixedMOEmbeddingDiagnostics,
     FixedMOEmbeddingResult,
     build_fixed_mo_embedding_integrals,
+    resolve_active_space,
 )
 from .pyscf_pennylane import PySCFPennyLaneConverter, UnifiedDensityMatrix
 
@@ -18,4 +19,5 @@ __all__ = [
     "PySCFPennyLaneConverter",
     "UnifiedDensityMatrix",
     "build_fixed_mo_embedding_integrals",
+    "resolve_active_space",
 ]

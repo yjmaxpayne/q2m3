@@ -1,13 +1,13 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Lightweight tests for examples/resource_estimation_survey.py."""
+"""Lightweight tests for examples/resources/resource_estimation_survey.py."""
 
 import pytest
 
 
 def test_survey_systems_include_nh3_scale_expansion():
     """Survey includes the added near-NH3 systems requested for task 3."""
-    from examples.resource_estimation_survey import survey_systems
+    from examples.resources.resource_estimation_survey import survey_systems
 
     specs = survey_systems()
     labels = {spec.label for spec in specs}
@@ -29,7 +29,7 @@ def test_survey_systems_include_nh3_scale_expansion():
 
 def test_survey_systems_include_measured_compile_bridge_points():
     """Survey includes small systems used to add measured compile data."""
-    from examples.resource_estimation_survey import survey_systems
+    from examples.resources.resource_estimation_survey import survey_systems
 
     specs = survey_systems()
     labels = {spec.label for spec in specs}
@@ -53,7 +53,7 @@ def test_estimate_one_runtime_uses_total_toffoli_once():
     """
     import numpy as np
 
-    from examples.resource_estimation_survey import (
+    from examples.resources.resource_estimation_survey import (
         DEFAULT_TARGET_ERROR,
         estimate_one,
         survey_systems,

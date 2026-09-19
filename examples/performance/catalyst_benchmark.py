@@ -14,7 +14,7 @@ equals or exceeds execution time. Significant speedup only appears in
 multi-iteration workflows (VQE optimization, MC loops).
 
 Usage:
-    uv run python examples/catalyst_benchmark.py
+    uv run python examples/performance/catalyst_benchmark.py
 """
 
 import time

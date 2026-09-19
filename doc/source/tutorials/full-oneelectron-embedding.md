@@ -8,7 +8,7 @@ rows.
 ## Run The Script
 
 ```bash
-uv run python examples/full_oneelectron_embedding.py
+uv run python examples/qmmm/full_oneelectron_embedding.py
 ```
 
 The script prints Hamiltonian `lambda`, Toffoli count, logical qubits, and

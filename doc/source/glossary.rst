@@ -12,6 +12,22 @@ Glossary
       Quantum phase estimation. q2m3 uses QPE circuits to estimate molecular
       energies from a time-evolution phase.
 
+   SQD
+      Sample-based quantum diagonalization. q2m3 prepares a CCSD-seeded LUCJ
+      state in ffsim, samples fixed-particle-number determinants, and solves the
+      Hamiltonian in the recovered subspace with qiskit-addon-sqd.
+
+   LUCJ
+      Local unitary cluster Jastrow ansatz used by the SQD workflow. Its
+      repetition count and optional spin-channel connectivity are explicit run
+      inputs.
+
+   reference tier
+      The SQD baseline policy: T0 exact active-space CASCI, T1 selected CI,
+      explicitly registered T1+ plugins, or diagnostic T2 CCSD(T). A tier
+      records method and uncertainty semantics; it is not an accuracy label by
+      itself.
+
    EFTQC
       Early fault-tolerant quantum computer. In q2m3, this term is used for
       resource-estimation studies such as logical qubit and Toffoli counts.

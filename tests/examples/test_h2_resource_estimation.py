@@ -1,13 +1,13 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Smoke tests for examples/h2_resource_estimation.py."""
+"""Smoke tests for examples/resources/h2_resource_estimation.py."""
 
 from types import SimpleNamespace
 
 
 def test_h2_resource_estimation_main_smoke(monkeypatch, capsys):
     """The example main path runs and prints vacuum/solvated resource rows."""
-    from examples import h2_resource_estimation as example
+    from examples.resources import h2_resource_estimation as example
 
     vacuum = SimpleNamespace(
         logical_qubits=115,

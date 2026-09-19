@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Tests for examples/ir_qre_correlation_analysis.py."""
+"""Tests for examples/performance/ir_qre_correlation_analysis.py."""
 
 import csv
 import json
@@ -194,7 +194,7 @@ def _write_trotter5_compile_fixture(tmp_path):
 
 def test_build_correlation_rows_cover_three_systems_and_four_dimensions(tmp_path):
     """Summary rows only use standardized trotter-5 measured compile data."""
-    from examples.ir_qre_correlation_analysis import (
+    from examples.performance.ir_qre_correlation_analysis import (
         DIMENSIONS,
         build_correlation_rows,
         compute_dimension_stats,
@@ -227,7 +227,7 @@ def test_build_correlation_rows_cover_three_systems_and_four_dimensions(tmp_path
 
 def test_trotter5_loader_rejects_nonstandard_compile_rows(tmp_path):
     """Nonstandard measured rows are rejected instead of silently mixed in."""
-    from examples.ir_qre_correlation_analysis import build_correlation_rows
+    from examples.performance.ir_qre_correlation_analysis import build_correlation_rows
 
     compile_json = _write_trotter5_compile_fixture(tmp_path)
     payload = json.loads(compile_json.read_text(encoding="utf-8"))
@@ -244,7 +244,7 @@ def test_trotter5_loader_rejects_nonstandard_compile_rows(tmp_path):
 
 def test_main_writes_csv_report_and_four_publication_figures(tmp_path):
     """The CLI writes the summary table, report, stats table, and 300-dpi figures."""
-    from examples.ir_qre_correlation_analysis import main
+    from examples.performance.ir_qre_correlation_analysis import main
 
     out_dir = tmp_path / "output"
     main(

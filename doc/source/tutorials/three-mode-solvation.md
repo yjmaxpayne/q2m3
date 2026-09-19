@@ -7,7 +7,7 @@ H2 smoke test and should be run after `h2_mc_solvation.py`.
 ## Run The Script
 
 ```bash
-uv run python examples/h2_three_mode_comparison.py
+uv run python examples/qmmm/h2_three_mode_comparison.py
 ```
 
 ## Modes

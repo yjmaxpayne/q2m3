@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
 # SPDX-License-Identifier: MIT
-"""Tests for examples/ir_qre_trotter5_compile_survey.py."""
+"""Tests for examples/performance/ir_qre_trotter5_compile_survey.py."""
 
 import csv
 import json
@@ -9,7 +9,10 @@ from dataclasses import replace
 
 def test_target_systems_cover_standard_total_qubit_ladder():
     """The default compile survey spans 8-, 10-, and 12-qubit targets."""
-    from examples.ir_qre_trotter5_compile_survey import DEFAULT_SYSTEM_LABELS, systems_by_label
+    from examples.performance.ir_qre_trotter5_compile_survey import (
+        DEFAULT_SYSTEM_LABELS,
+        systems_by_label,
+    )
 
     systems = systems_by_label()
     total_qubits = {
@@ -25,7 +28,7 @@ def test_target_systems_cover_standard_total_qubit_ladder():
 
 def test_profile_result_to_record_uses_trotter5_metadata(mock_result, parent_data):
     """Profile results are normalized into the trotter-5 compile schema."""
-    from examples.ir_qre_trotter5_compile_survey import profile_result_to_record
+    from examples.performance.ir_qre_trotter5_compile_survey import profile_result_to_record
 
     result = replace(
         mock_result,
@@ -57,7 +60,7 @@ def test_profile_result_to_record_uses_trotter5_metadata(mock_result, parent_dat
 
 def test_main_writes_trotter5_json_and_csv(tmp_path, mock_result, parent_data):
     """The CLI writes incremental standardized JSON and CSV outputs."""
-    from examples import ir_qre_trotter5_compile_survey as survey
+    from examples.performance import ir_qre_trotter5_compile_survey as survey
 
     output_json = tmp_path / "compile.json"
     output_csv = tmp_path / "compile.csv"
@@ -107,7 +110,7 @@ def test_main_writes_trotter5_json_and_csv(tmp_path, mock_result, parent_data):
 
 def test_main_preserves_existing_rows_when_running_subset(tmp_path, mock_result, parent_data):
     """Running a second system appends/replaces cases instead of clearing prior data."""
-    from examples import ir_qre_trotter5_compile_survey as survey
+    from examples.performance import ir_qre_trotter5_compile_survey as survey
 
     output_json = tmp_path / "compile.json"
     output_csv = tmp_path / "compile.csv"

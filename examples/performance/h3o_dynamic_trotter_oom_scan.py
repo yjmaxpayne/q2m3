@@ -9,8 +9,8 @@ configured fraction of total RAM, preventing Catalyst compilation from driving
 the machine into OOM.
 
 Usage:
-    OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py
-    OMP_NUM_THREADS=8 uv run python examples/h3o_dynamic_trotter_oom_scan.py --max-trotter 12
+    OMP_NUM_THREADS=8 uv run python examples/performance/h3o_dynamic_trotter_oom_scan.py
+    OMP_NUM_THREADS=8 uv run python examples/performance/h3o_dynamic_trotter_oom_scan.py --max-trotter 12
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from typing import Any
 from q2m3.molecule import MoleculeConfig
 from q2m3.profiling import ProfileResult, run_single_profile
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
 DEFAULT_OUTPUT_JSON = OUTPUT_DIR / "h3o_dynamic_trotter_oom_scan.json"
 DEFAULT_OUTPUT_CSV = OUTPUT_DIR / "h3o_dynamic_trotter_oom_scan.csv"

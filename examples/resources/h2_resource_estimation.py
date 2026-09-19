@@ -12,7 +12,7 @@ electrostatics). Resource estimates are dominated by 2-electron integrals,
 which remain unchanged → minimal impact on EFTQC resources.
 
 Usage:
-    uv run python examples/h2_resource_estimation.py
+    uv run python examples/resources/h2_resource_estimation.py
 """
 
 import numpy as np

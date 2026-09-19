@@ -257,6 +257,26 @@ def test_supervisor_counts_parent_and_child_rss(hydrogen):
         plugin_run(hydrogen, "memory", rss=cap)
 
 
+def test_tree_pids_ignores_process_exit_during_task_enumeration(monkeypatch):
+    from pathlib import Path
+
+    m = mod()
+    original_glob = Path.glob
+
+    def glob_with_vanishing_process(path, pattern):
+        if path == Path("/proc/424242/task"):
+
+            def vanished():
+                raise FileNotFoundError(path)
+                yield
+
+            return vanished()
+        return original_glob(path, pattern)
+
+    monkeypatch.setattr(Path, "glob", glob_with_vanishing_process)
+    assert m._tree_pids(424242) == {424242}
+
+
 def test_resolver_is_io_free(monkeypatch):
     import builtins
 

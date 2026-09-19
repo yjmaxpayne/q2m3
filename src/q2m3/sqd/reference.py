@@ -510,13 +510,16 @@ def _tree_pids(pid):
     found, todo = {pid}, [pid]
     while todo:
         current = todo.pop()
-        for path in Path(f"/proc/{current}/task").glob("*/children"):
-            try:
-                children = {int(p) for p in path.read_text().split()} - found
-            except (FileNotFoundError, ProcessLookupError):
-                continue
-            found.update(children)
-            todo.extend(children)
+        try:
+            for path in Path(f"/proc/{current}/task").glob("*/children"):
+                try:
+                    children = {int(p) for p in path.read_text().split()} - found
+                except (FileNotFoundError, ProcessLookupError):
+                    continue
+                found.update(children)
+                todo.extend(children)
+        except (FileNotFoundError, ProcessLookupError):
+            continue
     return found
 
 

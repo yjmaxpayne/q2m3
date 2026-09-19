@@ -349,8 +349,7 @@ def test_pure_type_import_and_use_with_optional_backend_imports_blocked():
     import textwrap
     from pathlib import Path
 
-    code = textwrap.dedent(
-        """
+    code = textwrap.dedent("""
         import importlib.abc
         import sys
         import q2m3  # Existing root-package imports are outside the SQD boundary.
@@ -374,8 +373,7 @@ def test_pure_type_import_and_use_with_optional_backend_imports_blocked():
         assert "run_sqd_from_integrals" not in sqd.__all__
         added = set(sys.modules) - before
         assert not {name for name in added if name.split(".")[0] in forbidden}
-    """
-    )
+    """)
     env = dict(os.environ)
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src")
     env.update(OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")

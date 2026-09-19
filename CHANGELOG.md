@@ -1,19 +1,24 @@
 # Changelog
 
-## Unreleased
+## v0.2.0 (2026-09-19)
+
+### BREAKING CHANGE
+
+- estimate_eftqc_runtime(qpe_iterations, toffoli_gates,
+toffoli_cycle_microseconds) is replaced by estimate_eftqc_runtime(toffoli_gates,
+logical_qubits, p_phys, t_cycle_microseconds, t_react_microseconds, n_factories,
+failure_budget); the returned dict no longer has toffoli_cycle_microseconds.
 
 ### Feat
 
-- Add optional geometry- and authenticated-integral SQD workflows with immutable
-  run contracts, CCSD-seeded LUCJ sampling, same-Hamiltonian references, and
-  calibrated resource guards.
-- Add fixed-frame point-charge embedding for SQD and complete H₂, water, and
-  glycine end-to-end examples with auditable JSON/CSV/figure artifacts.
+- **sqd**: add end-to-end sampled diagonalization workflows
+- **api**: add lazy solvation exports and label HF references
+- **sqd**: add immutable configuration and result contracts
 
-### Docs
+### Fix
 
-- Add the SQD user guide, API reference, architecture description, glossary
-  entries, troubleshooting, and H₂-to-glycine tutorial.
+- **sqd**: tolerate exited processes during RSS scans
+- **qre**: stop double-counting lambda/eps in EFTQC runtime and use a physical tick model
 
 ## v0.1.3 (2026-05-26)
 

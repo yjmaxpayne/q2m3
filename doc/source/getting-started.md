@@ -20,9 +20,8 @@ visualization tools.
 | Full local development set | `uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz` |
 
 ```{note}
-GPU support is optional. The `gpu` extra installs CUDA-oriented packages and
-should only be used on machines with compatible NVIDIA drivers and CUDA
-runtime support.
+GPU support is optional. The `gpu` extra installs CUDA-oriented packages. Use it
+only on machines with compatible NVIDIA drivers and CUDA runtime support.
 ```
 
 ## Installation
@@ -47,9 +46,12 @@ uv run python examples/qpe/h2_qpe_validation.py
 uv run python examples/resources/h2_resource_estimation.py
 ```
 
-The maintained H2 validation script checks vacuum and MM-embedded Hamiltonians,
-compares PySCF Hartree-Fock references with QPE estimates, and reports the
-solvation stabilization in kcal/mol after explicit conversion from Hartree.
+The maintained H2 validation script does three things:
+
+- It checks vacuum and MM-embedded Hamiltonians.
+- It compares PySCF Hartree-Fock references with QPE estimates.
+- It reports the solvation stabilization in kcal/mol after explicit conversion
+  from Hartree.
 
 ## Quick API Check
 
@@ -69,9 +71,9 @@ scales with estimation wires, Trotter depth, and Hamiltonian term count.
 | Tier | Scripts | Expected environment |
 | --- | --- | --- |
 | First run | `h2_qpe_validation.py`, `h2_resource_estimation.py` | CPU laptop or workstation |
-| Standard MC | `h2_mc_solvation.py` | Catalyst/JAX installed; 8 GB+ RAM recommended |
-| H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed; 16 GB+ RAM recommended |
-| High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended; use provided guards/options |
+| Standard MC | `h2_mc_solvation.py` | Catalyst/JAX installed. 8 GB+ RAM recommended |
+| H3O+ MC | `h3o_mc_solvation.py` | Catalyst/JAX installed. 16 GB+ RAM recommended |
+| High-memory diagnostics | `h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py` | 30 GB+ RAM recommended. Use provided guards/options |
 
 ## Basic Solvation Run
 
@@ -80,13 +82,13 @@ uv run python examples/qmmm/h2_mc_solvation.py
 ```
 
 This runs a fixed-mode H2 MC solvation workflow with IR caching enabled. The
-first run may compile Catalyst IR; later runs can reuse the cache when the
-circuit structure is unchanged.
+first run may compile Catalyst IR. Later runs can reuse the cache when the
+circuit structure does not change.
 
 ## First SQD Run
 
-SQD currently requires Linux x86_64 and a source checkout. Native numerical
-thread counts must be set before Python starts because the calibrated resource
+SQD currently requires Linux x86_64 and a source checkout. You must set native
+numerical thread counts before Python starts because the calibrated resource
 model covers serial execution.
 
 ```bash
@@ -106,14 +108,14 @@ input, and fixed point-charge embedding.
 | --- | --- | --- |
 | Import error for `catalyst` or `jax` | Solvation extras are missing | Run `uv sync --extra catalyst --extra solvation` |
 | Import error for `ffsim` or `qiskit_addon_sqd` | SQD extra is missing | Run `uv sync --frozen --extra sqd` |
-| SQD rejects the platform or thread settings | The calibrated executor requires Linux x86_64 and serial BLAS/OpenMP | Set all documented thread variables to `1` before Python starts; use a supported host |
-| SQD rejects a size or memory request | The request is outside the calibrated domain or reaches a host/user/hard cap | Reduce the documented active-space profile or budget; `allow_large` cannot bypass hard/domain limits |
+| SQD rejects the platform or thread settings | The calibrated executor requires Linux x86_64 and serial BLAS/OpenMP | Set all documented thread variables to `1` before Python starts. Use a supported host |
+| SQD rejects a size or memory request | The request is outside the calibrated domain or reaches a host/user/hard cap | Reduce the documented active-space profile or budget. `allow_large` cannot bypass hard/domain limits |
 | Very slow first MC run | Catalyst is compiling QPE IR | Let the first compile finish, then reuse the cache |
-| H3O+ example is killed or times out | H3O+ IR is much larger than H2 IR | Use the H2 examples first; lower Trotter depth or run on a larger machine |
+| H3O+ example is killed or times out | H3O+ IR is much larger than H2 IR | Use the H2 examples first. Lower Trotter depth or run on a larger machine |
 | GPU device is not selected | CUDA, Lightning GPU, and JAX CUDA availability are separate checks | Inspect `q2m3.core.device_utils` and fall back to `lightning.qubit` or `default.qubit` |
 | QPE energy differs from HF by a large amount | Low precision, phase wrapping, or Trotter error | Check estimation wires, `base_time`, energy shift, and Trotter depth before interpreting the value as chemistry |
 
 ## Next Steps
 
-Read [](core-concepts.md) for the scientific model, then run the tutorials in
-order from H2 QPE validation through the three-mode solvation comparison.
+Read [](core-concepts.md) for the scientific model. Then run the tutorials in
+order, from H2 QPE validation through the three-mode solvation comparison.

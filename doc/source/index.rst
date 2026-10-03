@@ -46,12 +46,12 @@ What is q2m3?
 |badge-python| |badge-license| |badge-docs-ci| |badge-docs-site| |badge-codecov| |badge-doi| |badge-pennylane| |badge-catalyst| |badge-pyscf|
 
 q2m3 is a hybrid quantum-classical QM/MM framework for small-molecule
-quantum chemistry workflows that combine PySCF, PennyLane QPE circuits,
+quantum chemistry workflows. These workflows combine PySCF, PennyLane QPE circuits,
 sample-based quantum diagonalization, explicit MM point charges, Monte Carlo
 solvation, and EFTQC resource estimation.
 
 The documentation emphasizes lightweight H2 examples first. SQD glycine,
-Catalyst, H3O+, 8-bit QPE, and dynamic-Trotter diagnostics are documented as
+Catalyst, H3O+, 8-bit QPE, and dynamic-Trotter diagnostics appear as
 optional paths because they can require substantially more memory or compile
 time.
 

@@ -2,7 +2,7 @@ Tutorials
 =========
 
 The tutorials are ordered from lightweight validation toward larger SQD and
-solvation workflows. Run the H2 paths first before attempting glycine, H3O+, or
+solvation workflows. Run the H2 paths first, before you try glycine, H3O+, or
 high-memory profiling scripts.
 
 .. toctree::

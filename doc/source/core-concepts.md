@@ -10,8 +10,8 @@ the same architectural issues that appear in larger EFTQC-oriented studies.
 QM/MM separates a system into a quantum mechanical region and a molecular
 mechanics environment. q2m3 currently uses PySCF for the classical quantum
 chemistry side and TIP3P/SPC/E-style point charges for explicit water
-environments. Energies are stored in Hartree internally; kcal/mol appears only
-after an explicit conversion.
+environments. q2m3 stores energies in Hartree internally. The unit kcal/mol
+appears only after an explicit conversion.
 
 The current embedding model is electrostatic point-charge embedding. It does
 not include a polarizable MM force field or advanced solvent response model.
@@ -52,7 +52,7 @@ qubits.
 | --- | --- | --- | --- |
 | H2 | 2 electrons, 2 orbitals | 4 | First-run validation path |
 | H3O+ | 4 electrons, 4 orbitals | 8 | Optional ionic solvation diagnostics |
-| Glycine | 6, 8, or 10 electrons in the same number of orbitals | 12, 16, or 20 | SQD scaling tutorial; each space has its own Hamiltonian and reference |
+| Glycine | 6, 8, or 10 electrons in the same number of orbitals | 12, 16, or 20 | SQD scaling tutorial. Each space has its own Hamiltonian and reference |
 
 The full H3O+ STO-3G space is larger than the default examples. The public H3O+
 scripts therefore use conservative active-space and Trotter settings.
@@ -68,7 +68,7 @@ tiered reference computed for the same Hamiltonian.
 The signed primary error is
 `1000 * (E_SQD - E_reference)` in mHa, so a positive value places SQD above the
 reference. Only a T0 exact-active-space result supports an exact-error claim.
-Seed spread is descriptive; it is not a confidence interval. The sampled
+Seed spread is descriptive. It is not a confidence interval. The sampled
 determinant fraction also does not equal simulator-memory savings because ffsim
 still represents the full fixed-particle-number state.
 
@@ -79,8 +79,9 @@ or evidence of quantum advantage.
 ## Phase Decoding And Energy Shifts
 
 QPE measures a phase modulo one. Large negative molecular energies can wrap
-around the phase register, so q2m3 uses shifted QPE parameters to estimate a
-smaller energy difference relative to a Hartree-Fock reference when needed.
+around the phase register. When needed, q2m3 therefore uses shifted QPE
+parameters to estimate a smaller energy difference relative to a Hartree-Fock
+reference.
 
 Two phase-extraction conventions exist in the current code:
 
@@ -107,10 +108,10 @@ so the estimator includes projection utilities for physically valid matrices.
 
 The `q2m3.core.resource_estimation` API estimates EFTQC resources such as
 Hamiltonian 1-norm, logical qubits, Toffoli gates, system qubits, and target
-error. These are hardware-planning estimates; they are not the same as
+error. These are hardware-planning estimates. They are not the same as
 Catalyst compile memory or LLVM IR size.
 
-The H2 resource example demonstrates that MM point charges mainly modify
+The H2 resource example demonstrates that MM point charges mainly change
 one-electron terms. For small H2/STO-3G runs, the two-electron integrals
 dominate the resource estimate, so vacuum and solvated estimates are close.
 
@@ -124,12 +125,12 @@ two public resource-estimation modes for this perturbation:
 | `diagonal` | Diagonal `Delta h_pp` terms only | Compatibility row for dynamic coefficient-update workflows |
 | `full_oneelectron` | Full fixed-MO `Delta h_pq` matrix | Resource rows and fixed-Hamiltonian operator support |
 
-Both modes are fixed-MO models. The vacuum molecular-orbital frame is reused,
-the two-electron tensor is held at its vacuum value, and no orbital relaxation,
-polarizable MM response, or relaxed solvation energy is computed. The
+Both modes are fixed-MO models. They reuse the vacuum molecular-orbital frame
+and hold the two-electron tensor at its vacuum value. They compute no orbital
+relaxation, polarizable MM response, or relaxed solvation energy. The
 diagnostic `delta_h_offdiag_fro` reports the Frobenius norm of the off-diagonal
-active-space perturbation that is omitted by `diagonal` mode and included by
-`full_oneelectron` mode.
+active-space perturbation that `diagonal` mode omits and `full_oneelectron`
+mode includes.
 
 ## Catalyst Guidance
 
@@ -154,10 +155,10 @@ compiled circuit structure when only coefficients change at runtime.
 | `hf_corrected` | `E_HF(R) + E_MM` with interval QPE diagnostics | Intermediate mode for throughput |
 | `dynamic` | `E_QPE(H_eff) + E_MM` | Most complete current model for MM-embedded QPE |
 
-The difference between fixed and dynamic correlation behavior is used to study
+q2m3 uses the difference between fixed and dynamic correlation behavior to study
 `delta_corr-pol`, the correlation-polarization coupling term.
 
 The current dynamic runtime coefficient path updates diagonal coefficients. It
 does not accept `embedding_mode="full_oneelectron"` because off-diagonal
-one-electron terms can alter the operator support that Catalyst compiled for a
+one-electron terms can change the operator support that Catalyst compiled for a
 given circuit.

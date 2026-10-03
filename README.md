@@ -16,19 +16,19 @@
 
 q2m3 is a research framework for hybrid quantum-classical QM/MM
 (quantum mechanics / molecular mechanics). It connects PySCF molecular
-integrals and Hartree–Fock references with PennyLane Quantum Phase Estimation
-(QPE) circuits, explicit MM point charges, Monte Carlo solvation, and sample-based quantum
-diagonalization (SQD).
+integrals and Hartree–Fock references to PennyLane Quantum Phase Estimation
+(QPE) circuits. It also supports explicit MM point charges, Monte Carlo (MC)
+solvation, and sample-based quantum diagonalization (SQD).
 
-Use it to explore small-molecule QPE workflows and early fault-tolerant
+Use q2m3 to explore small-molecule QPE workflows and early fault-tolerant
 quantum computing (EFTQC) resource estimates. The project is an alpha
-proof of concept; its approximations and small-system checks do not establish
+proof of concept. Its approximations and small-system checks do not establish
 production chemistry accuracy.
 
 ## Install
 
-Requires Python 3.11+. Choose PyPI for library use, or a source checkout for
-the example scripts and development tools.
+q2m3 requires Python 3.11+. Install from PyPI to use the library. Use a
+source checkout to run the example scripts and the development tools.
 
 ### From PyPI
 
@@ -40,7 +40,7 @@ source .venv/bin/activate
 python -m pip install q2m3
 ```
 
-The package is published as [q2m3 on PyPI](https://pypi.org/project/q2m3/).
+The package is available as [q2m3 on PyPI](https://pypi.org/project/q2m3/).
 
 ### From source
 
@@ -53,27 +53,27 @@ uv sync
 ```
 
 The core install supports the three H₂ starter scripts in the
-[example guide](examples/README.md). Optional extras are selected by purpose:
+[example guide](examples/README.md). Select optional extras by purpose:
 
 | Extra | Use |
 | --- | --- |
-| `solvation` | Monte Carlo workflows; includes Catalyst and JAX |
+| `solvation` | Monte Carlo workflows (includes Catalyst and JAX) |
 | `catalyst` | Circuit compilation without the full solvation extra |
-| `gpu` | GPU dependencies; requires compatible NVIDIA/CUDA setup |
+| `gpu` | GPU dependencies (requires a compatible NVIDIA/CUDA setup) |
 | `viz` | Molecular visualization tools |
 | `dev` / `docs` | Tests and code quality tools / Sphinx documentation |
-| `sqd` | ffsim/Qiskit SQD workflows; see the [SQD guide](doc/source/sqd.md) |
+| `sqd` | ffsim/Qiskit SQD workflows (see the [SQD guide](doc/source/sqd.md)) |
 
-For example, use `uv sync --extra solvation` in a checkout, or
-`python -m pip install "q2m3[solvation]"` in a library environment.
+For example, run `uv sync --extra solvation` in a source checkout. In a
+library environment, run `python -m pip install "q2m3[solvation]"`.
 
 ## Minimal Python API
 
-This estimates resources for H₂/STO-3G with an active space of two electrons
-in two spatial orbitals, corresponding to four Jordan–Wigner system qubits.
-Coordinates are in Å; the target energy error is in Hartree.
-Run the snippet with `python` in the PyPI environment or `uv run python` in
-the source checkout.
+This snippet estimates resources for H₂/STO-3G. The active space has two
+electrons in two spatial orbitals, which gives four Jordan–Wigner system qubits.
+Coordinates are in Å. The target energy error is in Hartree.
+Run the snippet with `python` in the PyPI environment, or with `uv run python`
+in the source checkout.
 
 ```python
 import numpy as np
@@ -93,38 +93,44 @@ print("Logical qubits:", resources.logical_qubits)
 print("Toffoli gates:", resources.toffoli_gates)
 ```
 
-`estimate_resources` returns an `EFTQCResources` object. Logical qubits and
-Toffoli gates describe an algorithmic cost model; they do not predict local
-simulator runtime or Catalyst compilation memory.
+`estimate_resources` returns an `EFTQCResources` object. The logical-qubit and
+Toffoli-gate counts come from an algorithmic cost model. They do not predict
+local simulator runtime or Catalyst compilation memory.
 
 ## SQD workflows
 
-In this source checkout, run `uv sync --frozen --extra sqd`. Catalyst is
-optional for SQD. The public supervisor requires Linux x86_64 and serial native
-threads. The unified lock also moves core-only PySCF to 2.14.0; the calibrated
-resource profile uses Python 3.12.3.
+To install the SQD dependencies in a source checkout, run
+`uv sync --frozen --extra sqd`. SQD does not require Catalyst. The public
+supervisor requires Linux x86_64 and serial native threads. The unified lock
+also moves the core-only PySCF version to 2.14.0. The calibrated resource
+profile uses Python 3.12.3.
 
-Use `from q2m3 import run_sqd` for molecular geometry, or
-`from q2m3.sqd import run_sqd_from_integrals` for an authenticated integral
-Hamiltonian and same-frame CCSD seed. Both require an explicit closed-shell
-active space and return the complete `SQDResult`. The [SQD guide](doc/source/sqd.md)
-provides runnable examples for both, fixed-frame MM semantics, reference
-tiers, installation boundaries and resource caps.
-The [SQD API reference](doc/source/api-reference/sqd.rst) lists the public
-contracts, authenticated integral producers, and resource-policy functions.
+SQD has two entry points:
 
-Current evidence supports the default two-repetition/100000-shot benchmark
-scope. H₂/H₃O⁺ are full-space regressions; Glycine is worse than CCSD for
-all five seeds, and N₂ is worse than both CCSD and matched-size SCI. The
-original orbital-basis (E1) and connectivity (E6) studies remain inconclusive;
-historical four-repetition runs remain out of the certified resource domain.
+- `from q2m3 import run_sqd` starts from a molecular geometry.
+- `from q2m3.sqd import run_sqd_from_integrals` starts from an authenticated
+  integral Hamiltonian and a same-frame CCSD seed.
+
+Both functions require an explicit closed-shell active space. Both return the
+complete `SQDResult`. The [SQD guide](doc/source/sqd.md) gives runnable
+examples for both. It also covers fixed-frame MM semantics, reference tiers,
+installation boundaries, and resource caps. The
+[SQD API reference](doc/source/api-reference/sqd.rst) lists the public
+contracts, the authenticated integral producers, and the resource-policy
+functions.
+
+Current evidence supports the default benchmark scope of two repetitions and
+100000 shots. H₂ and H₃O⁺ are full-space regressions. Glycine is worse than
+CCSD for all five seeds. N₂ is worse than both CCSD and matched-size SCI. The
+original orbital-basis (E1) and connectivity (E6) studies remain inconclusive.
+Historical four-repetition runs remain outside the certified resource domain.
 These results do not establish SQD superiority or quantum hardware readiness.
 
 ## Examples and documentation
 
-Start with the [example guide](examples/README.md) for runnable H₂ commands
-and the complete script index. It also separates MC workflows from larger
-diagnostics.
+Start with the [example guide](examples/README.md). It gives runnable H₂
+commands and the complete script index. It also separates MC workflows from
+larger diagnostics.
 
 | Goal | Entry point |
 | --- | --- |
@@ -135,20 +141,11 @@ diagnostics.
 | Run sampled diagonalization end to end | [SQD H₂-to-glycine tutorial](doc/source/tutorials/sqd-showcase.md) |
 | Understand the model and API | [Documentation site](https://yjmaxpayne.github.io/q2m3/) |
 
-Energies are computed in Hartree and converted explicitly for kcal/mol
+q2m3 computes energies in Hartree and converts them explicitly for kcal/mol
 reports. QPE–HF differences contain numerical errors as well as correlation
-contributions. Fixed-MO MM embedding holds the vacuum orbital frame and
-two-electron tensor fixed; runtime MC coefficient updates are diagonal-only.
-Read the example boundaries before interpreting energies physically.
-
-## Development, citation, and license
-
-See the [development guide](doc/source/development.md) for test, lint, and
-build commands, and [AGENTS.md](AGENTS.md) for contribution conventions.
-Keep generated coverage, caches, and benchmark outputs out of commits.
-
-For research use, cite the release that produced your results using
-[CITATION.cff](CITATION.cff). q2m3 is released under the [MIT License](LICENSE).
+contributions. Fixed-MO MM embedding keeps the vacuum orbital frame and the
+two-electron tensor fixed. Runtime MC coefficient updates are diagonal-only.
+Read the example boundaries before you interpret energies physically.
 
 ### Runnable capability map
 
@@ -160,7 +157,18 @@ For research use, cite the release that produced your results using
 | Quantum resource estimates | [Resource examples](examples/resources/README.md) |
 | Catalyst and compilation costs | [Performance examples](examples/performance/README.md) |
 
-SQD tutorials save complete results, CSV and PNG/SVG figures to unique runs under
-`data/output/examples/`. The default glycine scan runs 15 actual points in serial
-fresh processes. Calibration, audits and dependency replays are documented in
-[Development tools](tools/sqd/README.md).
+SQD tutorials save complete results, CSV files, and PNG/SVG figures to a unique
+run directory under `data/output/examples/`. The default glycine scan runs 15
+actual points in sequence, each in a fresh process. The
+[Development tools](tools/sqd/README.md) guide documents calibration, audits,
+and dependency replays.
+
+## Development, citation, and license
+
+See the [development guide](doc/source/development.md) for test, lint, and
+build commands. See [AGENTS.md](AGENTS.md) for contribution conventions.
+Do not commit generated coverage files, caches, or benchmark outputs.
+
+For research use, cite the release that produced your results. Use
+[CITATION.cff](CITATION.cff) for the citation metadata. q2m3 uses the
+[MIT License](LICENSE).

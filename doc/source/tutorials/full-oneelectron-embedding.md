@@ -66,8 +66,8 @@ print(full.embedding_diagnostics.delta_h_offdiag_fro)
 
 ## Interpretation Boundaries
 
-`full_oneelectron` means the full fixed-MO active-space one-electron
-perturbation is included in the resource row. It does not mean relaxed orbital
+`full_oneelectron` means the resource row includes the full fixed-MO active-space
+one-electron perturbation. It does not mean relaxed orbital
 optimization, a polarizable MM force field, or a relaxed solvation energy.
 
 The current dynamic runtime coefficient workflow remains diagonal-update only.

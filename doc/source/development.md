@@ -83,13 +83,13 @@ sections, not in first-run tutorials.
 
 ## Contribution Notes
 
-Public documentation should be checked against source code, tests, maintained
-examples, and the current README. Prefer current source and tests over older
+Contributors should check public documentation against source code, tests,
+maintained examples, and the current README. Prefer current source and tests over older
 planning notes when they conflict.
 
 Scientific claims should name the active space, qubit count, QPE precision,
 Trotter settings, and unit conversion assumptions when those values affect the
 interpretation.
 
-Generated coverage reports, Sphinx build output, Catalyst IR cache files,
-benchmark outputs, and temporary profiling artifacts should not be committed.
+Contributors should not commit generated coverage reports, Sphinx build output,
+Catalyst IR cache files, benchmark outputs, or temporary profiling artifacts.

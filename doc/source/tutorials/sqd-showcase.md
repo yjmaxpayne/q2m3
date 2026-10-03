@@ -5,18 +5,18 @@ diagonalization (SQD). You will run a full-space H₂ regression, a sparse glyci
 calculation, a five-seed scan, the authenticated integral adapter, and two
 fixed-point-charge embedding examples.
 
-After completing it, you should be able to:
+After you complete it, you should be able to:
 
-- choose the geometry or integral entry point;
-- read SQD errors without mixing active spaces or reference tiers;
-- preserve the complete `sqd.result.v1` record;
-- distinguish the engine's resource audit from whole-process measurement; and
-- state the physical limits of the fixed-MO embedding examples.
+- choose the geometry or integral entry point
+- read SQD errors without mixing active spaces or reference tiers
+- preserve the complete `sqd.result.v1` record
+- distinguish the engine's resource audit from whole-process measurement
+- state the physical limits of the fixed-MO embedding examples
 
 ## Prerequisites
 
 Run from a Linux x86_64 checkout with Python 3.11 or newer. The production
-supervisor uses `/proc` and `fork`; its calibrated resource model does not cover
+supervisor uses `/proc` and `fork`. Its calibrated resource model does not cover
 other platforms. The published benchmark profile used Python 3.12. Install the
 locked SQD and development environments:
 
@@ -27,12 +27,12 @@ export NUMEXPR_NUM_THREADS=1 JAX_PLATFORMS=cpu
 ```
 
 Set the thread variables before Python starts. SQD is CPU-based and does not
-need Catalyst or a GPU. The commands below use 512 shots for a quick walkthrough;
-the measured benchmark in `examples/sqd/README.md` uses 100,000 shots.
+need Catalyst or a GPU. The commands below use 512 shots for a quick walkthrough.
+The measured benchmark in `examples/sqd/README.md` uses 100,000 shots.
 
 ```{note}
 Each command creates a new directory under `data/output/examples/` and prints
-its path. Use `--output NEW_PATH` when you need a predictable location; the path
+its path. Use `--output NEW_PATH` when you need a predictable location. The path
 must not already exist.
 ```
 
@@ -49,7 +49,7 @@ system qubits, two LUCJ repetitions, and seed 31. Its four sampled determinants
 cover the full fixed-particle-number space. Expect a completed T0
 `exact_casci` reference and SQD agreement near numerical precision.
 
-This result checks tensor conventions, energy constants, sampling conversion,
+This result verifies tensor conventions, energy constants, sampling conversion,
 and result serialization. Full-space recovery does not demonstrate a sampling
 advantage.
 
@@ -64,13 +64,13 @@ uv run --no-sync python -m examples.sqd.glycine_ground_state \
 
 The geometry entry performs the complete production flow:
 
-1. build vacuum RHF molecular orbitals and choose the requested active indices;
-2. assemble real chemist-order active-space integrals and `e_core`;
-3. solve same-frame RCCSD and authenticate the amplitudes;
-4. prepare a two-layer spin-balanced LUCJ state and sample occupations;
-5. recover and diagonalize sampled determinant subspaces;
-6. run the reference ladder and matched-size controls; and
-7. return an immutable `SQDResult` with provenance, timings, and resource data.
+1. Build vacuum RHF molecular orbitals and choose the requested active indices.
+2. Assemble real chemist-order active-space integrals and `e_core`.
+3. Solve same-frame RCCSD and authenticate the amplitudes.
+4. Prepare a two-layer spin-balanced LUCJ state and sample occupations.
+5. Recover and diagonalize sampled determinant subspaces.
+6. Run the reference ladder and matched-size controls.
+7. Return an immutable `SQDResult` with provenance, timings, and resource data.
 
 The available glycine choices are CAS(6e,6o), CAS(8e,8o), and CAS(10e,10o),
 which use 12, 16, and 20 system qubits. Their full closed-shell determinant
@@ -87,7 +87,7 @@ uv run --no-sync python -m examples.sqd.glycine_active_space_scan \
   --active-spaces 6 --shots 512
 ```
 
-The scan launches each point in a fresh interpreter and runs them serially. It
+The scan starts each point in a fresh interpreter and runs the points serially. It
 saves every successful point immediately, records failures, and exits nonzero if
 any requested point fails. The default command without `--active-spaces` runs
 all three spaces and 15 calculations.
@@ -110,14 +110,14 @@ uv run --no-sync python -m examples.sqd.glycine_from_integrals \
 The example first creates `IntegralData` with `build_integrals`, then creates a
 same-frame `CCSDSeed` with `build_ccsd_seed`. It passes `h1`, chemist-order `h2`,
 `e_core`, `IntegralContext`, and the seed to `run_sqd_from_integrals`. The script
-runs the geometry entry as well and requires six reported energies plus the
+also runs the geometry entry. It requires six reported energies plus the
 frame, Hamiltonian, and active-index identities to agree within 1e-8 Ha.
 
 Both entries share the same SQD solver. Agreement verifies adapter and assembly
-consistency; it is not an independent numerical oracle. Do not transpose `h2`
+consistency. It is not an independent numerical oracle. Do not transpose `h2`
 or add `e_core` again. Bare `t1` and `t2` arrays cannot replace `CCSDSeed`.
 
-Integral and CCSD preprocessing occurs before the lower-level engine call and
+Integral and CCSD preprocessing occurs before the lower-level engine call. It
 is therefore outside that call's `timings_s["total"]` and embedded peak RSS.
 Use the complete-process monitor when that boundary matters:
 
@@ -129,7 +129,7 @@ uv run --no-sync python -m tools.sqd.verify_showcase \
 ```
 
 Choose a new monitor path for every run. Its 10 ms `/proc` polling covers the
-command from interpreter launch through exit, including descendants, imports,
+command from interpreter start through exit, including descendants, imports,
 serialization, and figures. It remains an observation and can miss brief peaks.
 
 ## 5. Compare fixed-MO embedding modes
@@ -151,14 +151,14 @@ uv run --no-sync python -m examples.qmmm.glycine_sqd_embedding \
 
 For embedded runs, coordinates are Å, point charges are elementary-charge units,
 and energies are Hartree. Both modes hold the vacuum MO frame and two-electron
-tensor fixed. `diagonal` adds only active-space `Delta h_pp`; `full_oneelectron`
+tensor fixed. `diagonal` adds only active-space `Delta h_pp`. `full_oneelectron`
 retains the complete `Delta h_pq` perturbation. `e_core` already contains the
 MM-induced nuclear and frozen-core correction.
 
 Read two effects separately:
 
 - `baseline_energy(mode) - baseline_energy(vacuum)` is the fixed-Hamiltonian
-  reference shift, to the quality of each reference;
+  reference shift, to the quality of each reference.
 - `delta_mHa(mode) - delta_mHa(vacuum)` is the change in SQD solver residual.
 
 The charges are fixed test environments. These examples do not include orbital
@@ -171,7 +171,7 @@ The H₂, glycine, integral, and glycine-embedding runs write `input.json`, a
 complete result JSON, `summary.json`, `summary.csv`, and energy/cost plots in PNG
 and SVG. The H₂O validation instead writes `report.json`, per-mode result and
 downstream-wrapper JSON files, summaries, and comparison plots. Scans add one
-subdirectory and log per point plus `statistics.json`; the integral example adds
+subdirectory and log per point plus `statistics.json`. The integral example adds
 `assembly.json` and `consistency.json`. Failures preserve completed artifacts and
 write `failure.json`.
 
@@ -180,9 +180,9 @@ The key result fields are:
 | Field | Interpretation |
 | --- | --- |
 | `status` | `completed` or the explicitly requested `reference_only` mode |
-| `sqd_energy` | Sampled-subspace energy in Hartree; absent for reference-only runs |
-| `baseline_tier`, `baseline_method` | The actual reference path; only T0 is exact in the active space |
-| `delta_mHa` | `1000 * (E_SQD - E_baseline)`; positive means SQD is higher |
+| `sqd_energy` | Sampled-subspace energy in Hartree (absent for reference-only runs) |
+| `baseline_tier`, `baseline_method` | The actual reference path. Only T0 is exact in the active space |
+| `delta_mHa` | `1000 * (E_SQD - E_baseline)`. Positive means SQD is higher |
 | `subspace_dim`, `full_ci_dim` | Sampled Cartesian determinant space and complete fixed-particle space |
 | `reference_attempts` | Ordered solver selection/execution audit |
 | `provenance` | Configuration, orbital frame, Hamiltonian, seed, and input sources |
@@ -198,14 +198,14 @@ uncertainty semantics is not an auditable result.
 
 `ReferenceConfig` sets one shared wall deadline and decimal-MB RSS budget. The
 executor takes the tightest of the user budget, currently available host memory,
-and the 8192 MB hard component cap. Predictions at a cap reject before allocation;
-observed process-tree RSS at a cap terminates the run. `allow_large=True` can
+and the 8192 MB hard component cap. Predictions at a cap reject before allocation.
+Observed process-tree RSS at a cap terminates the run. `allow_large=True` can
 cross only a soft policy boundary and cannot bypass the calibrated domain, host
 availability, or hard caps.
 
 For an intentional baseline without sampling, pass `mode="reference_only"`.
 The result records absent sampling fields and their reasons. A failed full run
-never silently turns into reference-only or substitutes HF for SQD.
+never silently becomes reference-only or substitutes HF for SQD.
 
 See [](../sqd.md) for the reference ladder, full 40-field result contract,
 calibrated domain, measured outcomes, and research-status boundaries. The

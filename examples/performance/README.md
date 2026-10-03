@@ -18,6 +18,15 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 5. [Correlate measured IR data with resource estimates](ir_qre_correlation_analysis.py):
    `uv run --no-sync python -m examples.performance.ir_qre_correlation_analysis`
 
-Read each script’s --help/docstring before running. Inputs are built-in system grids; correlation analysis consumes data/output/qre_survey.json and data/output/ir_qre_trotter5_compile_survey.json. Existing JSON/CSV/IR/figure locations are retained under data/output or the selected IR directory. Compilation may consume many GB and minutes per point: run serially, begin with H₂ and small phase registers. Catalyst is useful for compile-once/reuse-many workloads. The full grids are research workloads, not smoke tests.
+Read the `--help` output or the docstring of each script before you run it.
+The inputs are built-in system grids. The correlation analysis reads
+`data/output/qre_survey.json` and `data/output/ir_qre_trotter5_compile_survey.json`.
+The scripts keep their existing JSON, CSV, IR, and figure locations under
+`data/output` or the selected IR directory.
+
+Compilation may use many GB of memory and take minutes per point. Run the points
+serially. Start with H₂ and small phase registers. Catalyst is useful for
+compile-once/reuse-many workloads. The full grids are research workloads, not
+smoke tests.
 
 Return to the [capability map](../README.md).

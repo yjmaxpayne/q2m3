@@ -4,8 +4,8 @@ These tutorials call the public production API directly. Energies are in
 Hartree, geometry is in Angstrom, and signed solver differences are in mHa. To
 install from a fresh checkout, run `uv sync --frozen --extra sqd --extra dev`
 (Linux x86_64, Python 3.11+). The supervisor rejects other platforms because its
-resource accounting uses `/proc` and `fork`. The frozen dependencies match the
-current calibrated domain. SQD does not require the Catalyst extra. Set the
+resource accounting uses `/proc` and `fork`. Run these examples from the checkout
+root. SQD does not require the Catalyst extra. Set the
 thread variables before Python starts:
 
 ```bash
@@ -73,11 +73,35 @@ outside the engine window. To monitor the complete process independently,
 including these costs, run:
 
 ```bash
-uv run --no-sync python -m tools.sqd.verify_showcase \
-  --output data/output/examples/glycine-monitor \
-  -- uv run --no-sync python -m examples.sqd.glycine_ground_state \
-  --output data/output/examples/glycine-run
+uv run --no-sync python - <<'PY'
+import sys
+from pathlib import Path
+
+from q2m3.profiling import measure_command
+
+record = measure_command(
+    [
+        sys.executable,
+        "-m",
+        "examples.sqd.glycine_ground_state",
+        "--output",
+        "data/output/examples/glycine-run",
+    ],
+    Path("data/output/examples/glycine-monitor"),
+)
+print(record)
+if not (record["exit_code"] == 0 and record["reason"] is None):
+    raise RuntimeError(f"Command failed: {record}")
+PY
 ```
+
+Both output paths must be new. The package API uses the caller's working
+directory by default, so this command needs the checkout root for `examples`.
+The monitor polls the command and its currently visible descendants every
+10 ms. It excludes the observer and can miss short peaks. Time is in seconds,
+and reported RSS is in decimal MB. See the
+[monitor contract](../../doc/source/tutorials/sqd-showcase.md#4-verify-the-integral-adapter)
+for default environment values, override rules, and the ten result keys.
 
 ## Example results
 
@@ -86,6 +110,8 @@ PySCF 2.14.0, ffsim 0.0.84 and qiskit-addon-sqd 0.13.1 from the frozen
 installation above, with OMP/MKL/OpenBLAS thread counts set to 1.
 The default glycine scan used two LUCJ layers, 100,000 shots and seeds 0–4.
 All 15 calculations completed with their own T0/exact CASCI reference.
+These historical observations describe that installation and those inputs.
+Shared CI does not promise to regenerate this campaign or its measurement files.
 
 | Active space | System qubits | Full determinants | Mean signed SQD error / mHa | Seed range / mHa | Sample standard deviation / mHa |
 |---|---:|---:|---:|---:|---:|

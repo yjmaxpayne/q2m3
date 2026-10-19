@@ -1,4 +1,4 @@
-"""Reproducible molecular inputs; no solver or audit-tool dependencies."""
+"""Reproducible molecular inputs with no solver or audit-tool dependencies."""
 
 from __future__ import annotations
 

@@ -2,7 +2,7 @@
 
 Geometry work has a separate bounded AO allocation inventory, not the calibrated
 synthetic active-space model. Callers must enforce an independent process-tree
-RSS cap and wall timeout; the inventory is a conservative planning estimate, not
+RSS cap and wall timeout. The inventory is a conservative planning estimate, not
 a certified bound on arbitrary native-library allocations.
 """
 
@@ -54,7 +54,7 @@ def hamiltonian_id(
     The digest starts with the version and NUL, then compact ASCII JSON
     ``[norb,[nalpha,nbeta]]`` and NUL. Each h1, h2, e_core field has a compact
     ``[name,shape,"<f8"]`` JSON header and NUL, followed by little-endian float64
-    C-order bytes; e_core is a scalar with shape []. No labels enter the digest.
+    C-order bytes. e_core is a scalar with shape []. No labels enter the digest.
 
     Args:
         h1: Real one-electron matrix in Hartree.
@@ -87,7 +87,7 @@ class IntegralData:
 
     ``hf_energy`` is the expectation of the first ``nelec[0]`` active orbitals,
     including e_core. It is not a relaxed-MM SCF minimum. No CCSD amplitudes are
-    constructed here; downstream seed solvers must consume this same Hamiltonian.
+    constructed here. Downstream seed solvers must consume this same Hamiltonian.
     """
 
     h1: np.ndarray
@@ -106,7 +106,7 @@ class IntegralData:
 
 @dataclass(frozen=True)
 class _MolecularIntegralInventory:
-    """AO-sized planning inventory; external RSS/time enforcement is mandatory.
+    """AO-sized planning inventory. External RSS/time enforcement is mandatory.
 
     Domain: <=32 AO/MOs, <=32 atoms, <=256 MM charges, serial real RHF using
     default DIIS space/cycle settings. The 1024 decimal-MB reserve covers imports
@@ -257,7 +257,7 @@ def build_integrals(
         ResourceModelDomainError: Real-AO work is outside the bounded inventory.
 
     An external process-tree RSS monitor and wall timeout are required. Molecular
-    basis metadata is built first to count AOs; the inventory guard then runs
+    basis metadata is built first to count AOs. The inventory guard then runs
     before any RHF or integral transformation. Its estimate is recorded in source
     and does not certify the later sampling/reference stages or arbitrary hosts.
     """

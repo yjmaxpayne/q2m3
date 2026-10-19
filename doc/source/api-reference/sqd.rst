@@ -53,7 +53,7 @@ Authenticated Integral Assembly
 -------------------------------
 
 These lower-level producers create the provenance records required by
-``run_sqd_from_integrals``. The integral tensor uses real chemist ordering and
+``run_sqd_from_integrals``. The integral tensor uses real chemist ordering.
 ``e_core`` is added exactly once.
 
 .. autoclass:: q2m3.sqd.integrals.IntegralData

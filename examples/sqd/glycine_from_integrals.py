@@ -1,9 +1,9 @@
 """Build authenticated glycine integrals/CCSD seed and compare both public SQD entries.
 
 This is an adapter consistency check: both entries share the SQD solver. The
-engine budget starts at its API call; preprocessing is timed separately. Use
-``tools.sqd.verify_showcase`` to supervise imports, integral/seed assembly, both
-calls, plotting and serialization with an external whole-process budget.
+engine budget starts at its API call. Preprocessing is timed separately. Use
+``q2m3.profiling.measure_command`` to supervise imports, integral/seed assembly,
+both calls, plotting and serialization with an external whole-process budget.
 """
 
 from __future__ import annotations

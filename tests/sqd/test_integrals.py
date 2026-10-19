@@ -370,7 +370,7 @@ def test_signed_helper_frame_is_consumed_without_recanonicalizing(
 
 
 def test_real_rccsd_oracle_detects_amplitude_only_frame_change(vacuum, record_property):
-    """Independent oracle only; physical seed reception belongs to the seed solver."""
+    """Independent oracle only. Physical seed reception belongs to the seed solver."""
     from pyscf import ao2mo, cc, gto, scf
 
     mol = gto.M(verbose=0)

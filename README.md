@@ -159,9 +159,13 @@ Read the example boundaries before you interpret energies physically.
 
 SQD tutorials save complete results, CSV files, and PNG/SVG figures to a unique
 run directory under `data/output/examples/`. The default glycine scan runs 15
-actual points in sequence, each in a fresh process. The
-[Development tools](tools/sqd/README.md) guide documents calibration, audits,
-and dependency replays.
+actual points in sequence, each in a fresh process. Local development tools are
+not part of the installed package and are not required in a fresh clone. Use
+`q2m3.profiling.measure_command` for complete-process monitoring.
+The [SQD tutorial](doc/source/tutorials/sqd-showcase.md#4-verify-the-integral-adapter)
+documents its result contract, units, environment defaults, and sampling limits.
+Historical benchmark and calibration records describe their original inputs and
+versions. Shared CI does not promise to regenerate those studies.
 
 ## Development, citation, and license
 

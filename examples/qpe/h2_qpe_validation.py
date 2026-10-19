@@ -71,7 +71,7 @@ class QPEParams:
 
 @dataclass
 class ValidationResult:
-    """Single validation check result."""
+    """Result of a single validation check."""
 
     name: str
     passed: bool
@@ -397,7 +397,7 @@ def print_summary(
     exp_results: dict[str, float],
     qpe_results: dict[str, float],
 ) -> None:
-    """Print energy comparison summary table."""
+    """Print a summary table of the energy comparison."""
     print("  Energy Comparison (Ha):")
     print("  " + "-" * 50)
     print(f"  {'Method':<15} {'Vacuum':<15} {'Solvated':<15} {'Stab (kcal/mol)':<15}")

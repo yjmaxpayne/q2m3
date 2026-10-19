@@ -150,7 +150,7 @@ def numerical_probe() -> dict:
 
 
 def main() -> None:
-    """Run one gate and emit machine-readable JSON; assertion/import errors exit nonzero."""
+    """Run one gate and emit machine-readable JSON. Assertion/import errors exit nonzero."""
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("catalyst")

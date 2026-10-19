@@ -99,7 +99,7 @@ uv run --no-sync python -m examples.sqd.h2_ground_state
 
 This four-qubit H₂ case is a convention and integration regression: its sampled
 subspace reaches all four determinants. Continue with the
-[](tutorials/sqd-showcase.md) for sparse glycine runs, authenticated integral
+[SQD showcase tutorial](tutorials/sqd-showcase.md) for sparse glycine runs, authenticated integral
 input, and fixed point-charge embedding.
 
 ## Troubleshooting
@@ -117,5 +117,5 @@ input, and fixed point-charge embedding.
 
 ## Next Steps
 
-Read [](core-concepts.md) for the scientific model. Then run the tutorials in
+Read [Core Concepts](core-concepts.md) for the scientific model. Then run the tutorials in
 order, from H2 QPE validation through the three-mode solvation comparison.

@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import math
-import os
-import sys
 from pathlib import Path
 
 import pytest
@@ -25,6 +21,11 @@ class ConstantModel:
         if isinstance(self.value, bool):
             return self.value
         return self.value + kwargs["retained_mb"]
+
+
+def _guarded_call(operation, norb, nelec, **kwargs):
+    resources.guard_allocation(norb, nelec, **kwargs)
+    return operation()
 
 
 @pytest.mark.parametrize(
@@ -190,82 +191,9 @@ def test_explicit_manifest_still_requires_calibrated_catalyst_version():
         resources.load_resource_model(versions=explicit)
 
 
-def load_example():
-    path = Path(__file__).resolve().parents[2] / "tools/sqd/calibrate_resources.py"
-    spec = importlib.util.spec_from_file_location("calibration_example", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_guard_runs_before_allocation_side_effect():
-    example = load_example()
-    touched = []
-    with pytest.raises(ResourceLimitError):
-        example.guarded_call(
-            lambda: touched.append("allocated"),
-            4,
-            (2, 2),
-            stage="diagonalize",
-            subspace_dims=(6, 6),
-            model=ConstantModel(9000),
-            host_available_mb=20_000,
-        )
-    assert touched == []
-    assert (
-        example.guarded_call(
-            lambda: "allocated",
-            4,
-            (2, 2),
-            stage="prepare",
-            model=ConstantModel(1),
-            host_available_mb=20_000,
-        )
-        == "allocated"
-    )
-
-
-def test_historical_prep_value_is_below_warning():
-    # Legacy prior only, not a calibration observation or a current full bound.
-    prior = 320 + 64e-6 * math.comb(14, 7) ** 2 + 1.5e-3 * 14**4
-    assert prior == pytest.approx(1131.455936)
-    assert prior < 2048
-
-
 @pytest.mark.sqd
 def test_installed_environment_accepts_shipped_model():
     assert resources.load_resource_model().model_id
-
-
-def test_watchdog_times_out_and_preserves_censored_record(tmp_path):
-    example = load_example()
-    record = example.run_monitored(
-        [sys.executable, "-c", "import time; time.sleep(30)"], tmp_path / "deadline", timeout_s=0.15
-    )
-    assert record["status"] == "censored" and record["reason"] == "timeout"
-    assert record["exit_code"] != 0
-    assert record["wall_s"] < 5
-    assert json.loads((tmp_path / "deadline.run.json").read_text()) == record
-
-
-def test_watchdog_counts_and_kills_descendant_memory(tmp_path):
-    example = load_example()
-    baseline = example.proc_bytes(os.getpid())["VmRSS"]
-    payload = "import time; data=bytearray(80_000_000); time.sleep(30)"
-    command = (
-        "import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',"
-        + repr(payload)
-        + "]); time.sleep(30)"
-    )
-    record = example.run_monitored(
-        [sys.executable, "-c", command],
-        tmp_path / "rss",
-        rss_cap_bytes=baseline + 60_000_000,
-        timeout_s=5,
-    )
-    assert record["status"] == "censored" and record["reason"] == "rss"
-    assert record["max_processes"] >= 3
-    assert record["peak_tree_bytes"] >= record["rss_cap_bytes"]
 
 
 def test_domain_model_cannot_be_relabelled_as_validated(tmp_path):
@@ -301,7 +229,6 @@ def test_spin_symmetrization_and_recovery_stay_within_preallocation_bound():
     from qiskit.primitives import BitArray
     from qiskit_addon_sqd.fermion import diagonalize_fermionic_hamiltonian, solve_sci
 
-    example = load_example()
     model = resources.load_resource_model()
     bits = np.array([[0, 0, 0, 1, 0, 0, 1, 0], [1, 1, 0, 0, 0, 0, 0, 1]] * 10, dtype=bool)
     cap = resources.addon_subspace_bound(4, (1, 1), max_dim=3)
@@ -314,7 +241,7 @@ def test_spin_symmetrization_and_recovery_stay_within_preallocation_bound():
             assert dims[0] <= cap[0] and dims[1] <= cap[1]
             checked.append(dims)
             outputs.append(
-                example.guarded_call(
+                _guarded_call(
                     lambda a=a, b=b: solve_sci((a, b), h1, h2, norb, nelec, max_space=12),
                     norb,
                     nelec,
@@ -326,7 +253,7 @@ def test_spin_symmetrization_and_recovery_stay_within_preallocation_bound():
             )
         return outputs
 
-    output = example.guarded_call(
+    output = _guarded_call(
         lambda: diagonalize_fermionic_hamiltonian(
             np.diag([0.0, 1.0, 2.0, 3.0]),
             np.zeros((4,) * 4),

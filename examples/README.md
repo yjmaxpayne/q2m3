@@ -30,8 +30,6 @@ By default, SQD writes outputs to a new exclusive directory under
 the SQD scripts reject existing directories. The legacy QPE, MC, resource, and
 performance scripts keep their established output locations.
 
-[tools/sqd](../tools/sqd/README.md) contains calibration, audits,
-orbital/connectivity studies, and dependency replays. These tools answer
-validation questions. The tutorials above explain the user workflow. The
-[SQD chapter](sqd/README.md#example-results) also includes measured example
-results.
+The tutorials above are the public workflow and do not require local
+development tools. The [SQD chapter](sqd/README.md#example-results) also
+includes measured example results.

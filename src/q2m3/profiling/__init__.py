@@ -12,6 +12,7 @@ from .memory import (
     MemoryTimeline,
     ParentSideMonitor,
     ProfileResult,
+    measure_command,
     take_snapshot,
 )
 from .orchestrator import (
@@ -36,6 +37,7 @@ __all__ = [
     "ProfileResult",
     "MemoryTimeline",
     "ParentSideMonitor",
+    "measure_command",
     "take_snapshot",
     # catalyst_ir.py
     "COMPILATION_STAGES",

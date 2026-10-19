@@ -110,8 +110,9 @@ uv run --no-sync python -m examples.sqd.glycine_from_integrals \
 The example first creates `IntegralData` with `build_integrals`, then creates a
 same-frame `CCSDSeed` with `build_ccsd_seed`. It passes `h1`, chemist-order `h2`,
 `e_core`, `IntegralContext`, and the seed to `run_sqd_from_integrals`. The script
-also runs the geometry entry. It requires six reported energies plus the
-frame, Hamiltonian, and active-index identities to agree within 1e-8 Ha.
+also runs the geometry entry. It compares six reported energy fields. Numerical values must agree within
+an absolute tolerance of 1e-8 Ha. A field may be `None` only if both results
+report `None`. The frame, Hamiltonian, and active-index identities must match exactly.
 
 Both entries share the same SQD solver. Agreement verifies adapter and assembly
 consistency. It is not an independent numerical oracle. Do not transpose `h2`
@@ -122,15 +123,62 @@ is therefore outside that call's `timings_s["total"]` and embedded peak RSS.
 Use the complete-process monitor when that boundary matters:
 
 ```bash
-uv run --no-sync python -m tools.sqd.verify_showcase \
-  --output data/output/examples/tutorial-monitor \
-  -- uv run --no-sync python -m examples.sqd.glycine_ground_state \
-  --active-space 6 --shots 512
+uv run --no-sync python - <<'PY'
+import sys
+from pathlib import Path
+
+from q2m3.profiling import measure_command
+
+record = measure_command(
+    [
+        sys.executable,
+        "-m",
+        "examples.sqd.glycine_from_integrals",
+        "--active-space",
+        "6",
+        "--shots",
+        "512",
+    ],
+    Path("data/output/examples/tutorial-monitor"),
+)
+print(record)
+if not (record["exit_code"] == 0 and record["reason"] is None):
+    raise RuntimeError(f"Command failed: {record}")
+PY
 ```
 
-Choose a new monitor path for every run. Its 10 ms `/proc` polling covers the
-command from interpreter start through exit, including descendants, imports,
-serialization, and figures. It remains an observation and can miss brief peaks.
+Run this example from the checkout root so that Python can import `examples`.
+The package API itself does not require a checkout. Choose a new monitor path
+for every run. To check the monitor without a scientific calculation, replace
+the command list with `[sys.executable, "-c", "print('monitor check')"]`.
+
+The monitor polls Linux `/proc` every 10 ms. It measures the command and its
+descendants visible at each poll, including imports, serialization, and figures.
+The observer process is excluded. Polling can miss short peaks.
+
+The monitor copies the caller's environment, sets the OMP, MKL, OpenBLAS, and
+NumExpr thread counts to 1, and sets `JAX_PLATFORMS=cpu`. An explicit `env`
+mapping overrides those defaults by key. The default `cwd` is the caller's
+working directory. The default budgets are 900 seconds and 8192 decimal MB.
+
+The return value and `resources.json` contain exactly these ten keys:
+
+| Key | Meaning |
+| --- | --- |
+| `command` | Command argument list |
+| `exit_code` | Child process exit code |
+| `reason` | Monitor termination reason, or `None` |
+| `wall_s` | Observed elapsed time in seconds |
+| `peak_tree_rss_mb` | Largest sampled process-tree RSS in decimal MB |
+| `poll_s` | Poll interval in seconds: `0.01` |
+| `rss_budget_mb` | RSS budget in decimal MB |
+| `wall_budget_s` | Wall-time budget in seconds |
+| `scope` | Process scope of the observation |
+| `limitation` | Sampling limitation |
+
+The new directory also contains `stdout.log`, with stderr merged into stdout,
+and `rss.jsonl`, with `[elapsed_seconds, rss_bytes]` samples. Both the exit code
+and the reason must indicate success before you accept the scientific output.
 
 ## 5. Compare fixed-MO embedding modes
 
@@ -207,7 +255,7 @@ For an intentional baseline without sampling, pass `mode="reference_only"`.
 The result records absent sampling fields and their reasons. A failed full run
 never silently becomes reference-only or substitutes HF for SQD.
 
-See [](../sqd.md) for the reference ladder, full 40-field result contract,
+See [SQD guide](../sqd.md) for the reference ladder, full 40-field result contract,
 calibrated domain, measured outcomes, and research-status boundaries. The
-checkout guides `examples/sqd/README.md`, `examples/qmmm/README.md`, and
-`tools/sqd/README.md` document every CLI argument and audit tool.
+checkout guides `examples/sqd/README.md` and `examples/qmmm/README.md` document
+the public workflow. Local development tools are not required in a fresh clone.

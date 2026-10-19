@@ -430,7 +430,7 @@ class RDMEstimator:
         active_orbitals: int,
     ) -> np.ndarray:
         """
-        Convert active space spatial-orbital 1-RDM to AO basis.
+        Convert the spatial-orbital 1-RDM from the active space to the AO basis.
 
         Steps:
         1. Embed active space RDM into full MO RDM

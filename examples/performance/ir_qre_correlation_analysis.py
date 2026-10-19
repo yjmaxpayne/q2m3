@@ -6,7 +6,8 @@
 This script joins measured Catalyst/MLIR compilation-resource data from
 ``ir_qre_trotter5_compile_survey.json`` with fault-tolerant quantum resource
 estimates from ``qre_survey.json``. All compile rows must use 4 estimation wires
-and ``n_trotter=5``; older fixed-10 and reduced-shape dynamic rows are rejected.
+and ``n_trotter=5``. The script rejects older fixed-10 and reduced-shape dynamic
+rows.
 
 Usage:
     OMP_NUM_THREADS=4 uv run python examples/performance/ir_qre_correlation_analysis.py
@@ -204,7 +205,7 @@ def build_case_rows(
     qre_json: Path = DEFAULT_QRE_JSON,
     compile_json: Path = DEFAULT_COMPILE_JSON,
 ) -> list[dict[str, Any]]:
-    """Return case-level rows; currently identical to the measured summary."""
+    """Return case-level rows. These rows are currently identical to the measured summary."""
     return build_correlation_rows(qre_json, compile_json)
 
 

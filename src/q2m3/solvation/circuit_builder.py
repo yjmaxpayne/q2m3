@@ -65,7 +65,7 @@ class QPECircuitBundle:
         active_orbitals: Number of active spatial orbitals
         n_trotter_steps: Actual Trotter steps (may be capped)
         measurement_mode: "probs" or "shots"
-        is_fixed_circuit: True = zero-arg circuit (fixed mode); False = takes coeffs_arr
+        is_fixed_circuit: True for a zero-arg circuit (fixed mode). False for a circuit that takes coeffs_arr.
         embedding_mode: MM embedding mode used to build the fixed operator support
     """
 
@@ -93,11 +93,11 @@ def build_qpe_circuit(
 ) -> QPECircuitBundle:
     """Build parameterized QPE circuit accepting runtime coefficients.
 
-    The circuit builder constructs the base Hamiltonian, decomposes it into
-    coefficients and PennyLane operators, applies the HF energy shift, derives
-    shifted QPE parameters, caps runtime Trotter depth when needed, and returns
-    a ``QPECircuitBundle``. In diagonal mode the base Hamiltonian is vacuum
-    operator support; in ``full_oneelectron`` mode it is a fixed MM operator.
+    The circuit builder constructs the base Hamiltonian and decomposes it into
+    coefficients and PennyLane operators. It applies the HF energy shift and
+    derives shifted QPE parameters. It caps runtime Trotter depth when needed
+    and returns a ``QPECircuitBundle``. In diagonal mode the base Hamiltonian
+    is vacuum operator support. In ``full_oneelectron`` mode it is a fixed MM operator.
 
     Args:
         config: Solvation configuration

@@ -33,8 +33,8 @@ Catalyst may be absent. If Catalyst is installed, its version must still match
 the calibration environment. All required numerical packages remain version checked.
 
 For a guided progression through every maintained example, use the
-[](tutorials/sqd-showcase.md). Public signatures and typed contracts are listed
-in [](api-reference/sqd.rst).
+[SQD showcase tutorial](tutorials/sqd-showcase.md). Public signatures and typed contracts are listed
+in [SQD API reference](api-reference/sqd.rst).
 
 Ordinary `import q2m3` retains the existing PennyLane import cost. SQD's
 algorithm does not call PennyLane or Catalyst. Its workflow exports are lazy.

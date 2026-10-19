@@ -18,7 +18,7 @@ from q2m3.sqd.sampling import validate_samples
 
 @dataclass(frozen=True)
 class AllocationAudit:
-    """One pre-allocation estimate; iteration -1 denotes preprocessing bound."""
+    """One pre-allocation estimate. Iteration -1 denotes the preprocessing bound."""
 
     iteration: int
     batch: int
@@ -197,12 +197,12 @@ def diagonalize_samples(
         e_core: Constant added exactly once.
         samples: Nonempty bool matrix, beta-left/alpha-right, orbital zero rightmost.
         norb: Spatial orbitals.
-        nelec: Balanced spin populations; every sample must conserve both.
+        nelec: Balanced spin populations. Every sample must conserve both.
         host_available_mb: Executor memory cap, decimal MB.
         rss_budget_mb: User memory cap, decimal MB.
         retained_mb: Extra live inputs beyond the model inventory.
         allow_large: Override the soft threshold only.
-        samples_per_batch: Sample count per batch; defaults to min(300, shots).
+        samples_per_batch: Sample count per batch. Defaults to min(300, shots).
         num_batches: One or two serial batches.
         max_iterations: One or two recovery iterations.
         seed: Nonnegative random seed.
@@ -210,7 +210,7 @@ def diagonalize_samples(
 
     Returns:
         Best published-addon state with all candidate allocation audits. HF is
-        included in every candidate; final dimensions describe the best state,
+        included in every candidate. Final dimensions describe the best state,
         which need not belong to the last iteration.
 
     Raises:
@@ -259,7 +259,7 @@ def _diagonalize_recoverable_samples(
     symmetrize_spin=False,
     initial_occupancies=None,
 ):
-    """Internal recovery contract seam: raw weights may be invalid, structure may not."""
+    """Internal recovery contract seam: raw weights may be invalid, but structure may not be invalid."""
     validate_active_space(norb, nelec)
     if (
         not isinstance(samples, np.ndarray)

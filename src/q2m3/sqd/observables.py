@@ -1,8 +1,8 @@
 """Same-Hamiltonian, spin-matched four-arm observables.
 
 Comparison selection, seed reception, and fixed-space solves share one supervised
-wall deadline and process-tree RSS cap. SCI selection uses PySCF selected CI;
-missing strings are filled by an explicitly recorded determinant-energy heuristic.
+wall deadline and process-tree RSS cap. SCI selection uses PySCF selected CI.
+Missing strings are filled by an explicitly recorded determinant-energy heuristic.
 """
 
 from __future__ import annotations
@@ -185,7 +185,7 @@ def unique_dets_vs_shots(
 
     Args:
         samples: Nonempty boolean matrix in beta-left/alpha-right big-endian order.
-        checkpoints: Increasing prefixes; total shots is always appended.
+        checkpoints: Increasing prefixes. Total shots is always appended.
 
     Returns:
         Cumulative (shots, unique pairs) points, including the final shot.
@@ -493,7 +493,7 @@ def run_comparisons(
         norb: Number of active spatial orbitals.
         nelec: Balanced spin populations.
         context: Hamiltonian and frame provenance.
-        seed_data: Converged seed; physically revalidated against supplied integrals.
+        seed_data: Converged seed, physically revalidated against supplied integrals.
         reference: Comparable baseline with matching frame/Hamiltonian IDs.
         sqd: Final returned SQD state, with its actual spin strings and amplitudes.
         samples: Valid boolean samples for the complete saturation trajectory.

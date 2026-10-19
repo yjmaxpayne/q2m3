@@ -4,8 +4,9 @@
 """
 EFTQC resource estimation module.
 
-Provides structured dataclass results for Early Fault-Tolerant Quantum Computer
-(EFTQC) resource estimation, wrapping PySCFPennyLaneConverter.estimate_qpe_resources().
+This module wraps PySCFPennyLaneConverter.estimate_qpe_resources().
+It returns structured dataclass results for resource estimates for an Early Fault-Tolerant
+Quantum Computer (EFTQC).
 """
 
 from __future__ import annotations
@@ -61,7 +62,7 @@ class EFTQCResources:
         target_error: Target energy error in Hartree.
         n_system_qubits: System register size = n_orbitals * 2 (Jordan-Wigner).
         basis: Basis set used (e.g. "sto-3g").
-        n_mm_charges: Number of MM point charges; 0 for vacuum.
+        n_mm_charges: Number of MM point charges. The value is 0 for vacuum.
         embedding_mode: Effective embedding state ("none", "diagonal", or
             "full_oneelectron").
         embedding_diagnostics: Optional scalar diagnostics for fixed-MO
@@ -178,8 +179,9 @@ def compare_vacuum_solvated(
 ) -> ResourceComparisonResult:
     """Compare EFTQC resource requirements between vacuum and solvated systems.
 
-    Calls estimate_resources() twice: once without MM charges (vacuum) and
-    once with MM charges (solvated), then computes the percentage deltas.
+    This function calls estimate_resources() twice: once without MM charges
+    (vacuum) and once with MM charges (solvated). It then computes the
+    percentage deltas.
 
     Args:
         symbols: List of atomic symbols.
@@ -283,10 +285,10 @@ def surface_code_distance(
 ) -> int:
     """Smallest odd surface-code distance keeping the whole run below ``failure_budget``.
 
-    Uses the Litinski (Quantum 3, 128 (2019), Eq. 10) logical error model
-    ``p_L(d) = 0.1 * (100 * p_phys) ** ((d + 1) / 2)`` per logical qubit per code
-    cycle, and assumes each Toffoli occupies one logical time step of ``d``
-    code cycles for every logical qubit.
+    This function uses the Litinski (Quantum 3, 128 (2019), Eq. 10) logical error model:
+    ``p_L(d) = 0.1 * (100 * p_phys) ** ((d + 1) / 2)`` per logical qubit per code cycle.
+    It assumes that each Toffoli occupies one logical time step of ``d`` code
+    cycles for every logical qubit.
 
     Args:
         logical_qubits: Number of logical (data) qubits.
@@ -324,10 +326,10 @@ def estimate_eftqc_runtime(
     Babbush et al., PRX Quantum 2, 010103 (2021), Eq. 6), floored by the
     classical reaction time (Lee et al., PRX Quantum 2, 030305 (2021)).
 
-    ``toffoli_gates`` is the **total** count for the whole algorithm, exactly
-    what PennyLane ``DoubleFactorization.gates`` / ``EFTQCResources.toffoli_gates``
-    report; it already contains the ``ceil(pi*lambda/(2*eps))`` phase-estimation
-    repetitions, so no iteration count is multiplied in here.
+    ``toffoli_gates`` is the **total** count for the whole algorithm.
+    PennyLane ``DoubleFactorization.gates`` / ``EFTQCResources.toffoli_gates`` report exactly this count.
+    It already contains the ``ceil(pi*lambda/(2*eps))`` phase-estimation repetitions.
+    This function therefore applies no iteration-count multiplier.
 
     Args:
         toffoli_gates: Total Toffoli count of the algorithm.
@@ -335,8 +337,8 @@ def estimate_eftqc_runtime(
         p_phys: Physical error rate (default 1e-3, superconducting assumption).
         t_cycle_microseconds: Surface-code cycle time (default 1 us).
         t_react_microseconds: Classical reaction time floor (default 10 us).
-        n_factories: Number of parallel CCZ factories (default 1, sequential
-            upper bound; Lee 2021 FeMoco uses 4).
+        n_factories: Number of parallel CCZ factories. The default is 1
+            (sequential upper bound). Lee 2021 FeMoco uses 4.
         failure_budget: Accepted total logical failure probability.
 
     Returns:

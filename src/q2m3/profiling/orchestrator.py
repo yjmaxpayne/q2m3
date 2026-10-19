@@ -6,8 +6,9 @@ Subprocess orchestration and parameter sweep for QPE compilation profiling.
 Provides functions to run profiling passes in isolated subprocesses (avoiding
 ru_maxrss accumulation) and to sweep across parameter grids.
 
-All progress reporting uses an injectable ``on_progress`` callback — no direct
-console output (Rich, print, etc.) so callers can plug in any UI layer.
+All progress reporting uses an injectable ``on_progress`` callback.
+Progress reporting produces no direct console output (Rich, print, etc.).
+Callers can therefore use any UI layer.
 """
 
 import logging
@@ -181,7 +182,7 @@ def run_single_profile_in_subprocess(
 ) -> None:
     """Run a single profiling pass inside a subprocess (avoids ru_maxrss accumulation).
 
-    Results are placed into *queue* — this function does not return the result.
+    This function places results into *queue*. It does not return the result.
     """
     try:
         tracemalloc.start()

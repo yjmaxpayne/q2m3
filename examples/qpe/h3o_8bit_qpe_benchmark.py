@@ -86,7 +86,7 @@ def run_one(
     n_trotter: int = 10,
     label: str = "",
 ) -> dict:
-    """Run one benchmark config; capture timing + memory + statistics."""
+    """Run one benchmark configuration. Capture timing, memory, and statistics."""
     config = SolvationConfig(
         molecule=H3OP,
         qpe_config=QPEConfig(

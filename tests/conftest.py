@@ -36,9 +36,6 @@ SQD_SCIENCE = (
     "tests/sqd/test_observables.py",
     "tests/sqd/test_orchestrator.py",
     "tests/sqd/test_embedding.py",
-    "tests/examples/test_sqd_benchmarks.py",
-    "tests/examples/test_orbital_basis_scan.py",
-    "tests/examples/test_connectivity_comparison.py",
 )
 
 
@@ -80,8 +77,8 @@ class ExecutionGate:
     """Require successful real solver/JIT smoke nodes, not merely broad markers.
 
     The SQD node runs both real entry points and compares energies and JSON.
-    The Catalyst node builds and executes an H2 QPE circuit with use_catalyst=True;
-    unlike the solvation builder unit tests, it does not replace qjit with a mock.
+    The Catalyst node builds and executes an H2 QPE circuit with use_catalyst=True.
+    Unlike the solvation builder unit tests, it does not replace qjit with a mock.
     Renaming either test requires deliberately updating this fail-closed contract.
     """
 

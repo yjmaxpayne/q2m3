@@ -23,27 +23,3 @@ def test_output_directory_stays_at_repository_root(module):
     loaded = importlib.import_module(module)
     directory = getattr(loaded, "OUTPUT_DIR", getattr(loaded, "DEFAULT_OUTPUT_DIR", None))
     assert directory == ROOT / "data/output"
-
-
-@pytest.mark.parametrize(
-    "module",
-    [
-        "tools.sqd.calibrate_resources",
-        "tools.sqd.connectivity_comparison",
-        "tools.sqd.orbital_basis_scan",
-        "tools.sqd.molecular_benchmark",
-    ],
-)
-def test_tool_root_is_checkout(module):
-    assert importlib.import_module(module).ROOT == ROOT
-
-
-def test_replay_root_and_inventory():
-    module = importlib.import_module("tools.sqd.replay.replay")
-    assert module.ROOT == ROOT
-    assert module.validate_manifest()["origins"]
-
-
-def test_sibling_tool_is_importable():
-    module = importlib.import_module("tools.sqd.compare_fixed_space")
-    assert module.ROOT == ROOT

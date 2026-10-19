@@ -20,12 +20,27 @@ def load_local_module(name, path):
 def test_optional_sqd_sampling_preserves_support_and_seed(sqd_modules):
     import numpy as np
 
-    replay = load_local_module(
-        "sqd_optional_replay", Path(__file__).resolve().parents[2] / "tools/sqd/replay/replay.py"
-    )
-
     ffsim, _ = sqd_modules
-    assert replay.interaction_pair_checks() == 8
+
+    amplitudes = np.array([[[[-0.2]]]])
+    pairs = ([(0, 0), (0, 1)], [(1, 1)])
+    operator = ffsim.UCJOpSpinBalanced.from_t_amplitudes(
+        amplitudes, n_reps=2, interaction_pairs=pairs
+    )
+    for channel, allowed in enumerate(pairs):
+        mask = np.zeros((2, 2), dtype=bool)
+        for i, j in allowed:
+            mask[i, j] = mask[j, i] = True
+        values = operator.diag_coulomb_mats[:, channel]
+        assert np.all(values[:, ~mask] == 0)
+        assert all(np.any(np.abs(values[:, i, j]) > 1e-12) for i, j in allowed)
+        for invalid in ([(1, 0)], [(0, 0), (0, 0)]):
+            trial = list(pairs)
+            trial[channel] = invalid
+            with pytest.raises(ValueError):
+                ffsim.UCJOpSpinBalanced.from_t_amplitudes(
+                    amplitudes, n_reps=2, interaction_pairs=tuple(trial)
+                )
 
     # Two determinants with unequal weights make a constant-output sampler fail.
     state = np.array([0.5, 0.0, 0.0, np.sqrt(0.75)], dtype=complex)

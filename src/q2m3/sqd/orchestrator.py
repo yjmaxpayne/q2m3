@@ -264,7 +264,7 @@ def run_sqd(
         mm_coords: Point-charge positions in Angstrom.
         embedding_mode: Fixed-frame one-electron embedding treatment.
         seed: Nonnegative seed forwarded to all stochastic operations.
-        allow_large: Forward soft-policy override where supported; existing
+        allow_large: Forward soft-policy override where supported. Existing
             component/model caps remain in force, including 8192 MB.
         verbose: Print a compact energy/status summary.
         mode: Full SQD or explicitly requested reference-only calculation.
@@ -395,7 +395,7 @@ def run_sqd_from_integrals(
         norb: Active spatial orbital count.
         nelec: Balanced alpha/beta electron counts.
         context: Integral/frame identifiers and constant decomposition.
-        seed_data: Same-frame CCSD seed; None only in reference-only mode.
+        seed_data: Same-frame CCSD seed. Use None only in reference-only mode.
         lucj: Ansatz and sampling configuration.
         reference: Baseline policy and total shared resource budgets.
         seed: Nonnegative run seed.

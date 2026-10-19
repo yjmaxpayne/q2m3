@@ -50,8 +50,8 @@ result = run_solvation(config, show_plots=False)
 ## Fixed Mode
 
 `fixed` mode uses a vacuum QPE Hamiltonian and adds MM energy terms during the
-MC loop. It is the fastest public MC path and a good way to validate Catalyst,
-JAX, PySCF, and the IR cache together.
+MC loop. It is the fastest public MC path. Use it to test Catalyst, JAX, PySCF,
+and the IR cache together.
 
 The first run can compile Catalyst IR. Later runs can reuse cached IR if the
 circuit structure is unchanged.
@@ -59,12 +59,12 @@ circuit structure is unchanged.
 ## Output Fields
 
 The result dictionary includes energy trajectories, acceptance statistics,
-timing data, circuit metadata, and optional cache statistics. The exact keys can
-grow as diagnostics improve, so code that consumes results should use `.get()`
-for optional metadata.
+timing data, circuit metadata, and optional cache statistics. Diagnostics can
+add result keys. Code that reads results should use `.get()` for optional
+metadata.
 
 ## Memory Notes
 
-H2 fixed mode is the safe MC default. H3O+ and dynamic mode increase Hamiltonian
+Use H2 fixed mode for the first MC run. H3O+ and dynamic mode increase Hamiltonian
 term count, circuit size, and Catalyst compile cost. Treat them as diagnostics
 until the H2 path is validated.

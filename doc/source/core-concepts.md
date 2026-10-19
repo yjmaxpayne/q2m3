@@ -2,8 +2,8 @@
 
 q2m3 connects classical quantum chemistry with quantum phase-estimation
 circuits, sample-based quantum diagonalization, and explicit MM point-charge
-environments. The framework is small enough for H2 validation while exposing
-the same architectural issues that appear in larger EFTQC-oriented studies.
+environments. Use H2 for small validation runs. The framework also exposes architectural
+constraints relevant to larger EFTQC studies.
 
 ## QM/MM Partitioning
 
@@ -19,10 +19,9 @@ not include a polarizable MM force field or advanced solvent response model.
 ## QPE Workflow
 
 QPE estimates an eigenphase of the time-evolution operator and converts that
-phase back into an energy. In q2m3, real PennyLane QPE paths build HF state
-preparation, controlled Trotter time evolution, inverse QFT, and phase
-decoding. A classical fallback path is still useful for testing the QM/MM data
-pipeline when a PennyLane Hamiltonian is not available.
+phase back into an energy. The PennyLane QPE paths prepare an HF state, apply controlled Trotter
+time evolution and inverse QFT, and decode the phase. A classical fallback tests
+the QM/MM data pipeline when no PennyLane Hamiltonian is available.
 
 ```{mermaid}
 flowchart LR
@@ -43,7 +42,7 @@ flowchart LR
 
 ## Active Spaces
 
-Active-space truncation keeps simulation sizes manageable. An active space is
+Active-space truncation reduces the simulation size. An active space is
 reported as electrons/orbitals, followed by the resulting qubit count. For
 Jordan-Wigner mappings, each spatial orbital contributes two spin-orbital
 qubits.
@@ -72,14 +71,14 @@ Seed spread is descriptive. It is not a confidence interval. The sampled
 determinant fraction also does not equal simulator-memory savings because ffsim
 still represents the full fixed-particle-number state.
 
-The current implementation is a classical simulator workflow. It provides
-algorithm integration and scientific controls, not quantum hardware execution
-or evidence of quantum advantage.
+The current implementation runs on a classical simulator. It integrates the
+algorithm and scientific controls. It does not execute on quantum hardware or
+provide evidence of quantum advantage.
 
 ## Phase Decoding And Energy Shifts
 
-QPE measures a phase modulo one. Large negative molecular energies can wrap
-around the phase register. When needed, q2m3 therefore uses shifted QPE
+QPE measures a phase modulo one. Large negative molecular energies can
+therefore produce phase wrapping. When needed, q2m3 uses shifted QPE
 parameters to estimate a smaller energy difference relative to a Hartree-Fock
 reference.
 
@@ -96,9 +95,9 @@ model.
 ## RDM Measurement
 
 The one-particle reduced density matrix (1-RDM) maps quantum-state information
-back into classical chemical analysis. q2m3 uses RDM estimation for Mulliken
-population analysis, charge conservation checks, and future QM/MM feedback
-loops.
+back into classical chemical analysis. q2m3 estimates RDMs for Mulliken
+population analysis and charge conservation checks. These estimates can support
+future QM/MM feedback loops.
 
 RDM values must obey physical constraints such as Hermiticity, electron count,
 and non-negative occupations. Measurement noise can violate these constraints,
@@ -108,7 +107,7 @@ so the estimator includes projection utilities for physically valid matrices.
 
 The `q2m3.core.resource_estimation` API estimates EFTQC resources such as
 Hamiltonian 1-norm, logical qubits, Toffoli gates, system qubits, and target
-error. These are hardware-planning estimates. They are not the same as
+error. Use these estimates to plan quantum hardware resources. They are not the same as
 Catalyst compile memory or LLVM IR size.
 
 The H2 resource example demonstrates that MM point charges mainly change
@@ -135,7 +134,7 @@ mode includes.
 ## Catalyst Guidance
 
 Catalyst is most useful when the workflow can compile once and execute many
-times. Single QPE executions often pay too much compile overhead. MC solvation
+times. For a single QPE execution, compilation often costs more time than it saves. MC solvation
 is a better fit because each accepted solvent configuration can reuse the same
 compiled circuit structure when only coefficients change at runtime.
 

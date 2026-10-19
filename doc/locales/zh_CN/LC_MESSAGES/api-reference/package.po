@@ -1,0 +1,204 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/package.rst:2
+msgid "Package API"
+msgstr "软件包 API"
+
+#: ../../source/api-reference/package.rst:5
+msgid "Top-Level Package"
+msgstr "顶层软件包"
+
+#: of q2m3:1
+msgid "Hybrid quantum-classical chemistry framework."
+msgstr "量电混合量子化学框架。"
+
+#: of q2m3:3
+msgid ""
+"q2m3 provides QPE, QM/MM solvation, resource-estimation, and optional sample-based quantum "
+"diagonalization workflows."
+msgstr "q2m3 提供 QPE、QM/MM 溶剂化、资源估计和可选的基于采样的量子对角化工作流。"
+
+#: ../../source/api-reference/package.rst:10
+msgid "Primary Exports"
+msgstr "主要导出项"
+
+#: ../../source/api-reference/package.rst:12
+msgid ":class:`q2m3.QuantumQMMM`"
+msgstr ":class:`q2m3.QuantumQMMM`"
+
+#: ../../source/api-reference/package.rst:13
+msgid ":class:`q2m3.QPEEngine`"
+msgstr ":class:`q2m3.QPEEngine`"
+
+#: ../../source/api-reference/package.rst:14
+msgid ":class:`q2m3.QMMMSystem`"
+msgstr ":class:`q2m3.QMMMSystem`"
+
+#: ../../source/api-reference/package.rst:15
+msgid ":class:`q2m3.PySCFPennyLaneConverter`"
+msgstr ":class:`q2m3.PySCFPennyLaneConverter`"
+
+#: ../../source/api-reference/package.rst:16
+msgid ":class:`q2m3.UnifiedDensityMatrix`"
+msgstr ":class:`q2m3.UnifiedDensityMatrix`"
+
+#: ../../source/api-reference/package.rst:17
+msgid ":class:`q2m3.MoleculeConfig`"
+msgstr ":class:`q2m3.MoleculeConfig`"
+
+#: ../../source/api-reference/package.rst:18
+msgid ":func:`q2m3.load_xyz`"
+msgstr ":func:`q2m3.load_xyz`"
+
+#: ../../source/api-reference/package.rst:19
+msgid ":func:`q2m3.save_json_results`"
+msgstr ":func:`q2m3.save_json_results`"
+
+#: ../../source/api-reference/package.rst:20
+msgid ":func:`q2m3.run_sqd` (available with the ``sqd`` extra)"
+msgstr ":func:`q2m3.run_sqd` （需安装 ``sqd`` 扩展依赖）"
+
+#: ../../source/api-reference/package.rst:23
+msgid "Optional SQD Exports"
+msgstr "可选 SQD 导出项"
+
+#: ../../source/api-reference/package.rst:25
+msgid ""
+"q2m3 loads ``q2m3.run_sqd`` on access. This export appears in ``q2m3.__all__`` only when Python "
+"can locate both SQD backend modules. The integral entry point and typed contracts live under "
+":mod:`q2m3.sqd`. See :doc:`sqd`."
+msgstr ""
+"q2m3 在访问时加载 ``q2m3.run_sqd``。仅当 Python 能找到两个 SQD 后端模块时，``q2m3.__all__`` 才包含此导出。积分入口和类型契约位于 "
+":mod:`q2m3.sqd`。参见 :doc:`sqd`。"
+
+#: ../../source/api-reference/package.rst:31
+msgid "Constants"
+msgstr "常量"
+
+#: of q2m3.constants:1
+msgid "Centralized physical constants for quantum chemistry and QM/MM simulations."
+msgstr "量子化学与 QM/MM 模拟共用的物理常量。"
+
+#: of q2m3.constants:3
+msgid ""
+"All values are Python floats (NOT JAX scalars) for compatibility with both pure Python and @qjit "
+"compiled code."
+msgstr "所有值均为 Python 浮点数（不是 JAX 标量），以兼容纯 Python 和 @qjit 编译代码。"
+
+#: ../../source/api-reference/package.rst:37
+msgid "Molecule Configuration"
+msgstr "分子配置"
+
+#: of q2m3.molecule:1
+msgid "Molecular system configuration."
+msgstr "分子系统配置。"
+
+#: of q2m3.molecule:3
+msgid ""
+"Provides a generic MoleculeConfig dataclass for configuring QM region parameters in hybrid "
+"quantum-classical simulations."
+msgstr "提供通用 MoleculeConfig 数据类，用于配置量电混合模拟中的 QM 区域参数。"
+
+#: of q2m3.molecule.MoleculeConfig:1
+msgid "Generic molecular system configuration."
+msgstr "通用分子系统配置。"
+
+#: of q2m3.molecule.MoleculeConfig:3
+msgid ""
+"This class supports any molecular system by specifying atomic symbols, coordinates, charge, and "
+"active space parameters."
+msgstr "通过指定原子符号、坐标、电荷和活性空间参数，此类可支持任意分子系统。"
+
+#: ../../source/api-reference/package.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.molecule.MoleculeConfig:8
+msgid "Human-readable identifier for the molecule"
+msgstr "便于阅读的分子标识"
+
+#: of q2m3.molecule.MoleculeConfig
+msgid "type"
+msgstr "类型"
+
+#: of q2m3.molecule.MoleculeConfig:10 q2m3.molecule.MoleculeConfig:46
+msgid "str"
+msgstr "str"
+
+#: of q2m3.molecule.MoleculeConfig:14
+msgid "List of atomic symbols (e.g., [\"O\", \"H\", \"H\"])"
+msgstr "原子符号列表，例如 [\"O\", \"H\", \"H\"]"
+
+#: of q2m3.molecule.MoleculeConfig:16
+msgid "list[str]"
+msgstr "list[str]"
+
+#: of q2m3.molecule.MoleculeConfig:20
+msgid "Atomic coordinates in Angstrom, shape (n_atoms, 3)"
+msgstr "以埃为单位的原子坐标，形状为 (n_atoms, 3)"
+
+#: of q2m3.molecule.MoleculeConfig:22
+msgid "list[list[float]]"
+msgstr "list[list[float]]"
+
+#: of q2m3.molecule.MoleculeConfig:26
+msgid "Total molecular charge (0 for neutral, +1 for cation, etc.)"
+msgstr "分子总电荷（中性分子为 0，阳离子为 +1，依此类推）"
+
+#: of q2m3.molecule.MoleculeConfig:28 q2m3.molecule.MoleculeConfig:34 q2m3.molecule.MoleculeConfig:40
+msgid "int"
+msgstr "int"
+
+#: of q2m3.molecule.MoleculeConfig:32
+msgid "Number of active electrons for QPE active space"
+msgstr "QPE 活性空间中的活性电子数"
+
+#: of q2m3.molecule.MoleculeConfig:38
+msgid "Number of active orbitals for QPE active space"
+msgstr "QPE 活性空间中的活性轨道数"
+
+#: of q2m3.molecule.MoleculeConfig:44
+msgid "Basis set name (default: \"sto-3g\")"
+msgstr "基组名称，默认为 \"sto-3g\""
+
+#: of q2m3.molecule.MoleculeConfig:48
+msgid "Example::"
+msgstr "示例::"
+
+#: of q2m3.molecule.MoleculeConfig.n_atoms:1
+msgid "Number of atoms in the molecule."
+msgstr "分子中的原子数。"
+
+#: of q2m3.molecule.MoleculeConfig.coords_array:1
+msgid "Coordinates as numpy array."
+msgstr "numpy 数组形式的坐标。"
+
+#: of q2m3.molecule.MoleculeConfig.center:1
+msgid "Geometric center of the molecule."
+msgstr "分子的几何中心。"
+
+#: of q2m3.molecule.MoleculeConfig.validate:1
+msgid "Validate configuration consistency."
+msgstr "验证配置的一致性。"
+
+#: of q2m3.molecule.MoleculeConfig.validate
+msgid "Return type"
+msgstr "返回类型"

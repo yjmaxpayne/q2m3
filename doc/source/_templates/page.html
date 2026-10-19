@@ -1,0 +1,18 @@
+{% extends "!page.html" %}
+{% block body %}
+{# Furo does not mark these accessibility labels for translation. #}
+{{ super()
+  | replace('aria-label="Toggle site navigation sidebar"', 'aria-label="' ~ _('Toggle site navigation sidebar') ~ '"')
+  | replace('aria-label="Toggle table of contents sidebar"', 'aria-label="' ~ _('Toggle table of contents sidebar') ~ '"')
+  | replace('aria-label="Toggle Light / Dark / Auto color theme"', 'aria-label="' ~ _('Toggle Light / Dark / Auto color theme') ~ '"')
+  | replace('aria-label="Toggle navigation of ', 'aria-label="' ~ _('Toggle navigation of') ~ ' ')
+}}
+{% endblock %}
+{% block footer %}
+{{ super() | replace("@pradyunsg</a>'s", "@pradyunsg</a>" ~ _("'s")) }}
+{% endblock %}
+{# Include theme messages in the project catalog so check covers them. #}
+{% set ui_messages = [
+  _('Search'), _('Next'), _('Previous'), _('Home'), _('On this page'),
+  _('Back to top'), _('Skip to content'), _('View this page')
+] %}

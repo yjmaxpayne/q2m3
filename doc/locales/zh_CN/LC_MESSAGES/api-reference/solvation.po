@@ -1,0 +1,1635 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/solvation.rst:2
+msgid "Solvation API"
+msgstr "溶剂化 API"
+
+#: ../../source/api-reference/solvation.rst:5
+msgid "Configuration"
+msgstr "配置"
+
+#: of q2m3.solvation.config:1
+msgid "Configuration dataclasses for MC solvation simulations."
+msgstr "MC 溶剂化模拟的配置数据类。"
+
+#: of q2m3.solvation.config:3
+msgid ""
+"Provides frozen (immutable) configuration for molecule, QPE parameters, and solvation simulation "
+"settings with the three-mode Hamiltonian framework (hf_corrected / fixed / dynamic)."
+msgstr "提供冻结（不可变）的分子配置、QPE 参数和溶剂化模拟设置。采用三模式哈密顿量框架（hf_corrected / fixed / dynamic）。"
+
+#: of q2m3.solvation.config.MoleculeConfig:1
+msgid "Molecular system configuration for solvation simulations."
+msgstr "溶剂化模拟的分子体系配置。"
+
+#: ../../source/api-reference/solvation.rst of q2m3.solvation.analysis.DeltaCorrPolResult
+#: q2m3.solvation.analysis.EnergyPhaseResult q2m3.solvation.analysis.EquilibrationResult
+#: q2m3.solvation.analysis.ModeComparisonResult q2m3.solvation.analysis.QPEHFConsistencyResult
+#: q2m3.solvation.energy.StepResult q2m3.solvation.ir_cache.cache_path_for_config
+#: q2m3.solvation.ir_cache.compute_cache_key q2m3.solvation.ir_cache.is_cache_available
+#: q2m3.solvation.mc_loop.MCResult q2m3.solvation.orchestrator.replay_quantum_trajectory
+#: q2m3.solvation.solvent.SolventModel.get_lj_params
+#: q2m3.solvation.solvent.SolventMolecule.from_state_vector
+#: q2m3.solvation.solvent.molecules_to_state_array q2m3.solvation.solvent.state_array_to_molecules
+#: q2m3.solvation.statistics.TimingData q2m3.solvation.statistics.create_timing_data_from_result
+#: q2m3.solvation.statistics.create_timing_table
+#: q2m3.solvation.structure_analysis.coordination_by_cutoff
+#: q2m3.solvation.structure_analysis.load_state_trajectory_csv
+#: q2m3.solvation.structure_analysis.radial_density_profile
+#: q2m3.solvation.structure_analysis.radial_profile_to_rows
+#: q2m3.solvation.structure_analysis.select_random_snapshot_indices
+#: q2m3.solvation.structure_analysis.select_representative_snapshot_indices
+#: q2m3.solvation.structure_analysis.shell_counts_per_frame
+#: q2m3.solvation.structure_analysis.solute_center
+#: q2m3.solvation.structure_analysis.state_to_symbols_coords
+#: q2m3.solvation.structure_analysis.validate_state_trajectory
+#: q2m3.solvation.structure_analysis.water_oxygen_distances
+#: q2m3.solvation.structure_analysis.write_state_trajectory_csv
+#: q2m3.solvation.structure_analysis.write_xyz_snapshot
+#: q2m3.solvation.structure_analysis.xyz_atom_count
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.solvation.config.MoleculeConfig:5
+msgid "Human-readable identifier"
+msgstr "便于阅读的标识符"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle q2m3.solvation.config.MoleculeConfig
+#: q2m3.solvation.config.QPEConfig q2m3.solvation.config.SolvationConfig
+#: q2m3.solvation.solvent.SolventAtom q2m3.solvation.solvent.SolventModel
+#: q2m3.solvation.solvent.SolventMolecule
+msgid "type"
+msgstr "类型"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:67
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:79 q2m3.solvation.config.MoleculeConfig:7
+#: q2m3.solvation.config.MoleculeConfig:43 q2m3.solvation.solvent.SolventAtom:7
+#: q2m3.solvation.solvent.SolventModel:10 q2m3.solvation.solvent.SolventModel:22
+msgid "str"
+msgstr "str"
+
+#: of q2m3.solvation.config.MoleculeConfig:11
+msgid "Atomic symbols (e.g., [\"H\", \"H\"])"
+msgstr "原子符号（例如 [\"H\", \"H\"]）"
+
+#: of q2m3.solvation.config.MoleculeConfig:13
+msgid "list[str]"
+msgstr "list[str]"
+
+#: of q2m3.solvation.config.MoleculeConfig:17
+msgid "Atomic coordinates in Angstrom, shape (n_atoms, 3)"
+msgstr "原子坐标，单位为埃，形状为 (n_atoms, 3)"
+
+#: of q2m3.solvation.config.MoleculeConfig:19
+msgid "list[list[float]]"
+msgstr "list[list[float]]"
+
+#: of q2m3.solvation.config.MoleculeConfig:23
+msgid "Total molecular charge (REQUIRED — no default)"
+msgstr "分子总电荷（必填，无默认值）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:43
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:49
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:55
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:61 q2m3.solvation.config.MoleculeConfig:25
+#: q2m3.solvation.config.MoleculeConfig:31 q2m3.solvation.config.MoleculeConfig:37
+#: q2m3.solvation.config.QPEConfig:7 q2m3.solvation.config.QPEConfig:13
+#: q2m3.solvation.config.QPEConfig:19 q2m3.solvation.config.QPEConfig:43
+#: q2m3.solvation.config.SolvationConfig:41 q2m3.solvation.config.SolvationConfig:47
+#: q2m3.solvation.config.SolvationConfig:77
+msgid "int"
+msgstr "int"
+
+#: of q2m3.solvation.config.MoleculeConfig:29
+msgid "Active electrons for QPE active space"
+msgstr "QPE 活性空间中的活性电子数"
+
+#: of q2m3.solvation.config.MoleculeConfig:35
+msgid "Active orbitals for QPE active space"
+msgstr "QPE 活性空间中的活性轨道数"
+
+#: of q2m3.solvation.config.MoleculeConfig:41
+msgid "Basis set name"
+msgstr "基组名称"
+
+#: of q2m3.solvation.config.MoleculeConfig.coords_array:1
+msgid "Coordinates as numpy array of shape (n_atoms, 3)."
+msgstr "以形状为 (n_atoms, 3) 的 numpy 数组表示的坐标。"
+
+#: of q2m3.solvation.config.MoleculeConfig.validate:1 q2m3.solvation.config.SolvationConfig.validate:1
+msgid "Validate configuration consistency."
+msgstr "验证配置的一致性。"
+
+#: ../../source/api-reference/solvation.rst of q2m3.solvation.config.MoleculeConfig.validate
+#: q2m3.solvation.config.SolvationConfig.validate q2m3.solvation.ir_cache.cache_path_for_config
+#: q2m3.solvation.ir_cache.compute_cache_key q2m3.solvation.ir_cache.default_cache_dir
+#: q2m3.solvation.ir_cache.is_cache_available q2m3.solvation.orchestrator.replay_quantum_trajectory
+#: q2m3.solvation.solvent.SolventModel.get_lj_params
+#: q2m3.solvation.solvent.SolventMolecule.from_state_vector
+#: q2m3.solvation.solvent.SolventMolecule.get_charges
+#: q2m3.solvation.solvent.SolventMolecule.to_state_vector
+#: q2m3.solvation.solvent.molecules_to_state_array q2m3.solvation.solvent.state_array_to_molecules
+#: q2m3.solvation.statistics.create_timing_data_from_result
+#: q2m3.solvation.statistics.create_timing_table
+#: q2m3.solvation.structure_analysis.coordination_by_cutoff
+#: q2m3.solvation.structure_analysis.load_state_trajectory_csv
+#: q2m3.solvation.structure_analysis.radial_density_profile
+#: q2m3.solvation.structure_analysis.radial_profile_to_rows
+#: q2m3.solvation.structure_analysis.select_random_snapshot_indices
+#: q2m3.solvation.structure_analysis.select_representative_snapshot_indices
+#: q2m3.solvation.structure_analysis.shell_counts_per_frame
+#: q2m3.solvation.structure_analysis.solute_center
+#: q2m3.solvation.structure_analysis.state_to_symbols_coords
+#: q2m3.solvation.structure_analysis.validate_state_trajectory
+#: q2m3.solvation.structure_analysis.water_oxygen_distances
+#: q2m3.solvation.structure_analysis.write_state_trajectory_csv
+#: q2m3.solvation.structure_analysis.write_xyz_snapshot
+#: q2m3.solvation.structure_analysis.xyz_atom_count
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.solvation.config.QPEConfig:1
+msgid "QPE (Quantum Phase Estimation) parameters."
+msgstr "QPE（量子相位估计）参数。"
+
+#: of q2m3.solvation.config.QPEConfig:5
+msgid "Qubits for phase estimation register"
+msgstr "相位估计寄存器的量子比特数"
+
+#: of q2m3.solvation.config.QPEConfig:11
+msgid "Trotter steps for time evolution"
+msgstr "时间演化的 Trotter 步数"
+
+#: of q2m3.solvation.config.QPEConfig:17
+msgid "Measurement shots (0 = analytical, >0 = shots)"
+msgstr "测量次数（0 = 解析计算，>0 = 采样）"
+
+#: of q2m3.solvation.config.QPEConfig:23
+msgid "Optional seed for shot-based device sampling reproducibility"
+msgstr "用于复现设备采样结果的可选随机种子"
+
+#: of q2m3.solvation.config.QPEConfig:25
+msgid "int | None"
+msgstr "int | None"
+
+#: of q2m3.solvation.config.QPEConfig:29
+msgid "Target energy resolution in Hartree"
+msgstr "目标能量分辨率，单位为 Hartree"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:25
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:37 q2m3.solvation.config.QPEConfig:31
+#: q2m3.solvation.config.QPEConfig:37 q2m3.solvation.config.SolvationConfig:53
+#: q2m3.solvation.config.SolvationConfig:59 q2m3.solvation.config.SolvationConfig:65
+#: q2m3.solvation.config.SolvationConfig:71 q2m3.solvation.solvent.SolventAtom:19
+#: q2m3.solvation.solvent.SolventAtom:25 q2m3.solvation.solvent.SolventAtom:31
+msgid "float"
+msgstr "float"
+
+#: of q2m3.solvation.config.QPEConfig:35
+msgid "Energy range for shifted QPE in Hartree"
+msgstr "平移后 QPE 的能量范围，单位为 Hartree"
+
+#: of q2m3.solvation.config.QPEConfig:41
+msgid "MC step interval between QPE evaluations (hf_corrected mode)"
+msgstr "两次 QPE 评估之间的 MC 步数间隔（hf_corrected 模式）"
+
+#: of q2m3.solvation.config.SolvationConfig:1
+msgid "Complete MC solvation simulation configuration."
+msgstr "完整的 MC 溶剂化模拟配置。"
+
+#: of q2m3.solvation.config.SolvationConfig:3
+msgid "The hamiltonian_mode field selects the energy evaluation strategy:"
+msgstr "hamiltonian_mode 字段选择能量评估策略："
+
+#: of q2m3.solvation.config.SolvationConfig:4
+msgid "\"hf_corrected\": E_HF + delta_corr_pol (fast, approximate)"
+msgstr "\"hf_corrected\"：E_HF + delta_corr_pol（快速，近似）"
+
+#: of q2m3.solvation.config.SolvationConfig:5
+msgid "\"fixed\": Compile-once vacuum Hamiltonian (medium)"
+msgstr "\"fixed\"：仅编译一次的真空哈密顿量（速度中等）"
+
+#: of q2m3.solvation.config.SolvationConfig:6
+msgid "\"dynamic\": Per-step MM-embedded Hamiltonian (slow, most complete)"
+msgstr "\"dynamic\"：每步使用 MM 嵌入哈密顿量（慢，最完整）"
+
+#: of q2m3.solvation.config.SolvationConfig:8
+msgid "The embedding_mode field selects the MM embedding operator boundary:"
+msgstr "embedding_mode 字段选择 MM 嵌入算符的支持范围："
+
+#: of q2m3.solvation.config.SolvationConfig:9
+msgid "\"diagonal\": Identity/Z coefficient update compatibility mode"
+msgstr "\"diagonal\"：更新单位算符/Z 算符系数的兼容模式"
+
+#: of q2m3.solvation.config.SolvationConfig:10
+msgid ""
+"\"full_oneelectron\": Fixed-MO full one-electron operator support, available only with "
+"hamiltonian_mode=\"fixed\""
+msgstr "\"full_oneelectron\"：支持固定 MO 的完整单电子算符，仅适用于 hamiltonian_mode=\"fixed\""
+
+#: of q2m3.solvation.config.SolvationConfig:15 q2m3.solvation.energy.compute_hf_energy_vacuum:3
+msgid "Molecular system configuration"
+msgstr "分子体系配置"
+
+#: of q2m3.solvation.config.SolvationConfig:17
+msgid "q2m3.solvation.config.MoleculeConfig"
+msgstr "q2m3.solvation.config.MoleculeConfig"
+
+#: of q2m3.solvation.config.SolvationConfig:21
+msgid "QPE parameters"
+msgstr "QPE 参数"
+
+#: of q2m3.solvation.config.SolvationConfig:23
+msgid "q2m3.solvation.config.QPEConfig"
+msgstr "q2m3.solvation.config.QPEConfig"
+
+#: of q2m3.solvation.config.SolvationConfig:27
+msgid "Energy evaluation strategy"
+msgstr "能量评估策略"
+
+#: of q2m3.solvation.config.SolvationConfig:29
+msgid "Literal['hf_corrected', 'fixed', 'dynamic']"
+msgstr "Literal['hf_corrected', 'fixed', 'dynamic']"
+
+#: of q2m3.solvation.config.SolvationConfig:33
+msgid "MM embedding mode for QPE Hamiltonian construction"
+msgstr "构建 QPE 哈密顿量时使用的 MM 嵌入模式"
+
+#: of q2m3.solvation.config.SolvationConfig:35
+msgid "Literal['diagonal', 'full_oneelectron']"
+msgstr "Literal['diagonal', 'full_oneelectron']"
+
+#: of q2m3.solvation.config.SolvationConfig:39
+msgid "Number of TIP3P water molecules"
+msgstr "TIP3P 水分子数"
+
+#: of q2m3.solvation.config.SolvationConfig:45
+msgid "Total MC sampling steps"
+msgstr "MC 采样总步数"
+
+#: of q2m3.solvation.config.SolvationConfig:51
+msgid "Simulation temperature in Kelvin"
+msgstr "模拟温度，单位为开尔文"
+
+#: of q2m3.solvation.config.SolvationConfig:57
+msgid "Max translation per MC move in Angstrom"
+msgstr "每次 MC 移动的最大平移量，单位为埃"
+
+#: of q2m3.solvation.config.SolvationConfig:63
+msgid "Max rotation per MC move in radians"
+msgstr "每次 MC 移动的最大旋转角，单位为弧度"
+
+#: of q2m3.solvation.config.SolvationConfig:69
+msgid "Initial water ring radius in Angstrom"
+msgstr "初始水分子环半径，单位为埃"
+
+#: of q2m3.solvation.config.SolvationConfig:75
+msgid "Random seed for reproducibility"
+msgstr "用于复现结果的随机种子"
+
+#: of q2m3.solvation.config.SolvationConfig:81
+msgid "Print progress information"
+msgstr "打印进度信息"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:73 q2m3.solvation.config.SolvationConfig:83
+#: q2m3.solvation.config.SolvationConfig:95 q2m3.solvation.config.SolvationConfig:101
+msgid "bool"
+msgstr "bool"
+
+#: of q2m3.solvation.config.SolvationConfig:87
+msgid "Directory for Catalyst LLVM IR cache, or None for the default cache path"
+msgstr "Catalyst LLVM IR 缓存目录；设为 None 时使用默认缓存路径"
+
+#: of q2m3.solvation.config.SolvationConfig:89
+msgid "str | None"
+msgstr "str | None"
+
+#: of q2m3.solvation.config.SolvationConfig:93
+msgid "Enable reuse of cached Catalyst LLVM IR"
+msgstr "启用 Catalyst LLVM IR 缓存复用"
+
+#: of q2m3.solvation.config.SolvationConfig:99
+msgid "Ignore cached IR and force recompilation"
+msgstr "忽略缓存的 IR 并强制重新编译"
+
+#: of q2m3.solvation.config.SolvationConfig.n_qpe_evaluations:1
+msgid "Compute expected QPE evaluation count based on mode."
+msgstr "根据模式计算预期的 QPE 评估次数。"
+
+#: of q2m3.solvation.config.SolvationConfig.kt:1
+msgid "Thermal energy kT in Hartree."
+msgstr "热能 kT，单位为 Hartree。"
+
+#: of q2m3.solvation.config.SolvationConfig.validate:3
+msgid "Returns self to support chaining: config.validate()"
+msgstr "返回自身以支持链式调用：config.validate()"
+
+#: ../../source/api-reference/solvation.rst:12
+msgid "Orchestrator"
+msgstr "流程编排器"
+
+#: of q2m3.solvation.orchestrator:1
+msgid "MC Solvation Orchestrator."
+msgstr "MC 溶剂化流程编排器。"
+
+#: of q2m3.solvation.orchestrator:3
+msgid ""
+"End-to-end workflow for QPE-driven Monte Carlo solvation simulations. Supports three Hamiltonian "
+"modes:"
+msgstr "由 QPE 驱动的蒙特卡洛溶剂化模拟的端到端工作流。支持三种哈密顿量模式："
+
+#: of q2m3.solvation.orchestrator:6
+msgid "hf_corrected: E_HF + E_MM for acceptance, interval-based QPE diagnostics"
+msgstr "hf_corrected：使用 E_HF + E_MM 判定是否接受，按间隔执行 QPE 诊断"
+
+#: of q2m3.solvation.orchestrator:7
+msgid "fixed: Compile-once vacuum Hamiltonian, QPE every step"
+msgstr "fixed：真空哈密顿量仅编译一次，每步执行 QPE"
+
+#: of q2m3.solvation.energy:9 q2m3.solvation.orchestrator:8
+msgid "dynamic: Per-step MM-embedded Hamiltonian, QPE every step"
+msgstr "dynamic：每步使用 MM 嵌入哈密顿量，每步执行 QPE"
+
+#: of q2m3.solvation.orchestrator:10
+msgid "Usage::"
+msgstr "用法::"
+
+#: of q2m3.solvation.orchestrator.run_solvation:1
+msgid "Execute complete MC solvation workflow."
+msgstr "执行完整的 MC 溶剂化工作流。"
+
+#: of q2m3.solvation.orchestrator.run_solvation:3
+msgid ""
+"Workflow: 1. Validate config 2. Initialize solvent ring 3. Compute vacuum HF energy 4. Build QPE "
+"circuit (build_qpe_circuit -> QPECircuitBundle) 5. Precompute vacuum cache 6. Create step "
+"callback (mode-dependent) 7. Compute initial energy (first step_callback call -> triggers @qjit) "
+"8. Create MC loop (create_mc_loop) 9. Execute MC loop 10. Compute Mulliken charges (diagnostic) "
+"11. Print statistics + plot (if requested) 12. Return result dict"
+msgstr ""
+"工作流：1. 验证配置 2. 初始化溶剂环 3. 计算真空 HF 能量 4. 构建 QPE 电路（build_qpe_circuit -> QPECircuitBundle）5. 预计算真空缓存"
+" 6. 创建步回调（取决于模式）7. 计算初始能量（首次调用 step_callback -> 触发 @qjit）8. 创建 MC 循环（create_mc_loop）9. 执行 MC 循环 "
+"10. 计算 Mulliken 电荷（诊断）11. 打印统计信息并绘图（如有请求）12. 返回结果字典"
+
+#: of q2m3.solvation.orchestrator.run_solvation:17
+msgid "Complete solvation simulation configuration"
+msgstr "完整的溶剂化模拟配置"
+
+#: of q2m3.solvation.orchestrator.run_solvation:18
+msgid "Whether to display energy trajectory plots"
+msgstr "是否显示能量轨迹图"
+
+#: ../../source/api-reference/solvation.rst
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.solvation.orchestrator.run_solvation:20
+msgid "dict with Layer 1 (MCResult) + Layer 2 (orchestrator) fields"
+msgstr "包含第 1 层（MCResult）和第 2 层（流程编排器）字段的 dict"
+
+#: of q2m3.solvation.orchestrator.replay_quantum_trajectory:1
+msgid "Replay fixed or dynamic quantum evaluations on a saved solvent trajectory."
+msgstr "在保存的溶剂轨迹上重放 fixed 或 dynamic 模式的量子评估。"
+
+#: ../../source/api-reference/solvation.rst:19
+msgid "Circuit Builder"
+msgstr "电路构建器"
+
+#: of q2m3.solvation.circuit_builder:1
+msgid "QPE circuit builder for MC solvation simulations."
+msgstr "MC 溶剂化模拟的 QPE 电路构建器。"
+
+#: of q2m3.solvation.circuit_builder:3
+msgid ""
+"Builds parameterized @qjit-compiled QPE circuits that accept Hamiltonian coefficients as runtime "
+"arguments. Compile once, call with different coefficients each MC step — avoids 67s recompilation"
+" per step."
+msgstr "构建由 @qjit 编译的参数化 QPE 电路。电路将哈密顿量系数作为运行时参数接收。仅编译一次后，每个 MC 步用不同系数调用，避免每步重新编译所需的 67 秒。"
+
+#: of q2m3.solvation.circuit_builder:7
+msgid ""
+"Key Catalyst constraints (POC-validated): - Use X gates instead of qml.BasisState (Catalyst @qjit"
+" + ctrl() bug) - TrotterProduct requires check_hermitian=False (JAX tracer incompatible) - "
+"MAX_TROTTER_STEPS_RUNTIME caps Trotter steps to avoid MLIR OOM - MSB-first qubit ordering "
+"(matching PennyLane QFT convention)"
+msgstr ""
+"Catalyst 的关键约束（已通过概念验证）：- 使用 X 门代替 qml.BasisState（Catalyst @qjit + ctrl() 存在缺陷）- TrotterProduct "
+"必须设置 check_hermitian=False（与 JAX tracer 不兼容）- MAX_TROTTER_STEPS_RUNTIME 限制 Trotter 步数，以避免 MLIR "
+"内存不足 - 量子比特采用最高有效位在前的顺序（与 PennyLane QFT 约定一致）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:1
+msgid "All artifacts from QPE circuit compilation."
+msgstr "QPE 电路编译产生的全部对象。"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:5
+msgid "@qjit function: () → result (fixed) or (coeffs_arr) → result (dynamic)"
+msgstr "@qjit 函数：() → result（fixed）或 (coeffs_arr) → result（dynamic）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:7
+msgid "collections.abc.Callable"
+msgstr "collections.abc.Callable"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:11
+msgid "Initial vacuum + shift coefficients"
+msgstr "初始真空系数加平移系数"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:13 q2m3.solvation.solvent.SolventMolecule:13
+#: q2m3.solvation.solvent.SolventMolecule:19
+msgid "numpy.ndarray"
+msgstr "numpy.ndarray"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:17
+msgid "PennyLane operators (compile-time constants)"
+msgstr "PennyLane 算符（编译时常量）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:19
+msgid "list"
+msgstr "list"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:23
+msgid "Evolution time for phase-to-energy conversion"
+msgstr "用于将相位转换为能量的演化时间"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:29
+#, python-brace-format
+msgid "{\"identity_idx\": int, \"z_wire_idx\": {wire: idx}}"
+msgstr "{\"identity_idx\": int, \"z_wire_idx\": {wire: idx}}"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:31
+msgid "dict"
+msgstr "dict"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:35
+msgid "E_HF shift applied to Hamiltonian"
+msgstr "施加于哈密顿量的 E_HF 平移量"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:41
+msgid "Number of QPE estimation qubits"
+msgstr "QPE 估计量子比特数"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:7
+#: q2m3.solvation.circuit_builder.QPECircuitBundle:47
+msgid "Number of system qubits (= 2 * active_orbitals)"
+msgstr "系统量子比特数（= 2 * active_orbitals）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:53
+msgid "Number of active spatial orbitals"
+msgstr "活性空间轨道数"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:59
+msgid "Actual Trotter steps (may be capped)"
+msgstr "实际 Trotter 步数（可能受上限限制）"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:65
+msgid "\"probs\" or \"shots\""
+msgstr "\"probs\" 或 \"shots\""
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:71
+msgid "True for a zero-arg circuit (fixed mode). False for a circuit that takes coeffs_arr."
+msgstr "零参数电路（fixed 模式）为 True；接收 coeffs_arr 的电路为 False。"
+
+#: of q2m3.solvation.circuit_builder.QPECircuitBundle:77
+msgid "MM embedding mode used to build the fixed operator support"
+msgstr "构建固定算符支撑集所用的 MM 嵌入模式"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:1
+msgid "Build parameterized QPE circuit accepting runtime coefficients."
+msgstr "构建接收运行时系数的参数化 QPE 电路。"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:3
+msgid ""
+"The circuit builder constructs the base Hamiltonian and decomposes it into coefficients and "
+"PennyLane operators. It applies the HF energy shift and derives shifted QPE parameters. It caps "
+"runtime Trotter depth when needed and returns a ``QPECircuitBundle``. In diagonal mode the base "
+"Hamiltonian is vacuum operator support. In ``full_oneelectron`` mode it is a fixed MM operator."
+msgstr ""
+"电路构建器构造基础哈密顿量，并将其分解为系数和 PennyLane 算符。它施加 HF 能量平移并推导平移后的 QPE 参数。必要时限制运行时 Trotter 深度，并返回 "
+"``QPECircuitBundle``。在 diagonal 模式下，基础哈密顿量采用真空算符支撑集。在 ``full_oneelectron`` 模式下，它采用固定 MM 算符。"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:9
+#: q2m3.solvation.energy.create_coefficient_callback:6
+#: q2m3.solvation.energy.create_hf_corrected_step_callback:11
+#: q2m3.solvation.energy.create_step_callback:11
+msgid "Solvation configuration"
+msgstr "溶剂化配置"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:10
+msgid "QM region coordinates in Angstrom, shape (n_atoms, 3)"
+msgstr "QM 区域坐标，单位为埃，形状为 (n_atoms, 3)"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:11
+msgid "HF energy for energy shift and base_time calculation"
+msgstr "用于能量平移和 base_time 计算的 HF 能量"
+
+#: of q2m3.solvation.circuit_builder.build_qpe_circuit:13
+msgid "QPECircuitBundle with compiled circuit and metadata"
+msgstr "包含已编译电路和元数据的 QPECircuitBundle"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:1
+msgid "Extract (coeffs, ops) from PennyLane Sum/Hamiltonian."
+msgstr "从 PennyLane Sum/Hamiltonian 中提取 (coeffs, ops)。"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:3
+msgid ""
+"PennyLane 0.44+ returns Sum of SProd from qml.qchem.molecular_hamiltonian. We need separate "
+"coefficients and operators for qml.dot(coeffs, ops)."
+msgstr ""
+"在 PennyLane 0.44+ 中，qml.qchem.molecular_hamiltonian 返回由 SProd 组成的 Sum。qml.dot(coeffs, ops) "
+"需要分别传入系数和算符。"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:6
+msgid "PennyLane Hamiltonian (Sum of SProd operators)"
+msgstr "PennyLane 哈密顿量（由 SProd 算符组成的 Sum）"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:8
+msgid ""
+"Tuple of (coefficients, operators) where coefficients are floats and operators are PennyLane "
+"operator instances."
+msgstr "(coefficients, operators) 元组，其中系数为浮点数，算符为 PennyLane 算符实例。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:1
+msgid "Scan ops to find Identity and single-Z(wire) indices for MM coefficient updates."
+msgstr "扫描 ops，查找 Identity 和单 Z(wire) 的索引，以更新 MM 系数。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:3
+msgid ""
+"If any Z(wire) for wire in range(n_system_qubits) is missing, appends a coeff=0.0 placeholder to "
+"ensure all spin orbitals can receive MM corrections."
+msgstr "如果 range(n_system_qubits) 中任一 wire 缺少 Z(wire)，则追加 coeff=0.0 的占位项，确保所有自旋轨道都能接收 MM 修正。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:6
+msgid "List of PennyLane operators (from decompose_hamiltonian)"
+msgstr "PennyLane 算符列表（来自 decompose_hamiltonian）"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:8
+msgid "Corresponding coefficient list (may be extended)"
+msgstr "对应的系数列表（可能会扩展）"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:10
+#, python-brace-format
+msgid ""
+"- index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}} - extended_coeffs: "
+"coefficients with any missing Z terms appended - extended_ops: operators with any missing Z terms"
+" appended"
+msgstr ""
+"- index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}} - extended_coeffs: 追加缺失 Z "
+"项后的系数 - extended_ops: 追加缺失 Z 项后的算符"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:10
+#, python-brace-format
+msgid "index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}}"
+msgstr "index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}}"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:11
+msgid "extended_coeffs: coefficients with any missing Z terms appended"
+msgstr "extended_coeffs: 追加缺失 Z 项后的系数"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:12
+msgid "extended_ops: operators with any missing Z terms appended"
+msgstr "extended_ops: 追加缺失 Z 项后的算符"
+
+#: ../../source/api-reference/solvation.rst:26
+msgid "Energy Callbacks"
+msgstr "能量回调"
+
+#: of q2m3.solvation.energy:1
+msgid "Energy computation module for MC solvation simulations."
+msgstr "MC 溶剂化模拟的能量计算模块。"
+
+#: of q2m3.solvation.energy:3
+msgid ""
+"Provides vacuum caching, three-mode coefficient callbacks, and step callback factories for QPE-"
+"driven Monte Carlo solvation energy evaluation."
+msgstr "提供真空缓存、三模式系数回调和步回调工厂，用于由 QPE 驱动的蒙特卡洛溶剂化能量评估。"
+
+#: of q2m3.solvation.energy:6
+msgid "Three Hamiltonian modes:"
+msgstr "三种哈密顿量模式："
+
+#: of q2m3.solvation.energy:7
+msgid "hf_corrected: HF energy for MC acceptance, interval-based QPE diagnostics"
+msgstr "hf_corrected：使用 HF 能量判定 MC 是否接受，按间隔执行 QPE 诊断"
+
+#: of q2m3.solvation.energy:8
+msgid "fixed: Compile-once vacuum coefficients, QPE every step"
+msgstr "fixed：真空系数仅编译一次，每步执行 QPE"
+
+#: of q2m3.solvation.energy:11
+msgid ""
+"All step callbacks are pure Python (not @qjit); they invoke pre-compiled @qjit circuits "
+"internally (ADR-003)."
+msgstr "所有步回调均为纯 Python 函数（未使用 @qjit）；它们在内部调用预编译的 @qjit 电路（ADR-003）。"
+
+#: of q2m3.solvation.energy.StepResult:1
+msgid "Result from one MC step's energy computation."
+msgstr "一次 MC 步的能量计算结果。"
+
+#: of q2m3.solvation.energy.precompute_vacuum_cache:1
+msgid "Run vacuum SCF once and cache results for MC loop."
+msgstr "运行一次真空 SCF，并缓存结果供 MC 循环使用。"
+
+#: of q2m3.solvation.energy.precompute_vacuum_cache:3
+msgid "Solvation configuration with molecule definition"
+msgstr "包含分子定义的溶剂化配置"
+
+#: of q2m3.solvation.energy.precompute_vacuum_cache:5
+msgid "h_core_vac, mo_coeff, mo_coeff_active, energy_nuc_vac, e_vacuum, active_idx"
+msgstr "h_core_vac, mo_coeff, mo_coeff_active, energy_nuc_vac, e_vacuum, active_idx"
+
+#: of q2m3.solvation.energy.create_coefficient_callback:1
+msgid "Factory: create coefficient update callback for the configured mode."
+msgstr "工厂：为配置的模式创建系数更新回调。"
+
+#: of q2m3.solvation.energy.create_coefficient_callback:3
+msgid ""
+"For \"hf_corrected\" / \"fixed\": returns base_coeffs unchanged. For \"dynamic\": runs solvated "
+"SCF, computes delta, patches coefficients."
+msgstr "对于 \"hf_corrected\" / \"fixed\"：返回未修改的 base_coeffs。对于 \"dynamic\"：运行溶剂化 SCF，计算差值并更新系数。"
+
+#: of q2m3.solvation.energy.create_coefficient_callback:7
+msgid "QPE circuit bundle with base_coeffs and op_index_map"
+msgstr "包含 base_coeffs 和 op_index_map 的 QPE 电路对象包"
+
+#: of q2m3.solvation.energy.create_coefficient_callback:8
+#: q2m3.solvation.energy.create_hf_corrected_step_callback:12
+#: q2m3.solvation.energy.create_step_callback:12
+msgid "Pre-computed vacuum data"
+msgstr "预计算的真空数据"
+
+#: of q2m3.solvation.energy.create_coefficient_callback:10
+msgid "(solvent_states, qm_coords_flat) -> np.ndarray[n_terms]"
+msgstr "(solvent_states, qm_coords_flat) -> np.ndarray[n_terms]"
+
+#: of q2m3.solvation.energy.create_step_callback:1
+msgid "Factory: create per-step energy computation callback (fixed/dynamic modes)."
+msgstr "工厂：创建每步能量计算回调（fixed/dynamic 模式）。"
+
+#: of q2m3.solvation.energy.create_step_callback:3
+msgid ""
+"Internal pipeline: 1. coefficient_callback → new_coeffs 2. "
+"compiled_circuit(jnp.array(new_coeffs)) → measurement_result 3. "
+"phase_extraction(measurement_result) → e_qpe 4. compute_mm_energy(solvents) → e_mm_sol_sol 5. "
+"Return StepResult"
+msgstr ""
+"内部流程：1. coefficient_callback → new_coeffs 2. compiled_circuit(jnp.array(new_coeffs)) → "
+"measurement_result 3. phase_extraction(measurement_result) → e_qpe 4. compute_mm_energy(solvents)"
+" → e_mm_sol_sol 5. 返回 StepResult"
+
+#: of q2m3.solvation.energy.create_step_callback:10
+msgid "QPE circuit bundle with compiled circuit"
+msgstr "包含已编译电路的 QPE 电路对象包"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:17
+#: q2m3.solvation.energy.create_step_callback:14
+msgid "(solvent_states, qm_coords_flat) -> StepResult"
+msgstr "(solvent_states, qm_coords_flat) -> StepResult"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:1
+msgid "Factory: hf_corrected mode step callback with deferred compilation."
+msgstr "工厂：创建延迟编译的 hf_corrected 模式步回调。"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:3
+msgid ""
+"Every step: PySCF QMMM → e_hf_ref; compute_mm_energy → e_mm. Every qpe_interval steps: "
+"additionally run QPE circuit for diagnostics."
+msgstr "每步：PySCF QMMM → e_hf_ref；compute_mm_energy → e_mm。每隔 qpe_interval 步：额外运行 QPE 电路进行诊断。"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:6
+msgid ""
+"If circuit_bundle is None, QPE circuit is lazily built on the first QPE step (deferred "
+"compilation — avoids startup compilation cost)."
+msgstr "如果 circuit_bundle 为 None，则在首个 QPE 步按需构建 QPE 电路（延迟编译，避免启动时的编译开销）。"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:9
+msgid "Non-QPE steps return StepResult(e_qpe=NaN, qpe_time=0.0)."
+msgstr "非 QPE 步返回 StepResult(e_qpe=NaN, qpe_time=0.0)。"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:13
+msgid "QM coordinates array for circuit building"
+msgstr "用于构建电路的 QM 坐标数组"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:14
+msgid "Vacuum HF energy for energy shift"
+msgstr "用于能量平移的真空 HF 能量"
+
+#: of q2m3.solvation.energy.create_hf_corrected_step_callback:15
+msgid "Optional pre-built circuit bundle (None = deferred)"
+msgstr "可选的预构建电路对象包（None = 延迟构建）"
+
+#: of q2m3.solvation.energy.compute_hf_energy_vacuum:1
+msgid "Compute vacuum HF energy for the QM region."
+msgstr "计算 QM 区域的真空 HF 能量。"
+
+#: of q2m3.solvation.energy.compute_hf_energy_vacuum:5
+msgid "Vacuum HF energy in Hartree"
+msgstr "真空 HF 能量，单位为 Hartree"
+
+#: of q2m3.solvation.energy.compute_hf_energy_solvated:1
+msgid "Compute solvated HF energy with MM electrostatic embedding."
+msgstr "计算含 MM 静电嵌入的溶剂化 HF 能量。"
+
+#: of q2m3.solvation.energy.compute_hf_energy_solvated:3
+#: q2m3.solvation.energy.compute_mulliken_charges:3
+msgid "QM region molecular configuration"
+msgstr "QM 区域的分子配置"
+
+#: of q2m3.solvation.energy.compute_hf_energy_solvated:4
+msgid "List of solvent molecules (MM region)"
+msgstr "溶剂分子列表（MM 区域）"
+
+#: of q2m3.solvation.energy.compute_hf_energy_solvated:6
+msgid "Solvated HF energy in Hartree"
+msgstr "溶剂化 HF 能量，单位为 Hartree"
+
+#: of q2m3.solvation.energy.compute_mulliken_charges:1
+msgid "Compute Mulliken charges for vacuum or solvated geometry."
+msgstr "计算真空或溶剂化构型的 Mulliken 电荷。"
+
+#: of q2m3.solvation.energy.compute_mulliken_charges:4
+msgid "Optional solvent state array (n_mol, 6). Use None for vacuum."
+msgstr "可选的溶剂状态数组 (n_mol, 6)。真空情况使用 None。"
+
+#: of q2m3.solvation.energy.compute_mulliken_charges:6
+msgid "mulliken_charge}, e.g. {\"O0\": -0.45, \"H1\": +0.22}"
+msgstr "mulliken_charge}，例如 {\"O0\": -0.45, \"H1\": +0.22}"
+
+#: ../../source/api-reference/solvation.rst:33
+msgid "Monte Carlo Loop"
+msgstr "蒙特卡洛循环"
+
+#: of q2m3.solvation.mc_loop:1
+msgid "Monte Carlo loop for QPE-driven solvation simulations."
+msgstr "由 QPE 驱动的溶剂化模拟的蒙特卡洛循环。"
+
+#: of q2m3.solvation.mc_loop:3
+msgid ""
+"Implements a pure-Python Metropolis MC loop (ADR-003: no @qjit) that delegates energy evaluation "
+"to pre-compiled step callbacks."
+msgstr "实现纯 Python 的 Metropolis MC 循环（ADR-003：不使用 @qjit），将能量评估交给预编译的步回调。"
+
+#: of q2m3.solvation.mc_loop:6
+msgid "Three Hamiltonian modes determine acceptance energy:"
+msgstr "三种哈密顿量模式决定接受判据所用的能量："
+
+#: of q2m3.solvation.mc_loop:7
+msgid "hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)"
+msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol)（快速，近似）"
+
+#: of q2m3.solvation.mc_loop:8
+msgid "fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)"
+msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol)（完整量子计算）"
+
+#: of q2m3.solvation.mc_loop.MCResult:1
+msgid "Complete MC simulation result."
+msgstr "完整的 MC 模拟结果。"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:1
+msgid "Factory: create QPE-driven MC loop (pure Python)."
+msgstr "工厂：创建由 QPE 驱动的 MC 循环（纯 Python）。"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:3
+msgid "Returns a closure that runs the MC simulation with Metropolis acceptance."
+msgstr "返回使用 Metropolis 接受准则运行 MC 模拟的闭包。"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:5
+msgid "Solvation simulation configuration."
+msgstr "溶剂化模拟配置。"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:6
+msgid "Energy evaluator for each MC trial. Signature: (solvent_states, qm_coords) -> StepResult"
+msgstr "每次 MC 尝试的能量评估函数。签名：(solvent_states, qm_coords) -> StepResult"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:9
+msgid "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
+msgstr "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
+
+#: ../../source/api-reference/solvation.rst:40
+msgid "Phase Extraction"
+msgstr "相位提取"
+
+#: of q2m3.solvation.phase_extraction:1
+msgid "Phase extraction utilities for QPE measurement results."
+msgstr "从 QPE 测量结果中提取相位的工具。"
+
+#: of q2m3.solvation.phase_extraction:3
+msgid "Pure NumPy implementation — no PennyLane, Catalyst, or JAX dependencies."
+msgstr "纯 NumPy 实现，不依赖 PennyLane、Catalyst 或 JAX。"
+
+#: of q2m3.solvation.phase_extraction:5
+msgid "Two extraction modes:"
+msgstr "两种提取模式："
+
+#: of q2m3.solvation.phase_extraction:6
+msgid ""
+"Analytical (probs): probability-weighted expected bin, preserving sub-bin sensitivity (~0.1 mHa) "
+"compared to argmax (~12 mHa for 4-bit QPE)."
+msgstr "解析模式（probs）：计算概率加权的预期分箱索引。与 argmax（4 位 QPE 约为 12 mHa）相比，可保留小于分箱宽度的灵敏度（约 0.1 mHa）。"
+
+#: of q2m3.solvation.phase_extraction:8
+msgid ""
+"Shots-based (samples): decode each bitstring to a bin index, then compute energy statistics "
+"across shots."
+msgstr "采样模式（samples）：将每个比特串解码为分箱索引，再计算各次测量的能量统计量。"
+
+#: of q2m3.solvation.phase_extraction:11
+msgid "Core formula (shared):"
+msgstr "共用的核心公式："
+
+#: of q2m3.solvation.phase_extraction:12
+msgid "phase = expected_bin / n_bins energy = -2π · phase / base_time + energy_shift"
+msgstr "phase = expected_bin / n_bins energy = -2π · phase / base_time + energy_shift"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:1
+msgid "Extract energy from analytical probability distribution."
+msgstr "从解析概率分布中提取能量。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:3
+msgid "Uses the probability-weighted mean of bin indices. The mean can lie between integer bins."
+msgstr "使用分箱索引的概率加权平均值。平均值可以位于整数分箱索引之间。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:5
+msgid "Probability array of shape (2^n_estimation_wires,)."
+msgstr "形状为 (2^n_estimation_wires,) 的概率数组。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:6
+#: q2m3.solvation.phase_extraction.extract_energy_from_shots:8
+msgid "Base evolution time for phase-to-energy conversion."
+msgstr "用于将相位转换为能量的基本演化时间。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:7
+#: q2m3.solvation.phase_extraction.extract_energy_from_shots:9
+msgid "Energy offset applied to the Hamiltonian."
+msgstr "施加于哈密顿量的能量偏移量。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:8
+#: q2m3.solvation.phase_extraction.extract_energy_from_shots:10
+msgid "Number of QPE estimation qubits."
+msgstr "QPE 估计量子比特数。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_probs:10
+msgid "Estimated energy in Hartree."
+msgstr "估计能量，单位为 Hartree。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:1
+msgid "Extract energy from shots-based measurement samples."
+msgstr "从测量采样中提取能量。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:3
+msgid ""
+"Each row of *samples* is a bitstring (MSB-first) that encodes a bin index. All per-shot energies "
+"are computed, then either the mean or a statistics dict is returned."
+msgstr "*samples* 的每一行都是一个编码分箱索引的比特串（最高有效位在前）。计算每次测量的能量后，返回平均值或统计字典。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:7
+msgid "Binary array of shape (n_shots, n_estimation_wires)."
+msgstr "形状为 (n_shots, n_estimation_wires) 的二进制数组。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:11
+msgid "If True, return dict with mean, std, sem, n_shots."
+msgstr "如果为 True，则返回包含 mean、std、sem 和 n_shots 的字典。"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:13
+msgid "Mean energy (float) or statistics dict."
+msgstr "平均能量（float）或统计字典。"
+
+#: ../../source/api-reference/solvation.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.solvation.phase_extraction.extract_energy_from_shots:15
+msgid "If samples is empty."
+msgstr "samples 为空时。"
+
+#: ../../source/api-reference/solvation.rst:46
+msgid "Solvent Models"
+msgstr "溶剂模型"
+
+#: of q2m3.solvation.solvent:1
+msgid "Explicit Solvent Models for QM/MM Simulations"
+msgstr "QM/MM 模拟的显式溶剂模型"
+
+#: of q2m3.solvation.solvent:3
+msgid ""
+"This module provides data-driven solvent model definitions for use with PySCF's qmmm module. It "
+"focuses on: 1. Solvent geometry and partial charges (for pyscf.qmmm.mm_charge) 2. Rigid body "
+"coordinate transformations 3. Classical MM energy for solvent-solvent interactions (MC "
+"acceptance)"
+msgstr ""
+"本模块提供数据驱动的溶剂模型定义，供 PySCF 的 qmmm 模块使用。主要包括：1. 溶剂几何结构和部分电荷（用于 pyscf.qmmm.mm_charge）2. 刚体坐标变换 3. "
+"溶剂间相互作用的经典 MM 能量（用于 MC 接受判定）"
+
+#: of q2m3.solvation.solvent:9
+msgid "Design Philosophy:"
+msgstr "设计原则："
+
+#: of q2m3.solvation.solvent:10
+msgid "Data-driven: Solvent models defined as dataclasses, easy to extend"
+msgstr "数据驱动：使用数据类定义溶剂模型，便于扩展"
+
+#: of q2m3.solvation.solvent:11
+msgid "PySCF-compatible: Output coordinates in Angstrom for qmmm.mm_charge"
+msgstr "兼容 PySCF：为 qmmm.mm_charge 输出以埃为单位的坐标"
+
+#: of q2m3.solvation.solvent:12
+msgid "Minimal: Only implement what PySCF doesn't provide directly"
+msgstr "最小实现：仅实现 PySCF 未直接提供的功能"
+
+#: of q2m3.solvation.solvent:14 q2m3.solvation.solvent.get_mm_embedding_data:9
+msgid "Usage with PySCF:"
+msgstr "与 PySCF 配合使用："
+
+#: of q2m3.solvation.solvent:15
+msgid "from pyscf import qmmm"
+msgstr "from pyscf import qmmm"
+
+#: of q2m3.solvation.solvent:17
+msgid ""
+"model = TIP3P_WATER molecules = [SolventMolecule(model, pos, angles) for ...] mm_coords, "
+"mm_charges = get_mm_embedding_data(molecules)"
+msgstr ""
+"model = TIP3P_WATER molecules = [SolventMolecule(model, pos, angles) for ...] mm_coords, "
+"mm_charges = get_mm_embedding_data(molecules)"
+
+#: of q2m3.solvation.solvent:21
+msgid ""
+"# Convert to Bohr for PySCF mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR mf = qmmm.mm_charge(mf,"
+" mm_coords_bohr, mm_charges)"
+msgstr ""
+"# Convert to Bohr for PySCF mm_coords_bohr = mm_coords * ANGSTROM_TO_BOHR mf = qmmm.mm_charge(mf,"
+" mm_coords_bohr, mm_charges)"
+
+#: of q2m3.solvation.solvent.SolventAtom:1
+msgid "Single atom in a solvent model."
+msgstr "溶剂模型中的单个原子。"
+
+#: of q2m3.solvation.solvent.SolventAtom:5
+msgid "Atomic symbol (e.g., \"O\", \"H\")"
+msgstr "原子符号（例如 \"O\"、\"H\"）"
+
+#: of q2m3.solvation.solvent.SolventAtom:11
+msgid "Position in molecule-fixed frame (Angstrom)"
+msgstr "分子固定坐标系中的位置（埃）"
+
+#: of q2m3.solvation.solvent.SolventAtom:13
+msgid "tuple[float, float, float]"
+msgstr "tuple[float, float, float]"
+
+#: of q2m3.solvation.solvent.SolventAtom:17
+msgid "Partial charge (elementary charge units)"
+msgstr "部分电荷（以元电荷为单位）"
+
+#: of q2m3.solvation.solvent.SolventAtom:23
+msgid "Lennard-Jones sigma parameter (Angstrom), 0 if no LJ"
+msgstr "Lennard-Jones sigma 参数（埃）；无 LJ 时为 0"
+
+#: of q2m3.solvation.solvent.SolventAtom:29
+msgid "Lennard-Jones epsilon parameter (kcal/mol), 0 if no LJ"
+msgstr "Lennard-Jones epsilon 参数（kcal/mol）；无 LJ 时为 0"
+
+#: of q2m3.solvation.solvent.SolventModel:1
+msgid "Solvent model definition containing geometry, charges, and LJ parameters."
+msgstr "包含几何结构、电荷和 LJ 参数的溶剂模型定义。"
+
+#: of q2m3.solvation.solvent.SolventModel:3
+msgid ""
+"This is an immutable data structure that defines a solvent type. Actual solvent molecule "
+"instances are represented by SolventMolecule."
+msgstr "这是定义溶剂类型的不可变数据结构。实际的溶剂分子实例由 SolventMolecule 表示。"
+
+#: of q2m3.solvation.solvent.SolventModel:8
+msgid "Model identifier (e.g., \"TIP3P\", \"SPC/E\")"
+msgstr "模型标识符（例如 \"TIP3P\"、\"SPC/E\"）"
+
+#: of q2m3.solvation.solvent.SolventModel:14
+msgid "Tuple of SolventAtom defining the molecule structure"
+msgstr "定义分子结构的 SolventAtom 元组"
+
+#: of q2m3.solvation.solvent.SolventModel:16
+msgid "tuple[q2m3.solvation.solvent.SolventAtom, ...]"
+msgstr "tuple[q2m3.solvation.solvent.SolventAtom, ...]"
+
+#: of q2m3.solvation.solvent.SolventModel:20
+msgid "Literature reference for the model parameters"
+msgstr "模型参数的文献引用"
+
+#: of q2m3.solvation.solvent.SolventModel.local_coords:1
+msgid "Local coordinates as (n_atoms, 3) array."
+msgstr "以 (n_atoms, 3) 数组表示的局部坐标。"
+
+#: of q2m3.solvation.solvent.SolventModel.get_lj_params:1
+msgid "Get (sigma, epsilon) for atom at given index."
+msgstr "获取指定索引原子的 (sigma, epsilon)。"
+
+#: of q2m3.solvation.solvent.SolventMolecule:1
+msgid "A solvent molecule instance with position and orientation."
+msgstr "具有位置和取向的溶剂分子实例。"
+
+#: of q2m3.solvation.solvent.SolventMolecule:5
+msgid "The solvent model (defines geometry and parameters)"
+msgstr "溶剂模型（定义几何结构和参数）"
+
+#: of q2m3.solvation.solvent.SolventMolecule:7
+msgid "q2m3.solvation.solvent.SolventModel"
+msgstr "q2m3.solvation.solvent.SolventModel"
+
+#: of q2m3.solvation.solvent.SolventMolecule:11
+msgid "Center of mass position in Angstrom"
+msgstr "质心位置，单位为埃"
+
+#: of q2m3.solvation.solvent.SolventMolecule:17
+msgid "Orientation as (roll, pitch, yaw) in radians"
+msgstr "以 (roll, pitch, yaw) 表示的取向，单位为弧度"
+
+#: of q2m3.solvation.solvent.SolventMolecule.get_atom_coords:1
+msgid "Get global coordinates of all atoms."
+msgstr "获取所有原子的全局坐标。"
+
+#: of q2m3.solvation.solvent.SolventMolecule.get_atom_coords:3
+msgid "Array of shape (n_atoms, 3) in Angstrom"
+msgstr "形状为 (n_atoms, 3) 的数组，单位为埃"
+
+#: of q2m3.solvation.solvent.SolventMolecule.get_charges:1
+msgid "Get partial charges for all atoms."
+msgstr "获取所有原子的部分电荷。"
+
+#: of q2m3.solvation.solvent.SolventMolecule.to_state_vector:1
+msgid "Convert to state vector [x, y, z, roll, pitch, yaw]."
+msgstr "转换为状态向量 [x, y, z, roll, pitch, yaw]。"
+
+#: of q2m3.solvation.solvent.SolventMolecule.from_state_vector:1
+msgid "Create molecule from state vector."
+msgstr "从状态向量创建分子。"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data:1
+msgid "Extract MM embedding data for pyscf.qmmm.mm_charge()."
+msgstr "为 pyscf.qmmm.mm_charge() 提取 MM 嵌入数据。"
+
+#: of q2m3.solvation.solvent.compute_mm_energy:9 q2m3.solvation.solvent.get_mm_embedding_data:3
+msgid "Sequence of SolventMolecule instances"
+msgstr "SolventMolecule 实例序列"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data:5
+msgid ""
+"- coords: Atom coordinates in Angstrom, shape (n_total_atoms, 3) - charges: Partial charges, "
+"shape (n_total_atoms,)"
+msgstr "- coords: 原子坐标，单位为埃，形状为 (n_total_atoms, 3) - charges: 部分电荷，形状为 (n_total_atoms,)"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data:5
+msgid "coords: Atom coordinates in Angstrom, shape (n_total_atoms, 3)"
+msgstr "coords: 原子坐标，单位为埃，形状为 (n_total_atoms, 3)"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data:6
+msgid "charges: Partial charges, shape (n_total_atoms,)"
+msgstr "charges: 部分电荷，形状为 (n_total_atoms,)"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data:10
+msgid ""
+"coords, charges = get_mm_embedding_data(molecules) coords_bohr = coords * ANGSTROM_TO_BOHR mf = "
+"qmmm.mm_charge(mf, coords_bohr, charges)"
+msgstr ""
+"coords, charges = get_mm_embedding_data(molecules) coords_bohr = coords * ANGSTROM_TO_BOHR mf = "
+"qmmm.mm_charge(mf, coords_bohr, charges)"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data_bohr:1
+msgid "Get MM embedding data with coordinates in Bohr (ready for PySCF)."
+msgstr "获取坐标以 Bohr 为单位的 MM 嵌入数据（可直接用于 PySCF）。"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data_bohr:3
+msgid ""
+"This is a convenience function that converts coordinates to Bohr, which is the unit expected by "
+"pyscf.qmmm.mm_charge()."
+msgstr "此便捷函数将坐标转换为 Bohr，即 pyscf.qmmm.mm_charge() 所需的单位。"
+
+#: of q2m3.solvation.solvent.get_mm_embedding_data_bohr:6
+msgid "Tuple of (coords_bohr, charges)"
+msgstr "(coords_bohr, charges) 元组"
+
+#: of q2m3.solvation.solvent.compute_mm_energy:1
+msgid "Compute classical MM energy between solvent molecules."
+msgstr "计算溶剂分子之间的经典 MM 能量。"
+
+#: of q2m3.solvation.solvent.compute_mm_energy:3
+msgid ""
+"This calculates the Lennard-Jones and Coulomb interactions between all pairs of solvent "
+"molecules. Used for the MC acceptance criterion."
+msgstr "计算所有溶剂分子对之间的 Lennard-Jones 和库仑相互作用，用于 MC 接受准则。"
+
+#: of q2m3.solvation.solvent.compute_mm_energy:6
+msgid ""
+"Note: This is a simple pairwise implementation. For production use with large systems, consider "
+"using OpenMM or other optimized libraries."
+msgstr "注意：这是简单的成对计算实现。大型体系的实际计算可考虑使用 OpenMM 或其他优化库。"
+
+#: of q2m3.solvation.solvent.compute_mm_energy:11
+msgid ""
+"Total MM energy in Hartree. Exact intermolecular atom overlap is treated as a hard-core invalid "
+"configuration and returns +inf."
+msgstr "总 MM 能量，单位为 Hartree。不同分子的原子完全重合时，将该构型视为违反硬核约束的无效构型，并返回 +inf。"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:1
+msgid "Initialize solvent molecules in a ring arrangement."
+msgstr "将溶剂分子初始化为环形排列。"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:3
+msgid "Molecules are placed equidistant in a ring in the x-y plane, with random initial orientations."
+msgstr "分子等间距排列在 x-y 平面的环上，初始取向随机。"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:6
+msgid "Solvent model to use"
+msgstr "使用的溶剂模型"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:7
+msgid "Number of molecules"
+msgstr "分子数"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:8
+msgid "Center of the ring (typically solute center)"
+msgstr "环中心（通常为溶质中心）"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:9
+msgid "Ring radius in Angstrom"
+msgstr "环半径，单位为埃"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:10
+msgid "Random seed for reproducible orientations"
+msgstr "用于复现取向的随机种子"
+
+#: of q2m3.solvation.solvent.initialize_solvent_ring:12
+msgid "List of SolventMolecule instances"
+msgstr "SolventMolecule 实例列表"
+
+#: of q2m3.solvation.solvent.molecules_to_state_array:1
+msgid "Convert list of molecules to state array of shape (n_mol, 6)."
+msgstr "将分子列表转换为形状为 (n_mol, 6) 的状态数组。"
+
+#: of q2m3.solvation.solvent.state_array_to_molecules:1
+msgid "Convert state array to list of molecules."
+msgstr "将状态数组转换为分子列表。"
+
+#: ../../source/api-reference/solvation.rst:53
+msgid "IR Cache"
+msgstr "IR 缓存"
+
+#: of q2m3.solvation.ir_cache:1
+msgid "Catalyst LLVM IR cache for QPE circuit compilation."
+msgstr "用于 QPE 电路编译的 Catalyst LLVM IR 缓存。"
+
+#: of q2m3.solvation.ir_cache:3
+msgid "Implements two-phase compilation caching:"
+msgstr "实现两阶段编译缓存："
+
+#: of q2m3.solvation.ir_cache:4
+msgid ""
+"Phase A (cache miss): Subprocess full @qjit(keep_intermediate=True) -> save LLVM IR Phase B "
+"(cache hit):  replace_ir + jit_compile -> skip MLIR pipeline (~5x faster)"
+msgstr ""
+"阶段 A（缓存未命中）：子进程完整运行 @qjit(keep_intermediate=True) -> 保存 LLVM IR 阶段 B（缓存命中）：replace_ir + "
+"jit_compile -> 跳过 MLIR 流水线（速度约为原来的 5 倍）"
+
+#: of q2m3.solvation.ir_cache:7
+msgid ""
+"Cache key = circuit topology parameters only. Runtime Hamiltonian coefficients do not affect LLVM"
+" IR structure, so IR compiled for n_waters=5 is valid for n_waters=20. Fixed full-one-electron "
+"embedding can change operator support, so embedding_mode is part of the key."
+msgstr ""
+"缓存键仅包含电路拓扑参数。运行时哈密顿量系数不影响 LLVM IR 结构，因此为 n_waters=5 编译的 IR 也适用于 "
+"n_waters=20。固定的完整单电子嵌入可能改变算符支撑集，因此 embedding_mode 是缓存键的一部分。"
+
+#: of q2m3.solvation.ir_cache.default_cache_dir:1
+msgid "Find project root (containing pyproject.toml) and return cache dir."
+msgstr "查找项目根目录（包含 pyproject.toml），并返回缓存目录。"
+
+#: of q2m3.solvation.ir_cache.compute_cache_key:1
+msgid "Generate deterministic cache key from circuit topology parameters."
+msgstr "根据电路拓扑参数生成确定性的缓存键。"
+
+#: of q2m3.solvation.ir_cache.compute_cache_key:3
+msgid ""
+"The key encodes parameters that affect LLVM IR structure: - Molecule identity (name, basis, "
+"active space) - QPE circuit parameters (estimation wires, Trotter steps, shots) - Hamiltonian "
+"circuit style and embedding operator support"
+msgstr "缓存键编码影响 LLVM IR 结构的参数：- 分子标识（名称、基组、活性空间）- QPE 电路参数（估计量子线、Trotter 步数、测量次数）- 哈密顿量电路形式及嵌入算符支撑集"
+
+#: of q2m3.solvation.ir_cache.compute_cache_key:8
+msgid ""
+"Parameters that only affect runtime coefficient values (n_waters, temperature, coordinates) are "
+"NOT included."
+msgstr "仅影响运行时系数值的参数（n_waters、temperature、coordinates）不包含在内。"
+
+#: of q2m3.solvation.ir_cache.cache_path_for_config:1
+msgid "Return the full path for the cached IR file."
+msgstr "返回缓存 IR 文件的完整路径。"
+
+#: of q2m3.solvation.ir_cache.is_cache_available:1
+msgid "Check if a valid cache file exists for this config."
+msgstr "检查此配置是否存在有效缓存文件。"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:1
+msgid "Cache-aware QPE circuit compilation resolution."
+msgstr "根据缓存状态确定 QPE 电路的编译方式。"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:3
+msgid ""
+"On cache hit:  replace_ir + jit_compile (seconds) On cache miss: subprocess full compile -> save "
+"IR -> replace_ir + jit_compile"
+msgstr "缓存命中时：replace_ir + jit_compile（数秒）缓存未命中时：子进程完整编译 -> 保存 IR -> replace_ir + jit_compile"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:6
+msgid "The bundle's compiled_circuit is modified in-place by replace_ir."
+msgstr "replace_ir 会原位修改对象包的 compiled_circuit。"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:8
+msgid "Solvation configuration with cache settings"
+msgstr "包含缓存设置的溶剂化配置"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:9
+msgid "QPECircuitBundle from build_qpe_circuit()"
+msgstr "来自 build_qpe_circuit() 的 QPECircuitBundle"
+
+#: of q2m3.solvation.ir_cache.resolve_compiled_circuit:11
+msgid "(bundle, cache_stats) — bundle is the same object (replace_ir modifies in-place)"
+msgstr "(bundle, cache_stats)；bundle 仍为同一个对象（replace_ir 原位修改）"
+
+#: ../../source/api-reference/solvation.rst:59
+msgid "Analysis"
+msgstr "分析"
+
+#: of q2m3.solvation.analysis:1
+msgid "Solvation analysis functions for δ_corr-pol and related statistics."
+msgstr "δ_corr-pol 及相关统计量的溶剂化分析函数。"
+
+#: of q2m3.solvation.analysis:3
+msgid ""
+"Pure NumPy module — no Catalyst or JAX dependency. All public functions are pure functions: take "
+"NumPy arrays, return frozen dataclasses."
+msgstr "纯 NumPy 模块，不依赖 Catalyst 或 JAX。所有公共函数均为纯函数：接收 NumPy 数组，返回冻结数据类。"
+
+#: of q2m3.solvation.analysis.DeltaCorrPolResult:1
+msgid "δ_corr-pol analysis result."
+msgstr "δ_corr-pol 分析结果。"
+
+#: of q2m3.solvation.analysis.DeltaCorrPolResult:3
+msgid ""
+"Note: frozen=True prevents field reassignment but does NOT prevent mutation of mutable fields "
+"like np.ndarray (e.g., obj.per_step_delta[0] = 999 is still possible). This is an accepted trade-"
+"off. frozen provides intent-level immutability and hashability for simple fields. ndarray copy-"
+"on-read is not enforced to avoid performance overhead on large arrays. Consumers should treat all"
+" fields as read-only."
+msgstr ""
+"注意：frozen=True 防止对字段重新赋值，但不能防止修改 np.ndarray 等可变字段（例如仍可执行 obj.per_step_delta[0] = "
+"999）。这是已接受的权衡。frozen 表达不可变的设计意图，并使简单字段可哈希。为避免大数组的性能开销，读取 ndarray 时不强制复制。使用者应将所有字段视为只读。"
+
+#: of q2m3.solvation.analysis.EnergyPhaseResult:1
+msgid "Energy trend phase analysis result (early vs late phase)."
+msgstr "能量趋势阶段分析结果（早期与晚期阶段）。"
+
+#: of q2m3.solvation.analysis.QPEHFConsistencyResult:1
+msgid "QPE-HF trajectory consistency metrics."
+msgstr "QPE-HF 轨迹一致性指标。"
+
+#: of q2m3.solvation.analysis.EquilibrationResult:1
+msgid "Equilibration diagnostic result (windowed monotonicity)."
+msgstr "平衡诊断结果（基于窗口的单调性）。"
+
+#: of q2m3.solvation.analysis.ModeComparisonResult:1
+msgid "Full three-mode comparison analysis result."
+msgstr "完整的三模式比较分析结果。"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:1
+msgid "Compute per-step δ_corr-pol from paired fixed/dynamic QPE energies."
+msgstr "从成对的 fixed/dynamic QPE 能量计算每步 δ_corr-pol。"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:3
+msgid "δ_corr-pol(R) = E_QPE(dynamic, R) - E_QPE(fixed, R)"
+msgstr "δ_corr-pol(R) = E_QPE(dynamic, R) - E_QPE(fixed, R)"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:4
+msgid "≈ E_corr(solvated, R) - E_corr(vacuum)"
+msgstr "≈ E_corr(solvated, R) - E_corr(vacuum)"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:6
+msgid "QPE energies from fixed Hamiltonian mode."
+msgstr "fixed 哈密顿量模式的 QPE 能量。"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:7
+msgid "QPE energies from dynamic Hamiltonian mode. Must be the same length as quantum_energies_fixed."
+msgstr "dynamic 哈密顿量模式的 QPE 能量。长度必须与 quantum_energies_fixed 相同。"
+
+#: of q2m3.solvation.analysis.compute_delta_corr_pol:10
+msgid "DeltaCorrPolResult with paired-sample statistics."
+msgstr "包含配对样本统计量的 DeltaCorrPolResult。"
+
+#: of q2m3.solvation.analysis.analyze_energy_phases:1
+msgid "Analyze early/late energy trends across MC sampling phases."
+msgstr "分析 MC 采样阶段的早期/晚期能量趋势。"
+
+#: of q2m3.solvation.analysis.analyze_energy_phases:3
+msgid ""
+"Splits the energy trajectory into n_phases equal segments and compares the first (early) and last"
+" (late) segments."
+msgstr "将能量轨迹等分为 n_phases 段，并比较首段（早期）和末段（晚期）。"
+
+#: of q2m3.solvation.analysis.analyze_energy_phases:6
+msgid "Energy trajectory from QPE-driven MC simulation."
+msgstr "由 QPE 驱动的 MC 模拟的能量轨迹。"
+
+#: of q2m3.solvation.analysis.analyze_energy_phases:7
+msgid "Number of phases to divide the trajectory into."
+msgstr "将轨迹划分的阶段数。"
+
+#: of q2m3.solvation.analysis.analyze_energy_phases:9
+msgid "EnergyPhaseResult with mean and std for early and late phases."
+msgstr "包含早期和晚期阶段均值及标准差的 EnergyPhaseResult。"
+
+#: of q2m3.solvation.analysis.compute_qpe_hf_consistency:1
+msgid "Compute QPE-HF trajectory consistency metrics."
+msgstr "计算 QPE-HF 轨迹一致性指标。"
+
+#: of q2m3.solvation.analysis.compute_qpe_hf_consistency:3
+msgid ""
+"Measures how well the QPE and HF energy trajectories track each other. A positive, high Pearson "
+"correlation indicates consistent trends."
+msgstr "衡量 QPE 和 HF 能量轨迹的同步变化程度。较高的正 Pearson 相关系数表明趋势一致。"
+
+#: of q2m3.solvation.analysis.compute_qpe_hf_consistency:6
+#: q2m3.solvation.analysis.detect_equilibration:6
+msgid "QPE energy trajectory."
+msgstr "QPE 能量轨迹。"
+
+#: of q2m3.solvation.analysis.compute_qpe_hf_consistency:7
+msgid "HF energy trajectory (same length as quantum_energies)."
+msgstr "HF 能量轨迹（长度与 quantum_energies 相同）。"
+
+#: of q2m3.solvation.analysis.compute_qpe_hf_consistency:9
+msgid "QPEHFConsistencyResult with offset and correlation statistics."
+msgstr "包含偏移量和相关统计量的 QPEHFConsistencyResult。"
+
+#: of q2m3.solvation.analysis.detect_equilibration:1
+msgid "Windowed monotonicity diagnostic for MC equilibration."
+msgstr "用于 MC 平衡判断的窗口单调性诊断。"
+
+#: of q2m3.solvation.analysis.detect_equilibration:3
+msgid ""
+"Splits energies into 5 equal windows and checks if window means are monotonically decreasing "
+"(suggesting non-equilibration)."
+msgstr "将能量等分为 5 个窗口，检查窗口均值是否单调递减（提示尚未达到平衡）。"
+
+#: of q2m3.solvation.analysis.detect_equilibration:7
+msgid "Minimum number of samples required. Returns None if len(quantum_energies) < min_samples."
+msgstr "所需的最少样本数。如果 len(quantum_energies) < min_samples，则返回 None。"
+
+#: of q2m3.solvation.analysis.detect_equilibration:10
+msgid "EquilibrationResult, or None if insufficient samples."
+msgstr "EquilibrationResult；样本不足时返回 None。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:1
+msgid "Orchestrate full three-mode comparison analysis."
+msgstr "编排完整的三模式比较分析。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:3
+msgid ""
+"Combines lower-level analysis functions to produce a complete ModeComparisonResult from "
+"run_solvation() return dicts."
+msgstr "组合底层分析函数，根据 run_solvation() 返回的字典生成完整的 ModeComparisonResult。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:6
+msgid "run_solvation() result dict for fixed Hamiltonian mode."
+msgstr "fixed 哈密顿量模式的 run_solvation() 结果字典。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:7
+msgid "run_solvation() result dict for dynamic Hamiltonian mode."
+msgstr "dynamic 哈密顿量模式的 run_solvation() 结果字典。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:8
+msgid "Optional result dict for hf_corrected mode."
+msgstr "可选的 hf_corrected 模式结果字典。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:9
+msgid "Vacuum reference energy (Ha) for Trotter bias calculation."
+msgstr "用于计算 Trotter 偏差的真空参考能量（Ha）。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:11
+msgid "ModeComparisonResult with all analysis fields populated."
+msgstr "所有分析字段均已填充的 ModeComparisonResult。"
+
+#: of q2m3.solvation.analysis.run_mode_comparison:13
+msgid "If any result dict is missing required keys."
+msgstr "任一结果字典缺少必需键时。"
+
+#: ../../source/api-reference/solvation.rst:66
+msgid "Structure Analysis"
+msgstr "结构分析"
+
+#: of q2m3.solvation.structure_analysis:1
+msgid "Internal structure-analysis helpers for finite-shell solvation outputs."
+msgstr "用于有限溶剂壳层输出的内部结构分析工具。"
+
+#: of q2m3.solvation.structure_analysis:3
+msgid ""
+"The routines in this module are pure NumPy/CSV helpers around the solvent state arrays already "
+"returned by :func:`q2m3.solvation.run_solvation`. They are kept out of "
+"``q2m3.solvation.__init__`` because they support optional post-processing workflows rather than "
+"the primary solvation API."
+msgstr ""
+"本模块中的例程是纯 NumPy/CSV 工具，用于处理 :func:`q2m3.solvation.run_solvation` "
+"已返回的溶剂状态数组。这些例程支持可选的后处理工作流，而非主要溶剂化 API，因此不加入 ``q2m3.solvation.__init__``。"
+
+#: of q2m3.solvation.structure_analysis.RadialProfile:1
+msgid "Finite-shell oxygen radial-density profile around a solute center."
+msgstr "溶质中心周围有限溶剂壳层中的氧原子径向密度分布。"
+
+#: of q2m3.solvation.structure_analysis.RadialProfile.bin_centers:1
+msgid "Bin centers in Angstrom."
+msgstr "分箱中心，单位为埃。"
+
+#: of q2m3.solvation.structure_analysis.validate_state_trajectory:1
+msgid "Return a float trajectory array with shape ``(n_steps, n_waters, 6)``."
+msgstr "返回形状为 ``(n_steps, n_waters, 6)`` 的浮点轨迹数组。"
+
+#: of q2m3.solvation.structure_analysis.write_state_trajectory_csv:1
+msgid "Write solvent states as a long-form CSV for deterministic round-trips."
+msgstr "将溶剂状态写为长格式 CSV，以支持确定性的往返读写。"
+
+#: of q2m3.solvation.structure_analysis.load_state_trajectory_csv:1
+msgid "Load a solvent-state trajectory CSV."
+msgstr "加载溶剂状态轨迹 CSV。"
+
+#: of q2m3.solvation.structure_analysis.load_state_trajectory_csv:3
+msgid ""
+"The preferred schema is long-form ``step,water_index,x,y,z,roll,pitch,yaw``. A compact wide "
+"schema with columns like ``water_0_x`` or ``w0_x`` is also accepted for compatibility with ad hoc"
+" notebook exports."
+msgstr ""
+"首选模式是长格式 ``step,water_index,x,y,z,roll,pitch,yaw``。为兼容临时 notebook 导出，也接受包含 ``water_0_x`` 或 "
+"``w0_x`` 等列的紧凑宽格式。"
+
+#: of q2m3.solvation.structure_analysis.solute_center:1
+msgid "Return the arithmetic center of solute coordinates."
+msgstr "返回溶质坐标的算术中心。"
+
+#: of q2m3.solvation.structure_analysis.water_oxygen_distances:1
+msgid "Return oxygen-center distances to the solute center for every frame/water."
+msgstr "返回每帧中每个水分子的氧原子中心到溶质中心的距离。"
+
+#: of q2m3.solvation.structure_analysis.radial_density_profile:1
+msgid "Compute finite-shell oxygen radial density and cumulative coordination."
+msgstr "计算有限溶剂壳层中的氧原子径向密度和累积配位数。"
+
+#: of q2m3.solvation.structure_analysis.shell_counts_per_frame:1
+msgid "Return per-frame water counts within ``cutoff`` Angstrom."
+msgstr "返回每帧中距离不超过 ``cutoff`` 埃的水分子数。"
+
+#: of q2m3.solvation.structure_analysis.coordination_by_cutoff:1
+msgid "Return mean coordination count for each cutoff."
+msgstr "返回每个截断距离的平均配位数。"
+
+#: of q2m3.solvation.structure_analysis.select_representative_snapshot_indices:1
+msgid "Select deterministic post-burn snapshots spanning shell occupancy."
+msgstr "确定性地选择初始舍弃期后的快照，使其覆盖壳层占据情况。"
+
+#: of q2m3.solvation.structure_analysis.select_random_snapshot_indices:1
+msgid "Select reproducible random snapshot indices from a trajectory window."
+msgstr "从轨迹窗口中选择可复现的随机快照索引。"
+
+#: of q2m3.solvation.structure_analysis.state_to_symbols_coords:1
+msgid "Convert one solvent-state frame to combined solute + TIP3P atom arrays."
+msgstr "将一帧溶剂状态转换为合并的溶质和 TIP3P 原子数组。"
+
+#: of q2m3.solvation.structure_analysis.write_xyz_snapshot:1
+msgid "Write one solute + solvent-shell frame as an XYZ file."
+msgstr "将一帧溶质与溶剂壳层写为 XYZ 文件。"
+
+#: of q2m3.solvation.structure_analysis.xyz_atom_count:1
+msgid "Return the atom count declared by an XYZ file."
+msgstr "返回 XYZ 文件声明的原子数。"
+
+#: of q2m3.solvation.structure_analysis.radial_profile_to_rows:1
+msgid "Convert a radial profile to CSV-ready dictionaries."
+msgstr "将径向分布转换为可写入 CSV 的字典。"
+
+#: ../../source/api-reference/solvation.rst:73
+msgid "Statistics And Plotting"
+msgstr "统计与绘图"
+
+#: of q2m3.solvation.statistics:1
+msgid "Time statistics formatting for MC solvation simulations."
+msgstr "MC 溶剂化模拟的时间统计格式化。"
+
+#: of q2m3.solvation.statistics:3
+msgid ""
+"Uses Rich library for console output with tables and panels. Supports three Hamiltonian modes: "
+"hf_corrected / fixed / dynamic."
+msgstr "使用 Rich 库在控制台输出表格和面板。支持三种哈密顿量模式：hf_corrected / fixed / dynamic。"
+
+#: of q2m3.solvation.statistics.TimingData:1
+msgid "Container for simulation timing data."
+msgstr "模拟计时数据容器。"
+
+#: of q2m3.solvation.statistics.create_timing_table:1
+msgid "Create Rich table for execution phase timing."
+msgstr "为执行阶段计时创建 Rich 表格。"
+
+#: of q2m3.solvation.statistics.print_time_statistics:1
+msgid "Print formatted timing statistics to console."
+msgstr "向控制台打印格式化的计时统计。"
+
+#: of q2m3.solvation.statistics.print_time_statistics:3
+msgid "TimingData instance"
+msgstr "TimingData 实例"
+
+#: of q2m3.solvation.statistics.print_time_statistics:4
+msgid "Rich Console (creates new if None)"
+msgstr "Rich Console（如果为 None 则新建）"
+
+#: of q2m3.solvation.statistics.create_timing_data_from_result:1
+msgid "Create TimingData from MC loop result dictionary."
+msgstr "从 MC 循环结果字典创建 TimingData。"
+
+#: of q2m3.solvation.plotting:1
+msgid "Plotting utilities for MC solvation simulations."
+msgstr "MC 溶剂化模拟的绘图工具。"
+
+#: of q2m3.solvation.plotting:3
+msgid "Provides energy trajectory visualization and acceptance rate analysis plots."
+msgstr "提供能量轨迹可视化和接受率分析图。"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:1
+msgid "Plot energy trajectory over MC steps."
+msgstr "绘制能量随 MC 步数变化的轨迹。"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:3
+msgid "MC step indices for HF energies"
+msgstr "HF 能量对应的 MC 步索引"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:4
+msgid "HF (or total QM/MM) energies at each step"
+msgstr "每步的 HF（或总 QM/MM）能量"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:5
+msgid "MC step indices where quantum evaluation was performed"
+msgstr "执行量子评估的 MC 步索引"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:6
+msgid "Quantum algorithm energy estimates"
+msgstr "量子算法的能量估计值"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:7
+msgid "Reference energy for relative plotting (e.g., vacuum energy)"
+msgstr "绘制相对值所用的参考能量（例如真空能量）"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:6 q2m3.solvation.plotting.plot_energy_trajectory:8
+msgid "Plot title"
+msgstr "图标题"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:9
+msgid "Path to save figure (None = don't save)"
+msgstr "图像保存路径（None = 不保存）"
+
+#: of q2m3.solvation.plotting.plot_energy_trajectory:10
+msgid "Whether to display the plot"
+msgstr "是否显示图像"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:10 q2m3.solvation.plotting.plot_energy_trajectory:12
+msgid "Matplotlib Figure object"
+msgstr "Matplotlib Figure 对象"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:1
+msgid "Plot cumulative and windowed acceptance rate."
+msgstr "绘制累积接受率和窗口接受率。"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:3
+msgid "MC step indices"
+msgstr "MC 步索引"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:4
+msgid "Cumulative number of accepted moves"
+msgstr "已接受移动的累积次数"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:5
+msgid "Window size for rolling acceptance rate"
+msgstr "滚动接受率的窗口大小"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:7
+msgid "Path to save figure"
+msgstr "图像保存路径"
+
+#: of q2m3.solvation.plotting.plot_acceptance_rate:8
+msgid "Whether to display"
+msgstr "是否显示"

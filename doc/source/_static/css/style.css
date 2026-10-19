@@ -20,6 +20,15 @@ a {
   overflow-wrap: anywhere;
 }
 
+.language-switch {
+  padding: 0.5rem 1rem;
+  text-align: center;
+}
+
+.language-switch [aria-current="page"] {
+  font-weight: 700;
+}
+
 .sidebar-logo {
   max-height: 5.25rem;
   width: auto;

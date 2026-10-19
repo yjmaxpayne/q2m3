@@ -1,0 +1,443 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/interfaces.rst:2
+msgid "Interfaces API"
+msgstr "接口 API"
+
+#: ../../source/api-reference/interfaces.rst:5
+msgid "PySCF/PennyLane Bridge"
+msgstr "PySCF/PennyLane 桥接"
+
+#: of q2m3.interfaces.pyscf_pennylane:1
+msgid "PySCF-PennyLane bidirectional conversion interface."
+msgstr "PySCF-PennyLane 双向转换接口。"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix:1
+msgid "Unified density matrix interface for quantum-classical data exchange."
+msgstr "用于量电混合数据交换的统一密度矩阵接口。"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix:3
+msgid "This interface converts between PySCF and PennyLane representations."
+msgstr "此接口在 PySCF 与 PennyLane 表示之间转换。"
+
+#: ../../source/api-reference/interfaces.rst of
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.__init__:1
+msgid "Initialize unified density matrix."
+msgstr "初始化统一密度矩阵。"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.__init__:3
+msgid "Density matrix data"
+msgstr "密度矩阵数据"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.__init__:4
+msgid "Source format ('pyscf' or 'pennylane')"
+msgstr "源格式（'pyscf' 或 'pennylane'）"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.to_pennylane_observable:1
+msgid "Convert to PennyLane observable format."
+msgstr "转换为 PennyLane 可观测量格式。"
+
+#: ../../source/api-reference/interfaces.rst of
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.to_pennylane_observable:3
+msgid "PennyLane Hermitian observable"
+msgstr "PennyLane Hermitian 可观测量"
+
+#: ../../source/api-reference/interfaces.rst of
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.from_quantum_state:1
+msgid "Update density matrix from quantum state vector."
+msgstr "根据量子态向量更新密度矩阵。"
+
+#: of q2m3.interfaces.pyscf_pennylane.UnifiedDensityMatrix.from_quantum_state:3
+msgid "Quantum state vector from QPE"
+msgstr "来自 QPE 的量子态向量"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter:1
+msgid "Converter for molecular integrals and Hamiltonians between PySCF and PennyLane."
+msgstr "用于在 PySCF 与 PennyLane 之间转换分子积分和哈密顿量的转换器。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.__init__:1
+msgid "Initialize converter."
+msgstr "初始化转换器。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.__init__:3
+msgid "Basis set for calculations"
+msgstr "计算使用的基组"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.__init__:4
+msgid "Fermion-to-qubit mapping scheme"
+msgstr "费米子到量子比特的映射方案"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:1
+msgid "Convert molecular structure to PennyLane qubit Hamiltonian."
+msgstr "将分子结构转换为 PennyLane 量子比特哈密顿量。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:3
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:18
+msgid "List of atomic symbols ['O', 'H', 'H', 'H']"
+msgstr "原子符号列表 ['O', 'H', 'H', 'H']"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:4
+msgid "Atomic coordinates in Angstrom, shape (n_atoms, 3) or (n_atoms*3,)"
+msgstr "以埃为单位的原子坐标，形状为 (n_atoms, 3) 或 (n_atoms*3,)"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:5
+msgid "Total molecular charge (default 0)"
+msgstr "分子总电荷，默认为 0"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:6
+msgid "Number of active electrons for active space (optional)"
+msgstr "活性空间中的活性电子数（可选）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:7
+msgid "Number of active orbitals for active space (optional)"
+msgstr "活性空间中的活性轨道数（可选）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:9
+msgid ""
+"(hamiltonian, n_qubits, hf_state)     - hamiltonian: PennyLane Hamiltonian operator     - "
+"n_qubits: Number of qubits required     - hf_state: Hartree-Fock reference state as numpy array"
+msgstr ""
+"(hamiltonian, n_qubits, hf_state)     - hamiltonian: PennyLane 哈密顿量算符     - n_qubits: 所需量子比特数"
+"     - hf_state: numpy 数组形式的 Hartree-Fock 参考态"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:11
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:33
+msgid "(hamiltonian, n_qubits, hf_state)"
+msgstr "(hamiltonian, n_qubits, hf_state)"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:12
+msgid "hamiltonian: PennyLane Hamiltonian operator"
+msgstr "hamiltonian: PennyLane 哈密顿量算符"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:13
+msgid "n_qubits: Number of qubits required"
+msgstr "n_qubits: 所需量子比特数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:14
+msgid "hf_state: Hartree-Fock reference state as numpy array"
+msgstr "hf_state: numpy 数组形式的 Hartree-Fock 参考态"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:17
+msgid "If symbols and coords dimensions don't match"
+msgstr "symbols 与 coords 的维度不匹配时"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:54
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian:20
+msgid "Example"
+msgstr "示例"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:1
+msgid "Build PennyLane Hamiltonian with MM point charge embedding."
+msgstr "构建带 MM 点电荷嵌入的 PennyLane 哈密顿量。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:3
+msgid ""
+"Uses a perturbative approach: 1. Get vacuum Hamiltonian from molecular_hamiltonian (correct "
+"eigenspectrum) 2. Compute MM corrections to single-electron integrals 3. Add MM correction as "
+"Pauli operators to the vacuum Hamiltonian 4. Optionally apply energy shift for QPE precision "
+"enhancement"
+msgstr ""
+"使用微扰方法：1. 从 molecular_hamiltonian 获取真空哈密顿量（具有正确的本征谱）；2. 计算单电子积分的 MM 修正；3. 将 MM 修正作为 Pauli "
+"算符加入真空哈密顿量；4. 可选地施加能量平移，以提高 QPE 精度。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:9
+msgid ""
+"This approach preserves the correct eigenspectrum structure from molecular_hamiltonian while "
+"adding MM electrostatic effects."
+msgstr "此方法在加入 MM 静电效应时，保留 molecular_hamiltonian 的正确本征谱结构。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:12
+msgid ""
+"The energy_shift parameter enables \"shifted QPE\", where ``H' = H - E_ref * I``. This allows QPE"
+" to measure ``ΔE = E - E_ref`` instead of absolute energy E, enabling higher precision for "
+"detecting small energy changes (like MM effects) without phase overflow in QPE circuits."
+msgstr ""
+"energy_shift 参数启用“平移 QPE”，其中 ``H' = H - E_ref * I``。这使 QPE 测量 ``ΔE = E - E_ref``，而非绝对能量 "
+"E，从而更精确地检测微小能量变化（例如 MM 效应），并避免 QPE 电路中的相位溢出。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:16
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:19
+msgid "Atomic coordinates in Angstrom, shape (n_atoms, 3)"
+msgstr "以埃为单位的原子坐标，形状为 (n_atoms, 3)"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:20
+msgid "Total molecular charge"
+msgstr "分子总电荷"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:21
+msgid "MM point charges array"
+msgstr "MM 点电荷数组"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:19
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:22
+msgid "MM charge coordinates in Angstrom, shape (n_mm, 3)"
+msgstr "以埃为单位的 MM 电荷坐标，形状为 (n_mm, 3)"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:23
+msgid "Number of active electrons"
+msgstr "活性电子数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:24
+msgid "Number of active orbitals"
+msgstr "活性轨道数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:25
+msgid ""
+"Reference energy to subtract from Hamiltonian (optional). If provided, the returned Hamiltonian "
+"is ``H' = H - E_shift * I``. This enables QPE to measure ``ΔE`` with higher precision."
+msgstr "从哈密顿量中减去的参考能量（可选）。若提供此值，返回的哈密顿量为 ``H' = H - E_shift * I``。这使 QPE 能够以更高精度测量 ``ΔE``。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian_with_mm:28
+msgid ""
+"MM embedding mode. ``\"diagonal\"`` preserves the historical Identity/Z coefficient update path. "
+"``\"full_oneelectron\"`` adds the full fixed-MO one-electron perturbation as a fixed operator "
+"Hamiltonian."
+msgstr ""
+"MM 嵌入模式。``\"diagonal\"`` 保留原有的 Identity/Z 系数更新路径。``\"full_oneelectron\"`` 将完整的固定 MO "
+"单电子微扰作为固定算符哈密顿量加入。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.build_qmmm_hamiltonian:1
+msgid "Build QM/MM Hamiltonian with MM embedding using classical simulation."
+msgstr "通过经典模拟构建带 MM 嵌入的 QM/MM 哈密顿量。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.build_qmmm_hamiltonian:3
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.compute_overlap_integrals:3
+msgid "PySCF molecule object"
+msgstr "PySCF 分子对象"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.build_qmmm_hamiltonian:4
+msgid "MM region point charges"
+msgstr "MM 区域的点电荷"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.build_qmmm_hamiltonian:5
+msgid "MM charge coordinates"
+msgstr "MM 电荷坐标"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.build_qmmm_hamiltonian:7
+msgid "Dictionary containing molecular data for QPE simulation"
+msgstr "包含 QPE 模拟所需分子数据的字典"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:1
+msgid "Extract molecular orbital coefficients from PySCF."
+msgstr "从 PySCF 提取分子轨道系数。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:3
+msgid "PySCF SCF calculation result"
+msgstr "PySCF SCF 计算结果"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:5
+msgid "MO coefficient matrix"
+msgstr "MO 系数矩阵"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.compute_overlap_integrals:1
+msgid "Compute overlap integrals for Mulliken analysis."
+msgstr "计算 Mulliken 分析所需的重叠积分。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.compute_overlap_integrals:5
+msgid "Overlap matrix"
+msgstr "重叠矩阵"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:1
+msgid "Estimate EFTQC resources for QPE algorithm using PennyLane."
+msgstr "使用 PennyLane 估计 QPE 算法的 EFTQC 资源。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:3
+msgid ""
+"Uses PennyLane's qml.estimator.DoubleFactorization to estimate quantum computing resources "
+"(Toffoli gates and logical qubits) required for Quantum Phase Estimation on molecular systems."
+msgstr "使用 PennyLane 的 qml.estimator.DoubleFactorization 估计分子系统量子相位估计所需的量子计算资源（Toffoli 门和逻辑量子比特）。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:7
+msgid ""
+"Supports both vacuum Hamiltonian and MM-embedded (solvated) Hamiltonian. When "
+"mm_charges/mm_coords are provided, the single-electron integrals include QM-MM electrostatic "
+"interaction terms. The default ``embedding_mode=\"full_oneelectron\"`` preserves the historical "
+"resource-estimation behavior by adding the full fixed-MO active-space ``Delta h`` matrix. Use "
+"``embedding_mode=\"diagonal\"`` to request the diagonal-only compatibility row used by the "
+"current QPE coefficient path."
+msgstr ""
+"支持真空哈密顿量和 MM 嵌入（溶剂化）哈密顿量。提供 mm_charges/mm_coords 时，单电子积分包含 QM-MM 静电相互作用项。默认的 "
+"``embedding_mode=\"full_oneelectron\"`` 通过加入完整的固定 MO 活性空间 ``Delta h`` 矩阵，保留原有的资源估计行为。使用 "
+"``embedding_mode=\"diagonal\"`` 可请求仅含对角项的兼容结果，对应当前 QPE 系数路径。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:15
+msgid "List of atomic symbols (e.g., ['O', 'H', 'H', 'H'])"
+msgstr "原子符号列表，例如 ['O', 'H', 'H', 'H']"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:17
+msgid "Total molecular charge (default: 0 for neutral)"
+msgstr "分子总电荷，默认为 0（中性）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:18
+msgid "MM point charges array (optional, for solvated Hamiltonian)"
+msgstr "MM 点电荷数组（可选，用于溶剂化哈密顿量）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:20
+msgid "Number of electrons in active space (optional)"
+msgstr "活性空间中的电子数（可选）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:21
+msgid "Number of spatial orbitals in active space (optional)"
+msgstr "活性空间中的空间轨道数（可选）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:22
+msgid "Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)"
+msgstr "目标能量误差，单位为 Hartree（默认：0.0016 = 1 kcal/mol）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:23
+msgid ""
+"MM embedding mode for resource rows. ``\"full_oneelectron\"`` adds the full active-space "
+"perturbation. ``\"diagonal\"`` adds only its diagonal. Ignored when no MM charges are provided, "
+"but still validated."
+msgstr ""
+"资源结果的 MM 嵌入模式。``\"full_oneelectron\"`` 加入完整的活性空间微扰。``\"diagonal\"`` 仅加入其对角项。未提供 MM "
+"电荷时忽略此参数，但仍验证其取值。"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:28
+msgid ""
+"- logical_qubits: Number of logical qubits for EFTQC - toffoli_gates: Total Toffoli count for the"
+" whole QPE run   (DoubleFactorization.gates = estimation_cost * unitary_cost) - "
+"hamiltonian_1norm: Lambda (1-norm of Hamiltonian) in Hartree - qpe_iterations: Number of walk-"
+"operator calls (= ceil(πλ/2ε)).   Informational only: these calls are already included in "
+"toffoli_gates - trotter_steps: Recommended Trotter steps (heuristic: 10 × n_orbitals) - "
+"target_error: Target error in Hartree - n_electrons: Number of electrons in the system - "
+"n_orbitals: Number of spatial orbitals - basis: Basis set used - mm_embedded: Whether MM "
+"embedding was applied - n_mm_charges: Number of MM point charges (0 if vacuum) - "
+"active_electrons: Active-space electron count passed to the estimator - active_orbitals: Active-"
+"space orbital count passed to the estimator - embedding_mode: Effective embedding state (\"none\""
+" for vacuum) - requested_embedding_mode: Requested MM mode, or None for vacuum - fixed_mo: "
+"Whether a fixed-MO MM perturbation was used - two_electron_tensor_fixed: Whether the two-electron"
+" tensor is vacuum - active_indices: Vacuum MO indices included in the active space - delta_h_* "
+"diagnostics for the MM one-electron perturbation"
+msgstr ""
+"- logical_qubits: EFTQC 的逻辑量子比特数 - toffoli_gates: 整次 QPE 运行的 Toffoli 总数 "
+"(DoubleFactorization.gates = estimation_cost * unitary_cost) - hamiltonian_1norm: Lambda（哈密顿量的 "
+"1-范数），单位为 Hartree - qpe_iterations: 游走算符调用次数 (= ceil(πλ/2ε))。仅供参考：这些调用已计入 toffoli_gates - "
+"trotter_steps: 建议的 Trotter 步数（启发式：10 × n_orbitals） - target_error: 目标误差，单位为 Hartree - "
+"n_electrons: 系统中的电子数 - n_orbitals: 空间轨道数 - basis: 使用的基组 - mm_embedded: 是否施加了 MM 嵌入 - "
+"n_mm_charges: MM 点电荷数（真空时为 0） - active_electrons: 传给估计器的活性空间电子数 - active_orbitals: 传给估计器的活性空间轨道数 "
+"- embedding_mode: 实际嵌入状态（真空时为 \"none\"） - requested_embedding_mode: 请求的 MM 模式，真空时为 None - "
+"fixed_mo: 是否使用了固定 MO 的 MM 微扰 - two_electron_tensor_fixed: 双电子张量是否取自真空 - active_indices: 活性空间所含的真空"
+" MO 索引 - delta_h_*：MM 单电子微扰的诊断信息"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:28
+msgid "logical_qubits: Number of logical qubits for EFTQC"
+msgstr "logical_qubits: EFTQC 的逻辑量子比特数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:29
+msgid ""
+"toffoli_gates: Total Toffoli count for the whole QPE run (DoubleFactorization.gates = "
+"estimation_cost * unitary_cost)"
+msgstr "toffoli_gates: 整次 QPE 运行的 Toffoli 总数 (DoubleFactorization.gates = estimation_cost * unitary_cost)"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:31
+msgid "hamiltonian_1norm: Lambda (1-norm of Hamiltonian) in Hartree"
+msgstr "hamiltonian_1norm: Lambda（哈密顿量的 1-范数），单位为 Hartree"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:32
+msgid ""
+"qpe_iterations: Number of walk-operator calls (= ceil(πλ/2ε)). Informational only: these calls "
+"are already included in toffoli_gates"
+msgstr "qpe_iterations: 游走算符调用次数 (= ceil(πλ/2ε))。仅供参考：这些调用已计入 toffoli_gates"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:34
+msgid "trotter_steps: Recommended Trotter steps (heuristic: 10 × n_orbitals)"
+msgstr "trotter_steps: 建议的 Trotter 步数（启发式：10 × n_orbitals）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:35
+msgid "target_error: Target error in Hartree"
+msgstr "target_error: 目标误差，单位为 Hartree"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:36
+msgid "n_electrons: Number of electrons in the system"
+msgstr "n_electrons: 系统中的电子数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:37
+msgid "n_orbitals: Number of spatial orbitals"
+msgstr "n_orbitals: 空间轨道数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:38
+msgid "basis: Basis set used"
+msgstr "basis: 使用的基组"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:39
+msgid "mm_embedded: Whether MM embedding was applied"
+msgstr "mm_embedded: 是否施加了 MM 嵌入"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:40
+msgid "n_mm_charges: Number of MM point charges (0 if vacuum)"
+msgstr "n_mm_charges: MM 点电荷数（真空时为 0）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:41
+msgid "active_electrons: Active-space electron count passed to the estimator"
+msgstr "active_electrons: 传给估计器的活性空间电子数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:42
+msgid "active_orbitals: Active-space orbital count passed to the estimator"
+msgstr "active_orbitals: 传给估计器的活性空间轨道数"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:43
+msgid "embedding_mode: Effective embedding state (\"none\" for vacuum)"
+msgstr "embedding_mode: 实际嵌入状态（真空时为 \"none\"）"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:44
+msgid "requested_embedding_mode: Requested MM mode, or None for vacuum"
+msgstr "requested_embedding_mode: 请求的 MM 模式，真空时为 None"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:45
+msgid "fixed_mo: Whether a fixed-MO MM perturbation was used"
+msgstr "fixed_mo: 是否使用了固定 MO 的 MM 微扰"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:46
+msgid "two_electron_tensor_fixed: Whether the two-electron tensor is vacuum"
+msgstr "two_electron_tensor_fixed: 双电子张量是否取自真空"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:47
+msgid "active_indices: Vacuum MO indices included in the active space"
+msgstr "active_indices: 活性空间所含的真空 MO 索引"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:48
+msgid "delta_h_* diagnostics for the MM one-electron perturbation"
+msgstr "delta_h_*：MM 单电子微扰的诊断信息"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources:51
+msgid "If coords shape does not match number of symbols"
+msgstr "coords 形状与 symbols 数量不匹配时"

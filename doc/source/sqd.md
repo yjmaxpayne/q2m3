@@ -2,8 +2,8 @@
 
 SQD prepares a CCSD-seeded LUCJ state with ffsim, samples determinants, and
 solves the Hamiltonian in the recovered subspace with qiskit-addon-sqd. The
-public workflows return an `SQDResult` with same-Hamiltonian reference and
-comparison energies. This is a classical simulator implementation. It does
+public workflows return an `SQDResult`. Its reference and comparison energies
+use the same Hamiltonian. This is a classical simulator implementation. It does
 not demonstrate quantum advantage or execution on quantum hardware.
 
 ## Installation and platform
@@ -27,17 +27,18 @@ core environment used 2.11.0. This also affects shared QPE/MM dependencies,
 so an old core environment is not equivalent to a fresh locked install.
 
 The measured profile is Linux x86_64, Python 3.12.3, NumPy 2.4.1, SciPy
-1.16.3, ffsim 0.0.84, Qiskit 2.5.2 and qiskit-addon-sqd 0.13.1. Resource
-certification does not extend to other platforms or arbitrary versions.
+1.16.3, ffsim 0.0.84, Qiskit 2.5.2 and qiskit-addon-sqd 0.13.1. The resource
+certification does not cover other platforms or arbitrary dependency versions.
 Catalyst may be absent. If Catalyst is installed, its version must still match
-the calibration environment. All required numerical packages remain version checked.
+the calibration environment. Version checks still apply to all required
+numerical packages.
 
 For a guided progression through every maintained example, use the
 [SQD showcase tutorial](tutorials/sqd-showcase.md). Public signatures and typed contracts are listed
 in [SQD API reference](api-reference/sqd.rst).
 
-Ordinary `import q2m3` retains the existing PennyLane import cost. SQD's
-algorithm does not call PennyLane or Catalyst. Its workflow exports are lazy.
+Ordinary `import q2m3` still imports PennyLane. The SQD algorithm does not
+call PennyLane or Catalyst. SQD workflow exports load on access.
 Without the extra, they raise `ImportError` with the installation command. To
 check availability, test `"run_sqd" in q2m3.__all__`. Do not use `hasattr`,
 because it can trigger that error. Configuration/result types do not import
@@ -114,7 +115,7 @@ assert abs(result.sqd_energy - result.baseline_energy) < 1e-10
 print(result.sqd_energy, result.baseline_method, result.delta_mHa)
 ```
 
-Both yield approximately −1.13728383449 Ha in the measured profile.
+Both examples yield approximately −1.13728383449 Ha in the measured profile.
 `run_sqd_from_integrals` requires `context`. Bare `t1`/`t2` arrays are not an
 accepted substitute for `CCSDSeed`. These inputs are checked:
 
@@ -127,7 +128,7 @@ accepted substitute for `CCSDSeed`. These inputs are checked:
 
 Failed or unconverged seeds raise an error. For a deliberate
 baseline-only run, set `mode="reference_only"` (and `seed_data=None` at the
-integral entry). It never silently substitutes HF for a failed SQD run.
+integral entry). The workflow never silently substitutes HF for a failed SQD run.
 
 ## Fixed orbital frame and MM embedding
 
@@ -160,11 +161,11 @@ ladder shares the remaining budget across attempts:
 
 T0 cannot be disabled to force a downgrade. Only explicit unavailability,
 budget exhaustion or controlled timeout permits trying a lower tier.
-Numerical failure must surface. Every non-T0 result carries
+The workflow must report numerical failures. Every non-T0 result carries
 `baseline_downgrade_reason` and a warning.
 
-Unknown uncertainty is `None`
-with a reason, never zero. T2 reports the T1 diagnostic, convergence,
+If uncertainty is unknown, the result records `None` and a reason. It must
+not record zero. T2 reports the T1 diagnostic, convergence,
 triples correction and triples/correlation ratio. Flags can mark it
 untrustworthy. Zero T0 uncertainty excludes basis/model/experimental errors.
 
@@ -223,8 +224,8 @@ MM systems, plugins or T2 paths.
 These deltas use each run's own Hamiltonian/frame/core reference. Historical
 absolute energies must not be mixed into them. Historical Glycine
 reps 4/shots 200000 and N₂ reps 4/shots 500000 are rejected as out of domain.
-Their energy and full-run memory benchmarks remain unmeasured. A cheap
-rejection is not a successful memory benchmark.
+Their energy and full-run memory benchmarks remain unmeasured. Rejecting a run
+before execution does not constitute a successful memory benchmark.
 
 E1 (four orbital bases) and E6 (restricted connectivity) remain
 **inconclusive** because their original numerical matrices exceed the

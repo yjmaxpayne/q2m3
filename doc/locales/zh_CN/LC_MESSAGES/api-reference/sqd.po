@@ -1,0 +1,632 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/sqd.rst:2
+msgid "SQD API"
+msgstr "SQD API"
+
+#: ../../source/api-reference/sqd.rst:4
+msgid ""
+"The SQD API is optional. Install it with ``uv sync --frozen --extra sqd``. Configuration and "
+"result contracts remain importable without the optional sampling backend. Workflow functions load"
+" on access when ``ffsim`` and ``qiskit-addon-sqd`` are installed."
+msgstr ""
+"SQD API 是可选组件。使用 ``uv sync --frozen --extra sqd`` 安装。未安装可选采样后端时，仍可导入配置和结果契约。安装 ``ffsim`` 和 "
+"``qiskit-addon-sqd`` 后，工作流函数在访问时加载。"
+
+#: ../../source/api-reference/sqd.rst:10
+msgid "Public Workflows"
+msgstr "公共工作流"
+
+#: of q2m3.sqd.orchestrator.run_sqd:1
+msgid "Run SQD from geometry in Angstrom with an explicit closed-shell active space."
+msgstr "从以埃为单位的几何结构运行 SQD，并显式指定闭壳层活性空间。"
+
+#: ../../source/api-reference/sqd.rst of q2m3.sqd.config.CCSDSeed q2m3.sqd.config.IntegralContext
+#: q2m3.sqd.integrals.IntegralData q2m3.sqd.integrals.build_integrals
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.sqd.orchestrator.run_sqd:3
+msgid "Atomic element symbols."
+msgstr "原子元素符号。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:4
+msgid "Atomic coordinates in Angstrom."
+msgstr "原子坐标，单位为埃。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:5
+msgid "Even active electron count."
+msgstr "偶数个活性电子。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:11 q2m3.sqd.orchestrator.run_sqd:6
+#: q2m3.sqd.orchestrator.run_sqd_from_integrals:6
+msgid "Active spatial orbital count."
+msgstr "活性空间轨道数。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:7
+msgid "Molecular charge."
+msgstr "分子电荷。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:8
+msgid "PySCF basis name."
+msgstr "PySCF 基组名称。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:9 q2m3.sqd.orchestrator.run_sqd_from_integrals:10
+msgid "Ansatz and sampling configuration."
+msgstr "拟设与采样配置。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:10
+msgid "Baseline policy and shared run resource budgets."
+msgstr "基线策略和运行共享的资源预算。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:11
+msgid "Optional point charges in atomic charge units."
+msgstr "可选的点电荷，以原子电荷单位表示。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:12
+msgid "Point-charge positions in Angstrom."
+msgstr "点电荷位置，单位为埃。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:13
+msgid "Fixed-frame one-electron embedding treatment."
+msgstr "固定参考系中的单电子嵌入处理。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:14
+msgid "Nonnegative seed forwarded to all stochastic operations."
+msgstr "传递给所有随机操作的非负随机种子。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:15
+msgid ""
+"Forward soft-policy override where supported. Existing component/model caps remain in force, "
+"including 8192 MB."
+msgstr "在支持的位置传递软策略覆盖设置。现有组件/模型上限仍然有效，包括 8192 MB。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:17
+msgid "Print a compact energy/status summary."
+msgstr "打印简明的能量/状态摘要。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:18
+msgid "Full SQD or explicitly requested reference-only calculation."
+msgstr "完整 SQD 计算或显式请求的仅参考计算。"
+
+#: ../../source/api-reference/sqd.rst of q2m3.sqd.integrals.build_integrals
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.sqd.orchestrator.run_sqd:20
+msgid "Validated immutable energies, metadata and resource/timing audit."
+msgstr "已验证的不可变能量、元数据和资源/计时审计记录。"
+
+#: ../../source/api-reference/sqd.rst of q2m3.sqd.integrals.build_integrals
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.sqd.orchestrator.run_sqd:22
+msgid "Inputs or execution environment are unsupported."
+msgstr "不支持输入或执行环境。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:23
+msgid "Allocation or observed process RSS reaches a cap."
+msgstr "内存分配量或观测到的进程 RSS 达到上限。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:24 q2m3.sqd.orchestrator.run_sqd_from_integrals:20
+msgid "The total shared deadline expires."
+msgstr "共享的总执行时限到期。"
+
+#: ../../source/api-reference/sqd.rst of q2m3.sqd.config.LUCJConfig.validate
+#: q2m3.sqd.config.ReferenceConfig.validate q2m3.sqd.config.SQDConfig.validate
+#: q2m3.sqd.integrals.build_integrals q2m3.sqd.result.ReferenceAttempt.validate
+#: q2m3.sqd.result.ReferenceResult.validate q2m3.sqd.result.T1Residual.validate
+#: q2m3.sqd.result.T2Diagnostics.validate
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:1
+msgid "Run the same workflow from real chemist integrals and authenticated provenance."
+msgstr "从实数化学家记号积分和已验证的来源记录运行同一工作流。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:3
+msgid "Real one-electron integrals in Hartree."
+msgstr "实数单电子积分，单位为 Hartree。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:4
+msgid "Real chemist two-electron tensor, without any additional transposition."
+msgstr "化学家记号的实数双电子张量，不再进行任何额外转置。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:5
+msgid "Core constant in Hartree, already including embedding corrections."
+msgstr "核心常数，单位为 Hartree，已包含嵌入修正。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:7
+msgid "Balanced alpha/beta electron counts."
+msgstr "相等的 alpha/beta 电子数。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:8
+msgid "Integral/frame identifiers and constant decomposition."
+msgstr "积分/参考系标识符及常数分解。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:9
+msgid "Same-frame CCSD seed. Use None only in reference-only mode."
+msgstr "同一参考系中的 CCSD 初始解。仅在仅参考模式下使用 None。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:11
+msgid "Baseline policy and total shared resource budgets."
+msgstr "基线策略和共享的总资源预算。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:12
+msgid "Nonnegative run seed."
+msgstr "非负的运行随机种子。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:13
+msgid "Forward supported overrides within existing component caps."
+msgstr "在现有组件上限内传递受支持的覆盖设置。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:14
+msgid "Full SQD or explicit reference-only calculation."
+msgstr "完整 SQD 计算或显式指定的仅参考计算。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:16
+msgid "Validated immutable result, using exactly one copy of e_core in energies."
+msgstr "已验证的不可变结果，能量中恰好计入一次 e_core。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:18
+msgid "The declared integral contract is invalid."
+msgstr "所声明的积分契约无效。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:19
+msgid "Predicted or actual resources exceed the budget."
+msgstr "预测或实际资源用量超出预算。"
+
+#: ../../source/api-reference/sqd.rst:17
+msgid "Configuration Contracts"
+msgstr "配置契约"
+
+#: of q2m3.sqd.config.LUCJConfig:1
+msgid "Spin-balanced ansatz and sampling configuration."
+msgstr "自旋平衡的拟设与采样配置。"
+
+#: of q2m3.sqd.config.LUCJConfig.validate:1
+msgid "Validate counts and connectivity structure, returning this instance."
+msgstr "验证数量和连接结构，并返回此实例。"
+
+#: of q2m3.sqd.config.ReferenceConfig:1
+msgid "Reference solver budgets, allowed tiers, and ordered optional plugins."
+msgstr "参考求解器预算、允许的层级和有序的可选插件。"
+
+#: of q2m3.sqd.config.ReferenceConfig.validate:1
+msgid "Validate finite budgets and strictly descending cutoffs. Return self."
+msgstr "验证预算为有限值且截断值严格递减。返回自身。"
+
+#: of q2m3.sqd.config.SQDConfig:1
+msgid "SQD run configuration. The molecule retains its existing mutable semantics."
+msgstr "SQD 运行配置。分子保留现有的可变语义。"
+
+#: of q2m3.sqd.config.SQDConfig.validate:1
+msgid "Validate molecular and run inputs, returning this instance."
+msgstr "验证分子和运行输入，并返回此实例。"
+
+#: of q2m3.sqd.config.SQDConfig.snapshot:1
+msgid "Capture an independent immutable configuration at the time of the call."
+msgstr "在调用时获取独立的不可变配置快照。"
+
+#: of q2m3.sqd.config.SQDConfig.snapshot:3
+msgid "A recursively frozen mapping suitable for runtime provenance."
+msgstr "适用于运行时来源记录的递归冻结映射。"
+
+#: of q2m3.sqd.config.SQDConfig.snapshot:5
+msgid "Configuration contains nonfinite or non-JSON metadata."
+msgstr "配置包含非有限值或非 JSON 元数据。"
+
+#: of q2m3.sqd.config.IntegralContext:1
+msgid "Immutable metadata describing the supplied fixed orbital Hamiltonian."
+msgstr "描述所提供的固定轨道哈密顿量的不可变元数据。"
+
+#: of q2m3.sqd.config.CCSDSeed:1
+msgid "Copied read-only RCCSD amplitudes and declared solver provenance."
+msgstr "已复制的只读 RCCSD 振幅及所声明的求解器来源记录。"
+
+#: ../../source/api-reference/sqd.rst:35
+msgid "Result Contracts"
+msgstr "结果契约"
+
+#: of q2m3.sqd.result.SQDResult:1
+msgid "Complete SQD report, with absent work represented by None and a reason."
+msgstr "完整的 SQD 报告；未执行的工作以 None 和原因表示。"
+
+#: of q2m3.sqd.result.SQDResult.validate:1
+msgid "Validate finite data, reference semantics and execution consistency."
+msgstr "验证数据为有限值、参考结果语义以及执行一致性。"
+
+#: of q2m3.sqd.result.SQDResult.validate:3
+msgid "This immutable result."
+msgstr "此不可变结果。"
+
+#: of q2m3.sqd.result.SQDResult.validate:5
+msgid "A field contradicts the result schema or executed mode."
+msgstr "某字段与结果模式或已执行模式冲突。"
+
+#: of q2m3.sqd.result.ReferenceResult:1
+msgid "A reference energy with explicit uncertainty and execution provenance."
+msgstr "包含明确不确定性和执行来源记录的参考能量。"
+
+#: of q2m3.sqd.result.ReferenceResult.validate:1
+msgid "Validate reference metadata and diagnostics, returning this record."
+msgstr "验证参考元数据和诊断信息，并返回此记录。"
+
+#: of q2m3.sqd.result.ReferenceAttempt:1
+msgid "One auditable reference selection or execution outcome."
+msgstr "一项可审计的参考选择或执行结果。"
+
+#: of q2m3.sqd.result.ReferenceAttempt.validate:1
+msgid "Validate the outcome and decimal-MB measurement, returning this record."
+msgstr "验证结果和以十进制 MB 计量的数值，并返回此记录。"
+
+#: of q2m3.sqd.result.T1Residual:1
+msgid "Adjacent-cutoff residual, attributed to the looser executed point."
+msgstr "相邻截断值之间的残差，归于已执行的较宽松截断点。"
+
+#: of q2m3.sqd.result.T1Residual.validate:1
+msgid "Check cutoff ordering and the residual, returning this record."
+msgstr "检查截断值顺序和残差，并返回此记录。"
+
+#: of q2m3.sqd.result.T2Diagnostics:1
+msgid "Independent coupled-cluster reliability flags for a T2 baseline."
+msgstr "T2 基线的独立耦合簇可靠性标志。"
+
+#: of q2m3.sqd.result.T2Diagnostics.validate:1
+msgid "Check each flag against its own diagnostic, returning this record."
+msgstr "逐一根据对应诊断检查各标志，并返回此记录。"
+
+#: ../../source/api-reference/sqd.rst:53
+msgid "Authenticated Integral Assembly"
+msgstr "经来源验证的积分构建"
+
+#: ../../source/api-reference/sqd.rst:55
+msgid ""
+"These lower-level producers create the provenance records required by ``run_sqd_from_integrals``."
+" The integral tensor uses real chemist ordering. ``e_core`` is added exactly once."
+msgstr "这些底层生成函数创建 ``run_sqd_from_integrals`` 所需的来源记录。积分张量采用实数化学家记号顺序。``e_core`` 恰好加一次。"
+
+#: of q2m3.sqd.integrals.IntegralData:1
+msgid "Immutable chemist Hamiltonian, complete MO snapshot and its provenance."
+msgstr "不可变的化学家记号哈密顿量、完整 MO 快照及其来源记录。"
+
+#: of q2m3.sqd.integrals.IntegralData:3
+msgid ""
+"``hf_energy`` is the expectation of the first ``nelec[0]`` active orbitals, including e_core. It "
+"is not a relaxed-MM SCF minimum. No CCSD amplitudes are constructed here. Downstream seed solvers"
+" must consume this same Hamiltonian."
+msgstr ""
+"``hf_energy`` 是前 ``nelec[0]`` 个活性轨道的期望值，包含 e_core。它不是经 MM 松弛的 SCF 极小值。此处不构建 CCSD "
+"振幅。下游初始解求解器必须使用同一个哈密顿量。"
+
+#: of q2m3.sqd.integrals.build_integrals:1
+msgid "Build a guarded molecular Hamiltonian in its one vacuum RHF frame."
+msgstr "在分子唯一的真空 RHF 参考系中构建带保护检查的哈密顿量。"
+
+#: of q2m3.sqd.integrals.build_integrals:3
+msgid "Molecular geometry in Angstrom and explicit closed-shell space."
+msgstr "以埃为单位的分子几何结构和显式指定的闭壳层空间。"
+
+#: of q2m3.sqd.integrals.build_integrals:4
+msgid "Optional nonempty point-charge array in elementary charges."
+msgstr "可选的非空点电荷数组，单位为元电荷。"
+
+#: of q2m3.sqd.integrals.build_integrals:5
+msgid "Corresponding coordinates in Angstrom."
+msgstr "对应坐标，单位为埃。"
+
+#: of q2m3.sqd.integrals.build_integrals:6
+msgid "Diagonal or full active-space one-electron perturbation."
+msgstr "对角或完整活性空间单电子微扰。"
+
+#: of q2m3.sqd.integrals.build_integrals:7
+msgid "Executor's conservative whole-run memory cap in decimal MB."
+msgstr "执行器为整次运行设置的保守内存上限，以十进制 MB 计。"
+
+#: of q2m3.sqd.integrals.build_integrals:8
+msgid "User's whole-run memory cap in decimal MB."
+msgstr "用户为整次运行设置的内存上限，以十进制 MB 计。"
+
+#: of q2m3.sqd.integrals.build_integrals:9
+msgid "Override only the standard soft resource rejection boundary."
+msgstr "仅覆盖标准的资源软拒绝边界。"
+
+#: of q2m3.sqd.integrals.build_integrals:11
+msgid "Read-only integrals/MOs and same-frame HF expectation with provenance."
+msgstr "只读积分/MO，以及同一参考系中包含来源记录的 HF 期望值。"
+
+#: of q2m3.sqd.integrals.build_integrals:13
+msgid "Malformed inputs, missing helper frame, or invalid integrals."
+msgstr "输入格式错误、缺少辅助参考系或积分无效。"
+
+#: of q2m3.sqd.integrals.build_integrals:14
+msgid "RHF did not converge."
+msgstr "RHF 未收敛。"
+
+#: of q2m3.sqd.integrals.build_integrals:15
+msgid "The pre-allocation estimate reaches the run cap."
+msgstr "分配前估计值达到运行上限。"
+
+#: of q2m3.sqd.integrals.build_integrals:16
+msgid "Real-AO work is outside the bounded inventory."
+msgstr "实数 AO 工作超出有界资源清单的范围。"
+
+#: of q2m3.sqd.integrals.build_integrals:18
+msgid ""
+"An external process-tree RSS monitor and wall timeout are required. Molecular basis metadata is "
+"built first to count AOs. The inventory guard then runs before any RHF or integral "
+"transformation. Its estimate is recorded in source and does not certify the later "
+"sampling/reference stages or arbitrary hosts."
+msgstr ""
+"必须使用外部进程树 RSS 监控器和墙钟超时。首先构建分子基组元数据以统计 AO 数。随后在任何 RHF 或积分变换之前运行资源清单保护检查。其估计值记录在 source "
+"中，不能据此确认后续采样/参考阶段或任意主机的资源安全性。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:1
+msgid "Hash actual integrals using the ``q2m3.hamiltonian.v1`` byte format."
+msgstr "使用 ``q2m3.hamiltonian.v1`` 字节格式对实际积分计算哈希。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:3
+msgid ""
+"The digest starts with the version and NUL, then compact ASCII JSON ``[norb,[nalpha,nbeta]]`` and"
+" NUL. Each h1, h2, e_core field has a compact ``[name,shape,\"<f8\"]`` JSON header and NUL, "
+"followed by little-endian float64 C-order bytes. e_core is a scalar with shape []. No labels "
+"enter the digest."
+msgstr ""
+"摘要输入依次以版本号和 NUL、紧凑 ASCII JSON ``[norb,[nalpha,nbeta]]`` 和 NUL 开头。h1、h2、e_core 各字段均含紧凑的 "
+"``[name,shape,\"<f8\"]`` JSON 头和 NUL，随后是小端 float64 的 C 顺序字节。e_core 是形状为 [] 的标量。标签均不参与摘要计算。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:8
+msgid "Real one-electron matrix in Hartree."
+msgstr "实数单电子矩阵，单位为 Hartree。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:9
+msgid "Real chemist two-electron tensor in Hartree."
+msgstr "化学家记号的实数双电子张量，单位为 Hartree。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:10
+msgid "Core plus nuclear constant in Hartree."
+msgstr "核心加核常数，单位为 Hartree。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:12
+msgid "Balanced spin populations."
+msgstr "平衡的自旋电子数。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:14
+msgid "Lowercase SHA256 hex digest, invariant to storage order and endianness."
+msgstr "小写 SHA256 十六进制摘要，不受存储顺序和字节序影响。"
+
+#: of q2m3.sqd.integrals.hamiltonian_id:16
+msgid "Shape, spin populations, or real/finite representation is invalid."
+msgstr "形状、自旋电子数或实数/有限值表示无效。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:1
+msgid "Solve RCCSD in the supplied fixed frame without rerunning SCF."
+msgstr "在所提供的固定参考系中求解 RCCSD，不重新运行 SCF。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:3
+msgid "Immutable Hamiltonian and complete molecular-frame source."
+msgstr "不可变哈密顿量和完整的分子参考系来源记录。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:4
+msgid "Executor whole-run cap in decimal MB."
+msgstr "执行器为整次运行设置的上限，以十进制 MB 计。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:5
+msgid "User whole-run cap in decimal MB."
+msgstr "用户为整次运行设置的上限，以十进制 MB 计。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:6
+msgid "Override only the resource soft boundary."
+msgstr "仅覆盖资源软边界。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:7
+msgid "Iteration bound, 0..200. Zero exercises convergence refusal."
+msgstr "迭代次数上限，范围为 0..200。设为零时检验不收敛拒绝路径。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:9
+msgid "Converged read-only amplitudes with independently verified Ha residual."
+msgstr "已收敛的只读振幅，包含经独立验证、以 Ha 为单位的残差。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:11
+msgid "Iterations fail or the physical residual is unacceptable."
+msgstr "迭代失败或物理残差不可接受。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:12
+msgid "Supplied Hamiltonian/frame/energy is inconsistent."
+msgstr "所提供的哈密顿量/参考系/能量不一致。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed:13
+msgid "Inventory guard refuses allocation."
+msgstr "资源清单保护检查拒绝分配内存。"
+
+#: ../../source/api-reference/sqd.rst:69
+msgid "Resource Policy"
+msgstr "资源策略"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:1
+msgid "Estimate total simultaneously resident memory for one serial stage."
+msgstr "估计单个串行阶段同时驻留的总内存。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:3 q2m3.sqd.resources.guard_allocation:3
+msgid "Active spatial orbitals."
+msgstr "活性空间轨道。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:4 q2m3.sqd.resources.guard_allocation:4
+msgid "Balanced alpha/beta populations."
+msgstr "平衡的 alpha/beta 电子数。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:5
+msgid "Operation about to allocate memory."
+msgstr "即将分配内存的操作。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:6
+msgid "Candidate spin-sector sizes, required for fixed spaces."
+msgstr "候选自旋扇区大小；固定空间必须提供。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:7
+msgid "Additional live inputs outside the model's workload inventory."
+msgstr "模型工作负载资源清单之外仍在使用的额外输入。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:8
+msgid "Required reference solver identity."
+msgstr "所需参考求解器的标识。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:9
+msgid "Versioned model already checked against its runtime environment."
+msgstr "已根据运行环境检查的带版本模型。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:11
+msgid "Finite decimal MB, including imports, workspace and retained inputs."
+msgstr "以十进制 MB 计的有限值，包括导入、工作区和保留的输入。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:13
+msgid "Malformed counts or retained memory."
+msgstr "数量或保留内存的格式错误。"
+
+#: of q2m3.sqd.resources.estimate_rss_mb:14
+msgid "Missing dimensions, unsupported stage or invalid bound."
+msgstr "缺少维度、不支持该阶段或边界无效。"
+
+#: of q2m3.sqd.resources.guard_allocation:1
+msgid "Reject an unsafe operation before allocating its working space."
+msgstr "在分配工作空间之前拒绝不安全的操作。"
+
+#: of q2m3.sqd.resources.guard_allocation:5
+msgid "Stage about to run."
+msgstr "即将运行的阶段。"
+
+#: of q2m3.sqd.resources.guard_allocation:6
+msgid "Applicable empirical model."
+msgstr "适用的经验模型。"
+
+#: of q2m3.sqd.resources.guard_allocation:7
+msgid "Conservative total run cap supplied by the executor."
+msgstr "执行器提供的保守运行总上限。"
+
+#: of q2m3.sqd.resources.guard_allocation:8
+msgid "Actual candidates, or a proven pre-call dimension bound."
+msgstr "实际候选，或经证明的调用前维度上界。"
+
+#: of q2m3.sqd.resources.guard_allocation:9
+msgid "Additional simultaneously live memory outside the inventory."
+msgstr "资源清单之外同时在用的额外内存。"
+
+#: of q2m3.sqd.resources.guard_allocation:10
+msgid "Reference solver identity, when applicable."
+msgstr "参考求解器标识（如适用）。"
+
+#: of q2m3.sqd.resources.guard_allocation:11
+msgid "Optional user cap. An override never bypasses this cap."
+msgstr "可选的用户上限。覆盖设置绝不会绕过此上限。"
+
+#: of q2m3.sqd.resources.guard_allocation:12
+msgid "Permit estimates above the default soft rejection boundary."
+msgstr "允许估计值超过默认软拒绝边界。"
+
+#: of q2m3.sqd.resources.guard_allocation:14
+msgid "The checked estimate in decimal MB."
+msgstr "检查后的估计值，以十进制 MB 计。"
+
+#: of q2m3.sqd.resources.guard_allocation:16
+msgid "Estimate reaches any applicable rejection boundary."
+msgstr "估计值达到任一适用的拒绝边界。"
+
+#: of q2m3.sqd.resources.guard_allocation:17
+msgid "No applicable bound exists, even with override."
+msgstr "不存在适用的上界，即使启用覆盖设置也不例外。"
+
+#: of q2m3.sqd.resources.load_resource_model:1
+msgid "Load a validated model and reject incompatible dependencies or workload."
+msgstr "加载已验证的模型，并拒绝不兼容的依赖项或工作负载。"
+
+#: of q2m3.sqd.resources.load_resource_model:3
+msgid "Calibration artifact. Defaults to the shipped coefficient file."
+msgstr "校准产物。默认为随包提供的系数文件。"
+
+#: of q2m3.sqd.resources.load_resource_model:4
+msgid ""
+"Exact explicit manifest, or installed distribution versions. Only absent optional Catalyst is "
+"accepted when inspecting the installation. An installed Catalyst version must still match the "
+"calibration."
+msgstr "完整且明确的清单，或已安装分发包的版本。检查安装时，仅允许可选的 Catalyst 缺失。若已安装 Catalyst，其版本仍必须与校准记录匹配。"
+
+#: of q2m3.sqd.resources.load_resource_model:7
+msgid "Workload overrides to check against the artifact's bounded profile."
+msgstr "需要根据校准产物的有界配置检查的工作负载覆盖设置。"
+
+#: of q2m3.sqd.resources.load_resource_model:9
+msgid ""
+"An immutable model. Executors must honor the recorded live-array schedule, solver settings and "
+"profile. Arbitrary geometry/AO-basis work is not covered."
+msgstr "不可变模型。执行器必须遵守记录的在用数组调度、求解器设置和配置。不涵盖任意几何结构/AO 基组工作。"
+
+#: of q2m3.sqd.resources.load_resource_model:12
+msgid "Missing artifact, unvalidated model or runtime mismatch."
+msgstr "产物缺失、模型未经验证或运行环境不匹配。"
+
+#: ../../source/api-reference/sqd.rst:78
+msgid "Exceptions"
+msgstr "异常"
+
+#: of q2m3.sqd.exceptions:1
+msgid "Typed SQD failures shared by optional numerical backends."
+msgstr "可选数值后端共用的带类型 SQD 失败。"
+
+#: of q2m3.sqd.exceptions.ResourceLimitError:1
+msgid "A run exceeds its allowed resource budget."
+msgstr "运行超出允许的资源预算。"
+
+#: of q2m3.sqd.exceptions.ResourceModelDomainError:1
+msgid "No calibrated resource bound applies to the requested operation."
+msgstr "没有适用于所请求操作的已校准资源上界。"
+
+#: of q2m3.sqd.exceptions.CCSDConvergenceError:1
+msgid "The ansatz seed did not converge."
+msgstr "拟设初始解未收敛。"
+
+#: of q2m3.sqd.exceptions.BaselineUnavailableError:1
+msgid "No permitted reference solver can supply a baseline."
+msgstr "没有获准使用的参考求解器能提供基线。"
+
+#: of q2m3.sqd.exceptions.ReferenceUnavailableError:1
+msgid "An optional reference solver is unavailable."
+msgstr "可选的参考求解器不可用。"
+
+#: of q2m3.sqd.exceptions.ReferenceTimeoutError:1
+msgid "A reference solve exhausted its time budget."
+msgstr "参考求解耗尽时间预算。"
+
+#: of q2m3.sqd.exceptions.ReferenceNumericalError:1
+msgid "A reference solve failed its numerical acceptance checks."
+msgstr "参考求解未通过数值验收检查。"
+
+#: of q2m3.sqd.exceptions.SamplingIntegrityError:1
+msgid "Samples violate the sampling contract."
+msgstr "样本违反采样契约。"
+
+#: of q2m3.sqd.exceptions.ComparisonUnavailableError:1
+msgid "A required matched comparison cannot be produced."
+msgstr "无法生成所需的匹配比较。"
+
+#: of q2m3.sqd.exceptions.ProvenanceMismatchError:1
+msgid "Inputs refer to different orbital frames or Hamiltonians."
+msgstr "输入对应不同的轨道参考系或哈密顿量。"

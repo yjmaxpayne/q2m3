@@ -1,9 +1,9 @@
 Tutorials
 =========
 
-The tutorials are ordered from lightweight validation toward larger SQD and
-solvation workflows. Run the H2 paths first, before you try glycine, H3O+, or
-high-memory profiling scripts.
+The tutorials cover small validation runs and larger SQD and solvation
+workflows. Run the H2 examples before glycine, H3O+, or profiling scripts
+that require large amounts of memory.
 
 .. toctree::
    :maxdepth: 1
@@ -18,7 +18,7 @@ high-memory profiling scripts.
 Optional Diagnostic Scripts
 ---------------------------
 
-The following examples are intentionally not first-run tutorials:
+Run these diagnostics after the first-run tutorials:
 
 * ``examples/qmmm/h3o_mc_solvation.py``: H3O+ ionic solvation, 16 GB+ RAM recommended.
 * ``examples/qpe/h3o_8bit_qpe_benchmark.py``: high-precision H3O+ benchmark with

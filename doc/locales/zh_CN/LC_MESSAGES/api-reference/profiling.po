@@ -1,0 +1,574 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/profiling.rst:2
+msgid "Profiling API"
+msgstr "性能分析 API"
+
+#: ../../source/api-reference/profiling.rst:5
+msgid "Memory Profiling"
+msgstr "内存性能分析"
+
+#: of q2m3.profiling.memory:1
+msgid "Memory measurement infrastructure for QPE circuit compilation profiling."
+msgstr "用于 QPE 电路编译性能分析的内存测量基础设施。"
+
+#: of q2m3.profiling.memory:3
+msgid "Provides multi-layer memory measurement:"
+msgstr "提供多层内存测量："
+
+#: of q2m3.profiling.memory:4
+msgid "resource.getrusage(RUSAGE_SELF/RUSAGE_CHILDREN) → process lifetime peak RSS"
+msgstr "resource.getrusage(RUSAGE_SELF/RUSAGE_CHILDREN) → 进程生命周期内的峰值 RSS"
+
+#: of q2m3.profiling.memory:5
+msgid "/proc/self/status VmRSS/VmPeak → current/peak RSS (Linux kernel level)"
+msgstr "/proc/self/status VmRSS/VmPeak → 当前／峰值 RSS（Linux 内核层面）"
+
+#: of q2m3.profiling.memory:6
+msgid "tracemalloc → Python heap only"
+msgstr "tracemalloc → 仅 Python 堆"
+
+#: of q2m3.profiling.memory:8
+msgid "This module has zero project dependencies (stdlib only)."
+msgstr "此模块无项目依赖（仅使用标准库）。"
+
+#: of q2m3.profiling.memory.MemorySnapshot:1
+msgid "Multi-layer memory snapshot at a single point in time."
+msgstr "单个时间点的多层内存快照。"
+
+#: ../../source/api-reference/profiling.rst of q2m3.profiling.memory.MemorySnapshot
+#: q2m3.profiling.memory.ProfileResult q2m3.profiling.memory.take_snapshot
+#: q2m3.profiling.orchestrator.run_single_profile_in_subprocess
+#: q2m3.profiling.timing.ProfilingStats.record q2m3.profiling.timing.profile_function
+#: q2m3.profiling.timing.profile_section
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.profiling.memory.ProfileResult:1
+msgid "Complete profiling result for one parameter combination."
+msgstr "一个参数组合的完整性能分析结果。"
+
+#: of q2m3.profiling.memory.read_proc_status:1
+msgid "Parse /proc/[pid]/status for VmRSS and VmPeak (Linux only)."
+msgstr "解析 /proc/[pid]/status 中的 VmRSS 和 VmPeak（仅限 Linux）。"
+
+#: of q2m3.profiling.memory.read_proc_status:3
+msgid "Process ID to read, or \"self\" for current process."
+msgstr "要读取的进程 ID，或用 \"self\" 表示当前进程。"
+
+#: ../../source/api-reference/profiling.rst of q2m3.profiling.memory.take_snapshot
+#: q2m3.profiling.orchestrator.run_single_profile_in_subprocess
+#: q2m3.profiling.timing.ProfilingStats.record q2m3.profiling.timing.ProfilingStats.summary
+#: q2m3.profiling.timing.profile_function
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.profiling.memory.read_smaps_rollup:1
+msgid "Parse /proc/[pid]/smaps_rollup to categorize RSS into memory types."
+msgstr "解析 /proc/[pid]/smaps_rollup，按内存类型划分 RSS。"
+
+#: of q2m3.profiling.memory.read_smaps_rollup:3
+msgid "Returns dict with MB values for:"
+msgstr "返回字典，包含以下值，单位为 MB："
+
+#: of q2m3.profiling.memory.read_smaps_rollup:4
+msgid "Rss: total resident"
+msgstr "Rss：驻留内存总量"
+
+#: of q2m3.profiling.memory.read_smaps_rollup:5
+msgid "Pss: proportional share"
+msgstr "Pss：按比例分摊的内存"
+
+#: of q2m3.profiling.memory.read_smaps_rollup:6
+msgid "Anonymous: heap + anonymous mmap (C++ allocations, LLVM JIT code)"
+msgstr "Anonymous：堆 + 匿名 mmap（C++ 分配、LLVM JIT 代码）"
+
+#: of q2m3.profiling.memory.read_smaps_rollup:7
+msgid "LazyFree, AnonHugePages, etc."
+msgstr "LazyFree、AnonHugePages 等。"
+
+#: of q2m3.profiling.memory.take_snapshot:1
+msgid "Take a comprehensive memory snapshot from all measurement layers."
+msgstr "从所有测量层获取完整的内存快照。"
+
+#: of q2m3.profiling.memory.take_snapshot:3
+msgid ""
+"Captures both RUSAGE_SELF (Python process) and RUSAGE_CHILDREN (catalyst subprocess) to detect "
+"the measurement blind spot where MLIR→LLVM compilation happens in a child process."
+msgstr "同时捕获 RUSAGE_SELF（Python 进程）和 RUSAGE_CHILDREN（catalyst 子进程），以检测 MLIR→LLVM 编译发生在子进程时的测量盲区。"
+
+#: of q2m3.profiling.memory.MemoryTimeline:1
+msgid "Background daemon thread sampling /proc/self/status VmRSS at 100ms intervals."
+msgstr "后台守护线程，每 100ms 采样一次 /proc/self/status VmRSS。"
+
+#: of q2m3.profiling.memory.MemoryTimeline:3
+msgid "Also captures /proc/self/smaps_rollup at peak RSS to categorize memory."
+msgstr "同时在 RSS 峰值处捕获 /proc/self/smaps_rollup，以划分内存类型。"
+
+#: of q2m3.profiling.memory.MemoryTimeline.peak_smaps:1
+msgid "Memory categorization captured at peak RSS moment."
+msgstr "在 RSS 峰值时刻捕获的内存分类。"
+
+#: of q2m3.profiling.memory.ParentSideMonitor:1
+msgid "Monitor a child process's RSS from the parent side via /proc/PID/status."
+msgstr "从父进程通过 /proc/PID/status 监测子进程的 RSS。"
+
+#: of q2m3.profiling.memory.ParentSideMonitor:3
+msgid ""
+"This provides an independent measurement that validates the child's self-reported ru_maxrss. "
+"Critical for detecting measurement blind spots where getrusage misses certain allocation patterns"
+" (mmap, LLVM JIT, etc.)."
+msgstr "此方法提供独立测量，用于验证子进程自行报告的 ru_maxrss。它对于检测 getrusage 遗漏某些分配模式（mmap、LLVM JIT 等）时的测量盲区十分关键。"
+
+#: of q2m3.profiling.memory.ParentSideMonitor.peak_hwm_mb:1
+msgid "kernel-tracked high water mark for RSS (most reliable)."
+msgstr "内核记录的 RSS 历史最高值（最可靠）。"
+
+#: of q2m3.profiling.memory.ParentSideMonitor.peak_hwm_mb
+msgid "type"
+msgstr "类型"
+
+#: of q2m3.profiling.memory.ParentSideMonitor.peak_hwm_mb:3
+msgid "VmHWM"
+msgstr "VmHWM"
+
+#: of q2m3.profiling.memory.measure_command:1
+msgid "Run a command and record wall time, exit state, and process-tree RSS."
+msgstr "运行命令，并记录实际耗时、退出状态和进程树 RSS。"
+
+#: of q2m3.profiling.memory.measure_command:3
+msgid ""
+"The monitor supports Linux systems with /proc. It polls the command process and its current "
+"descendants every 0.01 seconds. The observer process is excluded. RSS values are decimal "
+"megabytes. Polled samples do not bound arbitrary transient allocations."
+msgstr "此监测器支持具有 /proc 的 Linux 系统。每 0.01 秒轮询一次命令进程及其当前后代进程，不包含观测进程。RSS 使用十进制兆字节。轮询样本无法为任意瞬态分配提供上界。"
+
+#: of q2m3.profiling.memory.measure_command:8
+msgid "Non-empty argv list. Each item is a string without NUL."
+msgstr "非空 argv 列表。每项都是不含 NUL 的字符串。"
+
+#: of q2m3.profiling.memory.measure_command:9
+msgid "New evidence directory. A relative path is relative to the caller's current directory."
+msgstr "新的证据目录。相对路径以调用方的当前目录为基准。"
+
+#: of q2m3.profiling.memory.measure_command:11
+msgid "Positive finite wall-time budget in seconds."
+msgstr "有限且为正的实际耗时预算，单位为秒。"
+
+#: of q2m3.profiling.memory.measure_command:12
+msgid "Positive finite process-tree RSS budget in decimal megabytes."
+msgstr "有限且为正的进程树 RSS 预算，单位为十进制兆字节。"
+
+#: of q2m3.profiling.memory.measure_command:13
+msgid ""
+"Working directory for the command. None uses the caller's current directory. The parent process "
+"does not change directory."
+msgstr "命令的工作目录。None 表示调用方的当前目录。父进程不改变目录。"
+
+#: of q2m3.profiling.memory.measure_command:15
+msgid "String mapping merged over the default child environment."
+msgstr "覆盖合并到默认子进程环境的字符串映射。"
+
+#: ../../source/api-reference/profiling.rst of q2m3.profiling.timing.profile_function
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.profiling.memory.measure_command:17
+msgid ""
+"A record with command, exit_code, reason, wall_s, peak_tree_rss_mb, poll_s, rss_budget_mb, "
+"wall_budget_s, scope, and limitation."
+msgstr ""
+"一条记录，包含 command、exit_code、reason、wall_s、peak_tree_rss_mb、poll_s、rss_budget_mb、wall_budget_s、scope"
+" 和 limitation。"
+
+#: ../../source/api-reference/profiling.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.profiling.memory.measure_command:20
+msgid ""
+"An input value is invalid. The function rejects it before     it creates the output directory or "
+"starts a process."
+msgstr "输入值无效。函数会在创建输出目录或启动进程之前拒绝此输入。"
+
+#: of q2m3.profiling.memory.measure_command:21
+msgid "The output directory already exists."
+msgstr "输出目录已存在。"
+
+#: of q2m3.profiling.memory.measure_command:22
+msgid "The platform lacks Linux /proc support."
+msgstr "平台不支持 Linux /proc。"
+
+#: of q2m3.profiling.memory.measure_command:23
+msgid "The working directory is missing or the command cannot start."
+msgstr "工作目录不存在，或命令无法启动。"
+
+#: ../../source/api-reference/profiling.rst:12
+msgid "Timing Utilities"
+msgstr "计时工具"
+
+#: of q2m3.profiling.timing:1
+msgid "General-purpose timing utilities for q2m3."
+msgstr "q2m3 的通用计时工具。"
+
+#: of q2m3.profiling.timing:3
+msgid ""
+"Provides lightweight profiling tools for measuring code section and function execution times. "
+"These utilities are independent of QPE-specific profiling and can be used anywhere in the "
+"codebase."
+msgstr "提供轻量性能分析工具，用于测量代码段和函数的执行时间。这些工具独立于 QPE 专用性能分析，可用于代码库的任意位置。"
+
+#: of q2m3.profiling.timing.profile_section:1
+msgid "Context manager for profiling a code section."
+msgstr "用于代码段性能分析的上下文管理器。"
+
+#: of q2m3.profiling.timing.profile_section:3
+msgid "Name of the section being profiled"
+msgstr "被分析代码段的名称"
+
+#: of q2m3.profiling.timing.profile_function:4 q2m3.profiling.timing.profile_section:4
+msgid "Whether to print timing information"
+msgstr "是否打印计时信息"
+
+#: of q2m3.profiling.catalyst_ir.ir_output_dir q2m3.profiling.timing.profile_section
+msgid "Yields"
+msgstr "产出值"
+
+#: of q2m3.profiling.timing.profile_section:6
+msgid "*dict* -- A timing info dictionary that gets updated with elapsed time"
+msgstr "*dict* -- 随已用时间更新的计时信息字典"
+
+#: of q2m3.profiling.timing.profile_function:8 q2m3.profiling.timing.profile_section:8
+msgid "Example::"
+msgstr "示例::"
+
+#: of q2m3.profiling.timing.profile_function:1
+msgid "Decorator for profiling a function's execution time."
+msgstr "用于分析函数执行时间的装饰器。"
+
+#: of q2m3.profiling.timing.profile_function:3
+msgid "The function to profile"
+msgstr "要分析的函数"
+
+#: of q2m3.profiling.timing.profile_function:6
+msgid "Wrapped function that tracks execution time"
+msgstr "跟踪执行时间的包装函数"
+
+#: of q2m3.profiling.timing.ProfilingStats:1
+msgid "Accumulator for profiling statistics across multiple runs."
+msgstr "累积多次运行的性能统计信息。"
+
+#: of q2m3.profiling.timing.ProfilingStats.record:1
+msgid "Record a timing measurement."
+msgstr "记录一次计时测量。"
+
+#: of q2m3.profiling.timing.ProfilingStats.total:1
+msgid "Total elapsed time."
+msgstr "总耗时。"
+
+#: of q2m3.profiling.timing.ProfilingStats.count:1
+msgid "Number of recorded timings."
+msgstr "记录的计时次数。"
+
+#: of q2m3.profiling.timing.ProfilingStats.mean:1
+msgid "Mean elapsed time."
+msgstr "平均耗时。"
+
+#: of q2m3.profiling.timing.ProfilingStats.min:1
+msgid "Minimum elapsed time."
+msgstr "最短耗时。"
+
+#: of q2m3.profiling.timing.ProfilingStats.max:1
+msgid "Maximum elapsed time."
+msgstr "最长耗时。"
+
+#: of q2m3.profiling.timing.ProfilingStats.summary:1
+msgid "Return a summary string of profiling stats."
+msgstr "返回性能统计的摘要字符串。"
+
+#: ../../source/api-reference/profiling.rst:19
+msgid "Catalyst IR Analysis"
+msgstr "Catalyst IR 分析"
+
+#: of q2m3.profiling.catalyst_ir:1
+msgid "Catalyst IR stage analysis utilities."
+msgstr "Catalyst IR 各阶段的分析工具。"
+
+#: of q2m3.profiling.catalyst_ir:3
+msgid ""
+"WARNING: ir_output_dir() uses os.chdir() which modifies global process state. It is NOT thread-"
+"safe. Do not call concurrently from multiple threads. ir_output_dir() must be the outermost "
+"context manager around @qjit decoration."
+msgstr ""
+"警告：ir_output_dir() 使用 os.chdir()，会修改全局进程状态。它不具备线程安全性。不得从多个线程并发调用。ir_output_dir() 必须是包围 @qjit "
+"装饰的最外层上下文管理器。"
+
+#: of q2m3.profiling.catalyst_ir.ir_output_dir:1
+msgid "Manage Catalyst IR workspace directory."
+msgstr "管理 Catalyst IR 工作目录。"
+
+#: of q2m3.profiling.catalyst_ir.ir_output_dir:3
+msgid ""
+"This context manager must wrap @qjit decoration, not just the call. Catalyst captures os.getcwd()"
+" at decoration time to determine the IR output location."
+msgstr "此上下文管理器必须包围 @qjit 装饰，而不只是函数调用。Catalyst 在装饰时捕获 os.getcwd()，以确定 IR 输出位置。"
+
+#: of q2m3.profiling.catalyst_ir.ir_output_dir:6
+msgid ""
+"If provided, IR files are written here and preserved after exit. If None, a temporary directory "
+"is used and auto-cleaned on exit."
+msgstr "若提供目录，IR 文件写入此处并在退出后保留。若为 None，则使用临时目录，并在退出时自动清理。"
+
+#: of q2m3.profiling.catalyst_ir.ir_output_dir:9
+msgid "The workspace directory path (user-specified or auto-created tempdir)."
+msgstr "工作目录路径（用户指定的目录或自动创建的临时目录）。"
+
+#: of q2m3.profiling.catalyst_ir.analyze_ir_stages:1
+msgid "Export IR text from each compilation stage and measure size/lines."
+msgstr "导出各编译阶段的 IR 文本，并测量大小与行数。"
+
+#: of q2m3.profiling.catalyst_ir.analyze_ir_stages:3
+msgid "A Catalyst @qjit compiled function."
+msgstr "经 Catalyst @qjit 编译的函数。"
+
+#: of q2m3.profiling.catalyst_ir.analyze_ir_stages:4
+msgid "Override list of stage names. If None, uses COMPILATION_STAGES."
+msgstr "用于覆盖默认值的阶段名称列表。若为 None，则使用 COMPILATION_STAGES。"
+
+#: of q2m3.profiling.catalyst_ir.analyze_ir_stages:6
+msgid "List of (stage_name, size_kb, n_lines). Empty list if Catalyst is unavailable or all stages fail."
+msgstr "(stage_name, size_kb, n_lines) 列表。若 Catalyst 不可用或所有阶段均失败，则为空列表。"
+
+#: ../../source/api-reference/profiling.rst:25
+msgid "QPE Profiling"
+msgstr "QPE 性能分析"
+
+#: of q2m3.profiling.qpe_profiler:1
+msgid "Three-phase QPE compilation profiling workflow."
+msgstr "三阶段 QPE 编译性能分析工作流。"
+
+#: of q2m3.profiling.qpe_profiler:3
+msgid "Provides profile_* functions for measuring memory usage and timing across:"
+msgstr "提供 profile_* 函数，用于测量以下阶段的内存占用与耗时："
+
+#: of q2m3.profiling.qpe_profiler:4
+msgid "Phase A: PySCF → PennyLane Hamiltonian construction"
+msgstr "阶段 A：PySCF → PennyLane 哈密顿量构建"
+
+#: of q2m3.profiling.qpe_profiler:5
+msgid "Phase B: @qjit QPE circuit compilation (H_dynamic and H_fixed modes)"
+msgstr "阶段 B：@qjit QPE 电路编译（H_dynamic 与 H_fixed 模式）"
+
+#: of q2m3.profiling.qpe_profiler:6
+msgid "Phase C: Repeated execution of already-compiled circuit"
+msgstr "阶段 C：重复执行已编译的电路"
+
+#: of q2m3.profiling.qpe_profiler:8
+msgid ""
+"Catalyst is an optional dependency. profile_qjit_compilation[_fixed] raise ImportError at call "
+"time if catalyst is not installed."
+msgstr "Catalyst 是可选依赖。若未安装 catalyst，profile_qjit_compilation[_fixed] 在调用时抛出 ImportError。"
+
+#: of q2m3.profiling.qpe_profiler.profile_hamiltonian_build:1
+msgid "Profile Phase A: PySCF → PennyLane Hamiltonian construction."
+msgstr "分析阶段 A：PySCF → PennyLane 哈密顿量构建。"
+
+#: of q2m3.profiling.qpe_profiler.profile_hamiltonian_build:3
+msgid "Tuple of (snapshot, ops, coeffs, hf_state, circuit_params)"
+msgstr "(snapshot, ops, coeffs, hf_state, circuit_params) 元组"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:1
+msgid "Profile Phase B: H_dynamic mode @qjit QPE circuit compilation."
+msgstr "分析阶段 B：H_dynamic 模式的 @qjit QPE 电路编译。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:3
+msgid "This is the critical phase — first call triggers MLIR→LLVM compilation."
+msgstr "这是关键阶段：首次调用触发 MLIR→LLVM 编译。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:5
+msgid ""
+"IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context, because Catalyst captures "
+"os.getcwd() at decoration time to determine the IR workspace location."
+msgstr "重要：在 ir_output_dir 上下文内部，以函数调用形式应用 @qjit，因为 Catalyst 在装饰时捕获 os.getcwd()，以确定 IR 工作目录位置。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:9
+msgid "PennyLane operators used to build the runtime Hamiltonian."
+msgstr "用于构建运行时哈密顿量的 PennyLane 算符。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:10
+msgid "Hamiltonian coefficients supplied at runtime."
+msgstr "运行时提供的哈密顿量系数。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:11
+#: q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:11
+msgid "Hartree-Fock occupation vector for system-state preparation."
+msgstr "用于系统态制备的 Hartree-Fock 占据向量。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:12
+#: q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:12
+msgid "Circuit metadata from profile_hamiltonian_build()."
+msgstr "来自 profile_hamiltonian_build() 的电路元数据。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:13
+#: q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:13
+msgid ""
+"If provided, IR files are preserved at this path. If None, a tempdir is used and auto-cleaned "
+"after IR analysis."
+msgstr "若提供路径，IR 文件保留在该处。若为 None，则使用临时目录，并在 IR 分析后自动清理。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:15
+msgid ""
+"If True, retain all 6 IR stages in memory for analysis. If False, only final stage is kept (tests"
+" memory impact)."
+msgstr "若为 True，在内存中保留全部 6 个 IR 阶段以供分析。若为 False，仅保留最后阶段（用于测试内存影响）。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation:18
+#: q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:17
+msgid "Tuple of (snapshot, timeline, ir_analysis, compiled_fn)"
+msgstr "(snapshot, timeline, ir_analysis, compiled_fn) 元组"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:1
+msgid "Profile Phase B for H_fixed mode: Hamiltonian built OUTSIDE @qjit."
+msgstr "分析 H_fixed 模式的阶段 B：在 @qjit 外构建哈密顿量。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:3
+msgid ""
+"Coefficients are Python floats → Catalyst can constant-fold them into MLIR. The compiled function"
+" takes zero arguments."
+msgstr "系数为 Python 浮点数，因此 Catalyst 可将其常量折叠到 MLIR 中。编译后的函数不接收参数。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:6
+msgid ""
+"IMPORTANT: @qjit is applied functionally INSIDE ir_output_dir context, because Catalyst captures "
+"os.getcwd() at decoration time."
+msgstr "重要：在 ir_output_dir 上下文内部，以函数调用形式应用 @qjit，因为 Catalyst 在装饰时捕获 os.getcwd()。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:9
+msgid "PennyLane operators used to build the fixed Hamiltonian."
+msgstr "用于构建固定哈密顿量的 PennyLane 算符。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:10
+msgid "Hamiltonian coefficients embedded as Python floats before @qjit."
+msgstr "在 @qjit 之前以 Python 浮点数嵌入的哈密顿量系数。"
+
+#: of q2m3.profiling.qpe_profiler.profile_qjit_compilation_fixed:15
+msgid "If True, retain all 6 IR stages for analysis."
+msgstr "若为 True，保留全部 6 个 IR 阶段以供分析。"
+
+#: of q2m3.profiling.qpe_profiler.profile_execution:1
+msgid "Profile Phase C: repeated execution of already-compiled circuit."
+msgstr "分析阶段 C：重复执行已编译的电路。"
+
+#: of q2m3.profiling.qpe_profiler.profile_execution:3
+msgid "Tuple of (snapshot, prob_sum_from_last_call)"
+msgstr "(snapshot, prob_sum_from_last_call) 元组"
+
+#: ../../source/api-reference/profiling.rst:31
+msgid "Profiling Orchestrator"
+msgstr "性能分析编排器"
+
+#: of q2m3.profiling.orchestrator:1
+msgid "Subprocess orchestration and parameter sweep for QPE compilation profiling."
+msgstr "用于 QPE 编译性能分析的子进程编排和参数扫描。"
+
+#: of q2m3.profiling.orchestrator:3
+msgid ""
+"Provides functions to run profiling passes in isolated subprocesses (avoiding ru_maxrss "
+"accumulation) and to sweep across parameter grids."
+msgstr "提供在隔离子进程中运行性能分析的函数（避免 ru_maxrss 累积），以及遍历参数网格的函数。"
+
+#: of q2m3.profiling.orchestrator:6
+msgid ""
+"All progress reporting uses an injectable ``on_progress`` callback. Progress reporting produces "
+"no direct console output (Rich, print, etc.). Callers can therefore use any UI layer."
+msgstr "所有进度报告均使用可注入的 ``on_progress`` 回调。进度报告不直接输出到控制台（Rich、print 等）。因此，调用方可使用任意界面层。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:1
+msgid "Execute all three profiling phases for one parameter combination."
+msgstr "为一个参数组合执行全部三个性能分析阶段。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:3
+msgid "Molecule configuration."
+msgstr "分子配置。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:4
+msgid "Number of estimation wires."
+msgstr "估计线路数。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:5
+msgid "Trotter decomposition order."
+msgstr "Trotter 分解阶数。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:6
+msgid "\"dynamic\", \"fixed\", or \"both\"."
+msgstr "\"dynamic\"、\"fixed\" 或 \"both\"。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:7
+msgid "Directory to preserve IR files. None uses a tempdir."
+msgstr "用于保留 IR 文件的目录。None 表示使用临时目录。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:8 q2m3.profiling.orchestrator.run_sweep:6
+msgid "Optional callback for progress messages."
+msgstr "用于进度消息的可选回调。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile:10
+msgid ""
+"A single ProfileResult for \"dynamic\"/\"fixed\", or a tuple of (fixed_result, dynamic_result) "
+"when mode=\"both\"."
+msgstr "\"dynamic\"/\"fixed\" 模式返回单个 ProfileResult；mode=\"both\" 时返回 (fixed_result, dynamic_result) 元组。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile_in_subprocess:1
+msgid "Run a single profiling pass inside a subprocess (avoids ru_maxrss accumulation)."
+msgstr "在子进程中运行一次性能分析（避免 ru_maxrss 累积）。"
+
+#: of q2m3.profiling.orchestrator.run_single_profile_in_subprocess:3
+msgid "This function places results into *queue*. It does not return the result."
+msgstr "此函数将结果放入 *queue*，不直接返回结果。"
+
+#: of q2m3.profiling.orchestrator.run_both_modes:1
+msgid "Run fixed and dynamic modes in isolated subprocesses with parent-side monitoring."
+msgstr "在隔离子进程中运行 fixed 与 dynamic 模式，并从父进程侧监测。"
+
+#: of q2m3.profiling.orchestrator.run_both_modes:3
+msgid "Tuple of (result_fixed, result_dynamic, parent_data_fixed, parent_data_dynamic)."
+msgstr "(result_fixed, result_dynamic, parent_data_fixed, parent_data_dynamic) 元组。"
+
+#: of q2m3.profiling.orchestrator.run_sweep:1
+msgid "Run parameter sweep with subprocess isolation."
+msgstr "使用子进程隔离进行参数扫描。"
+
+#: of q2m3.profiling.orchestrator.run_sweep:3
+msgid "Key into MOLECULES dict."
+msgstr "MOLECULES 字典的键。"
+
+#: of q2m3.profiling.orchestrator.run_sweep:4
+msgid "\"dynamic\" or \"fixed\"."
+msgstr "\"dynamic\" 或 \"fixed\"。"
+
+#: of q2m3.profiling.orchestrator.run_sweep:5
+msgid "List of (n_est, n_trotter) pairs. Defaults to H2_SWEEP_GRID."
+msgstr "(n_est, n_trotter) 对列表。默认为 H2_SWEEP_GRID。"
+
+#: of q2m3.profiling.orchestrator.run_sweep:8
+msgid ""
+"Dict mapping (n_est, n_trotter) to ProfileResult for successful runs. Failed grid points are "
+"silently skipped (logged at warning level)."
+msgstr "将 (n_est, n_trotter) 映射到成功运行的 ProfileResult 的字典。失败的网格点会被跳过（以 warning 级别记录日志），且不会纳入结果。"

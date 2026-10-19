@@ -1,9 +1,8 @@
 # Architecture
 
-q2m3 is organized around explicit boundaries between classical chemistry,
-quantum circuits, MC sampling, and diagnostics. The boundaries matter because
-PySCF, NumPy, PennyLane, JAX, and Catalyst each impose different data and
-execution constraints.
+q2m3 separates classical chemistry, quantum circuits, MC sampling, and
+diagnostics. PySCF, NumPy, PennyLane, JAX, and Catalyst require different data
+formats and execution conditions.
 
 ## Package Overview
 
@@ -35,8 +34,8 @@ flowchart TB
 
 ## Data Flow
 
-The main workflow moves from classical molecular data to a qubit Hamiltonian,
-through QPE or a fallback solver path, and back to classical observables.
+The main workflow converts molecular data to a qubit Hamiltonian. QPE or a
+fallback solver then supplies data for classical observables.
 
 ```{mermaid}
 sequenceDiagram
@@ -70,7 +69,7 @@ sequenceDiagram
 
 ## Device Selection
 
-Device selection is split across two backend systems:
+Device selection uses two backend systems:
 
 | Backend family | Used for | Detection surface |
 | --- | --- | --- |
@@ -89,8 +88,8 @@ compiles the QPE circuit topology once. The solvation package then supplies
 fixed or runtime Hamiltonian coefficients across MC steps. The IR cache stores
 Catalyst LLVM IR for reuse when the structural cache key does not change.
 
-The cache key is structural: molecule, basis, active space, QPE wire count,
-Trotter depth, and circuit style matter. Runtime solvent coordinates and the
+The cache key records the molecule, basis, active space, QPE wire count,
+Trotter depth, and circuit style. Runtime solvent coordinates and the
 number of waters do not change the circuit topology in the same way.
 `embedding_mode` is also part of the key because `full_oneelectron` fixed-MO
 embedding can introduce off-diagonal one-electron operator support that is not
@@ -98,7 +97,7 @@ present in a diagonal coefficient update.
 
 ## SQD Execution Boundary
 
-SQD is a separate optional execution path and does not use QPE or Catalyst. The
+SQD is optional and does not use QPE or Catalyst. The
 geometry entry builds a vacuum RHF frame, active-space integrals, and a same-frame
 CCSD seed. It then executes the same integral-based solver that the lower-level
 entry point uses.
@@ -132,8 +131,9 @@ dependency/profile bounds recorded in `resource_calibration.json`.
 
 The orbital frame and Hamiltonian have separate SHA256 identities. SQD accepts an
 integral run only when `IntegralContext`, `CCSDSeed`, tensor shapes,
-permutation symmetries, constants, energies, and residuals agree. This prevents
-amplitudes or energies from one frame being silently reused with another.
+permutation symmetries, constants, energies, and residuals agree. These checks
+prevent the solver from silently reusing amplitudes or energies from a different
+frame.
 
 ## Key Design Decisions
 
@@ -154,5 +154,5 @@ amplitudes or energies from one frame being silently reused with another.
 
 `q2m3.core.quantum_solver` defines a conservative solver abstraction for future
 algorithms such as VQE or QAOA. Current public workflows still route primarily
-through `QPEEngine` and `QuantumQMMM`. Treat the solver abstraction as an
-extension point rather than a fully integrated replacement path.
+through `QPEEngine` and `QuantumQMMM`. The solver abstraction supports future
+extensions. It does not yet replace the integrated execution path.

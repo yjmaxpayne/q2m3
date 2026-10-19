@@ -1,12 +1,12 @@
 # Getting Started
 
-This guide gets a new q2m3 checkout to a working H2 validation run without
-starting the high-memory Catalyst diagnostics by accident.
+Use this guide to install q2m3 from source and run H2 validation.
+Start with these small examples before the high-memory Catalyst diagnostics.
 
 ## Requirements
 
 q2m3 targets Python 3.11 or newer and uses `uv` for environment management.
-The core package uses PySCF, PennyLane, NumPy, SciPy, Matplotlib, and Rich.
+The core package requires PySCF, PennyLane, NumPy, SciPy, Matplotlib, and Rich.
 Optional workflows add SQD, Catalyst/JAX, GPU backends, and molecular
 visualization tools.
 
@@ -38,8 +38,8 @@ is optional.
 
 ## First Validation
 
-Start with the H2 examples. They are intentionally small and exercise the
-same public APIs used by the larger workflows.
+Start with the small H2 examples. They test the same public APIs as the
+larger workflows.
 
 ```bash
 uv run python examples/qpe/h2_qpe_validation.py
@@ -55,8 +55,8 @@ The maintained H2 validation script does three things:
 
 ## Quick API Check
 
-The package-level constants are ordinary Python floats, which makes them safe
-to use in pure Python, NumPy, and Catalyst-facing code paths.
+The package-level constants are Python floats. You can use them in pure
+Python, NumPy, and code that supplies values to Catalyst.
 
 ```{doctest}
 >>> round(HARTREE_TO_KCAL_MOL * KCAL_TO_HARTREE, 12)
@@ -81,15 +81,14 @@ scales with estimation wires, Trotter depth, and Hamiltonian term count.
 uv run python examples/qmmm/h2_mc_solvation.py
 ```
 
-This runs a fixed-mode H2 MC solvation workflow with IR caching enabled. The
-first run may compile Catalyst IR. Later runs can reuse the cache when the
+This command runs fixed-mode H2 MC solvation with IR caching. The first run
+may compile Catalyst IR. Later runs can reuse the cache when the
 circuit structure does not change.
 
 ## First SQD Run
 
-SQD currently requires Linux x86_64 and a source checkout. You must set native
-numerical thread counts before Python starts because the calibrated resource
-model covers serial execution.
+SQD currently requires Linux x86_64 and a source checkout. Set native numerical thread counts before
+Python starts. The calibrated resource model covers serial execution.
 
 ```bash
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1

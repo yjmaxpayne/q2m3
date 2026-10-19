@@ -22,9 +22,10 @@ Primary Exports
 Optional SQD Exports
 --------------------
 
-``q2m3.run_sqd`` is resolved lazily and appears in ``q2m3.__all__`` only when
-both SQD backend modules can be located. The integral entry point and typed
-contracts live under :mod:`q2m3.sqd`. See :doc:`sqd`.
+q2m3 loads ``q2m3.run_sqd`` on access. This export appears in
+``q2m3.__all__`` only when Python can locate both SQD backend modules.
+The integral entry point and typed contracts live under :mod:`q2m3.sqd`.
+See :doc:`sqd`.
 
 Constants
 ---------

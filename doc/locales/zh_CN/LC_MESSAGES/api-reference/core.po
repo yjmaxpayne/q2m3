@@ -1,0 +1,1421 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/core.rst:2
+msgid "Core API"
+msgstr "核心 API"
+
+#: ../../source/api-reference/core.rst:5
+msgid "QPE Engine"
+msgstr "QPE 引擎"
+
+#: of q2m3.core.qpe:1
+msgid "Quantum Phase Estimation (QPE) implementation for molecular systems."
+msgstr "用于分子系统的量子相位估计（QPE）实现。"
+
+#: of q2m3.core.qpe:3
+msgid ""
+"Phase 2: Standard QPE circuit with: - HF state preparation via qml.BasisState - Controlled time "
+"evolution via qml.TrotterProduct - Inverse QFT via qml.adjoint(qml.QFT)"
+msgstr ""
+"阶段 2：标准 QPE 电路，包括：- 通过 qml.BasisState 制备 HF 态；- 通过 qml.TrotterProduct 实现受控时间演化；- 通过 "
+"qml.adjoint(qml.QFT) 实现逆 QFT。"
+
+#: of q2m3.core.qpe:8
+msgid "Phase 4: Catalyst @qjit integration for JIT compilation support."
+msgstr "阶段 4：集成 Catalyst @qjit，支持 JIT 编译。"
+
+#: of q2m3.core.qpe.QPEEngine:1
+msgid "Iterative Quantum Phase Estimation engine for QM/MM calculations."
+msgstr "用于 QM/MM 计算的迭代量子相位估计引擎。"
+
+#: of q2m3.core.qpe.QPEEngine:3
+msgid ""
+"Implements the iterative QPE algorithm optimized for near-term quantum devices, targeting early "
+"fault-tolerant quantum computers (EFTQC)."
+msgstr "实现面向近期量子设备优化的迭代 QPE 算法，目标为早期容错量子计算机（EFTQC）。"
+
+#: ../../source/api-reference/core.rst of q2m3.core.qmmm_system.Atom
+#: q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params q2m3.core.quantum_solver.QuantumSolver.compile
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:1
+msgid "Initialize QPE engine."
+msgstr "初始化 QPE 引擎。"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:3
+msgid "Number of system qubits"
+msgstr "系统量子比特数"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:4
+msgid "Number of QPE iterations (5-10 for POC)"
+msgstr "QPE 迭代次数（概念验证使用 5-10 次）"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:5
+msgid "Fermion-to-qubit mapping ('jordan_wigner' or 'bravyi_kitaev')"
+msgstr "费米子到量子比特的映射（'jordan_wigner' 或 'bravyi_kitaev'）"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:6
+msgid "PennyLane device name (deprecated, use device_type instead)"
+msgstr "PennyLane 设备名称（已弃用，改用 device_type）"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:7
+msgid ""
+"Device selection strategy: - \"auto\": Auto-select best available (GPU > lightning.qubit > "
+"default.qubit) - \"default.qubit\": Standard PennyLane simulator - \"lightning.qubit\": High-"
+"performance CPU simulator (default) - \"lightning.gpu\": GPU-accelerated simulator (requires "
+"cuQuantum)"
+msgstr ""
+"设备选择策略：- \"auto\"：自动选择可用的最佳设备 (GPU > lightning.qubit > default.qubit)；- \"default.qubit\"：标准 "
+"PennyLane 模拟器；- \"lightning.qubit\"：高性能 CPU 模拟器（默认）；- \"lightning.gpu\"：GPU 加速模拟器（需要 cuQuantum）。"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:12
+msgid "Enable Catalyst @qjit compilation (requires pennylane-catalyst)"
+msgstr "启用 Catalyst @qjit 编译（需要 pennylane-catalyst）"
+
+#: of q2m3.core.qpe.QPEEngine.__init__:13
+msgid "Additional device configuration"
+msgstr "附加设备配置"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:1
+msgid "Estimate ground state energy using classical simulation (POC)."
+msgstr "通过经典模拟估计基态能量（概念验证）。"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:3
+msgid ""
+"This is a classical simulation that mimics QPE behavior for POC purposes. Uses PySCF Hartree-Fock"
+" results as approximation. Both the result and its simulated convergence are labeled "
+"hf_reference."
+msgstr "此经典模拟为概念验证而模拟 QPE 行为。使用 PySCF Hartree-Fock 结果作近似。结果及其模拟收敛过程均标记为 hf_reference。"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:7
+msgid "Dictionary containing molecular data from PySCF"
+msgstr "包含 PySCF 分子数据的字典"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:8
+msgid "Initial quantum state preparation (unused in classical sim)"
+msgstr "初始量子态制备（经典模拟中不使用）"
+
+#: ../../source/api-reference/core.rst of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:10
+msgid ""
+"- energy: Ground state energy in Hartree - convergence: Convergence information - density_matrix:"
+" Electronic density matrix - method: hf_reference (no phase-estimation measurement)"
+msgstr ""
+"- energy: 基态能量，单位为 Hartree - convergence: 收敛信息 - density_matrix: 电子密度矩阵 - method: "
+"hf_reference（未进行相位估计测量）"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:10
+msgid "energy: Ground state energy in Hartree"
+msgstr "energy: 基态能量，单位为 Hartree"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:11
+#: q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:12
+msgid "convergence: Convergence information"
+msgstr "convergence: 收敛信息"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:12
+#: q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:10
+msgid "density_matrix: Electronic density matrix"
+msgstr "density_matrix: 电子密度矩阵"
+
+#: of q2m3.core.qpe.QPEEngine.estimate_ground_state_energy:13
+msgid "method: hf_reference (no phase-estimation measurement)"
+msgstr "method: hf_reference（未进行相位估计测量）"
+
+#: ../../source/api-reference/core.rst of q2m3.core.qmmm_system.QMMMSystem.get_qm_coords
+#: q2m3.core.qmmm_system.QMMMSystem.get_total_charge q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params
+#: q2m3.core.quantum_solver.QuantumSolver.compile
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.core.qpe.QPEEngine.compute_optimal_base_time:1
+msgid "Compute optimal base_time to avoid phase overflow in QPE."
+msgstr "计算避免 QPE 相位溢出的最优 base_time。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_optimal_base_time:3
+msgid ""
+"For QPE, the relationship is: ``phi = |E| * t / (2*pi)``. To avoid overflow, we need ``phi < 1``,"
+" i.e., ``t < 2*pi / |E|``."
+msgstr "QPE 满足关系 ``phi = |E| * t / (2*pi)``。为避免溢出，需满足 ``phi < 1``，即 ``t < 2*pi / |E|``。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_optimal_base_time:6
+msgid "Estimated ground state energy (e.g., HF energy)"
+msgstr "估计的基态能量（例如 HF 能量）"
+
+#: of q2m3.core.qpe.QPEEngine.compute_optimal_base_time:7
+msgid "Safety factor (default: PHASE_SAFETY_MARGIN = 0.8)"
+msgstr "安全系数（默认：PHASE_SAFETY_MARGIN = 0.8）"
+
+#: of q2m3.core.qpe.QPEEngine.compute_optimal_base_time:9
+msgid "Optimal base_time that avoids phase overflow"
+msgstr "避免相位溢出的最优 base_time"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:1
+msgid "Compute optimal QPE parameters for energy-shifted QPE."
+msgstr "计算能量平移 QPE 的最优参数。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:3
+msgid ""
+"In energy-shifted QPE, the Hamiltonian is transformed as H' = H - E_ref * I, where E_ref is "
+"typically the HF energy. This allows QPE to measure ΔE = E - E_ref instead of the absolute energy"
+" E, enabling higher precision for detecting small energy changes like MM embedding effects."
+msgstr ""
+"能量平移 QPE 将哈密顿量变换为 H' = H - E_ref * I，其中 E_ref 通常为 HF 能量。这使 QPE 测量 ΔE = E - E_ref，而非绝对能量 "
+"E，从而更精确地检测微小能量变化，例如 MM 嵌入效应。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:8
+msgid ""
+"Physics: - QPE measures phase: ``φ = |ΔE| * t / (2π)`` - For n-bit precision: ``resolution = 2π /"
+" (2^n * t)`` - Energy range: ``ΔE_max = 2π / t`` (to avoid phase overflow)"
+msgstr ""
+"物理关系：- QPE 测量相位：``φ = |ΔE| * t / (2π)``；- 对 n 位精度：``resolution = 2π / (2^n * t)``；- 能量范围：``ΔE_max"
+" = 2π / t`` （用于避免相位溢出）。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:13
+msgid ""
+"This method calculates the optimal n_estimation_wires and base_time to achieve the target "
+"resolution while covering the expected energy range."
+msgstr "此方法计算最优 n_estimation_wires 和 base_time，在覆盖预期能量范围的同时达到目标分辨率。"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:16
+msgid "Target energy resolution in Hartree (default: 0.001 Ha ≈ 0.63 kcal/mol)"
+msgstr "目标能量分辨率，单位为 Hartree（默认：0.001 Ha ≈ 0.63 kcal/mol）"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:17
+msgid "Expected energy range around E_ref in Hartree (default: ±0.1 Ha)"
+msgstr "E_ref 附近的预期能量范围，单位为 Hartree（默认：±0.1 Ha）"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:18
+msgid "Safety factor for phase overflow (default: PHASE_SAFETY_MARGIN)"
+msgstr "相位溢出的安全系数（默认：PHASE_SAFETY_MARGIN）"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:20
+msgid ""
+"- n_estimation_wires: Number of estimation qubits for target precision - base_time: Optimal base "
+"evolution time - resolution: Actual energy resolution achieved - max_energy_range: Maximum "
+"measurable energy range - phase_cycles: Number of phase cycles for ΔE at edge of range"
+msgstr ""
+"- n_estimation_wires: 达到目标精度所需的估计量子比特数 - base_time: 最优基础演化时间 - resolution: 实际达到的能量分辨率 - "
+"max_energy_range: 最大可测能量范围 - phase_cycles: 范围边界处 ΔE 对应的相位周期数"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:20
+msgid "n_estimation_wires: Number of estimation qubits for target precision"
+msgstr "n_estimation_wires: 达到目标精度所需的估计量子比特数"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:21
+msgid "base_time: Optimal base evolution time"
+msgstr "base_time: 最优基础演化时间"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:22
+msgid "resolution: Actual energy resolution achieved"
+msgstr "resolution: 实际达到的能量分辨率"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:23
+msgid "max_energy_range: Maximum measurable energy range"
+msgstr "max_energy_range: 最大可测能量范围"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:24
+msgid "phase_cycles: Number of phase cycles for ΔE at edge of range"
+msgstr "phase_cycles: 范围边界处 ΔE 对应的相位周期数"
+
+#: of q2m3.core.qpe.QPEEngine.compute_shifted_qpe_params:28
+msgid "Example"
+msgstr "示例"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:1
+msgid "Generate text visualization of QPE circuit structure."
+msgstr "生成 QPE 电路结构的文本可视化。"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:3 q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:3
+msgid ""
+"Uses qml.draw() with decimals=None and level=0 for clean output, showing circuit structure "
+"without parameter clutter."
+msgstr "使用 qml.draw()，并设置 decimals=None 和 level=0，以清楚显示电路结构，避免参数干扰。"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:6 q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:6
+#: q2m3.core.rdm.RDMEstimator.measure_1rdm:6 q2m3.core.rdm.measure_rdm_from_qpe_state:3
+msgid "PennyLane molecular Hamiltonian"
+msgstr "PennyLane 分子哈密顿量"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:7 q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:7
+msgid "HF reference state binary array"
+msgstr "HF 参考态的二进制数组"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:8
+msgid "Number of estimation qubits"
+msgstr "估计量子比特数"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:9
+msgid "Base evolution time"
+msgstr "基础演化时间"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:10
+msgid "Trotter steps per evolution"
+msgstr "每次演化的 Trotter 步数"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:11
+msgid "Max wires for full circuit display (default: 8)"
+msgstr "完整电路显示的最大线路数（默认：8）"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:12 q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:11
+msgid "Use qml.draw() for visualization (default: True)"
+msgstr "使用 qml.draw() 可视化（默认：True）"
+
+#: of q2m3.core.qpe.QPEEngine.draw_qpe_circuit:14 q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:13
+msgid "String representation of the circuit"
+msgstr "电路的字符串表示"
+
+#: ../../source/api-reference/core.rst:12
+msgid "QM/MM System"
+msgstr "QM/MM 系统"
+
+#: of q2m3.core.qmmm_system:1
+msgid "QM/MM system builder for molecular simulations."
+msgstr "用于分子模拟的 QM/MM 系统构建器。"
+
+#: of q2m3.core.qmmm_system.Atom:1
+msgid "Represents an atom with position and properties."
+msgstr "表示具有位置和属性的原子。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem:1
+msgid "Build and manage QM/MM system for H3O+ in water environment."
+msgstr "构建并管理水环境中 H3O+ 的 QM/MM 系统。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem:3
+msgid ""
+"This class partitions the QM and MM regions and prepares the embedding potential for quantum "
+"calculations."
+msgstr "此类划分 QM 与 MM 区域，并为量子计算准备嵌入势。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.__init__:1
+msgid "Initialize QM/MM system."
+msgstr "初始化 QM/MM 系统。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.__init__:3
+msgid "List of atoms in QM region (H3O+)"
+msgstr "QM 区域中的原子列表（H3O+）"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.__init__:4
+msgid "Water model for MM region"
+msgstr "MM 区域的水模型"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.__init__:5
+msgid "Number of solvation shells"
+msgstr "溶剂化壳层数"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.__init__:6 q2m3.core.quantum_qmmm.QuantumQMMM.__init__:4
+msgid "Number of water molecules in MM region"
+msgstr "MM 区域中的水分子数"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.get_embedding_potential:1
+msgid "Calculate embedding potential from MM charges."
+msgstr "计算 MM 电荷产生的嵌入势。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.get_embedding_potential:3
+msgid "Tuple of (charges, coordinates) for MM point charges"
+msgstr "MM 点电荷的 (charges, coordinates) 元组"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.get_total_charge:1
+msgid "Get total system charge."
+msgstr "获取系统总电荷。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.get_qm_coords:1
+msgid "Get QM atom coordinates as numpy array."
+msgstr "以 numpy 数组形式获取 QM 原子坐标。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.to_pyscf_mol:1
+msgid "Convert to PySCF molecule format."
+msgstr "转换为 PySCF 分子格式。"
+
+#: of q2m3.core.qmmm_system.QMMMSystem.to_pyscf_mol:3
+msgid "Dictionary with atom positions and basis set info"
+msgstr "包含原子位置与基组信息的字典"
+
+#: ../../source/api-reference/core.rst:19
+msgid "Quantum QM/MM Orchestrator"
+msgstr "量子 QM/MM 编排器"
+
+#: of q2m3.core.quantum_qmmm:1
+msgid "Main Quantum-QM/MM interface combining all components."
+msgstr "整合所有组件的主要 Quantum-QM/MM 接口。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM:1
+msgid "Main interface for Quantum-QM/MM calculations."
+msgstr "Quantum-QM/MM 计算的主要接口。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM:3
+msgid ""
+"Coordinates the workflow between PySCF classical calculations, PennyLane quantum circuits, and "
+"QM/MM embedding."
+msgstr "协调 PySCF 经典计算、PennyLane 量子电路和 QM/MM 嵌入之间的工作流。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.__init__:1
+msgid "Initialize Quantum-QM/MM calculator."
+msgstr "初始化 Quantum-QM/MM 计算器。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.__init__:3
+msgid "Atoms in the QM region"
+msgstr "QM 区域中的原子"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.__init__:5
+msgid "Configuration for QPE algorithm"
+msgstr "QPE 算法配置"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.__init__:6
+msgid "Enable Catalyst @qjit compilation for QPE circuits"
+msgstr "为 QPE 电路启用 Catalyst @qjit 编译"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.__init__:7
+msgid ""
+"Configuration for RDM measurement (default: enabled with defaults) - enabled: Enable RDM "
+"measurement (default: True) - n_shots: Measurement shots (default: 1000) - include_off_diagonal: "
+"Measure off-diagonal elements (default: True) - symmetrize: Enforce Hermitian symmetry (default: "
+"True)"
+msgstr ""
+"RDM 测量配置（默认：启用并使用默认值）- enabled: 启用 RDM 测量（默认：True）- n_shots: 测量次数（默认：1000）- include_off_diagonal:"
+" 测量非对角元素（默认：True）- symmetrize: 强制满足厄米对称性（默认：True）"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:1
+msgid "Compute ground state properties using QPE."
+msgstr "使用 QPE 计算基态性质。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:3
+msgid ""
+"If True, include EFTQC resource estimation in the output. Uses PennyLane's DoubleFactorization to"
+" estimate logical qubits, Toffoli gates, and QPE iterations. Default: False."
+msgstr ""
+"若为 True，在输出中包含 EFTQC 资源估计。使用 PennyLane 的 DoubleFactorization 估计逻辑量子比特数、Toffoli 门数和 QPE "
+"迭代次数。默认：False。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:7
+msgid ""
+"- energy: Ground state energy (Hartree) - energy_hf: HF reference energy (Hartree) - "
+"energy_difference: ``|E_QPE - E_HF|`` (Hartree) - density_matrix: Electronic density matrix - "
+"atomic_charges: Mulliken charges - convergence: Convergence information - eftqc_resources: "
+"(optional) EFTQC resource estimation if requested - timing: Fine-grained timing breakdown for "
+"performance analysis"
+msgstr ""
+"- energy: 基态能量 (Hartree) - energy_hf: HF 参考能量 (Hartree) - energy_difference: ``|E_QPE - E_HF|`` "
+"(Hartree) - density_matrix: 电子密度矩阵 - atomic_charges: Mulliken 电荷 - convergence: 收敛信息 - "
+"eftqc_resources: 请求时提供的 EFTQC 资源估计（可选）- timing: 用于性能分析的细分计时"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:7
+msgid "energy: Ground state energy (Hartree)"
+msgstr "energy: 基态能量 (Hartree)"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:8
+msgid "energy_hf: HF reference energy (Hartree)"
+msgstr "energy_hf: HF 参考能量 (Hartree)"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:9
+msgid "energy_difference: ``|E_QPE - E_HF|`` (Hartree)"
+msgstr "energy_difference: ``|E_QPE - E_HF|`` (Hartree)"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:11
+msgid "atomic_charges: Mulliken charges"
+msgstr "atomic_charges: Mulliken 电荷"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:13
+msgid "eftqc_resources: (optional) EFTQC resource estimation if requested"
+msgstr "eftqc_resources: 请求时提供的 EFTQC 资源估计（可选）"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.compute_ground_state:14
+msgid "timing: Fine-grained timing breakdown for performance analysis"
+msgstr "timing: 用于性能分析的细分计时"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.draw_circuits:1
+msgid "Generate text visualizations of QPE and RDM circuits."
+msgstr "生成 QPE 与 RDM 电路的文本可视化。"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.draw_circuits:3
+msgid "- \"qpe\": QPE circuit visualization - \"rdm\": RDM measurement circuit visualization"
+msgstr "- \"qpe\": QPE 电路可视化 - \"rdm\": RDM 测量电路可视化"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.draw_circuits:3
+msgid "\"qpe\": QPE circuit visualization"
+msgstr "\"qpe\": QPE 电路可视化"
+
+#: of q2m3.core.quantum_qmmm.QuantumQMMM.draw_circuits:4
+msgid "\"rdm\": RDM measurement circuit visualization"
+msgstr "\"rdm\": RDM 测量电路可视化"
+
+#: ../../source/api-reference/core.rst:26
+msgid "Reduced Density Matrix"
+msgstr "约化密度矩阵"
+
+#: of q2m3.core.rdm:1
+msgid "Reduced Density Matrix (RDM) estimation from quantum states."
+msgstr "从量子态估计约化密度矩阵（RDM）。"
+
+#: of q2m3.core.rdm:3
+msgid ""
+"Implements 1-RDM measurement using Pauli expectation values after Jordan-Wigner transformation of"
+" fermionic operators."
+msgstr "对费米子算符进行 Jordan-Wigner 变换后，使用 Pauli 期望值测量 1-RDM。"
+
+#: of q2m3.core.rdm:6
+msgid "Key formulas::"
+msgstr "关键公式::"
+
+#: of q2m3.core.rdm:13
+msgid ""
+"Performance optimization (Phase 7): - Batched measurement: single QNode returns all observables "
+"(120x → 1x execution) - GPU acceleration via device_utils - Catalyst @qjit support"
+msgstr ""
+"性能优化（阶段 7）：- 批量测量：单个 QNode 返回所有可观测量（执行次数从 120x 降至 1x）；- 通过 device_utils 实现 GPU 加速；- 支持 Catalyst "
+"@qjit。"
+
+#: of q2m3.core.rdm.RDMEstimator:1
+msgid "1-RDM measurement from quantum states using Pauli expectation values."
+msgstr "使用 Pauli 期望值从量子态测量 1-RDM。"
+
+#: of q2m3.core.rdm.RDMEstimator:3
+msgid ""
+"Measures the one-particle reduced density matrix (1-RDM) from a quantum state prepared by Trotter"
+" time evolution. Uses Jordan-Wigner transformation to convert fermionic operators to Pauli "
+"observables."
+msgstr "从 Trotter 时间演化制备的量子态测量单粒子约化密度矩阵（1-RDM）。使用 Jordan-Wigner 变换将费米子算符转换为 Pauli 可观测量。"
+
+#: of q2m3.core.rdm.RDMEstimator:7
+msgid ""
+"Performance optimization: Uses batched measurement (single QNode) instead of individual QNodes "
+"per observable for 10-50x speedup."
+msgstr "性能优化：使用批量测量（单个 QNode），而非每个可观测量单独使用 QNode，可获得 10-50x 加速。"
+
+#: of q2m3.core.rdm.RDMEstimator.__init__:1
+msgid "Initialize RDM estimator."
+msgstr "初始化 RDM 估计器。"
+
+#: of q2m3.core.rdm.RDMEstimator.__init__:3
+msgid "Number of spin orbitals (qubits in Jordan-Wigner)"
+msgstr "自旋轨道数（Jordan-Wigner 映射中的量子比特数）"
+
+#: of q2m3.core.rdm.RDMEstimator.__init__:4
+msgid "Number of electrons in the system"
+msgstr "系统中的电子数"
+
+#: of q2m3.core.rdm.RDMEstimator.__init__:5
+msgid ""
+"Optional configuration dictionary with keys: - n_shots: Number of measurement shots (default: "
+"1000) - include_off_diagonal: Measure off-diagonal elements (default: True) - symmetrize: Enforce"
+" Hermitian symmetry (default: True) - output_basis: \"spin\" or \"spatial\" (default: \"spin\")"
+msgstr ""
+"可选配置字典，包含以下键：- n_shots: 测量次数（默认：1000）；- include_off_diagonal: 测量非对角元素（默认：True）；- symmetrize: "
+"强制满足厄米对称性（默认：True）；- output_basis: \"spin\" 或 \"spatial\"（默认：\"spin\"）。"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:1
+msgid "Measure 1-RDM from Trotter-evolved state using batched measurement."
+msgstr "通过批量测量，从 Trotter 演化态测量 1-RDM。"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:3
+msgid ""
+"Prepares ``|HF>`` , applies TrotterProduct time evolution, then measures all 1-RDM elements as "
+"Pauli expectation values in a single QNode."
+msgstr "制备 ``|HF>``，施加 TrotterProduct 时间演化，再在单个 QNode 中将所有 1-RDM 元素测为 Pauli 期望值。"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:7
+msgid "Hartree-Fock reference state binary array"
+msgstr "Hartree-Fock 参考态的二进制数组"
+
+#: of q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:8 q2m3.core.rdm.RDMEstimator.measure_1rdm:8
+msgid "Evolution time for Trotter"
+msgstr "Trotter 演化时间"
+
+#: of q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:9 q2m3.core.rdm.RDMEstimator.measure_1rdm:9
+msgid "Number of Trotter steps"
+msgstr "Trotter 步数"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:10
+msgid ""
+"Device selection strategy: - \"auto\": Auto-select best (GPU > lightning.qubit > default.qubit) -"
+" \"default.qubit\": Standard PennyLane simulator - \"lightning.qubit\": High-performance CPU "
+"simulator - \"lightning.gpu\": GPU-accelerated simulator"
+msgstr ""
+"设备选择策略：- \"auto\"：自动选择最佳设备 (GPU > lightning.qubit > default.qubit)；- \"default.qubit\"：标准 "
+"PennyLane 模拟器；- \"lightning.qubit\"：高性能 CPU 模拟器；- \"lightning.gpu\"：GPU 加速模拟器。"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:15 q2m3.core.rdm.measure_rdm_from_qpe_state:10
+msgid "Enable Catalyst @qjit compilation"
+msgstr "启用 Catalyst @qjit 编译"
+
+#: of q2m3.core.rdm.RDMEstimator.measure_1rdm:17
+msgid "1-RDM as numpy array of shape (n_qubits, n_qubits)"
+msgstr "numpy 数组形式的 1-RDM，形状为 (n_qubits, n_qubits)"
+
+#: of q2m3.core.rdm.RDMEstimator.build_rdm_observables:1
+msgid "Build Pauli observables for all 1-RDM elements (legacy interface)."
+msgstr "构建所有 1-RDM 元素的 Pauli 可观测量（旧接口）。"
+
+#: of q2m3.core.rdm.RDMEstimator.build_rdm_observables:3
+msgid ""
+"Dictionary mapping (p, q) indices to PennyLane observables. For p == q: number operator "
+"observable For p < q: tuple of 4 Pauli observables for real/imag parts"
+msgstr "将 (p, q) 索引映射到 PennyLane 可观测量的字典。p == q 时为粒子数算符可观测量；p < q 时为包含 4 个 Pauli 可观测量的元组，分别用于实部和虚部。"
+
+#: of q2m3.core.rdm.RDMEstimator.enforce_physical_constraints:1
+msgid "Enforce physical constraints on 1-RDM."
+msgstr "强制 1-RDM 满足物理约束。"
+
+#: of q2m3.core.rdm.RDMEstimator.enforce_physical_constraints:3
+msgid ""
+"Constraints: 1. Hermiticity: γ_pq = γ_qp* 2. Positive semi-definiteness: all eigenvalues >= 0 3. "
+"Trace normalization: Tr(γ) = N_electrons"
+msgstr "约束：1. 厄米性：γ_pq = γ_qp*；2. 半正定性：所有本征值 >= 0；3. 迹归一化：Tr(γ) = N_electrons。"
+
+#: of q2m3.core.rdm.RDMEstimator.enforce_physical_constraints:8
+msgid "Raw 1-RDM from measurement"
+msgstr "测量得到的原始 1-RDM"
+
+#: of q2m3.core.rdm.RDMEstimator.enforce_physical_constraints:10
+msgid "Physically valid 1-RDM"
+msgstr "满足物理约束的 1-RDM"
+
+#: of q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:1
+msgid "Generate text visualization of RDM measurement circuit."
+msgstr "生成 RDM 测量电路的文本可视化。"
+
+#: of q2m3.core.rdm.RDMEstimator.draw_rdm_circuit:10
+msgid "Max observables to show (default: 4)"
+msgstr "显示的最大可观测量数（默认：4）"
+
+#: of q2m3.core.rdm.RDMEstimator.spin_to_spatial_rdm:1
+msgid "Convert spin-orbital 1-RDM to spatial-orbital 1-RDM."
+msgstr "将自旋轨道 1-RDM 转换为空间轨道 1-RDM。"
+
+#: of q2m3.core.rdm.RDMEstimator.spin_to_spatial_rdm:3
+msgid "For restricted systems, spatial RDM = sum of alpha and beta spin blocks."
+msgstr "对于限制性体系，空间 RDM = alpha 与 beta 自旋块之和。"
+
+#: of q2m3.core.rdm.RDMEstimator.spin_to_spatial_rdm:5
+msgid "1-RDM in spin-orbital basis, shape (2*n_spatial, 2*n_spatial)"
+msgstr "自旋轨道基下的 1-RDM，形状为 (2*n_spatial, 2*n_spatial)"
+
+#: of q2m3.core.rdm.RDMEstimator.spin_to_spatial_rdm:7
+msgid "1-RDM in spatial-orbital basis, shape (n_spatial, n_spatial)"
+msgstr "空间轨道基下的 1-RDM，形状为 (n_spatial, n_spatial)"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:1
+msgid "Convert the spatial-orbital 1-RDM from the active space to the AO basis."
+msgstr "将活性空间的空间轨道 1-RDM 转换到 AO 基。"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:3
+msgid ""
+"Steps: 1. Embed active space RDM into full MO RDM 2. Transform from MO to AO basis: P_AO = C @ "
+"P_MO @ C^T"
+msgstr "步骤：1. 将活性空间 RDM 嵌入完整 MO RDM；2. 从 MO 基变换到 AO 基：P_AO = C @ P_MO @ C^T。"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:7
+msgid "1-RDM in active MO basis, shape (active_orbitals, active_orbitals)"
+msgstr "活性 MO 基下的 1-RDM，形状为 (active_orbitals, active_orbitals)"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:8
+msgid "MO coefficient matrix from HF, shape (n_ao, n_mo)"
+msgstr "HF 的 MO 系数矩阵，形状为 (n_ao, n_mo)"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:9
+msgid "MO occupation numbers from HF, shape (n_mo,)"
+msgstr "HF 的 MO 占据数，形状为 (n_mo,)"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:10
+msgid "Number of active electrons"
+msgstr "活性电子数"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:11
+msgid "Number of active orbitals"
+msgstr "活性轨道数"
+
+#: of q2m3.core.rdm.RDMEstimator.active_mo_to_ao_rdm:13
+msgid "1-RDM in AO basis, shape (n_ao, n_ao)"
+msgstr "AO 基下的 1-RDM，形状为 (n_ao, n_ao)"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:1
+msgid "Convenience function to measure 1-RDM from QPE-like state."
+msgstr "从类似 QPE 的态测量 1-RDM 的便捷函数。"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:4
+msgid "Hartree-Fock reference state"
+msgstr "Hartree-Fock 参考态"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:5
+msgid "Number of electrons"
+msgstr "电子数"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:6
+msgid "Evolution time"
+msgstr "演化时间"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:7
+msgid "Trotter steps"
+msgstr "Trotter 步数"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:8
+msgid "Optional RDM configuration"
+msgstr "可选 RDM 配置"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:9
+msgid "PennyLane device selection"
+msgstr "PennyLane 设备选择"
+
+#: of q2m3.core.rdm.measure_rdm_from_qpe_state:12
+msgid "1-RDM numpy array"
+msgstr "1-RDM numpy 数组"
+
+#: ../../source/api-reference/core.rst:33
+msgid "Resource Estimation"
+msgstr "资源估计"
+
+#: of q2m3.core.resource_estimation:1
+msgid "EFTQC resource estimation module."
+msgstr "EFTQC 资源估计模块。"
+
+#: of q2m3.core.resource_estimation:3
+msgid ""
+"This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(). It returns structured "
+"dataclass results for resource estimates for an Early Fault-Tolerant Quantum Computer (EFTQC)."
+msgstr "此模块封装 PySCFPennyLaneConverter.estimate_qpe_resources()，以结构化数据类返回早期容错量子计算机（EFTQC）的资源估计结果。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:1
+msgid "Scalar diagnostics for an MM one-electron embedding resource row."
+msgstr "MM 单电子嵌入资源结果的标量诊断信息。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:5
+msgid "Vacuum molecular-orbital indices used for the active block."
+msgstr "用于活性块的真空分子轨道索引。"
+
+#: of q2m3.core.quantum_solver.SolverResult q2m3.core.resource_estimation.EFTQCResources
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics
+#: q2m3.core.resource_estimation.ResourceComparisonResult
+msgid "type"
+msgstr "类型"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:7
+msgid "tuple[int, ...]"
+msgstr "tuple[int, ...]"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:11
+msgid "Frobenius norm of the diagonal active-space perturbation."
+msgstr "活性空间微扰对角部分的 Frobenius 范数。"
+
+#: of q2m3.core.quantum_solver.SolverResult:7 q2m3.core.quantum_solver.SolverResult:13
+#: q2m3.core.resource_estimation.EFTQCResources:7 q2m3.core.resource_estimation.EFTQCResources:34
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:13
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:19
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:31
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:37
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:43
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:49
+#: q2m3.core.resource_estimation.ResourceComparisonResult:20
+#: q2m3.core.resource_estimation.ResourceComparisonResult:27
+msgid "float"
+msgstr "float"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:17
+msgid "Frobenius norm of the off-diagonal perturbation."
+msgstr "非对角微扰的 Frobenius 范数。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:23
+msgid "Ratio of off-diagonal to diagonal norms."
+msgstr "非对角部分范数与对角部分范数之比。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:25
+msgid "float | None"
+msgstr "float | None"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:29
+msgid "Maximum anti-Hermitian residual."
+msgstr "最大的反厄米残差。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:35
+msgid "Trace of the active-space perturbation in Hartree."
+msgstr "活性空间微扰的迹，单位为 Hartree。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:41
+msgid "MM-induced nuclear constant difference in Hartree."
+msgstr "MM 引起的核常数差，单位为 Hartree。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:47
+msgid "Frozen-core one-electron plus nuclear MM constant."
+msgstr "冻结核单电子项与核 MM 常数之和。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:53
+msgid "Whether the perturbation is represented in the vacuum MO frame."
+msgstr "微扰是否在真空 MO 框架中表示。"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:55
+#: q2m3.core.resource_estimation.EmbeddingDiagnostics:61
+msgid "bool"
+msgstr "bool"
+
+#: of q2m3.core.resource_estimation.EmbeddingDiagnostics:59
+msgid "Whether the two-electron tensor is held at vacuum values."
+msgstr "双电子张量是否保持真空值。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:1
+msgid "Resource estimation result for a single EFTQC configuration."
+msgstr "单个 EFTQC 配置的资源估计结果。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:5
+msgid "Lambda (1-norm) of the Hamiltonian in Hartree."
+msgstr "哈密顿量的 Lambda（1-范数），单位为 Hartree。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:11
+msgid "Number of logical qubits required."
+msgstr "所需逻辑量子比特数。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:13 q2m3.core.resource_estimation.EFTQCResources:20
+#: q2m3.core.resource_estimation.EFTQCResources:40 q2m3.core.resource_estimation.EFTQCResources:52
+msgid "int"
+msgstr "int"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:17
+msgid ""
+"Total non-Clifford (Toffoli) gate count for the whole QPE run (PennyLane "
+"``DoubleFactorization.gates``)."
+msgstr "整次 QPE 运行的非 Clifford（Toffoli）门总数（PennyLane ``DoubleFactorization.gates``）。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:24
+msgid ""
+"Number of Hamiltonian terms. None when DoubleFactorization resource estimation is used (it does "
+"not construct the full PennyLane Hamiltonian object)."
+msgstr "哈密顿量项数。使用 DoubleFactorization 资源估计时为 None，因为该方法不构建完整的 PennyLane Hamiltonian 对象。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:28 q2m3.core.resource_estimation.EFTQCResources:75
+msgid "int | None"
+msgstr "int | None"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:32
+msgid "Target energy error in Hartree."
+msgstr "目标能量误差，单位为 Hartree。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:38
+msgid "System register size = n_orbitals * 2 (Jordan-Wigner)."
+msgstr "系统寄存器大小 = n_orbitals * 2（Jordan-Wigner）。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:44
+msgid "Basis set used (e.g. \"sto-3g\")."
+msgstr "使用的基组，例如 \"sto-3g\"。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:46 q2m3.core.resource_estimation.EFTQCResources:59
+msgid "str"
+msgstr "str"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:50
+msgid "Number of MM point charges. The value is 0 for vacuum."
+msgstr "MM 点电荷数。真空时为 0。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:56
+msgid "Effective embedding state (\"none\", \"diagonal\", or \"full_oneelectron\")."
+msgstr "实际嵌入状态（\"none\"、\"diagonal\" 或 \"full_oneelectron\"）。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:63
+msgid "Optional scalar diagnostics for fixed-MO one-electron embedding."
+msgstr "固定 MO 单电子嵌入的可选标量诊断信息。"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:66
+msgid "q2m3.core.resource_estimation.EmbeddingDiagnostics | None"
+msgstr "q2m3.core.resource_estimation.EmbeddingDiagnostics | None"
+
+#: of q2m3.core.resource_estimation.EFTQCResources:70
+msgid ""
+"Number of qubitized walk-operator calls in QPE, ``ceil(pi * lambda / (2 * target_error))`` "
+"(PennyLane ``DoubleFactorization.estimation_cost``). Informational only: it is already included "
+"in ``toffoli_gates``."
+msgstr ""
+"QPE 中量子比特化游走算符的调用次数，``ceil(pi * lambda / (2 * target_error))`` （PennyLane "
+"``DoubleFactorization.estimation_cost``）。仅供参考：这些调用已计入 ``toffoli_gates``。"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:1
+msgid "Comparison of EFTQC resources between vacuum and solvated systems."
+msgstr "真空与溶剂化系统的 EFTQC 资源比较。"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:5
+msgid "Resource estimate with no MM embedding."
+msgstr "无 MM 嵌入时的资源估计。"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:7
+#: q2m3.core.resource_estimation.ResourceComparisonResult:13
+msgid "q2m3.core.resource_estimation.EFTQCResources"
+msgstr "q2m3.core.resource_estimation.EFTQCResources"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:11
+msgid "Resource estimate with MM point charge embedding."
+msgstr "带 MM 点电荷嵌入的资源估计。"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:17
+msgid "Percentage change in Hamiltonian 1-norm due to solvation: (solvated - vacuum) / vacuum * 100."
+msgstr "溶剂化引起的哈密顿量 1-范数百分比变化：(solvated - vacuum) / vacuum * 100。"
+
+#: of q2m3.core.resource_estimation.ResourceComparisonResult:24
+msgid "Percentage change in Toffoli gate count due to solvation: (solvated - vacuum) / vacuum * 100."
+msgstr "溶剂化引起的 Toffoli 门数百分比变化：(solvated - vacuum) / vacuum * 100。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:1
+msgid "Estimate EFTQC resource requirements for a molecular system."
+msgstr "估计分子系统的 EFTQC 资源需求。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:3
+msgid ""
+"Wraps PySCFPennyLaneConverter.estimate_qpe_resources() and returns a structured, immutable "
+"EFTQCResources dataclass instead of a raw dict."
+msgstr "封装 PySCFPennyLaneConverter.estimate_qpe_resources()，返回结构化、不可变的 EFTQCResources 数据类，而非原始字典。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:6
+msgid "List of atomic symbols (e.g. ['H', 'H'])."
+msgstr "原子符号列表，例如 ['H', 'H']。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:8
+#: q2m3.core.resource_estimation.estimate_resources:7
+msgid "Atomic coordinates in Angstrom, shape (n_atoms, 3)."
+msgstr "以埃为单位的原子坐标，形状为 (n_atoms, 3)。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:9
+#: q2m3.core.resource_estimation.estimate_resources:8
+msgid "Total molecular charge (default: 0)."
+msgstr "分子总电荷，默认为 0。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:10
+#: q2m3.core.resource_estimation.estimate_resources:9
+msgid "Basis set name (default: \"sto-3g\")."
+msgstr "基组名称，默认为 \"sto-3g\"。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:11
+#: q2m3.core.resource_estimation.estimate_resources:10
+msgid "Active space electrons (optional)."
+msgstr "活性空间电子数（可选）。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:12
+#: q2m3.core.resource_estimation.estimate_resources:11
+msgid "Active space orbitals (optional)."
+msgstr "活性空间轨道数（可选）。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:12
+msgid "Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)."
+msgstr "目标能量误差，单位为 Hartree（默认：0.0016 = 1 kcal/mol）。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:13
+msgid "MM point charges array (optional, enables solvated Hamiltonian)."
+msgstr "MM 点电荷数组（可选，启用溶剂化哈密顿量）。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:14
+msgid "MM charge coordinates in Angstrom, shape (n_mm, 3)."
+msgstr "以埃为单位的 MM 电荷坐标，形状为 (n_mm, 3)。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:15
+msgid ""
+"MM embedding mode for resource rows. Defaults to the historical full fixed-MO one-electron "
+"resource behavior."
+msgstr "资源结果的 MM 嵌入模式。默认保留原有的完整固定 MO 单电子资源估计行为。"
+
+#: of q2m3.core.resource_estimation.estimate_resources:18
+msgid "EFTQCResources dataclass with all resource fields populated."
+msgstr "所有资源字段均已填充的 EFTQCResources 数据类。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:1
+msgid "Compare EFTQC resource requirements between vacuum and solvated systems."
+msgstr "比较真空与溶剂化系统的 EFTQC 资源需求。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:3
+msgid ""
+"This function calls estimate_resources() twice: once without MM charges (vacuum) and once with MM"
+" charges (solvated). It then computes the percentage deltas."
+msgstr "此函数调用 estimate_resources() 两次：一次不使用 MM 电荷（真空），另一次使用 MM 电荷（溶剂化）。随后计算百分比变化。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:7
+msgid "List of atomic symbols."
+msgstr "原子符号列表。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:13
+msgid "MM point charges for the solvated estimate."
+msgstr "溶剂化估计所用的 MM 点电荷。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:14
+msgid "MM charge coordinates in Angstrom for the solvated estimate."
+msgstr "溶剂化估计所用的 MM 电荷坐标，单位为埃。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:15
+msgid "Target energy error in Hartree (default: 0.0016)."
+msgstr "目标能量误差，单位为 Hartree（默认：0.0016）。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:16
+msgid "MM embedding mode for the solvated resource row."
+msgstr "溶剂化资源结果的 MM 嵌入模式。"
+
+#: of q2m3.core.resource_estimation.compare_vacuum_solvated:18
+msgid "ResourceComparisonResult with both estimates and derived deltas."
+msgstr "包含两项估计及其变化量的 ResourceComparisonResult。"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:1
+msgid "Derive T-count and conservative T-depth from Toffoli count."
+msgstr "从 Toffoli 门数推导 T 门数和保守的 T 深度。"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:3
+msgid ""
+"DoubleFactorization returns Toffoli count and logical qubits but not the T-depth that surface-"
+"code-style analyses require. Use the standard fault-tolerant relation T-count = 7 * Toffoli-count"
+" and a conservative sequential upper bound for depth."
+msgstr ""
+"DoubleFactorization 返回 Toffoli 门数与逻辑量子比特数，但不返回表面码类分析所需的 T 深度。使用标准容错关系 T-count = 7 * Toffoli-"
+"count，并使用深度的保守串行上界。"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:8
+msgid "Total Toffoli gate count from DoubleFactorization."
+msgstr "DoubleFactorization 给出的 Toffoli 门总数。"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:10
+msgid ""
+"- t_count: 7 * toffoli_gates - toffoli_depth: conservative sequential upper bound (= "
+"toffoli_gates) - t_depth: T_PER_TOFFOLI * toffoli_depth (sequential upper bound)"
+msgstr ""
+"- t_count: 7 * toffoli_gates - toffoli_depth: 保守串行上界 (= toffoli_gates) - t_depth: T_PER_TOFFOLI *"
+" toffoli_depth（串行上界）"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:10
+msgid "t_count: 7 * toffoli_gates"
+msgstr "t_count: 7 * toffoli_gates"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:11
+msgid "toffoli_depth: conservative sequential upper bound (= toffoli_gates)"
+msgstr "toffoli_depth: 保守串行上界 (= toffoli_gates)"
+
+#: of q2m3.core.resource_estimation.derive_t_resources:12
+msgid "t_depth: T_PER_TOFFOLI * toffoli_depth (sequential upper bound)"
+msgstr "t_depth: T_PER_TOFFOLI * toffoli_depth（串行上界）"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:1
+msgid "Smallest odd surface-code distance keeping the whole run below ``failure_budget``."
+msgstr "使整次运行的失败概率低于 ``failure_budget`` 的最小奇数表面码距离。"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:3
+msgid ""
+"This function uses the Litinski (Quantum 3, 128 (2019), Eq. 10) logical error model: ``p_L(d) = "
+"0.1 * (100 * p_phys) ** ((d + 1) / 2)`` per logical qubit per code cycle. It assumes that each "
+"Toffoli occupies one logical time step of ``d`` code cycles for every logical qubit."
+msgstr ""
+"此函数使用 Litinski (Quantum 3, 128 (2019), Eq. 10) 的逻辑错误模型：每个逻辑量子比特在每个码周期的错误率为 ``p_L(d) = 0.1 * (100 "
+"* p_phys) ** ((d + 1) / 2)``。假设每个 Toffoli 对每个逻辑量子比特均占用一个逻辑时间步，每步为 ``d`` 个码周期。"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:8
+msgid "Number of logical (data) qubits."
+msgstr "逻辑（数据）量子比特数。"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:9
+msgid "Total sequential Toffoli count of the algorithm."
+msgstr "算法的串行 Toffoli 总数。"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:10
+msgid "Physical error rate per gate / code cycle."
+msgstr "每个门／码周期的物理错误率。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:21
+#: q2m3.core.resource_estimation.surface_code_distance:11
+msgid "Accepted total logical failure probability."
+msgstr "可接受的总逻辑失败概率。"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:13
+msgid "Code distance ``d`` (odd integer in [3, 99])."
+msgstr "码距 ``d`` （[3, 99] 内的奇数）。"
+
+#: ../../source/api-reference/core.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.core.resource_estimation.surface_code_distance:15
+msgid "If no distance below 101 meets the budget."
+msgstr "不存在小于 101 且满足预算的码距时。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:1
+msgid "Estimate wall-clock runtime and physical footprint of an EFTQC QPE run."
+msgstr "估计 EFTQC QPE 运行的实际时间与物理资源占用。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:3
+msgid ""
+"Surface-code model: ``runtime = toffoli_gates * tick`` with ``tick = max(t_react, 5.5 * d * "
+"t_cycle / n_factories)`` — one CCZ per ``5.5 d`` code cycles per factory (Gidney & Fowler, "
+"Quantum 3, 135 (2019); Babbush et al., PRX Quantum 2, 010103 (2021), Eq. 6), floored by the "
+"classical reaction time (Lee et al., PRX Quantum 2, 030305 (2021))."
+msgstr ""
+"表面码模型：``runtime = toffoli_gates * tick``，其中 ``tick = max(t_react, 5.5 * d * t_cycle / "
+"n_factories)``。每个工厂每 ``5.5 d`` 个码周期产出一个 CCZ（Gidney & Fowler, Quantum 3, 135 (2019); Babbush et "
+"al., PRX Quantum 2, 010103 (2021), Eq. 6），且 tick 不低于经典反应时间（Lee et al., PRX Quantum 2, 030305 "
+"(2021)）。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:9
+msgid ""
+"``toffoli_gates`` is the **total** count for the whole algorithm. PennyLane "
+"``DoubleFactorization.gates`` / ``EFTQCResources.toffoli_gates`` report exactly this count. It "
+"already contains the ``ceil(pi*lambda/(2*eps))`` phase-estimation repetitions. This function "
+"therefore applies no iteration-count multiplier."
+msgstr ""
+"``toffoli_gates`` 是整个算法的**总**门数。PennyLane ``DoubleFactorization.gates`` / "
+"``EFTQCResources.toffoli_gates`` 返回的正是此值。它已包含 ``ceil(pi*lambda/(2*eps))`` 次相位估计重复。因此，此函数不再乘以迭代次数。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:14
+msgid "Total Toffoli count of the algorithm."
+msgstr "算法的 Toffoli 总数。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:15
+msgid "Number of logical qubits (sets the code distance)."
+msgstr "逻辑量子比特数（决定码距）。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:16
+msgid "Physical error rate (default 1e-3, superconducting assumption)."
+msgstr "物理错误率（默认 1e-3，采用超导假设）。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:17
+msgid "Surface-code cycle time (default 1 us)."
+msgstr "表面码周期时间（默认 1 us）。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:18
+msgid "Classical reaction time floor (default 10 us)."
+msgstr "经典反应时间下限（默认 10 us）。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:19
+msgid ""
+"Number of parallel CCZ factories. The default is 1 (sequential upper bound). Lee 2021 FeMoco uses"
+" 4."
+msgstr "并行 CCZ 工厂数。默认为 1（串行上界）。Lee 2021 FeMoco 使用 4 个。"
+
+#: of q2m3.core.resource_estimation.estimate_eftqc_runtime:23
+#, python-brace-format
+msgid ""
+"Dict with ``code_distance``, ``tick_microseconds``, ``regime`` (\"factory\" or \"reaction\"), "
+"``runtime_{microseconds,seconds,hours,days}``, ``physical_qubits`` (2(d+1)^2 per logical qubit + "
+"15d x 8d per factory), and the input assumptions echoed back."
+msgstr ""
+"字典，包含 ``code_distance``、``tick_microseconds``、``regime`` （\"factory\" 或 "
+"\"reaction\"）、``runtime_{microseconds,seconds,hours,days}``、``physical_qubits`` （每个逻辑量子比特 "
+"2(d+1)^2，加上每个工厂 15d x 8d），并回传输入假设。"
+
+#: ../../source/api-reference/core.rst:40
+msgid "Device Utilities"
+msgstr "设备工具"
+
+#: of q2m3.core.device_utils:1
+msgid "Quantum device selection and management utilities."
+msgstr "量子设备选择与管理工具。"
+
+#: of q2m3.core.device_utils:3
+msgid ""
+"Provides unified device selection logic for QPE and RDM modules, with GPU acceleration support "
+"and Catalyst compatibility."
+msgstr "为 QPE 与 RDM 模块提供统一的设备选择逻辑，支持 GPU 加速并兼容 Catalyst。"
+
+#: of q2m3.core.device_utils:6
+msgid "IMPORTANT: There are TWO separate GPU support systems in q2m3:"
+msgstr "重要：q2m3 有两套独立的 GPU 支持系统："
+
+#: of q2m3.core.device_utils:8
+msgid ""
+"PennyLane Lightning GPU (cuQuantum/CUDA): - Used by standard QPE circuits (without @qjit) - "
+"Detected by HAS_LIGHTNING_GPU flag - Requires: pennylane-lightning[gpu], cuQuantum, CUDA"
+msgstr ""
+"PennyLane Lightning GPU (cuQuantum/CUDA)：- 用于标准 QPE 电路（不使用 @qjit）；- 通过 HAS_LIGHTNING_GPU 标志检测；- "
+"需要 pennylane-lightning[gpu]、cuQuantum 和 CUDA。"
+
+#: of q2m3.core.device_utils:13
+msgid ""
+"JAX/Catalyst GPU (jaxlib[cuda]): - Used by Catalyst @qjit compiled circuits - Detected by "
+"HAS_JAX_CUDA flag - Requires: jax[cuda11_pip] or jax[cuda12_pip]"
+msgstr ""
+"JAX/Catalyst GPU (jaxlib[cuda])：- 用于 Catalyst @qjit 编译电路；- 通过 HAS_JAX_CUDA 标志检测；- 需要 "
+"jax[cuda11_pip] 或 jax[cuda12_pip]。"
+
+#: of q2m3.core.device_utils:18
+msgid ""
+"When Catalyst @qjit is enabled, even with lightning.gpu device, the actual execution backend is "
+"determined by JAX, NOT PennyLane. If JAX lacks CUDA support, Catalyst runs on CPU regardless of "
+"device name."
+msgstr ""
+"启用 Catalyst @qjit 时，即使设备为 lightning.gpu，实际执行后端也由 JAX 决定，而非 PennyLane。若 JAX 不支持 "
+"CUDA，无论设备名称为何，Catalyst 均在 CPU 上运行。"
+
+#: of q2m3.core.device_utils.get_best_available_device:1
+msgid "Return the name of the best available device."
+msgstr "返回当前最佳可用设备的名称。"
+
+#: of q2m3.core.device_utils.get_best_available_device:3
+msgid "Priority: lightning.gpu > lightning.qubit > default.qubit"
+msgstr "优先级：lightning.gpu > lightning.qubit > default.qubit"
+
+#: of q2m3.core.device_utils.get_best_available_device:5
+msgid "Device name string"
+msgstr "设备名称字符串"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:1
+msgid "Get detailed information about Catalyst execution backend."
+msgstr "获取 Catalyst 执行后端的详细信息。"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:3
+msgid ""
+"IMPORTANT: Catalyst @qjit uses JAX as its execution backend, which is SEPARATE from PennyLane "
+"device selection. Even if device=\"lightning.gpu\", Catalyst will run on CPU if JAX lacks CUDA "
+"support."
+msgstr ""
+"重要：Catalyst @qjit 使用 JAX 作为执行后端，该后端独立于 PennyLane 设备选择。即使 device=\"lightning.gpu\"，若 JAX 不支持 "
+"CUDA，Catalyst 仍在 CPU 上运行。"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:7
+msgid ""
+"- jax_backend: JAX default backend (\"cpu\", \"cuda\", \"gpu\") - has_jax_cuda: Whether JAX has "
+"CUDA support - effective_device: Actual execution device for Catalyst - warning: Optional warning"
+" message if GPU expected but unavailable"
+msgstr ""
+"- jax_backend: JAX 默认后端（\"cpu\"、\"cuda\"、\"gpu\"）- has_jax_cuda: JAX 是否支持 CUDA - "
+"effective_device: Catalyst 的实际执行设备 - warning: 期望使用 GPU 但 GPU 不可用时的可选警告信息"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:7
+msgid "jax_backend: JAX default backend (\"cpu\", \"cuda\", \"gpu\")"
+msgstr "jax_backend: JAX 默认后端（\"cpu\"、\"cuda\"、\"gpu\"）"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:8
+msgid "has_jax_cuda: Whether JAX has CUDA support"
+msgstr "has_jax_cuda: JAX 是否支持 CUDA"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:9
+msgid "effective_device: Actual execution device for Catalyst"
+msgstr "effective_device: Catalyst 的实际执行设备"
+
+#: of q2m3.core.device_utils.get_catalyst_backend_info:10
+msgid "warning: Optional warning message if GPU expected but unavailable"
+msgstr "warning: 期望使用 GPU 但 GPU 不可用时的可选警告信息"
+
+#: of q2m3.core.device_utils.get_effective_catalyst_device_label:1
+msgid "Get the effective device label for Catalyst execution."
+msgstr "获取 Catalyst 执行的实际设备标签。"
+
+#: of q2m3.core.device_utils.get_effective_catalyst_device_label:3
+msgid ""
+"Unlike get_best_available_device() which returns the PennyLane device name, this returns what "
+"Catalyst actually runs on (CPU/GPU based on JAX backend)."
+msgstr "get_best_available_device() 返回 PennyLane 设备名称；此函数返回 Catalyst 实际运行的设备（由 JAX 后端决定为 CPU 或 GPU）。"
+
+#: of q2m3.core.device_utils.get_effective_catalyst_device_label:6
+msgid "CPU)\" or \"lightning.gpu (JAX: GPU)\""
+msgstr "CPU)\" 或 \"lightning.gpu (JAX: GPU)\""
+
+#: of q2m3.core.device_utils.get_catalyst_effective_backend:1
+msgid "Get human-readable Catalyst execution backend label."
+msgstr "获取便于阅读的 Catalyst 执行后端标签。"
+
+#: of q2m3.core.device_utils.get_catalyst_effective_backend:3
+msgid "String like \"GPU (JAX CUDA)\" or \"CPU (JAX)\""
+msgstr "类似 \"GPU (JAX CUDA)\" 或 \"CPU (JAX)\" 的字符串"
+
+#: of q2m3.core.device_utils.select_device:1
+msgid "Select quantum device based on device_type parameter."
+msgstr "根据 device_type 参数选择量子设备。"
+
+#: of q2m3.core.device_utils.select_device:3
+msgid ""
+"NOTE: As of PennyLane v0.43, setting shots on device is deprecated. Use qml.set_shots() transform"
+" on QNode instead."
+msgstr "注意：自 PennyLane v0.43 起，在设备上设置 shots 已弃用。改为对 QNode 使用 qml.set_shots() 变换。"
+
+#: of q2m3.core.device_utils.select_device:6
+msgid ""
+"Device selection strategy: - \"auto\": Auto-select best available (GPU > lightning.qubit > "
+"default.qubit) - \"default.qubit\": Standard PennyLane simulator - \"lightning.qubit\": High-"
+"performance CPU simulator - \"lightning.gpu\": GPU-accelerated simulator (requires cuQuantum)"
+msgstr ""
+"设备选择策略：- \"auto\"：自动选择可用的最佳设备 (GPU > lightning.qubit > default.qubit)；- \"default.qubit\"：标准 "
+"PennyLane 模拟器；- \"lightning.qubit\"：高性能 CPU 模拟器；- \"lightning.gpu\"：GPU 加速模拟器（需要 cuQuantum）。"
+
+#: of q2m3.core.device_utils.select_device:11
+msgid "Number of qubits"
+msgstr "量子比特数"
+
+#: of q2m3.core.device_utils.select_device:12
+msgid "If True, ensure Catalyst-compatible fallback (lightning.qubit instead of default.qubit)"
+msgstr "若为 True，确保回退设备兼容 Catalyst（使用 lightning.qubit，而非 default.qubit）"
+
+#: of q2m3.core.device_utils.select_device:14
+msgid "Optional device seed for reproducible shot-based sampling"
+msgstr "可选的设备随机种子，用于可复现的有限次数测量采样"
+
+#: of q2m3.core.device_utils.select_device:16
+msgid "PennyLane device instance"
+msgstr "PennyLane 设备实例"
+
+#: ../../source/api-reference/core.rst:46
+msgid "Hamiltonian Utilities"
+msgstr "哈密顿量工具"
+
+#: of q2m3.core.hamiltonian_utils:1
+msgid "PennyLane Hamiltonian operator utilities."
+msgstr "PennyLane 哈密顿量算符工具。"
+
+#: of q2m3.core.hamiltonian_utils:3
+msgid ""
+"Provides helper functions for decomposing PennyLane Sum/Hamiltonian objects (PennyLane 0.44+ "
+"compatible) and building operator index maps for efficient coefficient updates in QM/MM "
+"simulations."
+msgstr "提供辅助函数，用于分解 PennyLane Sum/Hamiltonian 对象（兼容 PennyLane 0.44+），以及构建算符索引映射，以高效更新 QM/MM 模拟中的系数。"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:1
+msgid "Extract (coeffs, ops) from PennyLane Sum/Hamiltonian."
+msgstr "从 PennyLane Sum/Hamiltonian 提取 (coeffs, ops)。"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:3
+msgid ""
+"PennyLane 0.44+ returns Sum of SProd from qml.qchem.molecular_hamiltonian. We need separate "
+"coefficients and operators for qml.dot(coeffs, ops)."
+msgstr ""
+"PennyLane 0.44+ 的 qml.qchem.molecular_hamiltonian 返回由 SProd 组成的 Sum。qml.dot(coeffs, ops) "
+"需要分离的系数与算符。"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:6
+msgid "PennyLane Hamiltonian (Sum of SProd operators)"
+msgstr "PennyLane 哈密顿量（SProd 算符之和）"
+
+#: of q2m3.core.hamiltonian_utils.decompose_hamiltonian:8
+msgid ""
+"Tuple of (coefficients, operators) where coefficients are floats and operators are PennyLane "
+"operator instances."
+msgstr "(coefficients, operators) 元组，其中 coefficients 为浮点数，operators 为 PennyLane 算符实例。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:1
+msgid "Scan ops to find Identity and single-Z(wire) indices for MM coefficient updates."
+msgstr "扫描 ops，查找 Identity 与单个 Z(wire) 的索引，用于 MM 系数更新。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:3
+msgid ""
+"If any Z(wire) for wire in range(n_system_qubits) is missing, appends a coeff=0.0 placeholder to "
+"ensure all spin orbitals can receive MM corrections."
+msgstr "若 range(n_system_qubits) 中任一 wire 缺少 Z(wire)，则追加 coeff=0.0 的占位项，确保所有自旋轨道都能接收 MM 修正。"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:6
+msgid "List of PennyLane operators (from decompose_hamiltonian)"
+msgstr "PennyLane 算符列表（来自 decompose_hamiltonian）"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:7
+msgid "Number of system qubits (= 2 * active_orbitals)"
+msgstr "系统量子比特数 (= 2 * active_orbitals)"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:8
+msgid "Corresponding coefficient list (may be extended)"
+msgstr "对应的系数列表（可能扩展）"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:10
+#, python-brace-format
+msgid ""
+"- index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}} - extended_coeffs: "
+"coefficients with any missing Z terms appended - extended_ops: operators with any missing Z terms"
+" appended"
+msgstr ""
+"- index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}} - extended_coeffs: 追加所有缺失 "
+"Z 项后的系数 - extended_ops: 追加所有缺失 Z 项后的算符"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:10
+#, python-brace-format
+msgid "index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}}"
+msgstr "index_map: {\"identity_idx\": int, \"z_wire_idx\": {wire: idx, ...}}"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:11
+msgid "extended_coeffs: coefficients with any missing Z terms appended"
+msgstr "extended_coeffs: 追加所有缺失 Z 项后的系数"
+
+#: of q2m3.core.hamiltonian_utils.build_operator_index_map:12
+msgid "extended_ops: operators with any missing Z terms appended"
+msgstr "extended_ops: 追加所有缺失 Z 项后的算符"
+
+#: ../../source/api-reference/core.rst:52
+msgid "Solver Extension Point"
+msgstr "求解器扩展点"
+
+#: of q2m3.core.quantum_solver:1
+msgid "Quantum Solver Interface for Ground State Energy Estimation."
+msgstr "用于基态能量估计的量子求解器接口。"
+
+#: of q2m3.core.quantum_solver:3
+msgid ""
+"Abstract base class for quantum solvers used in QM/MM simulations. Concrete implementations (QPE,"
+" VQE, etc.) are in separate modules."
+msgstr "QM/MM 模拟中量子求解器的抽象基类。具体实现（QPE、VQE 等）位于独立模块中。"
+
+#: of q2m3.core.quantum_solver:6
+msgid ""
+"This is a self-contained module — not exported from core/__init__.py. Future VQE/QAOA solvers can"
+" import directly::"
+msgstr "此模块可独立使用，不从 core/__init__.py 导出。未来的 VQE/QAOA 求解器可直接导入::"
+
+#: of q2m3.core.quantum_solver.SolverResult:1
+msgid "Universal result container for quantum solvers."
+msgstr "量子求解器的通用结果容器。"
+
+#: of q2m3.core.quantum_solver.SolverResult:5
+msgid "Estimated ground state energy in Hartree."
+msgstr "估计的基态能量，单位为 Hartree。"
+
+#: of q2m3.core.quantum_solver.SolverResult:11
+msgid "Estimated phase value from QPE."
+msgstr "QPE 估计的相位值。"
+
+#: of q2m3.core.quantum_solver.SolverResult:17
+msgid "Algorithm-specific measurement data."
+msgstr "算法特有的测量数据。"
+
+#: of q2m3.core.quantum_solver.SolverResult:19
+msgid "Any"
+msgstr "Any"
+
+#: of q2m3.core.quantum_solver.SolverResult:23
+msgid "Additional algorithm-specific information."
+msgstr "算法特有的附加信息。"
+
+#: of q2m3.core.quantum_solver.SolverResult:25
+msgid "dict"
+msgstr "dict"
+
+#: of q2m3.core.quantum_solver.QuantumSolver:1
+msgid "Abstract base class for quantum ground state solvers."
+msgstr "量子基态求解器的抽象基类。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver:3
+msgid ""
+"Implementations should provide: - solve(): Execute the algorithm and return energy estimate - "
+"compile(): Pre-compile circuit for repeated execution"
+msgstr "实现应提供：- solve()：执行算法并返回能量估计；- compile()：预编译电路以便重复执行。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver.solve:1
+msgid "Estimate ground state energy of the Hamiltonian."
+msgstr "估计哈密顿量的基态能量。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver.solve:3
+msgid "Dict containing Hamiltonian operator, HF state, qubit count, and reference energy."
+msgstr "包含哈密顿量算符、HF 态、量子比特数和参考能量的字典。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver.solve:6
+msgid "SolverResult with energy and measurement data."
+msgstr "包含能量和测量数据的 SolverResult。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver.compile:1
+msgid "Pre-compile circuit for repeated execution."
+msgstr "预编译电路以便重复执行。"
+
+#: of q2m3.core.quantum_solver.QuantumSolver.compile:3
+msgid ""
+"Some solvers (like QPE) support circuit pre-compilation for reuse across MC steps with the same "
+"Hamiltonian."
+msgstr "某些求解器（例如 QPE）支持电路预编译，以便在采用相同哈密顿量的不同 MC 步骤间复用。"

@@ -1,7 +1,7 @@
 # H2 Resource Estimation
 
-This tutorial uses the `q2m3.core.resource_estimation` API to estimate EFTQC
-hardware resources for H2 and to compare vacuum versus MM-embedded Hamiltonians.
+This tutorial estimates EFTQC hardware resources for H2 with
+`q2m3.core.resource_estimation`. It compares vacuum and MM-embedded Hamiltonians.
 
 ## Run The Script
 
@@ -51,8 +51,8 @@ The maintained example reports:
 | Toffoli gates | `1,224,608` |
 | Target error | Chemical-accuracy scale by default |
 
-The comparison is expected to show only a small resource change from MM
-embedding because point charges primarily change one-electron terms. For this
+MM embedding is expected to change the resource estimate only slightly.
+Point charges mainly change one-electron terms. For this
 small H2 example, two-electron integrals dominate the resource estimate.
 
 ## Interpretation Boundaries

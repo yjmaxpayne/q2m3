@@ -68,14 +68,28 @@ lint:
 pre-commit:
 	uv run --extra dev pre-commit run --all-files
 
-docs:
-	uv run $(DOCS_EXTRAS) sphinx-build -W --keep-going -b html doc/source doc/build/html
+docs: docs-site
+
+.PHONY: docs-site docs-gettext docs-translations-check
+docs-site: docs-translations-check
+	rm -rf doc/build/html
+	uv run $(DOCS_EXTRAS) sphinx-build -E -W --keep-going -b html -D language=en -d doc/build/doctrees/en doc/source doc/build/html
+	uv run $(DOCS_EXTRAS) sphinx-build -E -W --keep-going -b html -D language=zh_CN -d doc/build/doctrees/zh_CN doc/source doc/build/html/zh_CN
+	uv run $(DOCS_EXTRAS) python doc/check_site.py
+
+docs-gettext:
+	uv run $(DOCS_EXTRAS) python -c "import pathlib, shutil; shutil.rmtree(pathlib.Path('doc/build/gettext'), ignore_errors=True)"
+	uv run $(DOCS_EXTRAS) sphinx-build -E -W --keep-going -b gettext -d doc/build/doctrees/gettext doc/source doc/build/gettext
+
+docs-translations-check: docs-gettext
+	uv run $(DOCS_EXTRAS) python doc/translations.py check
 
 docs-clean:
 	$(MAKE) -C doc clean
 
 docs-doctest:
-	uv run $(DOCS_EXTRAS) sphinx-build -W --keep-going -b doctest doc/source doc/build/doctest
+	uv run $(DOCS_EXTRAS) sphinx-build -E -W --keep-going -b doctest -D language=en -d doc/build/doctrees/doctest-en doc/source doc/build/doctest/en
+	uv run $(DOCS_EXTRAS) sphinx-build -E -W --keep-going -b doctest -D language=zh_CN -d doc/build/doctrees/doctest-zh_CN doc/source doc/build/doctest/zh_CN
 
 changelog-dry:
 	uv run --extra dev cz changelog --dry-run

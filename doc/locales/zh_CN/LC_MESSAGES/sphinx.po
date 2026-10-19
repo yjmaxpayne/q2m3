@@ -1,0 +1,97 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/_templates/page.html:5
+msgid "Toggle site navigation sidebar"
+msgstr "切换网站导航侧栏"
+
+#: ../../source/_templates/page.html:6
+msgid "Toggle table of contents sidebar"
+msgstr "切换页内目录侧栏"
+
+#: ../../source/_templates/page.html:7
+msgid "Toggle Light / Dark / Auto color theme"
+msgstr "切换浅色 / 深色 / 自动配色主题"
+
+#: ../../source/_templates/page.html:8
+msgid "Toggle navigation of"
+msgstr "展开或收起导航："
+
+#: ../../source/_templates/page.html:12
+msgid "'s"
+msgstr " 的"
+
+#: ../../source/_templates/page.html:16
+msgid "Search"
+msgstr "搜索"
+
+#: ../../source/_templates/page.html:16
+msgid "Next"
+msgstr "下一页"
+
+#: ../../source/_templates/page.html:16
+msgid "Previous"
+msgstr "上一页"
+
+#: ../../source/_templates/page.html:16
+msgid "Home"
+msgstr "首页"
+
+#: ../../source/_templates/page.html:16
+msgid "On this page"
+msgstr "本页内容"
+
+#: ../../source/_templates/page.html:17
+msgid "Back to top"
+msgstr "返回顶部"
+
+#: ../../source/_templates/page.html:17
+msgid "Skip to content"
+msgstr "跳至正文"
+
+#: ../../source/_templates/page.html:17
+msgid "View this page"
+msgstr "查看此页"
+
+#: ../../source/_templates/sidebar/brand.html:5
+msgid "Logo"
+msgstr "标志"
+
+#: ../../source/_templates/sidebar/brand.html:10
+msgid "Light Logo"
+msgstr "浅色主题标志"
+
+#: ../../source/_templates/sidebar/brand.html:11
+msgid "Dark Logo"
+msgstr "深色主题标志"
+
+#: ../../source/_templates/sidebar/brand.html:19
+msgid "Language"
+msgstr "语言"
+
+#, python-format
+msgid "Copyright &#169; %(copyright)s"
+msgstr "版权所有 &#169; %(copyright)s"
+
+msgid "Made with "
+msgstr "使用 "
+
+msgid "<a href=\"https://www.sphinx-doc.org/\">Sphinx</a> and "
+msgstr "<a href=\"https://www.sphinx-doc.org/\">Sphinx</a> 与 "

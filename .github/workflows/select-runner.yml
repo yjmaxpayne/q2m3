@@ -1,0 +1,55 @@
+name: Select CI runner
+
+on:
+  workflow_call:
+    secrets:
+      SELF_HOSTED_RUNNER_READ_TOKEN:
+        required: false
+    outputs:
+      runner:
+        description: JSON array of runner labels
+        value: ${{ jobs.select.outputs.runner }}
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Prefer an online Linux x64 self-hosted runner
+        id: select
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.SELF_HOSTED_RUNNER_READ_TOKEN || github.token }}
+          script: |
+            const fallback = ["ubuntu-latest"];
+            const preferred = ["self-hosted", "Linux", "X64"];
+            const choose = (labels) => core.setOutput("runner", JSON.stringify(labels));
+            const pr = context.payload.pull_request;
+            const repository = `${context.repo.owner}/${context.repo.repo}`;
+            if (pr && pr.head.repo?.full_name !== repository) {
+              core.notice("Fork pull request: use a GitHub-hosted runner.");
+              choose(fallback);
+              return;
+            }
+            try {
+              const runners = await github.paginate(
+                "GET /repos/{owner}/{repo}/actions/runners",
+                { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 },
+                (response) => response.data.runners,
+              );
+              const online = runners.some((runner) =>
+                runner.status === "online" && preferred.every((label) =>
+                  runner.labels.some((item) => item.name.toLowerCase() === label.toLowerCase())
+                )
+              );
+              core.notice(online ? "Use online self-hosted Linux x64 runners." : "No matching runner online: use GitHub-hosted.");
+              choose(online ? preferred : fallback);
+            } catch (error) {
+              core.warning(`Runner lookup failed (HTTP ${error.status ?? "unknown"}); use GitHub-hosted. Configure SELF_HOSTED_RUNNER_READ_TOKEN with repository Administration read permission.`);
+              choose(fallback);
+            }

@@ -50,6 +50,8 @@ dev = [
     "notebook>=6.5.0",
 ]
 docs = [
+    "babel>=2.13",
+    "jieba>=0.42.1",
     "sphinx>=8.0.0",
     "furo>=2024.8.6",
     "myst-parser>=4.0.0",

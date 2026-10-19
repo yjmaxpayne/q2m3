@@ -1,0 +1,174 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/tutorials/h2-qpe-validation.md:1
+msgid "H2 QPE Validation"
+msgstr "H2 QPE 验证"
+
+#: ../../source/tutorials/h2-qpe-validation.md:3
+msgid ""
+"This tutorial checks the small H2 path used as the first q2m3 smoke test. It compares vacuum and "
+"MM-embedded H2 Hamiltonians and reports stabilization in kcal/mol after explicit conversion from "
+"Hartree."
+msgstr "本教程检查用于 q2m3 首次冒烟测试的小规模 H2 路径。它比较真空和 MM 嵌入 H2 哈密顿量，并在从 Hartree 显式转换后，以 kcal/mol 报告稳定能。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:7
+msgid "Run The Script"
+msgstr "运行脚本"
+
+#: ../../source/tutorials/h2-qpe-validation.md:13
+msgid "The script performs four steps:"
+msgstr "脚本执行四个步骤："
+
+#: ../../source/tutorials/h2-qpe-validation.md:15
+msgid "Build vacuum and solvated PennyLane Hamiltonians from PySCF data."
+msgstr "根据 PySCF 数据构建真空和溶剂化 PennyLane 哈密顿量。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:16
+msgid "Run classical Hartree-Fock references for vacuum and MM-embedded systems."
+msgstr "对真空和 MM 嵌入体系运行经典 Hartree-Fock 参考计算。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:17
+msgid "Execute QPE for both Hamiltonians."
+msgstr "对两个哈密顿量执行 QPE。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:18
+msgid "Compare HF and QPE stabilization energies."
+msgstr "比较 HF 和 QPE 稳定能。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:20
+msgid "What The Example Builds"
+msgstr "示例构建的体系"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Component"
+msgstr "组成"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Value"
+msgstr "数值"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Molecule"
+msgstr "分子"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "H2"
+msgstr "H2"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Bond length"
+msgstr "键长"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "0.74 Angstrom"
+msgstr "0.74 Angstrom"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Basis"
+msgstr "基组"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "STO-3G"
+msgstr "STO-3G"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Active space"
+msgstr "活性空间"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "2 electrons, 2 orbitals"
+msgstr "2 个电子，2 个轨道"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "System qubits"
+msgstr "系统量子比特数"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "4"
+msgstr "4"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "MM environment"
+msgstr "MM 环境"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "2 TIP3P waters as point charges"
+msgstr "以点电荷表示的 2 个 TIP3P 水分子"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "Default QPE register"
+msgstr "默认 QPE 寄存器"
+
+#: ../../source/tutorials/h2-qpe-validation.md
+msgid "4 estimation wires"
+msgstr "4 条估计线路"
+
+#: ../../source/tutorials/h2-qpe-validation.md:32
+msgid ""
+"The example places the MM point charges about 3 Angstrom from H2. This small environment tests "
+"the MM embedding path."
+msgstr "示例将 MM 点电荷放在距 H2 约 3 Angstrom 处。这个小环境用于测试 MM 嵌入路径。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:35
+msgid "Interpreting Results"
+msgstr "解释结果"
+
+#: ../../source/tutorials/h2-qpe-validation.md:37
+msgid ""
+"Use the current script's `run_validation_checks` and printed results as the integration check. "
+"Its example-specific thresholds are `0.1 kcal/mol` for PennyLane HF expectation values versus "
+"PySCF HF, and `2.0 Ha` for absolute QPE–HF differences. These deliberately loose POC checks do "
+"not establish chemical accuracy. The script prints failures without setting a failing exit "
+"status, so inspect every `[OK]` / `[FAIL]` line."
+msgstr ""
+"使用当前脚本的 `run_validation_checks` 和打印结果作为集成检查。该示例采用的阈值为：PennyLane HF 期望值与 PySCF HF 相差 `0.1 "
+"kcal/mol`，QPE–HF 绝对差为 `2.0 Ha`。这些刻意放宽的概念验证检查不能证明化学精度。脚本打印失败时不会设置失败退出状态，因此必须逐行检查 `[OK]` / "
+"`[FAIL]`。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:44
+msgid ""
+"The signed offset is `E_QPE - E_HF`. It includes finite phase resolution, Trotter error, and "
+"sampling effects. Do not identify it directly with correlation energy. The default run uses 100 "
+"shots, so QPE results can vary. The script defines stabilization as `(E_vacuum - E_solvated)` "
+"converted to kcal/mol: a positive value means the solvated system has lower energy. The script "
+"skips its sign check when the absolute QPE stabilization is at most `0.01 kcal/mol`."
+msgstr ""
+"带符号偏差为 `E_QPE - E_HF`，包含有限相位分辨率、Trotter 误差和采样效应，不能直接视为电子相关能。默认运行使用 100 次采样，因此 QPE "
+"结果可能变化。脚本将稳定能定义为 `(E_vacuum - E_solvated)` 转换为 kcal/mol 的结果：正值表示溶剂化体系能量更低。当 QPE 稳定能的绝对值至多为 `0.01 "
+"kcal/mol` 时，脚本跳过符号检查。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:52
+msgid ""
+"To compare regressions, save the output, source revision, dependency versions, device, and QPE "
+"parameters. Historical README numbers are not acceptance thresholds."
+msgstr "比较回归结果时，保存输出、源码版本、依赖版本、设备和 QPE 参数。历史 README 数值不是验收阈值。"
+
+#: ../../source/tutorials/h2-qpe-validation.md:56
+msgid "Common Adjustments"
+msgstr "常见调整"
+
+#: ../../source/tutorials/h2-qpe-validation.md:58
+msgid ""
+"Use more estimation wires for better phase resolution. Increase Trotter steps only after you "
+"check that memory and runtime are acceptable. If the energy appears to wrap or jump by a large "
+"amount, inspect the base time and shifted QPE parameters. Do this before you interpret the "
+"difference physically."
+msgstr "增加估计线路数可提高相位分辨率。仅在确认内存和运行时间可接受后，才增加 Trotter 步数。如果能量看似回绕或大幅跳变，先检查基准时间和平移后的 QPE 参数，再解释差异的物理意义。"

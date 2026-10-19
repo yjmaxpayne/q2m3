@@ -1,9 +1,8 @@
 # Full-One-Electron Fixed-MO Embedding
 
 This tutorial runs a small H2/STO-3G active-space resource estimate in vacuum
-and near one TIP3P water shell. It demonstrates the public
-`embedding_mode="diagonal"` and `embedding_mode="full_oneelectron"` resource
-rows.
+and near one TIP3P water shell. It compares resource rows for
+`embedding_mode="diagonal"` and `embedding_mode="full_oneelectron"`.
 
 ## Run The Script
 
@@ -70,7 +69,7 @@ print(full.embedding_diagnostics.delta_h_offdiag_fro)
 one-electron perturbation. It does not mean relaxed orbital
 optimization, a polarizable MM force field, or a relaxed solvation energy.
 
-The current dynamic runtime coefficient workflow remains diagonal-update only.
+The current runtime coefficient workflow updates only diagonal terms.
 Full-one-electron embedding is available for resource estimates and fixed
 Hamiltonian/operator paths because off-diagonal one-electron terms can change
 the compiled operator support.

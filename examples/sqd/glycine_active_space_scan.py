@@ -99,7 +99,7 @@ def calculate(args, directory) -> None:
 
 
 def main() -> int:
-    """Parse the scan request; --seed chooses the first of five consecutive seeds."""
+    """Parse the scan request. The --seed option chooses the first of five consecutive seeds."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output", type=Path)
     p.add_argument("--seed", type=int, default=0)

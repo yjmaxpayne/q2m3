@@ -1,4 +1,4 @@
-"""Input/output and interpretation for examples; all solvers live in q2m3."""
+"""Input/output and interpretation for examples. All solvers are in q2m3."""
 
 from __future__ import annotations
 
@@ -236,7 +236,7 @@ def seed_statistics(rows: list[dict]) -> list[dict]:
 
 
 def plot_results(directory: Path, rows: list[dict]) -> None:
-    """Plot every actual seed; exact-error panels include T0 references only."""
+    """Plot every actual seed. The exact-error panels include T0 references only."""
     import matplotlib
 
     matplotlib.use("Agg")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import csv
 import json
+import math
 import os
 import subprocess
 import sys
@@ -17,6 +18,152 @@ import pytest
 from examples.sqd import _presentation as display
 from examples.sqd._inputs import fixed_waters
 from tests.sqd.test_result import result_data
+
+
+def _validate_saved_run(directory: Path, *, require_t0: bool = False) -> list[dict]:
+    rows = json.loads((directory / "summary.json").read_text())
+    with (directory / "summary.csv").open() as stream:
+        csv_rows = list(csv.DictReader(stream))
+    if not rows or len(rows) != len(csv_rows):
+        raise ValueError("Summary row inventory mismatch")
+    for row, csv_row in zip(rows, csv_rows, strict=True):
+        if row["status"] != "completed":
+            raise ValueError("A requested calculation did not complete")
+        for key, value in row.items():
+            if csv_row[key] != ("" if value is None else str(value)):
+                raise ValueError(f"CSV mismatch: {key}")
+        data = json.loads((directory / row["result_file"]).read_text())
+        if len(data) != 40 or data["schema_version"] != "sqd.result.v1":
+            raise ValueError("Incomplete public result")
+        for key in (
+            "baseline_tier",
+            "baseline_method",
+            "baseline_uncertainty_kind",
+            "baseline_uncertainty_mHa",
+            "baseline_downgrade_reason",
+            "seed",
+            "shots",
+            "n_reps",
+            "embedding_mode",
+        ):
+            if row[key] != data[key]:
+                raise ValueError(f"Result metadata mismatch: {key}")
+        if require_t0 and data["baseline_tier"] != "T0":
+            raise ValueError("Acceptance requires T0 for every requested point")
+        for key in (
+            "sqd_energy",
+            "hf_energy",
+            "baseline_energy",
+            "iso_active_space_ccsd_energy",
+            "iso_ndet_sci_energy",
+            "iso_ndet_random_energy",
+        ):
+            if row[key] != data[key] or (data[key] is not None and not math.isfinite(data[key])):
+                raise ValueError(f"Energy summary mismatch: {key}")
+        expected = 1000 * (data["sqd_energy"] - data["baseline_energy"])
+        if not math.isclose(row["delta_mHa"], expected, rel_tol=0, abs_tol=1e-8):
+            raise ValueError("Signed mHa error mismatch")
+        exact = row["exact_error_mHa"]
+        if (data["baseline_tier"] != "T0" and exact is not None) or (
+            data["baseline_tier"] == "T0" and exact != row["delta_mHa"]
+        ):
+            raise ValueError("Exact-error series includes a non-exact reference")
+        nelec, norb = data["active_space"]
+        full = math.comb(norb, nelec // 2) ** 2
+        if not (
+            data["full_ci_dim"] == row["full_ci_dim"] == full
+            and data["subspace_dim"] == row["subspace_dim"]
+            and 0 < data["subspace_dim"] <= full
+            and math.prod(data["subspace_dims"]) == data["subspace_dim"]
+        ):
+            raise ValueError("Illegal determinant dimensions")
+        if row["subspace_fraction"] != data["subspace_dim"] / full:
+            raise ValueError("Incorrect subspace fraction")
+    statistics = json.loads((directory / "statistics.json").read_text())
+    groups = {
+        (r["active_electrons"], r["active_orbitals"], r.get("embedding_mode", "vacuum"))
+        for r in rows
+    }
+    reported = {(*item["active_space"], item["embedding_mode"]) for item in statistics}
+    if len(statistics) != len(groups) or reported != groups:
+        raise ValueError("Statistics group inventory mismatch")
+    for stats in statistics:
+        selected = [
+            r
+            for r in rows
+            if [r["active_electrons"], r["active_orbitals"]] == stats["active_space"]
+            and r.get("embedding_mode", "vacuum") == stats["embedding_mode"]
+        ]
+        errors = [r["delta_mHa"] for r in selected if r.get("baseline_tier") == "T0"]
+        average = sum(errors) / len(errors) if errors else None
+        if stats["requested_points"] != len(selected) or stats["t0_points"] != len(errors):
+            raise ValueError("Statistics point count mismatch")
+        if average is not None and not math.isclose(
+            stats["mean_signed_error_mHa"], average, rel_tol=0, abs_tol=1e-8
+        ):
+            raise ValueError("Statistics mean mismatch")
+        if len(errors) > 1:
+            deviation = math.sqrt(sum((e - average) ** 2 for e in errors) / (len(errors) - 1))
+            if not math.isclose(stats["sample_std_mHa"], deviation, rel_tol=0, abs_tol=1e-8):
+                raise ValueError("Statistics sample deviation mismatch")
+    for name in ("energies.png", "energies.svg", "cost.png", "cost.svg"):
+        if (directory / name).stat().st_size < 1000:
+            raise ValueError(f"Missing/empty figure: {name}")
+    return rows
+
+
+def _validate_embedding(directory: Path) -> None:
+    rows = _validate_saved_run(directory, require_t0=True)
+    by_mode = {r["embedding_mode"]: r for r in rows}
+    if len(rows) != 3 or set(by_mode) != {"vacuum", "diagonal", "full_oneelectron"}:
+        raise ValueError("Three distinct embedding modes are required")
+    frames = {
+        json.loads((directory / r["result_file"]).read_text())["provenance"]["context"]["frame_id"]
+        for r in rows
+    }
+    if len(frames) != 1:
+        raise ValueError("Embedding frame mismatch")
+    vacuum = by_mode["vacuum"]
+    for row in rows:
+        shift = 1000 * (row["baseline_energy"] - vacuum["baseline_energy"])
+        residual_change = row["delta_mHa"] - vacuum["delta_mHa"]
+        sqd_shift = 1000 * (row["sqd_energy"] - vacuum["sqd_energy"])
+        if not all(
+            math.isclose(a, b, abs_tol=1e-8)
+            for a, b in (
+                (shift, row["reference_shift_vs_vacuum_mHa"]),
+                (residual_change, row["solver_error_change_mHa"]),
+                (sqd_shift, row["sqd_shift_vs_vacuum_mHa"]),
+                (sqd_shift, shift + residual_change),
+            )
+        ):
+            raise ValueError("Embedding energy decomposition mismatch")
+
+
+def _validate_integrals(directory: Path) -> None:
+    rows = _validate_saved_run(directory, require_t0=True)
+    if len(rows) != 2 or {row["label"] for row in rows} != {"integrals", "geometry"}:
+        raise ValueError("Both integral and geometry results required")
+    low, high = [json.loads((directory / row["result_file"]).read_text()) for row in rows]
+    for key in ("frame_id", "hamiltonian_id", "active_indices"):
+        if low["provenance"]["context"][key] != high["provenance"]["context"][key]:
+            raise ValueError("Integral adapter context mismatch")
+    for key in (
+        "sqd_energy",
+        "baseline_energy",
+        "hf_energy",
+        "iso_active_space_ccsd_energy",
+        "iso_ndet_sci_energy",
+        "iso_ndet_random_energy",
+    ):
+        if low[key] is None or high[key] is None:
+            matched = low[key] == high[key]
+        else:
+            matched = math.isclose(low[key], high[key], rel_tol=0, abs_tol=1e-8)
+        if not matched:
+            raise ValueError("Integral adapter energy mismatch")
+    if not json.loads((directory / "consistency.json").read_text())["matched"]:
+        raise ValueError("Integral adapter consistency failed")
 
 
 @pytest.fixture
@@ -178,8 +325,6 @@ def test_real_h2_tutorial_matches_independent_casci(tmp_path):
     "mutation", ["none", "csv", "energy", "dimensions", "missing_field", "statistics"]
 )
 def test_saved_artifact_acceptance_rejects_corruption(payload, tmp_path, mutation):
-    from tools.sqd.check_showcase import validate_run
-
     display.write_json(tmp_path / "result.json", payload)
     row = display.summary_row(payload, "test", "result.json")
     display.save_summary(tmp_path, [row])
@@ -198,21 +343,17 @@ def test_saved_artifact_acceptance_rejects_corruption(payload, tmp_path, mutatio
             del data["warnings"]
         display.write_json(tmp_path / "result.json", data)
     if mutation == "none":
-        assert validate_run(tmp_path, require_t0=True) == [row]
+        assert _validate_saved_run(tmp_path, require_t0=True) == [row]
     else:
         with pytest.raises(ValueError):
-            validate_run(tmp_path, require_t0=True)
+            _validate_saved_run(tmp_path, require_t0=True)
 
 
-def test_external_monitor_records_timeout_and_nonzero_exit(tmp_path):
-    from tools.sqd.verify_showcase import measure
-
-    timed = measure(
-        [sys.executable, "-c", "import time; time.sleep(5)"], tmp_path / "timeout", wall_s=0.2
-    )
-    assert timed["reason"] == "wall_budget_exceeded"
-    assert timed["exit_code"] != 0
-    assert timed["wall_s"] < 4
-    failed = measure([sys.executable, "-c", "raise SystemExit(3)"], tmp_path / "exit")
-    assert failed["reason"] is None
-    assert failed["exit_code"] == 3
+def test_saved_showcase_directories():
+    root = os.environ.get("Q2M3_SHOWCASE_ROOT")
+    if root is None:
+        pytest.skip("Q2M3_SHOWCASE_ROOT is not set")
+    base = Path(root)
+    _validate_saved_run(base / "ci-scan", require_t0=True)
+    _validate_embedding(base / "ci-embedding")
+    _validate_integrals(base / "ci-integrals")

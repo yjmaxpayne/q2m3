@@ -62,7 +62,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `q2m3.core` | QPE, QM/MM orchestration, RDM, resource estimation, device selection | Owns quantum chemistry algorithms and public computational entry points |
 | `q2m3.interfaces` | PySCF/PennyLane conversion and density matrix bridge | Owns framework conversion and MM embedding data exchange |
-| `q2m3.sqd` | CCSD-seeded LUCJ sampling, subspace diagonalization, references, and resource guards | Owns immutable SQD contracts and same-frame provenance; optional backends remain lazy |
+| `q2m3.sqd` | CCSD-seeded LUCJ sampling, subspace diagonalization, references, and resource guards | Owns immutable SQD contracts and same-frame provenance. Optional backends remain lazy |
 | `q2m3.solvation` | MC solvation orchestration, Catalyst QPE bundles, IR cache, analysis | Owns compile-once/reuse-many solvation workflows |
 | `q2m3.sampling` | Classical water geometry, MC moves, force-field helpers | Keeps MC proposal mechanics independent of quantum execution |
 | `q2m3.profiling` | Memory, timing, and Catalyst IR diagnostics | Measures performance without becoming part of the physical model |
@@ -79,15 +79,15 @@ Device selection is split across two backend systems:
 
 `device_type="auto"` selects the best available PennyLane device for standard
 execution. Catalyst execution still depends on the effective JAX/Catalyst
-backend, so a Lightning GPU device name does not by itself prove that compiled
-execution is running on the GPU.
+backend. A Lightning GPU device name therefore does not by itself prove that
+compiled execution runs on the GPU.
 
 ## Catalyst And IR Cache
 
-The solvation package treats Catalyst as a compile-once/reuse-many tool. The
-QPE circuit topology is compiled once, then fixed or runtime Hamiltonian
-coefficients are supplied across MC steps. The IR cache stores Catalyst LLVM IR
-for reuse when the structural cache key is unchanged.
+The solvation package treats Catalyst as a compile-once/reuse-many tool. Catalyst
+compiles the QPE circuit topology once. The solvation package then supplies
+fixed or runtime Hamiltonian coefficients across MC steps. The IR cache stores
+Catalyst LLVM IR for reuse when the structural cache key does not change.
 
 The cache key is structural: molecule, basis, active space, QPE wire count,
 Trotter depth, and circuit style matter. Runtime solvent coordinates and the
@@ -100,8 +100,8 @@ present in a diagonal coefficient update.
 
 SQD is a separate optional execution path and does not use QPE or Catalyst. The
 geometry entry builds a vacuum RHF frame, active-space integrals, and a same-frame
-CCSD seed before executing the same integral-based solver used by the lower-level
-entry point.
+CCSD seed. It then executes the same integral-based solver that the lower-level
+entry point uses.
 
 ```{mermaid}
 flowchart LR
@@ -130,8 +130,8 @@ must monitor that preprocessing separately. The calibrated executor supports
 Linux x86_64, serial native threads, balanced closed-shell spaces, and the exact
 dependency/profile bounds recorded in `resource_calibration.json`.
 
-The orbital frame and Hamiltonian have separate SHA256 identities. An integral
-run is accepted only when `IntegralContext`, `CCSDSeed`, tensor shapes,
+The orbital frame and Hamiltonian have separate SHA256 identities. SQD accepts an
+integral run only when `IntegralContext`, `CCSDSeed`, tensor shapes,
 permutation symmetries, constants, energies, and residuals agree. This prevents
 amplitudes or energies from one frame being silently reused with another.
 
@@ -145,8 +145,8 @@ amplitudes or energies from one frame being silently reused with another.
 | Keep energies in Hartree internally | Unit conversion is visible and avoids mixed-unit mistakes |
 | Preserve classical fallback paths | They test QM/MM plumbing when quantum execution is unavailable |
 | Separate sampling from quantum execution | MC proposal logic remains testable without Catalyst |
-| Keep full-one-electron embedding fixed-only | Runtime coefficient updates are diagonal-only; full active-space `Delta h_pq` changes operator support |
-| Keep SQD optional and lazy | Core and configuration imports do not require ffsim or Qiskit; workflow access gives an installation hint when the extra is absent |
+| Keep full-one-electron embedding fixed-only | Runtime coefficient updates are diagonal-only. Full active-space `Delta h_pq` changes operator support |
+| Keep SQD optional and lazy | Core and configuration imports do not require ffsim or Qiskit. Workflow access gives an installation hint when the extra is absent |
 | Authenticate integral SQD inputs | Frame and Hamiltonian hashes keep CCSD seeds, integrals, core constants, and results on one auditable Hamiltonian |
 | Reject resource extrapolation | A calibrated bound is safer than treating `allow_large` as permission to bypass unknown or hard limits |
 
@@ -154,5 +154,5 @@ amplitudes or energies from one frame being silently reused with another.
 
 `q2m3.core.quantum_solver` defines a conservative solver abstraction for future
 algorithms such as VQE or QAOA. Current public workflows still route primarily
-through `QPEEngine` and `QuantumQMMM`; treat the solver abstraction as an
+through `QPEEngine` and `QuantumQMMM`. Treat the solver abstraction as an
 extension point rather than a fully integrated replacement path.

@@ -143,7 +143,7 @@ class ReferenceConfig:
                 raise ValueError(f"{name} must be a sequence") from exc
 
     def validate(self) -> ReferenceConfig:
-        """Validate finite budgets and strictly descending cutoffs; return self."""
+        """Validate finite budgets and strictly descending cutoffs. Return self."""
         for name in ("wall_budget_s", "rss_budget_mb"):
             _finite(getattr(self, name), name)
             if getattr(self, name) <= 0:
@@ -230,7 +230,7 @@ def validate_molecular_inputs(
 
 @dataclass(frozen=True)
 class SQDConfig:
-    """SQD run configuration; molecule retains its existing mutable semantics."""
+    """SQD run configuration. The molecule retains its existing mutable semantics."""
 
     molecule: MoleculeConfig
     lucj: LUCJConfig = field(default_factory=LUCJConfig)
@@ -372,7 +372,7 @@ def validate_integral_inputs(
     """Validate integral structure, symmetry, and declared metadata consistency.
 
     This does not authenticate the Hamiltonian hash or independently recompute CCSD
-    energies/residuals; the numerical receiving path must perform those checks too.
+    energies/residuals. The numerical receiving path must perform those checks too.
 
     Args:
         h1: Real one-electron integrals, shape ``(norb, norb)``.

@@ -1,7 +1,7 @@
 """Budgeted reference ladder with pure planning and supervised Linux execution.
 
 Wall predictions are versioned engineering work-count estimates, not calibrated
-upper bounds. RSS models have explicitly bounded domains; a process-tree monitor
+upper bounds. RSS models have explicitly bounded domains. A process-tree monitor
 checks actual decimal MB every 10 ms and terminates overruns. Polling cannot
 observe arbitrary instantaneous peaks. Numerical failures never trigger fallback.
 """
@@ -84,7 +84,7 @@ class ReferencePlan:
 
 
 class ReferenceSolver(Protocol):
-    """Optional solver capability; execution occurs inside the budget supervisor."""
+    """Optional solver capability. Execution occurs inside the budget supervisor."""
 
     method: str
 
@@ -116,7 +116,7 @@ def resolve_reference(
 ) -> ReferencePlan:
     """Choose the first eligible solver without imports, probing, or other I/O.
 
-    Wall equality is permitted; RSS equality is refused. Supplied attempts retain
+    Wall equality is permitted. RSS equality is refused. Supplied attempts retain
     execution failures, preventing a timed-out or unavailable method being retried.
     """
     validate_active_space(norb, nelec)
@@ -241,8 +241,8 @@ def build_reference_candidates(
     """Probe bounded RSS models and explicitly registered optional capabilities.
 
     Builtin wall costs use a fixed engineering operation-count proxy, not a
-    calibrated timing bound. Optional capabilities supply a ``candidate`` record;
-    absent records are outside the cost domain. No binary is implicitly launched.
+    calibrated timing bound. Optional capabilities supply a ``candidate`` record.
+    Absent records are outside the cost domain. No binary is implicitly launched.
     Parent RSS is added to the solver inventory for simultaneous process residency.
     """
     import os
@@ -630,7 +630,7 @@ def run_reference(
         remaining_wall_s: Remaining whole-run wall budget, including planning.
         retained_mb: Additional live arrays outside builtin inventories.
         plugins: Explicit optional solver registrations, with candidate metadata.
-        candidates: Caller-provided planning facts; runtime guards remain active.
+        candidates: Caller-provided planning facts. Runtime guards remain active.
 
     Returns:
         Validated reference energy, independent diagnostics, and audited attempts.

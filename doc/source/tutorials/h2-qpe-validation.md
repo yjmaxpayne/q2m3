@@ -1,6 +1,6 @@
 # H2 QPE Validation
 
-This tutorial validates the small H2 path used as the first q2m3 smoke test.
+This tutorial checks the small H2 path used as the first q2m3 smoke test.
 It compares vacuum and MM-embedded H2 Hamiltonians and reports stabilization
 in kcal/mol after explicit conversion from Hartree.
 
@@ -29,7 +29,7 @@ The script performs four steps:
 | MM environment | 2 TIP3P waters as point charges |
 | Default QPE register | 4 estimation wires |
 
-The MM point charges are placed about 3 Angstrom from H2. This keeps the
+The example places the MM point charges about 3 Angstrom from H2. This keeps the
 example small while still exercising the MM embedding path.
 
 ## Interpreting Results
@@ -41,12 +41,12 @@ QPE–HF differences. These deliberately loose POC checks do not establish
 chemical accuracy. The script prints failures without setting a failing exit
 status, so inspect every `[OK]` / `[FAIL]` line.
 
-The signed offset is `E_QPE - E_HF`; it includes finite phase resolution,
-Trotter error, and sampling effects and must not be identified directly with
+The signed offset is `E_QPE - E_HF`. It includes finite phase resolution,
+Trotter error, and sampling effects. Do not identify it directly with
 correlation energy. The default run uses 100 shots, so QPE results can vary.
 The script defines stabilization as `(E_vacuum - E_solvated)` converted to
 kcal/mol: a positive value means the solvated system has lower energy.
-Its sign check is bypassed when the absolute QPE stabilization is at most
+The script skips its sign check when the absolute QPE stabilization is at most
 `0.01 kcal/mol`.
 
 For a regression comparison, save the output together with the source
@@ -55,7 +55,7 @@ numbers are not acceptance thresholds.
 
 ## Common Adjustments
 
-Use more estimation wires for better phase resolution, and increase Trotter
-steps only after confirming memory and runtime are acceptable. If the energy
+Use more estimation wires for better phase resolution. Increase Trotter
+steps only after you check that memory and runtime are acceptable. If the energy
 appears to wrap or jump by a large amount, inspect the base time and shifted
-QPE parameters before interpreting the difference physically.
+QPE parameters. Do this before you interpret the difference physically.

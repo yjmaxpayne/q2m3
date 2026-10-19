@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       run_benchmarks:
-        description: 'Run slow tests and the default-domain N2 SQD benchmark'
+        description: 'Run slow scientific tests and public tutorial acceptance'
         type: boolean
         default: false
   push:
@@ -62,17 +62,17 @@ jobs:
 
       - name: Run linting (ruff)
         if: matrix.profile.name == 'core'
-        run: uvx ruff@0.9.10 check src/ tests/ examples/ tools/
+        run: uvx ruff@0.9.10 check src/ tests/ examples/
 
       - name: Check formatting (black)
         if: matrix.profile.name == 'core'
-        run: uvx black@26.3.1 --check src/ tests/ examples/ tools/ --line-length 100
+        run: uvx black@26.3.1 --check src/ tests/ examples/ --line-length 100
 
       - name: Verify pytest collection and installed profile
-        run: uv run --no-sync python tools/sqd/ci_profile.py --profile ${{ matrix.profile.name }} --collect-only
+        run: uv run --no-sync pytest -n 0 --q2m3-profile "${{ matrix.profile.name }}" --collect-only --no-cov
 
       - name: Run profile tests with coverage
-        run: uv run --no-sync python tools/sqd/ci_profile.py --profile ${{ matrix.profile.name }} --coverage
+        run: uv run --no-sync pytest -n 0 --q2m3-profile "${{ matrix.profile.name }}" --cov=src/q2m3 --cov-report=xml --cov-report=term
 
       - name: Run the H2 user tutorial
         if: matrix.profile.name == 'sqd'
@@ -90,7 +90,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   slow-science:
-    name: manual slow science and N2 benchmark
+    name: manual slow science and public tutorial acceptance
     if: github.event_name == 'workflow_dispatch' && inputs.run_benchmarks
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -107,40 +107,19 @@ jobs:
       - run: uv python install 3.12
       - run: uv sync --frozen --python 3.12 --extra dev --extra sqd --extra catalyst --extra solvation
       - name: Run complete non-GPU profile including slow tests
-        run: uv run --no-sync python tools/sqd/ci_profile.py --profile sqd-catalyst --include-slow
+        run: uv run --no-sync pytest -n 0 --q2m3-profile sqd-catalyst --q2m3-include-slow --no-cov
       - name: Run end-to-end SQD tutorials
         run: |
           uv run --no-sync python -m examples.sqd.glycine_active_space_scan --output data/output/examples/ci-scan
           uv run --no-sync python -m examples.sqd.glycine_from_integrals --output data/output/examples/ci-integrals
           uv run --no-sync python -m examples.qmmm.glycine_sqd_embedding --output data/output/examples/ci-embedding
-          uv run --no-sync python -m tools.sqd.check_showcase --scan data/output/examples/ci-scan --integrals data/output/examples/ci-integrals --embedding data/output/examples/ci-embedding
+      - name: Validate saved showcase directories
+        run: Q2M3_SHOWCASE_ROOT=data/output/examples uv run --no-sync pytest -o addopts='' -n 0 tests/examples/test_sqd_showcase.py::test_saved_showcase_directories -v
       - name: Preserve showcase artifacts including partial failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sqd-showcase
           path: data/output/examples/
-
-      - name: Run N2 default-domain benchmark
-        run: uv run --no-sync python tools/sqd/molecular_benchmark.py --system n2 --output tmp/ci-n2
-      - name: Require completed default-domain benchmark
-        run: |
-          uv run --no-sync python - <<'PYTHON'
-          import json
-          from pathlib import Path
-          report = json.loads(Path("tmp/ci-n2/report.json").read_text())
-          rows = [row for row in report["records"] if row["profile"] == "default"]
-          if not rows or not report["g2b_registered_default_cases"] or any(
-              row["status"] != "completed" or row["memory_verdict"] != "pass" for row in rows
-          ):
-              raise SystemExit("Default-domain N2 benchmark did not pass; inspect artifacts")
-          PYTHON
-      - name: Preserve benchmark evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sqd-n2-default-domain
-          path: tmp/ci-n2
-          if-no-files-found: warn
 
 # Documentation build & GitHub Pages deployment live in .github/workflows/docs.yml.

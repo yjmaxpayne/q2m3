@@ -69,7 +69,7 @@ def low(data, seed_data, **kwargs):
 
 @pytest.fixture(scope="module")
 def chains(tmp_path_factory):
-    """Capture actual worker inputs; reuse that one vacuum MO for both modes."""
+    """Capture actual worker inputs. Reuse that one vacuum MO for both modes."""
     from q2m3.interfaces.fixed_mo_embedding import (
         FixedMOEmbeddingDiagnostics,
         FixedMOEmbeddingResult,

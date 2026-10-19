@@ -25,7 +25,7 @@ class QMMMSystem:
     """
     Build and manage QM/MM system for H3O+ in water environment.
 
-    Handles the partitioning of QM and MM regions, and sets up
+    This class partitions the QM and MM regions and prepares
     the embedding potential for quantum calculations.
     """
 

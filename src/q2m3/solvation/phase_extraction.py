@@ -30,7 +30,7 @@ def extract_energy_from_probs(
     """
     Extract energy from analytical probability distribution.
 
-    Uses probability-weighted expected bin index for sub-bin sensitivity.
+    Uses the probability-weighted mean of bin indices. The mean can lie between integer bins.
 
     Args:
         probs: Probability array of shape (2^n_estimation_wires,).

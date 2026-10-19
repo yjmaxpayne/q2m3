@@ -347,7 +347,7 @@ def estimate_one(spec: SystemSpec) -> dict:
 
 
 def write_outputs(records: list[dict], output_dir: Path) -> tuple[Path, Path]:
-    """Persist records to CSV and JSON in output_dir; return both paths."""
+    """Persist records to CSV and JSON in output_dir. Return both paths."""
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "qre_survey.csv"
     json_path = output_dir / "qre_survey.json"

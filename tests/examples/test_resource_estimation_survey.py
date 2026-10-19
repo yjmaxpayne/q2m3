@@ -47,9 +47,9 @@ def test_survey_systems_include_measured_compile_bridge_points():
 def test_estimate_one_runtime_uses_total_toffoli_once():
     """BUG-QRE-RUNTIME-001: survey row must not re-multiply DF total by an iteration count.
 
-    ``EFTQCResources.toffoli_gates`` is already the whole-QPE Toffoli count, so
-    runtime_seconds == toffoli_gates * tick_us * 1e-6 with no extra factor, and the
-    informational walk_operator_calls column is PennyLane's ceil(pi*lambda/(2*eps)).
+    ``EFTQCResources.toffoli_gates`` is already the whole-QPE Toffoli count.
+    Therefore, runtime_seconds == toffoli_gates * tick_us * 1e-6 with no extra factor.
+    The informational walk_operator_calls column is PennyLane's ceil(pi*lambda/(2*eps)).
     """
     import numpy as np
 

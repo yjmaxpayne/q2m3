@@ -462,7 +462,7 @@ def compute_mulliken_charges(
 
     Args:
         molecule: QM region molecular configuration
-        solvent_states: Optional solvent state array (n_mol, 6); None for vacuum
+        solvent_states: Optional solvent state array (n_mol, 6). Use None for vacuum.
 
     Returns:
         Dictionary {atom_label: mulliken_charge}, e.g. {"O0": -0.45, "H1": +0.22}

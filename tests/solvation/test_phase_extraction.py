@@ -116,7 +116,7 @@ class TestExtractEnergyFromProbs:
         assert abs((e1 - e0) - 5.0) < 1e-12
 
     def test_sub_bin_sensitivity(self):
-        """Probability spread across adjacent bins → sub-bin energy resolution."""
+        """Adjacent-bin probabilities produce a weighted mean between the bins."""
         from q2m3.solvation.phase_extraction import extract_energy_from_probs
 
         n_estimation_wires = 4

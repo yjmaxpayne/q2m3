@@ -12,7 +12,7 @@ Run with the SQD extra installed and OMP/MKL/OPENBLAS_NUM_THREADS=1::
     python -m examples.qmmm.h2o_sqd_validation --output data/output/examples/h2o-sqd
 
 The sparse sampled space is not expected to reproduce the full-space reference.
-Errors are signed SQD-minus-reference in mHa; positive means SQD is higher.
+Errors are signed SQD-minus-reference in mHa. Positive errors mean SQD is higher.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import numpy as np
 
 
 def run_validation(output_dir: Path, *, shots: int = 4096, seed: int = 7) -> dict[str, Any]:
-    """Execute both embedding modes and save complete, honest result records.
+    """Execute both embedding modes. Save complete result records.
 
     Args:
         output_dir: Directory for public JSON results and downstream mapping examples.

@@ -1,10 +1,10 @@
 ## Description
-Brief description of the changes in this PR.
+Briefly describe the changes in this PR.
 
 ## Type Of Change
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Breaking change (fix or feature that would prevent existing functionality from working as expected)
 - [ ] Documentation update
 - [ ] Performance improvement
 - [ ] Code refactoring

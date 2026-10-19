@@ -11,8 +11,7 @@ import pytest
 
 @pytest.fixture
 def runner():
-    path = Path(__file__).resolve().parents[2] / "tools/sqd/ci_profile.py"
-    assert path.is_file(), "CI profile runner must be shipped in the checkout"
+    path = Path(__file__).resolve().parents[2] / "tests/conftest.py"
     spec = importlib.util.spec_from_file_location("ci_profile", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -46,20 +45,19 @@ def test_sqd_profile_rejects_accidentally_installed_catalyst(runner, monkeypatch
 
 
 def test_collection_exclusions_preserve_pure_sqd_tests(runner):
-    args = runner.pytest_args("core")
-    assert "--ignore=tests/solvation" in args
-    assert "--ignore=tests/sqd/test_sampling.py" in args
-    assert "--ignore=tests/sqd" not in args
+    settings = runner.profile_settings("core")
+    assert "tests/solvation" in settings["ignore"]
+    assert "tests/sqd/test_sampling.py" in settings["ignore"]
+    assert "tests/sqd" not in settings["ignore"]
     for name in ("test_config.py", "test_result.py", "test_resources.py"):
-        assert f"--ignore=tests/sqd/{name}" not in args
-    assert "not sqd" in args[args.index("-m") + 1]
-    assert args[args.index("-n") + 1] == "0"
+        assert f"tests/sqd/{name}" not in settings["ignore"]
+    assert "not sqd" in settings["markexpr"]
 
 
 def test_full_profile_keeps_science_and_catalyst(runner):
-    args = runner.pytest_args("sqd-catalyst")
-    assert not any(arg.startswith("--ignore") for arg in args)
-    assert args[args.index("-m") + 1] == "not slow and not gpu"
+    settings = runner.profile_settings("sqd-catalyst")
+    assert settings == {"ignore": [], "markexpr": "not slow and not gpu"}
+    assert runner.profile_settings("sqd-catalyst", include_slow=True)["markexpr"] == "not gpu"
 
 
 def test_all_skipped_sqd_is_not_success(runner):
@@ -143,3 +141,136 @@ def test_setup_pass_is_not_scientific_execution(runner):
     gate = runner.ExecutionGate("sqd")
     gate.pytest_runtest_logreport(SimpleNamespace(nodeid="science", when="setup", passed=True))
     assert not gate.passed
+
+
+pytest_plugins = ["pytester"]
+
+
+@pytest.fixture
+def isolated(pytester, monkeypatch):
+    """Copy the real hooks and control only dependency discovery in the child process."""
+    monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
+    source = (Path(__file__).resolve().parents[1] / "conftest.py").read_text()
+    pytester.makeconftest(
+        source + "\nimport importlib.util\nimportlib.util.find_spec = lambda name: None\n"
+    )
+    pytester.makeini(
+        "[pytest]\nmarkers =\n    slow\n    gpu\n    catalyst\n    solvation\n    sqd\n"
+    )
+    pytester.makepyfile(test_smoke="def test_pass(): pass")
+    return pytester
+
+
+def run_profile(isolated, *args):
+    return isolated.runpytest_subprocess("-p", "xdist.plugin", "-n", "0", *args)
+
+
+def test_profile_rejects_unknown_name(isolated):
+    result = run_profile(isolated, "--q2m3-profile=unknown")
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    result.stderr.fnmatch_lines(["*invalid choice*unknown*"])
+
+
+def test_include_slow_requires_profile(isolated):
+    result = run_profile(isolated, "--q2m3-include-slow")
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    result.stderr.fnmatch_lines(["*--q2m3-include-slow requires --q2m3-profile*"])
+
+
+def test_profile_rejects_parallel_execution(isolated):
+    for workers in ("2", "auto"):
+        result = run_profile(isolated, "--q2m3-profile=core", "-n", workers)
+        assert result.ret == pytest.ExitCode.USAGE_ERROR
+        result.stderr.fnmatch_lines(["*profile requires serial execution*"])
+
+
+def test_profile_combines_explicit_markers(isolated):
+    isolated.makepyfile(test_selection="""
+        import pytest
+        @pytest.mark.sqd
+        def test_sqd(): assert False
+        @pytest.mark.slow
+        def test_slow(): pass
+        @pytest.mark.gpu
+        def test_gpu(): assert False
+    """)
+    result = run_profile(isolated, "--q2m3-profile=core", "-m", "slow or sqd or gpu")
+    assert result.ret != 0
+    result.assert_outcomes(deselected=4)
+    result = run_profile(
+        isolated, "--q2m3-profile=core", "--q2m3-include-slow", "-m", "slow or sqd or gpu"
+    )
+    assert result.ret == 0
+    result.assert_outcomes(passed=1, deselected=3)
+
+
+def test_profile_excludes_before_module_import(isolated):
+    for path in ("tests/solvation/conftest.py", "tests/sqd/test_sampling.py", "custom/test_bad.py"):
+        target = isolated.path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("raise AssertionError('excluded module imported')")
+    result = run_profile(isolated, "--q2m3-profile=core", "--ignore=custom")
+    assert result.ret == 0
+    result.assert_outcomes(passed=1)
+
+
+def test_collection_only_still_checks_dependencies(isolated):
+    conftest = isolated.path / "conftest.py"
+    source = conftest.read_text()
+    conftest.write_text(source + "\nimportlib.util.find_spec = lambda name: object()\n")
+    result = run_profile(isolated, "--q2m3-profile=core", "--collect-only")
+    assert result.ret != 0
+    result.stderr.fnmatch_lines(["*core profile requires ffsim to be absent*"])
+    conftest.write_text(source)
+    result = run_profile(isolated, "--q2m3-profile=core", "--collect-only")
+    assert result.ret == 0
+    assert "CI profile did not execute" not in result.stdout.str()
+
+
+def test_missing_required_node_fails(isolated):
+    conftest = isolated.path / "conftest.py"
+    conftest.write_text(conftest.read_text() + "\ndef preflight(profile): pass\n")
+    result = run_profile(isolated, "--q2m3-profile=sqd")
+    assert result.ret != 0
+    result.assert_outcomes(passed=1)
+    result.stdout.fnmatch_lines(
+        ["*CI profile did not execute required tests:*test_full_high_low_same_frame_seed*"]
+    )
+
+
+def test_xfail_and_xpass_do_not_satisfy_gate(isolated):
+    isolated.makepyfile(test_smoke="""
+        import pytest
+        @pytest.mark.xfail
+        def test_xfail(): assert False
+        @pytest.mark.xfail
+        def test_xpass(): pass
+    """)
+    result = run_profile(isolated, "--q2m3-profile=core")
+    result.assert_outcomes(xfailed=1, xpassed=1)
+    assert result.ret != 0
+    result.stdout.fnmatch_lines(["*CI profile did not execute required tests:*any*"])
+
+
+def test_gate_state_is_isolated_between_sessions(runner, monkeypatch):
+    monkeypatch.setattr(runner, "preflight", lambda profile: None)
+
+    def config():
+        return pytest.Config.fromdictargs({}, [])
+
+    first, second = config(), config()
+    try:
+        for current in (first, second):
+            current.option.q2m3_profile = "sqd-catalyst"
+            current.option.q2m3_include_slow = False
+            current.option.numprocesses = 0
+            runner.pytest_configure(current)
+        gate1 = first.pluginmanager.get_plugin("q2m3-execution-gate")
+        gate2 = second.pluginmanager.get_plugin("q2m3-execution-gate")
+        assert gate1 is not gate2
+        gate1.pytest_runtest_logreport(SimpleNamespace(nodeid="smoke", when="call", passed=True))
+        assert gate1.passed
+        assert not gate2.passed
+    finally:
+        first._ensure_unconfigure()
+        second._ensure_unconfigure()

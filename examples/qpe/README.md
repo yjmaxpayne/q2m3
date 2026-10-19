@@ -14,6 +14,12 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 3. [H₃O⁺ resolution comparison with documented memory fallback](h3o_8bit_qpe_benchmark.py):
    `uv run --no-sync python -m examples.qpe.h3o_8bit_qpe_benchmark`
 
-Molecular geometries and QPE grids are in each script. Validation prints energies; resolution benchmarks retain their established JSON output conventions. Start with H₂; higher-bit Catalyst compilation may take minutes and many GB, and H₃O⁺ 8-bit compilation can exceed workstation RAM. Phase resolution and Trotter error are not correlation energy.
+Each script contains its molecular geometries and QPE grids. The validation
+script prints energies. The resolution benchmarks keep their established JSON
+output conventions.
+
+Start with H₂. Higher-bit Catalyst compilation may take minutes and many GB of
+memory. H₃O⁺ 8-bit compilation can exceed workstation RAM. Phase resolution and
+Trotter error are not correlation energy.
 
 Return to the [capability map](../README.md).

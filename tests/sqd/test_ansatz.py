@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import importlib
+import subprocess
+import sys
 from dataclasses import replace
 from itertools import combinations, product
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -174,6 +177,78 @@ def test_actual_ffsim_connectivity_is_consumed(module, data):
     assert full.n_reps == empty.n_reps == 2
     assert np.max(np.abs(full.diag_coulomb_mats)) > 1e-5
     np.testing.assert_allclose(empty.diag_coulomb_mats, 0, atol=1e-12)
+
+
+def test_restricted_pairs_affect_production_operator(module):
+    command = (
+        "from tests.sqd.test_ansatz import _check_restricted_pairs_operator; "
+        "_check_restricted_pairs_operator()"
+    )
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", command],
+        cwd=Path(__file__).resolve().parents[2],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _check_restricted_pairs_operator():
+    """Keep the native state-vector oracle isolated from later SQD workers."""
+    from ffsim.qiskit import PrepareHartreeFockJW, UCJOpSpinBalancedJW, final_state_vector
+    from qiskit import QuantumCircuit
+
+    module = importlib.import_module("q2m3.sqd.ansatz")
+    molecule = MoleculeConfig(
+        "h3o+",
+        ["O", "H", "H", "H"],
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.94, 0.26],
+            [0.814, -0.47, 0.26],
+            [-0.814, -0.47, 0.26],
+        ],
+        1,
+        4,
+        4,
+    )
+    data = build_integrals(molecule, host_available_mb=4096)
+    seed = module.build_ccsd_seed(data, host_available_mb=4096)
+    restricted_pairs = ([(0, 1), (1, 2), (2, 3)], [(0, 0)])
+    restricted = module.build_lucj(
+        data,
+        seed,
+        lucj=LUCJConfig(interaction_pairs=restricted_pairs, n_reps=2, shots=50_000),
+        host_available_mb=4096,
+    )
+    full = module.build_lucj(
+        data,
+        seed,
+        lucj=LUCJConfig(interaction_pairs=None, n_reps=2, shots=50_000),
+        host_available_mb=4096,
+    )
+
+    for channel, allowed in enumerate(restricted_pairs):
+        mask = np.zeros((data.norb, data.norb), dtype=bool)
+        for i, j in allowed:
+            mask[i, j] = mask[j, i] = True
+        assert np.all(restricted.diag_coulomb_mats[:, channel][:, ~mask] == 0)
+        assert np.any(np.abs(full.diag_coulomb_mats[:, channel][:, ~mask]) > 0)
+
+    difference = restricted.diag_coulomb_mats - full.diag_coulomb_mats
+    assert np.max(np.abs(difference)) > 1e-8
+
+    def statevector(operator):
+        circuit = QuantumCircuit(2 * data.norb)
+        circuit.append(PrepareHartreeFockJW(data.norb, data.nelec), range(2 * data.norb))
+        circuit.append(UCJOpSpinBalancedJW(operator), range(2 * data.norb))
+        return np.asarray(final_state_vector(circuit, norb=data.norb, nelec=data.nelec))
+
+    restricted_state = statevector(restricted)
+    full_state = statevector(full)
+    assert abs(np.linalg.norm(restricted_state) - 1) < 1e-10
+    assert 1 - abs(np.vdot(restricted_state, full_state)) ** 2 > 1e-8
 
 
 def test_receiver_rejects_t2_symmetry_and_changed_mo(module, data):

@@ -5,7 +5,7 @@
 
 The output is the single measured compile source consumed by
 ``examples/performance/ir_qre_correlation_analysis.py``. Each successful row uses the same
-4-bit estimation register and 5 Trotter steps so that compile-side data can be
+4-bit estimation register and 5 Trotter steps. Thus, compile-side data can be
 joined to QRE rows without mixing incompatible circuit shapes.
 
 Usage:

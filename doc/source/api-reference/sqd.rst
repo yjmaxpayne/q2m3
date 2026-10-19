@@ -3,7 +3,7 @@ SQD API
 
 The SQD API is optional. Install it with ``uv sync --frozen --extra sqd``.
 Configuration and result contracts remain importable without the optional
-sampling backend; workflow functions are exposed lazily when ``ffsim`` and
+sampling backend. Workflow functions are exposed lazily when ``ffsim`` and
 ``qiskit-addon-sqd`` are installed.
 
 Public Workflows
@@ -53,7 +53,7 @@ Authenticated Integral Assembly
 -------------------------------
 
 These lower-level producers create the provenance records required by
-``run_sqd_from_integrals``. The integral tensor uses real chemist ordering and
+``run_sqd_from_integrals``. The integral tensor uses real chemist ordering.
 ``e_core`` is added exactly once.
 
 .. autoclass:: q2m3.sqd.integrals.IntegralData

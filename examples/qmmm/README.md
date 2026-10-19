@@ -20,6 +20,22 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 6. [Existing three-mode QPE–MC comparison](h2_three_mode_comparison.py):
    `uv run --no-sync python -m examples.qmmm.h2_three_mode_comparison`
 
-SQD entries require sqd only; MC entries require catalyst and solvation. No SQD–MC integration is introduced. Built-in geometries/charges and mode settings are explicit in the scripts. Glycine accepts --active-space 6|8|10, --seed, --shots and --output and saves complete per-mode results, summaries and PNG/SVG figures in data/output/examples/. Its two artificial TIP3P waters contain six charges with net zero charge. They are a fixed environment, not a sampled solvent. Vacuum MOs and two-electron tensors remain fixed; polarization and orbital relaxation are excluded. Separate reference energy shifts from changes in SQD solver residual. These are not solvation free energies. Each glycine mode has 900 s/8192 decimal MB budget; water uses its existing 120 s/8192 MB budget. MC and Catalyst compilation can be substantially more expensive; start with H₂. Legacy MC outputs retain existing locations.
+SQD entries require only the `sqd` extra. MC entries require the `catalyst`
+and `solvation` extras. These examples do not add SQD–MC integration. The
+scripts state their built-in geometries, charges, and mode settings explicitly.
+
+The glycine example accepts `--active-space 6|8|10`, `--seed`, `--shots`, and
+`--output`. It saves complete per-mode results, summaries, and PNG/SVG figures in
+`data/output/examples/`. Its two artificial TIP3P waters contain six charges with
+a net charge of zero. They are a fixed environment, not a sampled solvent.
+
+Vacuum MOs and two-electron tensors remain fixed. The model excludes
+polarization and orbital relaxation. Separate reference energy shifts from
+changes in the SQD solver residual. These are not solvation free energies.
+
+Each glycine mode has a budget of 900 s and 8192 decimal MB. The water example
+keeps its existing budget of 120 s and 8192 MB. MC and Catalyst compilation can
+be substantially more expensive. Start with H₂. Legacy MC outputs keep their
+existing locations.
 
 Return to the [capability map](../README.md).

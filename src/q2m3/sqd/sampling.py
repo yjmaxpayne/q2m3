@@ -2,7 +2,7 @@
 
 Numerical calls require the frozen resource-model environment and an independent
 process-tree RSS/deadline supervisor. ffsim 0.0.84 expresses big-endian order with
-BitstringType.BIT_ARRAY (there is no ``order`` keyword); orbital zero is rightmost in
+BitstringType.BIT_ARRAY (there is no ``order`` keyword). Orbital zero is rightmost in
 each spin block, compatible with downstream ``order='big'`` decoding.
 """
 
@@ -90,7 +90,7 @@ class FfsimSampler:
 
     ``retained_mb`` covers extra live inputs beyond the calibrated serial active-
     space schedule, e.g. a larger AO/full-MO integral source kept by the caller.
-    This low-level sampler does not verify seed provenance; obtain its operator
+    This low-level sampler does not verify seed provenance. Obtain its operator
     through ``build_lucj`` to enforce same-Hamiltonian/frame CCSD acceptance.
     """
 

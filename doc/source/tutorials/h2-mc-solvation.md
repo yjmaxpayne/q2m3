@@ -66,5 +66,5 @@ for optional metadata.
 ## Memory Notes
 
 H2 fixed mode is the safe MC default. H3O+ and dynamic mode increase Hamiltonian
-term count, circuit size, and Catalyst compile cost; treat them as diagnostics
+term count, circuit size, and Catalyst compile cost. Treat them as diagnostics
 until the H2 path is validated.

@@ -2,7 +2,7 @@
 
 Estimates describe a bounded serial workload, not a mathematical memory guarantee.
 Executors must also enforce a process-tree RSS cap and a wall deadline. Loading a
-model checks the environment; estimating with an already loaded model is pure.
+model checks the environment. Estimating with an already loaded model is pure.
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ def guard_allocation(
         subspace_dims: Actual candidates, or a proven pre-call dimension bound.
         retained_mb: Additional simultaneously live memory outside the inventory.
         solver_method: Reference solver identity, when applicable.
-        rss_budget_mb: Optional user cap; override never bypasses it.
+        rss_budget_mb: Optional user cap. An override never bypasses this cap.
         allow_large: Permit estimates above the default soft rejection boundary.
 
     Returns:
@@ -308,15 +308,15 @@ def load_resource_model(
     """Load a validated model and reject incompatible dependencies or workload.
 
     Args:
-        path: Calibration artifact; defaults to the shipped coefficient file.
+        path: Calibration artifact. Defaults to the shipped coefficient file.
         versions: Exact explicit manifest, or installed distribution versions. Only
-            absent optional Catalyst is accepted when inspecting the installation;
-            an installed Catalyst version must still match the calibration.
+            absent optional Catalyst is accepted when inspecting the installation.
+            An installed Catalyst version must still match the calibration.
         profile: Workload overrides to check against the artifact's bounded profile.
 
     Returns:
         An immutable model. Executors must honor the recorded live-array schedule,
-        solver settings and profile; arbitrary geometry/AO-basis work is not covered.
+        solver settings and profile. Arbitrary geometry/AO-basis work is not covered.
 
     Raises:
         ResourceModelDomainError: Missing artifact, unvalidated model or runtime mismatch.

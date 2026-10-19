@@ -24,8 +24,8 @@ class DeltaCorrPolResult:
 
     Note: frozen=True prevents field reassignment but does NOT prevent mutation
     of mutable fields like np.ndarray (e.g., obj.per_step_delta[0] = 999 is still
-    possible). This is an accepted trade-off: frozen provides intent-level immutability
-    and hashability for simple fields, while ndarray copy-on-read is not enforced
+    possible). This is an accepted trade-off. frozen provides intent-level immutability
+    and hashability for simple fields. ndarray copy-on-read is not enforced
     to avoid performance overhead on large arrays. Consumers should treat all fields
     as read-only.
     """

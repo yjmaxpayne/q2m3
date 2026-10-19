@@ -5,7 +5,7 @@ Glossary
 
    QM/MM
       Quantum mechanics/molecular mechanics. q2m3 treats a small QM region
-      with PySCF and PennyLane while representing the solvent environment with
+      with PySCF and PennyLane. It represents the solvent environment with
       classical point charges and MM force-field terms.
 
    QPE
@@ -25,15 +25,15 @@ Glossary
    reference tier
       The SQD baseline policy: T0 exact active-space CASCI, T1 selected CI,
       explicitly registered T1+ plugins, or diagnostic T2 CCSD(T). A tier
-      records method and uncertainty semantics; it is not an accuracy label by
+      records method and uncertainty semantics. It is not an accuracy label by
       itself.
 
    EFTQC
-      Early fault-tolerant quantum computer. In q2m3, this term is used for
+      Early fault-tolerant quantum computer. q2m3 uses this term for
       resource-estimation studies such as logical qubit and Toffoli counts.
 
    RDM
-      Reduced density matrix. The 1-RDM is used for Mulliken population
+      Reduced density matrix. q2m3 uses the 1-RDM for Mulliken population
       analysis and quantum-to-classical observable transfer.
 
    active space

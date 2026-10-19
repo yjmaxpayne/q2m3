@@ -2,7 +2,7 @@
 
 The three-mode comparison estimates how much the solvent environment changes
 the electronic correlation contribution. It is more expensive than the fixed
-H2 smoke test and should be run after `h2_mc_solvation.py`.
+H2 smoke test. Run it after `h2_mc_solvation.py`.
 
 ## Run The Script
 
@@ -14,7 +14,7 @@ uv run python examples/qmmm/h2_three_mode_comparison.py
 
 | Mode | Formula | Role |
 | --- | --- | --- |
-| `fixed` | `E_QPE(H_vac) + E_MM` | Fast baseline; ignores solvent changes in correlation |
+| `fixed` | `E_QPE(H_vac) + E_MM` | Fast baseline that ignores solvent changes in correlation |
 | `hf_corrected` | `E_HF(R) + E_MM` | HF-level MM embedding with interval QPE diagnostics |
 | `dynamic` | `E_QPE(H_eff) + E_MM` | Runtime MM-embedded QPE coefficients |
 
@@ -47,8 +47,8 @@ structure can be compiled once while coefficients change across MC steps.
 ## Reading The Result
 
 The key scientific quantity is `delta_corr-pol`, the correlation-polarization
-coupling term. For small H2 runs, it is a diagnostic of whether the QPE energy
-changes materially when the MM embedding enters the Hamiltonian rather than
+coupling term. For small H2 runs, it diagnoses whether the QPE energy
+changes materially when the MM embedding enters the Hamiltonian, not
 only the classical correction.
 
 ## Optional H3O+ Diagnostics

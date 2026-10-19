@@ -36,7 +36,7 @@ class _SeedInventory:
     """Serial real RCCSD, DIIS6, <=200 cycles, or rank-2 UCJ decomposition.
 
     128 float64 n^4 arrays cover ERIs, t2/DIIS, simultaneous receiver inputs,
-    update scratch and double-factorization matrices; 64 n^2 arrays cover
+    update scratch and double-factorization matrices. 64 n^2 arrays cover
     singles/Fock/orbitals. Full retained MO is counted separately. The 1024 MB
     import/native reserve is not a certified bound and needs external enforcement.
     """
@@ -195,7 +195,7 @@ def _physical_values(
     t1: np.ndarray,
     t2: np.ndarray,
 ) -> tuple[float, float, float]:
-    """Independently contract HF/Ecc; undo Jacobi denominators for Ha equations.
+    """Independently contract HF/Ecc. Undo Jacobi denominators for Ha equations.
 
     PySCF 2.14 RCCSD update_amps divides the equation numerator by eia/eijab.
     Multiplying its update defect by these unshifted denominators recovers the
@@ -285,7 +285,7 @@ def validate_ccsd_seed_from_integrals(
     """Receive the low-level integral contract without requiring molecular MOs.
 
     Actual Hamiltonian bytes and seed equations are verified. Frame provenance
-    is the equality of the supplied context and seed identifiers; only the
+    is the equality of the supplied context and seed identifiers. Only the
     molecular wrapper can additionally reconstruct the frame digest from MOs.
 
     Args:
@@ -294,7 +294,7 @@ def validate_ccsd_seed_from_integrals(
         e_core: Same-Hamiltonian core constant in Hartree.
         norb: Active spatial orbital count.
         nelec: Balanced spin populations.
-        context: Supplied frame and Hamiltonian provenance; source may be empty.
+        context: Supplied frame and Hamiltonian provenance. The source may be empty.
         seed_data: Converged same-frame RCCSD seed.
         host_available_mb: Executor whole-run cap in decimal MB.
         rss_budget_mb: User whole-run cap in decimal MB.
@@ -326,7 +326,7 @@ def build_ccsd_seed(
         host_available_mb: Executor whole-run cap in decimal MB.
         rss_budget_mb: User whole-run cap in decimal MB.
         allow_large: Override only the resource soft boundary.
-        max_cycle: Iteration bound, 0..200; zero exercises convergence refusal.
+        max_cycle: Iteration bound, 0..200. Zero exercises convergence refusal.
 
     Returns:
         Converged read-only amplitudes with independently verified Ha residual.
@@ -397,11 +397,11 @@ def build_lucj(
 
     Returns:
         ffsim UCJOpSpinBalanced with requested repetitions and masked interactions.
-        Initialization uses deterministic factorization with optimize=False; no RNG.
+        Initialization uses deterministic factorization with optimize=False. It uses no RNG.
 
     Raises:
         ResourceModelDomainError: Unsupported environment, profile or no virtuals.
-        CCSDConvergenceError: Seed fails physical acceptance; no fallback occurs.
+        CCSDConvergenceError: Seed fails physical acceptance. No fallback occurs.
     """
     lucj = lucj or LUCJConfig()
     _validate_pairs(lucj, data.norb)

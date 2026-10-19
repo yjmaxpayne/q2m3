@@ -22,7 +22,7 @@ class UnifiedDensityMatrix:
     """
     Unified density matrix interface for quantum-classical data exchange.
 
-    Provides seamless conversion between PySCF and PennyLane representations.
+    This interface converts between PySCF and PennyLane representations.
     """
 
     def __init__(self, dm_data: np.ndarray, source: str = "pyscf"):
@@ -559,7 +559,7 @@ class PySCFPennyLaneConverter:
             active_orbitals: Number of spatial orbitals in active space (optional)
             target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)
             embedding_mode: MM embedding mode for resource rows. ``"full_oneelectron"``
-                adds the full active-space perturbation; ``"diagonal"`` adds only
+                adds the full active-space perturbation. ``"diagonal"`` adds only
                 its diagonal. Ignored when no MM charges are provided, but still
                 validated.
 
@@ -569,8 +569,8 @@ class PySCFPennyLaneConverter:
                 - toffoli_gates: Total Toffoli count for the whole QPE run
                   (DoubleFactorization.gates = estimation_cost * unitary_cost)
                 - hamiltonian_1norm: Lambda (1-norm of Hamiltonian) in Hartree
-                - qpe_iterations: Walk-operator calls (= ceil(πλ/2ε)); already
-                  included in toffoli_gates (informational only)
+                - qpe_iterations: Number of walk-operator calls (= ceil(πλ/2ε)).
+                  Informational only: these calls are already included in toffoli_gates
                 - trotter_steps: Recommended Trotter steps (heuristic: 10 × n_orbitals)
                 - target_error: Target error in Hartree
                 - n_electrons: Number of electrons in the system

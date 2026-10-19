@@ -5,7 +5,7 @@ Catalyst IR stage analysis utilities.
 
 WARNING: ir_output_dir() uses os.chdir() which modifies global process state.
 It is NOT thread-safe. Do not call concurrently from multiple threads.
-Must be used as the outermost context manager wrapping @qjit decoration.
+ir_output_dir() must be the outermost context manager around @qjit decoration.
 """
 
 import os
@@ -35,8 +35,8 @@ COMPILATION_STAGES = [
 def ir_output_dir(path: str | None = None) -> Generator[str, None, None]:
     """Manage Catalyst IR workspace directory.
 
-    Must wrap @qjit decoration (not just the call), because Catalyst captures
-    os.getcwd() at decoration time to determine the IR output location.
+    This context manager must wrap @qjit decoration, not just the call.
+    Catalyst captures os.getcwd() at decoration time to determine the IR output location.
 
     Args:
         path: If provided, IR files are written here and preserved after exit.

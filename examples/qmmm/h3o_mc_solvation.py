@@ -22,7 +22,7 @@ ancilla qubit range.
 This example intentionally uses n_trotter_steps=3 as the public default.
 H3O+ has a much larger Hamiltonian than H2, and Catalyst's runtime-coefficient
 IR can consume substantial memory when Trotter depth is raised. Treat larger
-Trotter counts as a profiling experiment and run them only on machines with
+Trotter counts as a profiling experiment. Run them only on machines with
 enough RAM headroom.
 """
 

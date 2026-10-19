@@ -86,11 +86,11 @@ def build_fixed_mo_embedding_integrals(
 ) -> FixedMOEmbeddingResult:
     """Build fixed-MO one-electron embedding tensors for MM point charges.
 
-    The helper runs vacuum RHF once, keeps its canonical MO frame fixed, and
-    computes ``Delta h_AO = h_core_MM - h_core_vac`` from a PySCF
+    The helper runs vacuum RHF once and keeps its canonical MO frame fixed.
+    It computes ``Delta h_AO = h_core_MM - h_core_vac`` from a PySCF
     ``qmmm.mm_charge`` mean-field object. The returned two-electron tensor is
-    the vacuum active-space tensor; no orbital relaxation or MM-updated
-    two-electron tensor is included.
+    the vacuum active-space tensor. The result includes no orbital relaxation
+    or MM-updated two-electron tensor.
 
     Args:
         symbols: QM atomic symbols.

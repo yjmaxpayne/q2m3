@@ -52,7 +52,7 @@ The maintained example reports:
 | Target error | Chemical-accuracy scale by default |
 
 The comparison is expected to show only a small resource change from MM
-embedding because point charges primarily modify one-electron terms. For this
+embedding because point charges primarily change one-electron terms. For this
 small H2 example, two-electron integrals dominate the resource estimate.
 
 ## Interpretation Boundaries

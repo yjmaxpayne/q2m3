@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.2.1 (2026-10-19)
+
+### docs
+
+- rewrite user docs in simplified technical english
+
+### ci
+
+- run dependency profiles through native pytest hooks
+
+### chore
+
+- keep research tools local and preserve shared validation
+
+### build
+
+- **deps**: update locked dependencies to resolve security advisories
+
 ## v0.2.0 (2026-09-19)
 
 ### BREAKING CHANGE

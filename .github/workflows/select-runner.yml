@@ -20,6 +20,24 @@ jobs:
     outputs:
       runner: ${{ steps.select.outputs.runner }}
     steps:
+      - name: Validate dedicated runner token
+        env:
+          RUNNER_READ_TOKEN: ${{ secrets.SELF_HOSTED_RUNNER_READ_TOKEN }}
+        run: |
+          if [ -z "${RUNNER_READ_TOKEN}" ]; then
+            echo "::warning::SELF_HOSTED_RUNNER_READ_TOKEN is not configured."
+            exit 0
+          fi
+          echo "SELF_HOSTED_RUNNER_READ_TOKEN is configured."
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${RUNNER_READ_TOKEN}" \
+            https://api.github.com/user)
+          echo "Dedicated token GET /user status: ${status}"
+          curl -sS -D - -o /dev/null \
+            -H "Authorization: Bearer ${RUNNER_READ_TOKEN}" \
+            https://api.github.com/user \
+            | grep -iE '^(x-oauth-scopes|x-accepted-oauth-scopes|x-github-authentication-token-type):' || true
+
       - name: Prefer an online Linux x64 self-hosted runner
         id: select
         uses: actions/github-script@v7

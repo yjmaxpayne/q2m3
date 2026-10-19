@@ -13,9 +13,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  select_runner:
+    name: Select runner
+    uses: ./.github/workflows/select-runner.yml
+    secrets:
+      SELF_HOSTED_RUNNER_READ_TOKEN: ${{ secrets.SELF_HOSTED_RUNNER_READ_TOKEN }}
+
   build-docs:
     name: Build Sphinx documentation
-    runs-on: ubuntu-latest
+    needs: select_runner
+    runs-on: ${{ fromJSON(needs.select_runner.outputs.runner) }}
     timeout-minutes: 20
     permissions:
       contents: read

@@ -1,0 +1,543 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/tutorials/sqd-showcase.md:1
+msgid "SQD end to end: H₂, glycine, integrals, and embedding"
+msgstr "SQD 完整流程：H₂、甘氨酸、积分与嵌入"
+
+#: ../../source/tutorials/sqd-showcase.md:3
+msgid ""
+"This tutorial covers the public sample-based quantum diagonalization (SQD) workflows. Run a full-"
+"space H₂ regression, a sparse glycine calculation, a five-seed scan, the authenticated integral "
+"adapter, and two fixed-point-charge embedding examples."
+msgstr "本教程介绍公开的基于采样的量子对角化（SQD）工作流。运行全空间 H₂ 回归、稀疏甘氨酸计算、五种子扫描、经过认证的积分适配器，以及两个固定点电荷嵌入示例。"
+
+#: ../../source/tutorials/sqd-showcase.md:8
+msgid "After you complete it, you should be able to:"
+msgstr "完成后，应能够："
+
+#: ../../source/tutorials/sqd-showcase.md:10
+msgid "choose the geometry or integral entry point"
+msgstr "选择几何入口或积分入口"
+
+#: ../../source/tutorials/sqd-showcase.md:11
+msgid "read SQD errors without mixing active spaces or reference tiers"
+msgstr "解释 SQD 误差，不混用活性空间或参考层级"
+
+#: ../../source/tutorials/sqd-showcase.md:12
+msgid "preserve the complete `sqd.result.v1` record"
+msgstr "保留完整的 `sqd.result.v1` 记录"
+
+#: ../../source/tutorials/sqd-showcase.md:13
+msgid "distinguish the engine's resource audit from whole-process measurement"
+msgstr "区分引擎资源审计与完整进程测量"
+
+#: ../../source/tutorials/sqd-showcase.md:14
+msgid "state the physical limits of the fixed-MO embedding examples"
+msgstr "说明固定分子轨道嵌入示例的物理边界"
+
+#: ../../source/tutorials/sqd-showcase.md:16
+msgid "Prerequisites"
+msgstr "前提条件"
+
+#: ../../source/tutorials/sqd-showcase.md:18
+msgid ""
+"Run from a Linux x86_64 checkout with Python 3.11 or newer. The production supervisor uses "
+"`/proc` and `fork`. Its calibrated resource model does not cover other platforms. The published "
+"benchmark profile used Python 3.12. Install the locked SQD and development environments:"
+msgstr ""
+"在 Linux x86_64 源码仓库中使用 Python 3.11 或更新版本运行。生产监督执行器使用 `/proc` 和 `fork`，其校准资源模型不覆盖其他平台。已发布基准配置使用 "
+"Python 3.12。安装锁定版本的 SQD 和开发环境："
+
+#: ../../source/tutorials/sqd-showcase.md:29
+msgid ""
+"Set the thread variables before Python starts. SQD is CPU-based and does not need Catalyst or a "
+"GPU. The commands below use 512 shots for a quick walkthrough. The measured benchmark in "
+"`examples/sqd/README.md` uses 100,000 shots."
+msgstr ""
+"在 Python 启动前设置线程变量。SQD 使用 CPU，不需要 Catalyst 或 GPU。以下命令使用 512 次采样，以便快速演示。`examples/sqd/README.md` "
+"中的实测基准使用 100,000 次采样。"
+
+#: ../../source/tutorials/sqd-showcase.md:34
+msgid ""
+"Each command creates a new directory under `data/output/examples/` and prints its path. Use "
+"`--output NEW_PATH` when you need a predictable location. The path must not already exist."
+msgstr "每条命令在 `data/output/examples/` 下新建目录并打印路径。需要可预期的位置时，使用 `--output NEW_PATH`。该路径必须尚不存在。"
+
+#: ../../source/tutorials/sqd-showcase.md:39
+msgid "1. Establish the H₂ convention"
+msgstr "1. 建立 H₂ 约定"
+
+#: ../../source/tutorials/sqd-showcase.md:41
+msgid "Start with the smallest complete active space:"
+msgstr "从最小完整活性空间开始："
+
+#: ../../source/tutorials/sqd-showcase.md:47
+msgid ""
+"The script calls `q2m3.sqd.run_sqd` for H₂/STO-3G with CAS(2e,2o), four system qubits, two LUCJ "
+"repetitions, and seed 31. Its four sampled determinants cover the full fixed-particle-number "
+"space. Expect a completed T0 `exact_casci` reference and SQD agreement near numerical precision."
+msgstr ""
+"脚本调用 `q2m3.sqd.run_sqd`，计算 H₂/STO-3G，使用 CAS(2e,2o)、四个系统量子比特、两次 LUCJ 重复和种子 "
+"31。采样得到的四个行列式覆盖完整固定粒子数空间。预期 T0 `exact_casci` 参考计算完成，且 SQD 在接近数值精度的范围内与其一致。"
+
+#: ../../source/tutorials/sqd-showcase.md:52
+msgid ""
+"This result verifies tensor conventions, energy constants, sampling conversion, and result "
+"serialization. Full-space recovery does not demonstrate a sampling advantage."
+msgstr "该结果验证张量约定、能量常数、采样转换和结果序列化。恢复全空间不能证明采样优势。"
+
+#: ../../source/tutorials/sqd-showcase.md:56
+msgid "2. Run sparse glycine SQD"
+msgstr "2. 运行稀疏甘氨酸 SQD"
+
+#: ../../source/tutorials/sqd-showcase.md:58
+msgid "Use the smallest glycine space for the walkthrough:"
+msgstr "演示使用最小甘氨酸活性空间："
+
+#: ../../source/tutorials/sqd-showcase.md:65
+msgid "The geometry entry performs these steps:"
+msgstr "几何入口执行以下步骤："
+
+#: ../../source/tutorials/sqd-showcase.md:67
+msgid "Build vacuum RHF molecular orbitals and choose the requested active indices."
+msgstr "构建真空 RHF 分子轨道，并选择请求的活性轨道索引。"
+
+#: ../../source/tutorials/sqd-showcase.md:68
+msgid "Assemble real chemist-order active-space integrals and `e_core`."
+msgstr "组装实数 chemist 顺序的活性空间积分和 `e_core`。"
+
+#: ../../source/tutorials/sqd-showcase.md:69
+msgid "Solve same-frame RCCSD and authenticate the amplitudes."
+msgstr "求解同轨道框架的 RCCSD，并认证振幅。"
+
+#: ../../source/tutorials/sqd-showcase.md:70
+msgid "Prepare a two-layer spin-balanced LUCJ state and sample occupations."
+msgstr "制备两层自旋平衡 LUCJ 态，采样占据数。"
+
+#: ../../source/tutorials/sqd-showcase.md:71
+msgid "Recover and diagonalize sampled determinant subspaces."
+msgstr "恢复采样行列式子空间并对角化。"
+
+#: ../../source/tutorials/sqd-showcase.md:72
+msgid "Run the reference ladder and matched-size controls."
+msgstr "运行参考阶梯和匹配大小的对照。"
+
+#: ../../source/tutorials/sqd-showcase.md:73
+msgid "Return an immutable `SQDResult` with provenance, timings, and resource data."
+msgstr "返回包含来源、计时和资源数据的不可变 `SQDResult`。"
+
+#: ../../source/tutorials/sqd-showcase.md:75
+msgid ""
+"The available glycine choices are CAS(6e,6o), CAS(8e,8o), and CAS(10e,10o), which use 12, 16, and"
+" 20 system qubits. Their full closed-shell determinant spaces contain 400, 4,900, and 63,504 "
+"alpha/beta pairs. Each choice constructs a different Hamiltonian and reference, so total energies"
+" across rows do not measure SQD convergence."
+msgstr ""
+"甘氨酸可选 CAS(6e,6o)、CAS(8e,8o) 和 CAS(10e,10o)，分别使用 12、16 和 20 个系统量子比特。完整闭壳层行列式空间分别包含 400、4,900 和 "
+"63,504 个 alpha/beta 对。每种选择构建不同的哈密顿量和参考计算，因此跨行总能量不能衡量 SQD 收敛性。"
+
+#: ../../source/tutorials/sqd-showcase.md:81
+msgid "3. Measure seed spread"
+msgstr "3. 测量种子离散程度"
+
+#: ../../source/tutorials/sqd-showcase.md:83
+msgid "Run five consecutive seeds for CAS(6e,6o):"
+msgstr "对 CAS(6e,6o) 运行五个连续种子："
+
+#: ../../source/tutorials/sqd-showcase.md:90
+msgid ""
+"The scan starts each point in a fresh interpreter and runs the points serially. It saves every "
+"successful point immediately, records failures, and exits nonzero if any requested point fails. "
+"The default command without `--active-spaces` runs all three spaces and 15 calculations."
+msgstr ""
+"扫描对每个点启动新解释器，并串行运行。它立即保存每个成功点，记录失败；只要请求的任一点失败，就以非零状态退出。不带 `--active-spaces` 的默认命令运行全部三个活性空间，共 15 "
+"次计算。"
+
+#: ../../source/tutorials/sqd-showcase.md:95
+msgid ""
+"Use `statistics.json` for the mean, sample standard deviation, and range of the executed T0 rows."
+" These are descriptive values for five deterministic seed choices, not confidence intervals. "
+"Missing or downgraded points never enter an exact-reference curve."
+msgstr "使用 `statistics.json` 查看已执行 T0 行的均值、样本标准差和范围。这些是五个确定种子选择的描述性统计，不是置信区间。缺失或降级点不会进入精确参考曲线。"
+
+#: ../../source/tutorials/sqd-showcase.md:100
+msgid "4. Verify the integral adapter"
+msgstr "4. 验证积分适配器"
+
+#: ../../source/tutorials/sqd-showcase.md:102
+msgid ""
+"The lower-level entry accepts an already assembled Hamiltonian only with its authenticated frame "
+"and seed:"
+msgstr "底层入口仅在同时提供经过认证的轨道框架和种子时，才接受已组装的哈密顿量："
+
+#: ../../source/tutorials/sqd-showcase.md:110
+msgid ""
+"The example creates `IntegralData` with `build_integrals`. It then creates a `CCSDSeed` in the "
+"same frame with `build_ccsd_seed`. It passes `h1`, chemist-order `h2`, `e_core`, "
+"`IntegralContext`, and the seed to `run_sqd_from_integrals`. The script also runs the geometry "
+"entry and compares six reported energy fields. Numerical values must agree within an absolute "
+"tolerance of 1e-8 Ha. A field may be `None` only if both results report `None`. The frame, "
+"Hamiltonian, and active-index identities must match exactly."
+msgstr ""
+"示例通过 `build_integrals` 创建 `IntegralData`，再通过 `build_ccsd_seed` 创建同轨道框架的 `CCSDSeed`。它将 "
+"`h1`、chemist 顺序的 `h2`、`e_core`、`IntegralContext` 和种子传给 "
+"`run_sqd_from_integrals`。脚本还运行几何入口，并比较六个报告能量字段。数值必须在绝对容差 1e-8 Ha 内一致。仅当两个结果都报告 `None` 时，字段才可以为 "
+"`None`。轨道框架、哈密顿量和活性轨道索引标识必须完全一致。"
+
+#: ../../source/tutorials/sqd-showcase.md:118
+msgid ""
+"Both entries share the same SQD solver. Agreement verifies adapter and assembly consistency. It "
+"is not an independent numerical oracle. Do not transpose `h2` or add `e_core` again. Bare `t1` "
+"and `t2` arrays cannot replace `CCSDSeed`."
+msgstr ""
+"两个入口共用同一 SQD 求解器。一致结果验证适配器和组装的一致性，不构成独立数值判据。不要转置 `h2` 或再次添加 `e_core`。裸 `t1` 和 `t2` 数组不能替代 "
+"`CCSDSeed`。"
+
+#: ../../source/tutorials/sqd-showcase.md:122
+msgid ""
+"Integral and CCSD preprocessing occurs before the lower-level engine call. It is therefore "
+"outside that call's `timings_s[\"total\"]` and embedded peak RSS. Use the complete-process "
+"monitor when that boundary matters:"
+msgstr "积分和 CCSD 预处理发生在底层引擎调用前，因此不计入该调用的 `timings_s[\"total\"]` 和内嵌峰值 RSS。需要覆盖此边界时，使用完整进程监测器："
+
+#: ../../source/tutorials/sqd-showcase.md:151
+msgid ""
+"Run this example from the checkout root so that Python can import `examples`. The package API "
+"itself does not require a checkout. Choose a new monitor path for every run. To check the monitor"
+" without a scientific calculation, replace the command list with `[sys.executable, \"-c\", "
+"\"print('monitor check')\"]`."
+msgstr ""
+"从仓库根目录运行该示例，以便 Python 导入 `examples`。包 API 本身不要求源码仓库。每次运行选择新的监测路径。只检查监测器而不做科学计算时，将命令列表替换为 "
+"`[sys.executable, \"-c\", \"print('monitor check')\"]`。"
+
+#: ../../source/tutorials/sqd-showcase.md:156
+msgid ""
+"The monitor polls Linux `/proc` every 10 ms. It measures the command and its descendants visible "
+"at each poll, including imports, serialization, and figures. The observer process is excluded. "
+"Polling can miss short peaks."
+msgstr "监测器每 10 ms 轮询 Linux `/proc`。它测量每次轮询可见的命令及其子孙进程，包括导入、序列化和绘图。观察进程不计入。轮询可能漏掉短时峰值。"
+
+#: ../../source/tutorials/sqd-showcase.md:160
+msgid ""
+"The monitor copies the caller's environment, sets the OMP, MKL, OpenBLAS, and NumExpr thread "
+"counts to 1, and sets `JAX_PLATFORMS=cpu`. An explicit `env` mapping overrides those defaults by "
+"key. The default `cwd` is the caller's working directory. The default budgets are 900 seconds and"
+" 8192 decimal MB."
+msgstr ""
+"监测器复制调用者环境，将 OMP、MKL、OpenBLAS 和 NumExpr 线程数设为 1，并设置 `JAX_PLATFORMS=cpu`。显式 `env` 映射按键覆盖这些默认值。默认 "
+"`cwd` 是调用者工作目录。默认预算为 900 秒和 8192 十进制 MB。"
+
+#: ../../source/tutorials/sqd-showcase.md:165
+msgid "The return value and `resources.json` contain exactly these ten keys:"
+msgstr "返回值和 `resources.json` 恰好包含以下十个键："
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Key"
+msgstr "键"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Meaning"
+msgstr "含义"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`command`"
+msgstr "`command`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Command argument list"
+msgstr "命令参数列表"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`exit_code`"
+msgstr "`exit_code`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Child process exit code"
+msgstr "子进程退出码"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`reason`"
+msgstr "`reason`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Monitor termination reason, or `None`"
+msgstr "监测器终止原因，或 `None`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`wall_s`"
+msgstr "`wall_s`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Observed elapsed time in seconds"
+msgstr "观测到的实际经过时间，单位秒"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`peak_tree_rss_mb`"
+msgstr "`peak_tree_rss_mb`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Largest sampled process-tree RSS in decimal MB"
+msgstr "采样到的最大进程树 RSS，单位十进制 MB"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`poll_s`"
+msgstr "`poll_s`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Poll interval in seconds: `0.01`"
+msgstr "轮询间隔，单位秒：`0.01`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`rss_budget_mb`"
+msgstr "`rss_budget_mb`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "RSS budget in decimal MB"
+msgstr "RSS 预算，单位十进制 MB"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`wall_budget_s`"
+msgstr "`wall_budget_s`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Wall-time budget in seconds"
+msgstr "实际时间预算，单位秒"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`scope`"
+msgstr "`scope`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Process scope of the observation"
+msgstr "观测的进程范围"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`limitation`"
+msgstr "`limitation`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Sampling limitation"
+msgstr "采样限制"
+
+#: ../../source/tutorials/sqd-showcase.md:180
+msgid ""
+"The new directory also contains `stdout.log`, with stderr merged into stdout, and `rss.jsonl`, "
+"with `[elapsed_seconds, rss_bytes]` samples. Accept the scientific output only when both the exit"
+" code and the reason indicate success."
+msgstr ""
+"新目录还包含将 stderr 合并到 stdout 的 `stdout.log`，以及记录 `[elapsed_seconds, rss_bytes]` 样本的 "
+"`rss.jsonl`。仅当退出码和原因均表示成功时，才接受科学输出。"
+
+#: ../../source/tutorials/sqd-showcase.md:184
+msgid "5. Compare fixed-MO embedding modes"
+msgstr "5. 比较固定分子轨道嵌入模式"
+
+#: ../../source/tutorials/sqd-showcase.md:186
+msgid ""
+"The water validation uses two asymmetric synthetic point charges and compares diagonal with full "
+"one-electron embedding:"
+msgstr "水分子验证使用两个非对称人工点电荷，比较对角嵌入和完整单电子嵌入："
+
+#: ../../source/tutorials/sqd-showcase.md:193
+msgid ""
+"The glycine example compares vacuum, diagonal, and full-one-electron treatments in one vacuum MO "
+"frame:"
+msgstr "甘氨酸示例在同一个真空分子轨道框架内比较真空、对角和完整单电子处理："
+
+#: ../../source/tutorials/sqd-showcase.md:201
+msgid ""
+"For embedded runs, coordinates are Å, point charges are elementary-charge units, and energies are"
+" Hartree. Both modes hold the vacuum MO frame and two-electron tensor fixed. `diagonal` adds only"
+" active-space `Delta h_pp`. `full_oneelectron` retains the complete `Delta h_pq` perturbation. "
+"`e_core` already contains the MM-induced nuclear and frozen-core correction."
+msgstr ""
+"嵌入运行中，坐标单位为 Å，点电荷单位为元电荷，能量单位为 Hartree。两种模式均保持真空分子轨道框架和双电子张量不变。`diagonal` 仅添加活性空间 `Delta "
+"h_pp`；`full_oneelectron` 保留完整 `Delta h_pq` 扰动。`e_core` 已包含 MM 引起的核能和冻结核心校正。"
+
+#: ../../source/tutorials/sqd-showcase.md:207
+msgid "Read two effects separately:"
+msgstr "分别解读两种效应："
+
+#: ../../source/tutorials/sqd-showcase.md:209
+msgid ""
+"`baseline_energy(mode) - baseline_energy(vacuum)` is the fixed-Hamiltonian reference shift, to "
+"the quality of each reference."
+msgstr "`baseline_energy(mode) - baseline_energy(vacuum)` 为固定哈密顿量参考能量平移，其质量取决于各参考计算。"
+
+#: ../../source/tutorials/sqd-showcase.md:211
+msgid "`delta_mHa(mode) - delta_mHa(vacuum)` is the change in SQD solver residual."
+msgstr "`delta_mHa(mode) - delta_mHa(vacuum)` 为 SQD 求解器残差的变化。"
+
+#: ../../source/tutorials/sqd-showcase.md:213
+msgid ""
+"The charges are fixed test environments. These examples do not include orbital relaxation, MM "
+"polarization, solvent sampling, correlated RDM feedback, an SQD-MC loop, or a solvation free "
+"energy."
+msgstr "这些电荷是固定测试环境。示例不包含轨道弛豫、MM 极化、溶剂采样、相关 RDM 反馈、SQD-MC 循环或溶剂化自由能。"
+
+#: ../../source/tutorials/sqd-showcase.md:217
+msgid "Read the artifacts"
+msgstr "读取产物"
+
+#: ../../source/tutorials/sqd-showcase.md:219
+msgid ""
+"The H₂, glycine, integral, and glycine-embedding runs write `input.json`, a complete result JSON,"
+" `summary.json`, `summary.csv`, and energy/cost plots in PNG and SVG. The H₂O validation instead "
+"writes `report.json`, per-mode result and downstream-wrapper JSON files, summaries, and "
+"comparison plots. Scans add one subdirectory and log per point plus `statistics.json`. The "
+"integral example adds `assembly.json` and `consistency.json`. Failures preserve completed "
+"artifacts and write `failure.json`."
+msgstr ""
+"H₂、甘氨酸、积分和甘氨酸嵌入运行写入 `input.json`、完整结果 JSON、`summary.json`、`summary.csv`，以及 PNG 和 SVG 能量 / 成本图。H₂O"
+" 验证则写入 `report.json`、各模式结果和下游包装器 JSON、汇总及比较图。扫描为每个点添加子目录和日志，并生成 `statistics.json`。积分示例还添加 "
+"`assembly.json` 和 `consistency.json`。失败时保留已完成产物，并写入 `failure.json`。"
+
+#: ../../source/tutorials/sqd-showcase.md:227
+msgid "The key result fields are:"
+msgstr "关键结果字段如下："
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Field"
+msgstr "字段"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Interpretation"
+msgstr "解释"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`status`"
+msgstr "`status`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`completed` or the explicitly requested `reference_only` mode"
+msgstr "`completed` 或显式请求的 `reference_only` 模式"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`sqd_energy`"
+msgstr "`sqd_energy`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Sampled-subspace energy in Hartree (absent for reference-only runs)"
+msgstr "采样子空间能量，单位 Hartree（仅参考运行时缺失）"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`baseline_tier`, `baseline_method`"
+msgstr "`baseline_tier`、`baseline_method`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "The actual reference path. Only T0 is exact in the active space"
+msgstr "实际参考路径。只有 T0 在活性空间内精确"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`delta_mHa`"
+msgstr "`delta_mHa`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`1000 * (E_SQD - E_baseline)`. Positive means SQD is higher"
+msgstr "`1000 * (E_SQD - E_baseline)`。正值表示 SQD 更高"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`subspace_dim`, `full_ci_dim`"
+msgstr "`subspace_dim`、`full_ci_dim`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Sampled Cartesian determinant space and complete fixed-particle space"
+msgstr "采样笛卡尔积行列式空间和完整固定粒子数空间"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`reference_attempts`"
+msgstr "`reference_attempts`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Ordered solver selection/execution audit"
+msgstr "有序求解器选择 / 执行审计"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`provenance`"
+msgstr "`provenance`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Configuration, orbital frame, Hamiltonian, seed, and input sources"
+msgstr "配置、轨道框架、哈密顿量、种子及输入来源"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`timings_s`"
+msgstr "`timings_s`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Stage timings with explicit reasons for stages that did not run"
+msgstr "各阶段计时，并明确说明未运行阶段的原因"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`diagnostics.resources`"
+msgstr "`diagnostics.resources`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Polled engine-process RSS scope, cap, and timing boundary"
+msgstr "轮询的引擎进程 RSS 范围、上限和计时边界"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "`null_reasons`, `warnings`"
+msgstr "`null_reasons`、`warnings`"
+
+#: ../../source/tutorials/sqd-showcase.md:33
+msgid "Required explanations for absent or downgraded values"
+msgstr "缺失值或降级值的必要说明"
+
+#: ../../source/tutorials/sqd-showcase.md:242
+msgid ""
+"Preserve the complete `SQDResult` or its serialized `sqd.result.v1` object. An energy without its"
+" method, tier, active space, frame, Hamiltonian, units, and uncertainty semantics is not an "
+"auditable result."
+msgstr "保留完整 `SQDResult` 或其序列化 `sqd.result.v1` 对象。没有方法、层级、活性空间、轨道框架、哈密顿量、单位和不确定性含义的能量，不能作为可审计结果。"
+
+#: ../../source/tutorials/sqd-showcase.md:246
+msgid "Resource failures and reference-only runs"
+msgstr "资源失败与仅参考运行"
+
+#: ../../source/tutorials/sqd-showcase.md:248
+msgid ""
+"`ReferenceConfig` sets one shared wall deadline and decimal-MB RSS budget. The executor uses the "
+"lowest limit: the user budget, currently available host memory, or the 8192 MB hard component "
+"cap. Predictions at a cap reject before allocation. The supervisor terminates the run when "
+"observed process-tree RSS reaches a cap. `allow_large=True` can cross only a soft policy boundary"
+" and cannot bypass the calibrated domain, host availability, or hard caps."
+msgstr ""
+"`ReferenceConfig` 设置统一的实际时间截止点和十进制 MB RSS 预算。执行器取用户预算、当前主机可用内存及 8192 MB "
+"组件硬上限中的最低值。预测值达到上限时，会在分配前拒绝。观测进程树 RSS 达到上限时，监督执行器终止运行。`allow_large=True` "
+"只能跨越软策略边界，不能绕过校准域、主机可用量或硬上限。"
+
+#: ../../source/tutorials/sqd-showcase.md:255
+msgid ""
+"For an intentional baseline without sampling, pass `mode=\"reference_only\"`. The result records "
+"absent sampling fields and their reasons. A failed full run never silently becomes reference-only"
+" or substitutes HF for SQD."
+msgstr "需要有意仅计算基准而不采样时，传入 `mode=\"reference_only\"`。结果记录缺失采样字段及原因。失败的完整运行不会静默变成仅参考运行，也不会用 HF 替代 SQD。"
+
+#: ../../source/tutorials/sqd-showcase.md:259
+msgid ""
+"See [SQD guide](../sqd.md) for the reference ladder, full 40-field result contract, calibrated "
+"domain, measured outcomes, and research-status boundaries. The checkout guides "
+"`examples/sqd/README.md` and `examples/qmmm/README.md` document the public workflow. Local "
+"development tools are not required in a fresh clone."
+msgstr ""
+"参考阶梯、完整 40 字段结果契约、校准域、实测结果和研究状态边界见 [SQD 指南](../sqd.md)。源码仓库指南 `examples/sqd/README.md` 和 "
+"`examples/qmmm/README.md` 说明公开工作流。新克隆仓库不要求本地开发工具。"

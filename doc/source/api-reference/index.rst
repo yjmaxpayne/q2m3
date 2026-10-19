@@ -1,8 +1,8 @@
 API Reference
 =============
 
-The API reference is grouped by package boundary. Start with the package-level
-exports, then use the module pages for implementation-specific entry points.
+The API reference groups functions and classes by package. Start with the
+package-level exports. Use the module pages for specific entry points.
 
 .. toctree::
    :maxdepth: 1

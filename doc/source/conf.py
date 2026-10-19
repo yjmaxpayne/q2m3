@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import posixpath
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as metadata_version
@@ -58,6 +59,13 @@ source_suffix = {
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+language = "en"
+locale_dirs = ["../locales"]
+gettext_compact = False
+gettext_uuid = False
+# These URL prefixes are independent of the HTML language tag (zh-CN).
+language_paths = {"en": "", "zh_CN": "zh_CN/"}
+
 nitpicky = False
 
 autodoc_member_order = "bysource"
@@ -101,3 +109,48 @@ html_theme_options = {
     "light_logo": "",
     "dark_logo": "",
 }
+
+
+def _language_links(app, pagename, templatename, context, doctree):
+    uri = app.builder.get_target_uri(pagename)
+    current = app.config.language_paths[app.config.language] + uri
+    context["language_links"] = {
+        code: posixpath.relpath(prefix + uri, posixpath.dirname(current) or ".")
+        for code, prefix in app.config.language_paths.items()
+    }
+
+
+def _language_title(app, config):
+    if config.language == "zh_CN":
+        config.html_title = "q2m3 文档"
+
+
+def _viewcode_alias_module(app, modname, fullname):
+    # Keep these re-exports from replacing the canonical core API backlinks.
+    if modname == "q2m3.solvation.circuit_builder" and fullname in {
+        "decompose_hamiltonian",
+        "build_operator_index_map",
+    }:
+        return modname
+    return None
+
+
+def _chinese_search_language():
+    from sphinx.search.zh import SearchChinese
+
+    class ChineseSearch(SearchChinese):
+        # Use matching identity stemmers for Chinese words and exact API names.
+        js_stemmer_rawcode = ""
+
+        def stem(self, word):
+            return word.lower()
+
+    return ChineseSearch
+
+
+def setup(app):
+    app.add_config_value("language_paths", language_paths, "html")
+    app.connect("config-inited", _language_title)
+    app.connect("html-page-context", _language_links)
+    app.connect("viewcode-follow-imported", _viewcode_alias_module)
+    app.add_search_language(_chinese_search_language())

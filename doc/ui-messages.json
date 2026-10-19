@@ -1,0 +1,22 @@
+[
+  "Toggle site navigation sidebar",
+  "Toggle table of contents sidebar",
+  "Toggle Light / Dark / Auto color theme",
+  "Toggle navigation of",
+  "Search",
+  "Next",
+  "Previous",
+  "Home",
+  "On this page",
+  "Back to top",
+  "Skip to content",
+  "View this page",
+  "Logo",
+  "Light Logo",
+  "Dark Logo",
+  "Language",
+  "Copyright &#169; %(copyright)s",
+  "Made with ",
+  "<a href=\"https://www.sphinx-doc.org/\">Sphinx</a> and ",
+  "'s"
+]

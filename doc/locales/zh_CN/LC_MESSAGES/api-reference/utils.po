@@ -1,0 +1,155 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/utils.rst:2
+msgid "Utilities API"
+msgstr "工具 API"
+
+#: ../../source/api-reference/utils.rst:5
+msgid "I/O Helpers"
+msgstr "输入输出辅助函数"
+
+#: of q2m3.utils.io:1
+msgid "Input/Output utilities for molecular data and results."
+msgstr "分子数据与结果的输入输出工具。"
+
+#: of q2m3.utils.io.load_xyz:1
+msgid "Load molecular structure from XYZ file."
+msgstr "从 XYZ 文件加载分子结构。"
+
+#: ../../source/api-reference/utils.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.utils.io.load_xyz:3
+msgid "Path to XYZ file"
+msgstr "XYZ 文件路径"
+
+#: ../../source/api-reference/utils.rst
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.utils.io.load_xyz:5
+msgid "List of Atom objects"
+msgstr "Atom 对象列表"
+
+#: ../../source/api-reference/utils.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.utils.io.load_config:7 q2m3.utils.io.load_xyz:7
+msgid "If file doesn't exist"
+msgstr "文件不存在时"
+
+#: of q2m3.utils.io.load_xyz:8
+msgid "If file format is invalid"
+msgstr "文件格式无效时"
+
+#: ../../source/api-reference/utils.rst
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.utils.io.save_json_results:1
+msgid "Save calculation results as strict JSON, including immutable dataclasses."
+msgstr "将计算结果保存为严格 JSON，支持不可变数据类。"
+
+#: of q2m3.utils.io.save_json_results:3
+msgid ""
+"Results mapping or dataclass instance. Nested dataclasses, mappings, numpy values, and tuples are"
+" converted recursively. Complex numbers use dictionaries with real and imag fields."
+msgstr "结果映射或数据类实例。递归转换嵌套的数据类、映射、numpy 值和元组。复数使用包含 real 和 imag 字段的字典表示。"
+
+#: of q2m3.utils.io.save_json_results:6
+msgid "Output file path"
+msgstr "输出文件路径"
+
+#: of q2m3.utils.io.save_json_results:7
+msgid "JSON indentation level"
+msgstr "JSON 缩进级别"
+
+#: of q2m3.utils.io.save_json_results:9
+msgid "A numeric value is NaN or infinite."
+msgstr "数值为 NaN 或无穷大。"
+
+#: of q2m3.utils.io.save_json_results:10
+msgid "A value cannot be represented in JSON."
+msgstr "值无法用 JSON 表示。"
+
+#: of q2m3.utils.io.load_config:1
+msgid "Load configuration from YAML or JSON file."
+msgstr "从 YAML 或 JSON 文件加载配置。"
+
+#: of q2m3.utils.io.load_config:3
+msgid "Path to config file"
+msgstr "配置文件路径"
+
+#: of q2m3.utils.io.load_config:5
+msgid "Configuration dictionary"
+msgstr "配置字典"
+
+#: of q2m3.utils.io.load_config:8
+msgid "If file format is not supported"
+msgstr "文件格式不受支持时"
+
+#: ../../source/api-reference/utils.rst:11
+msgid "Plotting Helpers"
+msgstr "绘图辅助函数"
+
+#: of q2m3.utils.plotting:1
+msgid "General plotting utilities for energy analysis."
+msgstr "用于能量分析的通用绘图工具。"
+
+#: of q2m3.utils.plotting:3
+msgid "Provides cross-module visualization tools such as HF vs quantum energy comparison."
+msgstr "提供跨模块可视化工具，例如 HF 能量与量子能量的比较。"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:1
+msgid "Plot correlation between HF and quantum energies."
+msgstr "绘制 HF 能量与量子能量的相关关系。"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:3
+msgid ""
+"Creates a two-panel figure: (1) scatter plot of HF vs quantum energies with y=x reference line, "
+"(2) histogram of energy differences."
+msgstr "创建双面板图：(1) HF 能量与量子能量的散点图，含 y=x 参考线；(2) 能量差的直方图。"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:6
+msgid "HF energies at quantum evaluation steps"
+msgstr "量子计算步骤对应的 HF 能量"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:7
+msgid "Quantum algorithm energy estimates"
+msgstr "量子算法估计的能量"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:8
+msgid "Plot title"
+msgstr "图标题"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:9
+msgid "Path to save figure"
+msgstr "图的保存路径"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:10
+msgid "Whether to display"
+msgstr "是否显示图"
+
+#: of q2m3.utils.plotting.plot_energy_comparison:12
+msgid "Matplotlib Figure object"
+msgstr "Matplotlib Figure 对象"

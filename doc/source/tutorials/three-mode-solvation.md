@@ -41,15 +41,14 @@ flowchart LR
     dynamic --> analysis
 ```
 
-Dynamic mode uses runtime-traceable Hamiltonian coefficients so that the circuit
-structure can be compiled once while coefficients change across MC steps.
+Dynamic mode uses Hamiltonian coefficients that Catalyst can trace at runtime.
+Catalyst compiles the circuit structure once. The coefficients change across MC steps.
 
 ## Reading The Result
 
 The key scientific quantity is `delta_corr-pol`, the correlation-polarization
-coupling term. For small H2 runs, it diagnoses whether the QPE energy
-changes materially when the MM embedding enters the Hamiltonian, not
-only the classical correction.
+coupling term. For small H2 runs, it measures whether QPE energy changes materially when
+MM embedding changes the Hamiltonian as well as the classical correction.
 
 ## Optional H3O+ Diagnostics
 

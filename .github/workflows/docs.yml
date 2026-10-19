@@ -61,8 +61,11 @@ jobs:
       - name: Install documentation dependencies
         run: uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz
 
-      - name: Build HTML with warnings as errors
-        run: uv run sphinx-build -W --keep-going -b html doc/source doc/build/html
+      - name: Build and check both documentation languages
+        run: make docs
+
+      - name: Check documentation examples in both languages
+        run: make docs-doctest
 
       - name: Configure GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

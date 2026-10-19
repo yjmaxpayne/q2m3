@@ -29,8 +29,8 @@ The script performs four steps:
 | MM environment | 2 TIP3P waters as point charges |
 | Default QPE register | 4 estimation wires |
 
-The example places the MM point charges about 3 Angstrom from H2. This keeps the
-example small while still exercising the MM embedding path.
+The example places the MM point charges about 3 Angstrom from H2. This small
+environment tests the MM embedding path.
 
 ## Interpreting Results
 
@@ -49,8 +49,8 @@ kcal/mol: a positive value means the solvated system has lower energy.
 The script skips its sign check when the absolute QPE stabilization is at most
 `0.01 kcal/mol`.
 
-For a regression comparison, save the output together with the source
-revision, dependency versions, device, and QPE parameters. Historical README
+To compare regressions, save the output, source revision, dependency
+versions, device, and QPE parameters. Historical README
 numbers are not acceptance thresholds.
 
 ## Common Adjustments

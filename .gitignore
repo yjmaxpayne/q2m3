@@ -66,6 +66,9 @@ htmlcov/
 .cache/
 
 # Documentation
+doc/build/
+doc/**/*.pot
+doc/**/*.mo
 docs/_build/
 docs/_static/
 docs/_templates/

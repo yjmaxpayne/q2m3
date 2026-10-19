@@ -10,7 +10,7 @@ uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --ex
 source .venv/bin/activate
 ```
 
-Use narrower extras when working on isolated parts of the project:
+Install only the extras required by your task:
 
 ```bash
 uv sync --extra dev
@@ -98,28 +98,56 @@ uv run pre-commit run check-yaml --all-files
 
 ## Documentation Workflow
 
-Build the Sphinx site with warnings treated as errors:
+English sources remain in `doc/source/`. Chinese translations, including API
+text extracted from source docstrings, remain in
+`doc/locales/zh_CN/LC_MESSAGES/`. Keep source docstrings in English.
+
+When you change documentation or an API docstring:
+
+1. Edit and simplify the English source.
+2. Extract messages and update the translation catalogs.
+3. Review the Chinese translations. Preserve conditions, units, formulas,
+   reference targets, and negative or inconclusive results.
+4. Build and check both languages.
 
 ```bash
-make docs-clean docs
+make docs-gettext
+uv run python doc/translations.py update
+# Review and translate the updated PO files before the check.
+uv run python doc/translations.py check
+make docs
 make docs-doctest
 ```
 
-The equivalent explicit build command is:
+`make docs` extracts messages, checks translations, and builds both languages
+with warnings treated as errors. It also checks the generated site.
+English remains the default at `/q2m3/`. Chinese is at `/q2m3/zh_CN/`.
+Use the sidebar language links to open the corresponding page in either language.
+The switch does not preserve query parameters or section anchors.
+
+The project UI message list is `doc/ui-messages.json`. Update it when theme text changes.
+`doc/site-baseline.json` records the starting commit and published page paths.
+Change its page list only when you intend to add or remove published pages.
+
+For an English-only preview, use:
 
 ```bash
-uv run --extra docs --extra sqd --extra catalyst --extra solvation --extra viz sphinx-build -W --keep-going -b html doc/source doc/build/html
+make -C doc html
 ```
 
-Documentation examples should be lightweight by default. H3O+, 8-bit QPE,
-dynamic Trotter scans, and memory profiles belong in optional diagnostic
-sections, not in first-run tutorials.
+Commit PO catalogs. POT, MO, HTML, and doctree files are build artifacts.
+English HTML is written to `doc/build/html/`. Chinese HTML is written to its
+`zh_CN/` subdirectory. The builds use separate doctrees.
+
+Keep default documentation examples small. Put H3O+, 8-bit QPE, dynamic
+Trotter scans, and memory profiles in optional diagnostic sections.
+First-run tutorials should use the smaller examples.
 
 ## Contribution Notes
 
-Contributors should check public documentation against source code, tests,
-maintained examples, and the current README. Prefer current source and tests over older
-planning notes when they conflict.
+Check public documentation against source code, tests, maintained examples,
+and the current README. If these sources conflict with older planning notes,
+use current source code and tests.
 
 Scientific claims should name the active space, qubit count, QPE precision,
 Trotter settings, and unit conversion assumptions when those values affect the

@@ -1,0 +1,128 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/index.rst:57
+msgid "User Guide"
+msgstr "用户指南"
+
+#: ../../source/index.rst:69
+msgid "Reference"
+msgstr "参考文档"
+
+#: ../../source/index.rst:2
+msgid "What is q2m3?"
+msgstr "什么是 q2m3？"
+
+#: ../../source/index.rst:4
+msgid "q2m3 logo"
+msgstr "q2m3 标志"
+
+#: ../../source/index.rst:46
+msgid ""
+"|badge-python| |badge-license| |badge-docs-ci| |badge-docs-site| |badge-codecov| |badge-doi| "
+"|badge-pennylane| |badge-catalyst| |badge-pyscf|"
+msgstr ""
+"|badge-python| |badge-license| |badge-docs-ci| |badge-docs-site| |badge-codecov| |badge-doi| "
+"|badge-pennylane| |badge-catalyst| |badge-pyscf|"
+
+#: ../../source/index.rst:10
+msgid "Python 3.11+"
+msgstr "Python 3.11+"
+
+#: ../../source/index.rst:14
+msgid "License: MIT"
+msgstr "许可证：MIT"
+
+#: ../../source/index.rst:18
+msgid "Documentation"
+msgstr "文档"
+
+#: ../../source/index.rst:22
+msgid "Docs latest"
+msgstr "最新文档"
+
+#: ../../source/index.rst:26
+msgid "codecov"
+msgstr "codecov"
+
+#: ../../source/index.rst:30
+msgid "DOI"
+msgstr "DOI"
+
+#: ../../source/index.rst:34
+msgid "PennyLane"
+msgstr "PennyLane"
+
+#: ../../source/index.rst:38
+msgid "Catalyst"
+msgstr "Catalyst"
+
+#: ../../source/index.rst:42
+msgid "PySCF"
+msgstr "PySCF"
+
+#: ../../source/index.rst:48
+msgid ""
+"q2m3 is a hybrid quantum-classical QM/MM framework for small-molecule quantum chemistry "
+"workflows. These workflows combine PySCF, PennyLane QPE circuits, sample-based quantum "
+"diagonalization, explicit MM point charges, Monte Carlo solvation, and EFTQC resource estimation."
+msgstr ""
+"q2m3 是面向小分子量子化学工作流的量子经典混合 QM/MM 框架。这些工作流结合 PySCF、PennyLane QPE 电路、基于采样的量子对角化、显式 MM 点电荷、蒙特卡洛溶剂化和 "
+"EFTQC 资源估计。"
+
+#: ../../source/index.rst:53
+msgid ""
+"Start with the small H2 examples. SQD glycine, Catalyst, H3O+, 8-bit QPE, and dynamic-Trotter "
+"diagnostics are optional. They can require much more memory or compilation time."
+msgstr "从小规模 H2 示例开始。SQD 甘氨酸、Catalyst、H3O+、8 位 QPE 和动态 Trotter 诊断均为可选内容，可能需要更多内存或更长编译时间。"
+
+#: ../../source/index.rst:76
+msgid "Project Links"
+msgstr "项目链接"
+
+#: ../../source/index.rst:78
+msgid "Source repository: https://github.com/yjmaxpayne/q2m3"
+msgstr "源码仓库：https://github.com/yjmaxpayne/q2m3"
+
+#: ../../source/index.rst:79
+msgid "Issue tracker: https://github.com/yjmaxpayne/q2m3/issues"
+msgstr "问题跟踪：https://github.com/yjmaxpayne/q2m3/issues"
+
+#: ../../source/index.rst:80
+msgid "Zenodo archive (concept DOI): https://doi.org/10.5281/zenodo.20114945"
+msgstr "Zenodo 归档（概念 DOI）：https://doi.org/10.5281/zenodo.20114945"
+
+#: ../../source/index.rst:83
+msgid "Citation"
+msgstr "引用"
+
+#: ../../source/index.rst:85
+msgid ""
+"If you use q2m3 in research, cite the Zenodo archive. The concept DOI `10.5281/zenodo.20114945 "
+"<https://doi.org/10.5281/zenodo.20114945>`_ always resolves to the latest published release. Use "
+"a version-specific DOI (for example `10.5281/zenodo.20114946 "
+"<https://doi.org/10.5281/zenodo.20114946>`_ for ``v0.1.1``) when you need to reference the exact "
+"code behind a result. ``CITATION.cff`` in the repository root lists both DOIs and powers GitHub's"
+" \"Cite this repository\" button."
+msgstr ""
+"如果在研究中使用 q2m3，请引用 Zenodo 归档。概念 DOI `10.5281/zenodo.20114945 "
+"<https://doi.org/10.5281/zenodo.20114945>`_ 始终指向最新发布版本。如果需要引用产生某项结果的确切代码，请使用版本专属 DOI，例如 "
+"``v0.1.1`` 的 `10.5281/zenodo.20114946 <https://doi.org/10.5281/zenodo.20114946>`_。仓库根目录的 "
+"``CITATION.cff`` 列出这两个 DOI，并为 GitHub 的“Cite this repository”按钮提供元数据。"

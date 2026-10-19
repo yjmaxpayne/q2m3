@@ -50,10 +50,9 @@ quantum chemistry workflows. These workflows combine PySCF, PennyLane QPE circui
 sample-based quantum diagonalization, explicit MM point charges, Monte Carlo
 solvation, and EFTQC resource estimation.
 
-The documentation emphasizes lightweight H2 examples first. SQD glycine,
-Catalyst, H3O+, 8-bit QPE, and dynamic-Trotter diagnostics appear as
-optional paths because they can require substantially more memory or compile
-time.
+Start with the small H2 examples. SQD glycine, Catalyst, H3O+, 8-bit QPE,
+and dynamic-Trotter diagnostics are optional. They can require much more
+memory or compilation time.
 
 .. toctree::
    :maxdepth: 2
@@ -83,7 +82,7 @@ Project Links
 Citation
 --------
 
-If you use q2m3 in research, please cite the Zenodo archive. The concept
+If you use q2m3 in research, cite the Zenodo archive. The concept
 DOI `10.5281/zenodo.20114945 <https://doi.org/10.5281/zenodo.20114945>`_
 always resolves to the latest published release. Use a version-specific
 DOI (for example

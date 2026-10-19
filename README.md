@@ -1,5 +1,7 @@
 # q2m3: A Hybrid Quantum-Classical QM/MM Simulation Framework
 
+[English](README.md) | [简体中文](README_CN.md)
+
 <p align="center">
   <img src="doc/source/_static/logo.svg" alt="q2m3 logo" width="360">
 </p>
@@ -16,11 +18,11 @@
 
 q2m3 is a research framework for hybrid quantum-classical QM/MM
 (quantum mechanics / molecular mechanics). It connects PySCF molecular
-integrals and Hartree–Fock references to PennyLane Quantum Phase Estimation
+integrals and Hartree–Fock references to PennyLane quantum phase estimation
 (QPE) circuits. It also supports explicit MM point charges, Monte Carlo (MC)
 solvation, and sample-based quantum diagonalization (SQD).
 
-Use q2m3 to explore small-molecule QPE workflows and early fault-tolerant
+Use q2m3 for small-molecule QPE workflows and early fault-tolerant
 quantum computing (EFTQC) resource estimates. The project is an alpha
 proof of concept. Its approximations and small-system checks do not establish
 production chemistry accuracy.
@@ -113,8 +115,8 @@ SQD has two entry points:
 
 Both functions require an explicit closed-shell active space. Both return the
 complete `SQDResult`. The [SQD guide](doc/source/sqd.md) gives runnable
-examples for both. It also covers fixed-frame MM semantics, reference tiers,
-installation boundaries, and resource caps. The
+examples for both. It explains fixed-frame MM embedding, reference tiers,
+installation requirements, and resource caps. The
 [SQD API reference](doc/source/api-reference/sqd.rst) lists the public
 contracts, the authenticated integral producers, and the resource-policy
 functions.
@@ -129,7 +131,7 @@ These results do not establish SQD superiority or quantum hardware readiness.
 ## Examples and documentation
 
 Start with the [example guide](examples/README.md). It gives runnable H₂
-commands and the complete script index. It also separates MC workflows from
+commands and the complete script index. It identifies MC workflows and
 larger diagnostics.
 
 | Goal | Entry point |

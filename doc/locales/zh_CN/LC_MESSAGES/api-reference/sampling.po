@@ -1,0 +1,348 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/sampling.rst:2
+msgid "Sampling API"
+msgstr "采样 API"
+
+#: ../../source/api-reference/sampling.rst:5
+msgid "Water Molecules"
+msgstr "水分子"
+
+#: of q2m3.sampling.water_molecule:1
+msgid "Water molecule representation for Monte Carlo sampling."
+msgstr "用于 Monte Carlo 采样的水分子表示。"
+
+#: of q2m3.sampling.water_molecule:3
+msgid ""
+"This module provides a WaterMolecule class that represents a TIP3P water molecule with position "
+"and orientation (Euler angles)."
+msgstr "此模块提供 WaterMolecule 类，用于表示具有位置和方向（Euler 角）的 TIP3P 水分子。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:1
+msgid "TIP3P water molecule with position and orientation."
+msgstr "具有位置和方向的 TIP3P 水分子。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:3
+msgid ""
+"The water molecule is defined by: - position: 3D coordinates of oxygen atom (center of molecule) "
+"- euler_angles: [roll, pitch, yaw] rotation in radians"
+msgstr "水分子定义为：- position：氧原子（分子中心）的 3D 坐标；- euler_angles：以弧度为单位的 [roll, pitch, yaw] 旋转。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:7
+msgid "Default orientation has hydrogens in the xy-plane, symmetric about x-axis."
+msgstr "默认方向下，氢原子位于 xy 平面内，关于 x 轴对称。"
+
+#: ../../source/api-reference/sampling.rst
+msgid "Parameters"
+msgstr "参数"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:11
+msgid "Oxygen atom position in Angstrom"
+msgstr "氧原子位置，单位为埃"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator q2m3.sampling.metropolis.MetropolisSampler
+#: q2m3.sampling.water_molecule.WaterMolecule
+msgid "type"
+msgstr "类型"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:13 q2m3.sampling.water_molecule.WaterMolecule:19
+msgid "numpy.ndarray"
+msgstr "numpy.ndarray"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule:17
+msgid "Euler angles [roll, pitch, yaw] in radians"
+msgstr "Euler 角 [roll, pitch, yaw]，单位为弧度"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.oxygen_position:1
+msgid "Return oxygen atom position (same as molecule position)."
+msgstr "返回氧原子位置（与分子位置相同）。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.get_atom_coords:1
+msgid "Get coordinates of all three atoms (O, H1, H2)."
+msgstr "获取三个原子（O、H1、H2）的坐标。"
+
+#: ../../source/api-reference/sampling.rst
+msgid "Returns"
+msgstr "返回值"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.get_atom_coords:3
+msgid "Array of shape (3, 3) with [O, H1, H2] coordinates in Angstrom."
+msgstr "形状为 (3, 3) 的数组，包含以埃为单位的 [O, H1, H2] 坐标。"
+
+#: ../../source/api-reference/sampling.rst of q2m3.sampling.water_molecule.WaterMolecule.copy
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.get_charges:1
+msgid "Get TIP3P partial charges for all atoms."
+msgstr "获取所有原子的 TIP3P 部分电荷。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.get_charges:3
+msgid "Array of shape (3,) with [O_charge, H1_charge, H2_charge]."
+msgstr "形状为 (3,) 的数组，包含 [O_charge, H1_charge, H2_charge]。"
+
+#: of q2m3.sampling.water_molecule.WaterMolecule.copy:1
+msgid "Create an independent copy of this water molecule."
+msgstr "创建此水分子的独立副本。"
+
+#: ../../source/api-reference/sampling.rst:12
+msgid "Move Generation"
+msgstr "移动生成"
+
+#: of q2m3.sampling.mc_moves:1
+msgid "Monte Carlo move generator for water molecules."
+msgstr "水分子的 Monte Carlo 移动生成器。"
+
+#: of q2m3.sampling.mc_moves:3
+msgid ""
+"This module provides random translation and rotation moves for Monte Carlo sampling of water "
+"configurations."
+msgstr "此模块提供随机平移和旋转移动，用于水分子构型的 Monte Carlo 采样。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator:1
+msgid "Generator for Monte Carlo moves (translation and rotation)."
+msgstr "Monte Carlo 移动（平移和旋转）生成器。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator:5
+msgid "Maximum translation in each direction (Angstrom)"
+msgstr "每个方向的最大平移量（埃）"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator:7 q2m3.sampling.mc_moves.MCMoveGenerator:13
+#: q2m3.sampling.metropolis.MetropolisSampler:22 q2m3.sampling.metropolis.MetropolisSampler:28
+#: q2m3.sampling.metropolis.MetropolisSampler:34
+msgid "float"
+msgstr "float"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator:11
+msgid "Maximum rotation in each Euler angle (radians)"
+msgstr "每个 Euler 角的最大旋转量（弧度）"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_translation:1
+msgid "Propose a random translation move."
+msgstr "提出随机平移移动。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move:3
+#: q2m3.sampling.mc_moves.MCMoveGenerator.propose_rotation:3
+#: q2m3.sampling.mc_moves.MCMoveGenerator.propose_translation:3
+msgid "Original water molecule"
+msgstr "原始水分子"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_translation:5
+msgid "New water molecule with translated position"
+msgstr "平移后得到的新水分子"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_rotation:1
+msgid "Propose a random rotation move."
+msgstr "提出随机旋转移动。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_rotation:5
+msgid "New water molecule with rotated orientation"
+msgstr "旋转后得到的新水分子"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move:1
+msgid "Propose either a translation or rotation move with equal probability."
+msgstr "以相等概率提出平移或旋转移动。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move:5
+msgid "New water molecule with proposed move applied"
+msgstr "应用所提移动后得到的新水分子"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move_for_system:1
+msgid "Propose a move for one randomly selected water in the system."
+msgstr "为系统中随机选中的一个水分子提出移动。"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move_for_system:3
+msgid "List of water molecules"
+msgstr "水分子列表"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move_for_system:5
+msgid ""
+"- new_waters: Copy of waters list with one water moved - moved_index: Index of the water that was"
+" moved"
+msgstr "- new_waters: 复制 waters 列表并移动其中一个水分子 - moved_index: 被移动水分子的索引"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move_for_system:5
+msgid "new_waters: Copy of waters list with one water moved"
+msgstr "new_waters: 复制 waters 列表并移动其中一个水分子"
+
+#: of q2m3.sampling.mc_moves.MCMoveGenerator.propose_move_for_system:6
+msgid "moved_index: Index of the water that was moved"
+msgstr "moved_index: 被移动水分子的索引"
+
+#: ../../source/api-reference/sampling.rst:20
+msgid "Metropolis Sampling"
+msgstr "Metropolis 采样"
+
+#: of q2m3.sampling.metropolis:1
+msgid "Metropolis-Hastings sampler for solvation structure optimization."
+msgstr "用于溶剂化结构优化的 Metropolis-Hastings 采样器。"
+
+#: of q2m3.sampling.metropolis:3
+msgid ""
+"This module provides a Metropolis-Hastings algorithm for sampling water configurations around a "
+"fixed solute molecule."
+msgstr "此模块提供 Metropolis-Hastings 算法，用于在固定溶质分子周围采样水分子构型。"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:1
+msgid "Metropolis-Hastings sampler for water configuration optimization."
+msgstr "用于水分子构型优化的 Metropolis-Hastings 采样器。"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:3
+msgid ""
+"Uses MC moves to sample configurations and accepts/rejects based on the Metropolis criterion with"
+" the given energy function."
+msgstr "使用 MC 移动采样构型，并根据给定能量函数，按 Metropolis 准则接受或拒绝移动。"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:8
+msgid "List of WaterMolecule objects (MM region)"
+msgstr "WaterMolecule 对象列表（MM 区域）"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:10
+msgid "list[q2m3.sampling.water_molecule.WaterMolecule]"
+msgstr "list[q2m3.sampling.water_molecule.WaterMolecule]"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:14
+msgid "Function that takes waters and returns energy in Hartree"
+msgstr "接收 waters 并返回以 Hartree 为单位的能量的函数"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:16
+msgid "collections.abc.Callable[[list[q2m3.sampling.water_molecule.WaterMolecule]], float]"
+msgstr "collections.abc.Callable[[list[q2m3.sampling.water_molecule.WaterMolecule]], float]"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:20
+msgid "Temperature in Kelvin for Boltzmann acceptance"
+msgstr "Boltzmann 接受准则的温度，单位为 Kelvin"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:26
+msgid "Maximum translation per move (Angstrom)"
+msgstr "每次移动的最大平移量（埃）"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler:32
+msgid "Maximum rotation per move (radians)"
+msgstr "每次移动的最大旋转量（弧度）"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:1
+msgid "Run Metropolis-Hastings sampling for n_steps."
+msgstr "运行 n_steps 步 Metropolis-Hastings 采样。"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:3
+msgid "Number of MC steps to run"
+msgstr "要运行的 MC 步数"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:5
+msgid ""
+"- energies: List of energies at each step - acceptance_rate: Fraction of accepted moves - "
+"best_energy: Lowest energy found - best_config: Water configuration with lowest energy"
+msgstr ""
+"- energies: 每一步的能量列表 - acceptance_rate: 接受移动的比例 - best_energy: 已找到的最低能量 - best_config: "
+"最低能量对应的水分子构型"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:5
+msgid "energies: List of energies at each step"
+msgstr "energies: 每一步的能量列表"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:6
+msgid "acceptance_rate: Fraction of accepted moves"
+msgstr "acceptance_rate: 接受移动的比例"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:7
+msgid "best_energy: Lowest energy found"
+msgstr "best_energy: 已找到的最低能量"
+
+#: of q2m3.sampling.metropolis.MetropolisSampler.run:8
+msgid "best_config: Water configuration with lowest energy"
+msgstr "best_config: 最低能量对应的水分子构型"
+
+#: ../../source/api-reference/sampling.rst:28
+msgid "Force Field"
+msgstr "力场"
+
+#: of q2m3.sampling.mm_forcefield:1
+msgid "TIP3P force field for water-water interactions."
+msgstr "水分子间相互作用的 TIP3P 力场。"
+
+#: of q2m3.sampling.mm_forcefield:3
+msgid ""
+"This module provides energy calculations for TIP3P water molecules, including Lennard-Jones and "
+"Coulomb interactions."
+msgstr "此模块计算 TIP3P 水分子的能量，包括 Lennard-Jones 和 Coulomb 相互作用。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField:1
+msgid "TIP3P water model force field for MM energy calculations."
+msgstr "用于 MM 能量计算的 TIP3P 水模型力场。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField:3
+msgid "Computes: - Lennard-Jones energy (O-O interactions only) - Coulomb energy (all atom pairs)"
+msgstr "计算：- Lennard-Jones 能量（仅 O-O 相互作用）；- Coulomb 能量（所有原子对）。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField:7
+msgid "All energies are returned in Hartree for compatibility with QM calculations."
+msgstr "所有能量均以 Hartree 返回，以兼容量子力学计算。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.__init__:1
+msgid "Initialize TIP3P force field."
+msgstr "初始化 TIP3P 力场。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.__init__:3
+msgid "LJ sigma parameter for O-O interaction (Angstrom)"
+msgstr "O-O 相互作用的 LJ sigma 参数（埃）"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.__init__:4
+msgid "LJ epsilon parameter for O-O interaction (kcal/mol)"
+msgstr "O-O 相互作用的 LJ epsilon 参数（kcal/mol）"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_lj_energy:1
+msgid "Compute Lennard-Jones energy between all water pairs."
+msgstr "计算所有水分子对之间的 Lennard-Jones 能量。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_lj_energy:3
+msgid "Only O-O interactions are included (TIP3P convention)."
+msgstr "仅包含 O-O 相互作用（TIP3P 约定）。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_coulomb_energy:5
+#: q2m3.sampling.mm_forcefield.TIP3PForceField.compute_lj_energy:5
+#: q2m3.sampling.mm_forcefield.TIP3PForceField.compute_mm_energy:3
+msgid "List of WaterMolecule objects"
+msgstr "WaterMolecule 对象列表"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_lj_energy:7
+msgid "Total LJ energy in Hartree"
+msgstr "LJ 总能量，单位为 Hartree"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_coulomb_energy:1
+msgid "Compute Coulomb energy between all water pairs."
+msgstr "计算所有水分子对之间的 Coulomb 能量。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_coulomb_energy:3
+msgid "All atom-atom interactions between different molecules are included."
+msgstr "包含不同分子之间所有原子对的相互作用。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_coulomb_energy:7
+msgid "Total Coulomb energy in Hartree"
+msgstr "Coulomb 总能量，单位为 Hartree"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_mm_energy:1
+msgid "Compute total MM energy (LJ + Coulomb) between all water pairs."
+msgstr "计算所有水分子对之间的 MM 总能量（LJ + Coulomb）。"
+
+#: of q2m3.sampling.mm_forcefield.TIP3PForceField.compute_mm_energy:5
+msgid "Total MM energy in Hartree"
+msgstr "MM 总能量，单位为 Hartree"

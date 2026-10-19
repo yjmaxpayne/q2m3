@@ -1,9 +1,9 @@
 # SQD end to end: H₂, glycine, integrals, and embedding
 
-This tutorial follows every public path added for sample-based quantum
-diagonalization (SQD). You will run a full-space H₂ regression, a sparse glycine
-calculation, a five-seed scan, the authenticated integral adapter, and two
-fixed-point-charge embedding examples.
+This tutorial covers the public sample-based quantum diagonalization (SQD)
+workflows. Run a full-space H₂ regression, a sparse glycine calculation,
+a five-seed scan, the authenticated integral adapter, and two fixed-point-charge
+embedding examples.
 
 After you complete it, you should be able to:
 
@@ -62,7 +62,7 @@ uv run --no-sync python -m examples.sqd.glycine_ground_state \
   --active-space 6 --shots 512
 ```
 
-The geometry entry performs the complete production flow:
+The geometry entry performs these steps:
 
 1. Build vacuum RHF molecular orbitals and choose the requested active indices.
 2. Assemble real chemist-order active-space integrals and `e_core`.
@@ -107,12 +107,13 @@ uv run --no-sync python -m examples.sqd.glycine_from_integrals \
   --active-space 6 --shots 512
 ```
 
-The example first creates `IntegralData` with `build_integrals`, then creates a
-same-frame `CCSDSeed` with `build_ccsd_seed`. It passes `h1`, chemist-order `h2`,
+The example creates `IntegralData` with `build_integrals`. It then creates a
+`CCSDSeed` in the same frame with `build_ccsd_seed`. It passes `h1`, chemist-order `h2`,
 `e_core`, `IntegralContext`, and the seed to `run_sqd_from_integrals`. The script
-also runs the geometry entry. It compares six reported energy fields. Numerical values must agree within
-an absolute tolerance of 1e-8 Ha. A field may be `None` only if both results
-report `None`. The frame, Hamiltonian, and active-index identities must match exactly.
+also runs the geometry entry and compares six reported energy fields. Numerical
+values must agree within an absolute tolerance of 1e-8 Ha. A field may be `None`
+only if both results report `None`. The frame, Hamiltonian, and active-index
+identities must match exactly.
 
 Both entries share the same SQD solver. Agreement verifies adapter and assembly
 consistency. It is not an independent numerical oracle. Do not transpose `h2`
@@ -177,8 +178,8 @@ The return value and `resources.json` contain exactly these ten keys:
 | `limitation` | Sampling limitation |
 
 The new directory also contains `stdout.log`, with stderr merged into stdout,
-and `rss.jsonl`, with `[elapsed_seconds, rss_bytes]` samples. Both the exit code
-and the reason must indicate success before you accept the scientific output.
+and `rss.jsonl`, with `[elapsed_seconds, rss_bytes]` samples. Accept the
+scientific output only when both the exit code and the reason indicate success.
 
 ## 5. Compare fixed-MO embedding modes
 
@@ -245,11 +246,11 @@ uncertainty semantics is not an auditable result.
 ## Resource failures and reference-only runs
 
 `ReferenceConfig` sets one shared wall deadline and decimal-MB RSS budget. The
-executor takes the tightest of the user budget, currently available host memory,
-and the 8192 MB hard component cap. Predictions at a cap reject before allocation.
-Observed process-tree RSS at a cap terminates the run. `allow_large=True` can
-cross only a soft policy boundary and cannot bypass the calibrated domain, host
-availability, or hard caps.
+executor uses the lowest limit: the user budget, currently available host
+memory, or the 8192 MB hard component cap. Predictions at a cap reject before allocation.
+The supervisor terminates the run when observed process-tree RSS reaches a cap.
+`allow_large=True` can cross only a soft policy boundary and cannot bypass the
+calibrated domain, host availability, or hard caps.
 
 For an intentional baseline without sampling, pass `mode="reference_only"`.
 The result records absent sampling fields and their reasons. A failed full run

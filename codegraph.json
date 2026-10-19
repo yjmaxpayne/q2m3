@@ -1,0 +1,16 @@
+{
+  "exclude": [
+    "**/tmp/",
+    "**/temp/",
+    "**/.venv*/",
+    "**/.lake/",
+    "**/.worktrees/",
+    "**/evidence/",
+    "**/doc/build/",
+    "**/doc/_doxygen/",
+    "**/docs/_build/",
+    "dev/protocol-harness/",
+    "dev/protocol-feedback/",
+    "data/output/"
+  ]
+}

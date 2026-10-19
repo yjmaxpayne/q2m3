@@ -1,0 +1,135 @@
+{
+  "schema_version": 3,
+  "target_x_ir_ops": {
+    "fixed": 7720.0,
+    "dynamic": 7220.0
+  },
+  "selection_rule": "minimum untransformed-RSS RMSE; fixed candidates {linear}; runtime-coefficient candidates {linear}",
+  "confidence_interval_rule": "95% selected-model OLS confidence band for the fitted frontier mean using t_{0.975,n-2} and target-point leverage in each candidate fitted scale; LOO RMSE is reported as a small-n candidate-stability diagnostic only",
+  "fixed": {
+    "n_fit": 5,
+    "x_min": 300.0,
+    "x_max": 7720.0,
+    "extrapolation_factor_over_xmax": 1.0,
+    "extrapolation_factor_over_xrange": 1.0,
+    "rows": [
+      {
+        "label": "H2 fixed",
+        "ir_ops_lower_bound": 300.0,
+        "compile_rss_gb": 1.8691,
+        "status": "measured"
+      },
+      {
+        "label": "H3+ fixed",
+        "ir_ops_lower_bound": 1240.0,
+        "compile_rss_gb": 2.162,
+        "status": "measured"
+      },
+      {
+        "label": "H3O+ fixed",
+        "ir_ops_lower_bound": 7720.0,
+        "compile_rss_gb": 5.723828125,
+        "status": "measured"
+      },
+      {
+        "label": "H- fixed",
+        "ir_ops_lower_bound": 540.0,
+        "compile_rss_gb": 2.186,
+        "status": "measured"
+      },
+      {
+        "label": "H2O (4e,4o) fixed",
+        "ir_ops_lower_bound": 3860.0,
+        "compile_rss_gb": 2.8708,
+        "status": "measured"
+      }
+    ],
+    "best": {
+      "name": "linear",
+      "rmse_raw": 0.35179912331082,
+      "r2_raw": 0.9385648174736062,
+      "r2_log": 0.9116879942842542,
+      "loo_rmse_log": 0.23976280533848457,
+      "target_y_gb": 5.415088614907687,
+      "equation": "$y=1.6+4.9\\times10^{-4}x$",
+      "target_ci_low_gb": 4.093446497392445,
+      "target_ci_high_gb": 6.73673073242293
+    },
+    "candidates": [
+      {
+        "name": "linear",
+        "rmse_raw": 0.35179912331082,
+        "r2_raw": 0.9385648174736062,
+        "r2_log": 0.9116879942842542,
+        "loo_rmse_log": 0.23976280533848457,
+        "target_y_gb": 5.415088614907687,
+        "equation": "$y=1.6+4.9\\times10^{-4}x$",
+        "target_ci_low_gb": 4.093446497392445,
+        "target_ci_high_gb": 6.73673073242293
+      }
+    ]
+  },
+  "dynamic_measured_only": {
+    "n_fit": 5,
+    "x_min": 300.0,
+    "x_max": 2100.0,
+    "extrapolation_factor_over_xmax": 3.4380952380952383,
+    "extrapolation_factor_over_xrange": 3.8444444444444446,
+    "rows": [
+      {
+        "label": "H2 dynamic",
+        "ir_ops_lower_bound": 300.0,
+        "compile_rss_gb": 7.2201,
+        "status": "measured"
+      },
+      {
+        "label": "H3+ dynamic",
+        "ir_ops_lower_bound": 1240.0,
+        "compile_rss_gb": 17.3456,
+        "status": "measured"
+      },
+      {
+        "label": "H- dynamic",
+        "ir_ops_lower_bound": 540.0,
+        "compile_rss_gb": 7.20596,
+        "status": "measured"
+      },
+      {
+        "label": "F- dynamic",
+        "ir_ops_lower_bound": 540.0,
+        "compile_rss_gb": 7.2043,
+        "status": "measured"
+      },
+      {
+        "label": "Li+ dynamic",
+        "ir_ops_lower_bound": 2100.0,
+        "compile_rss_gb": 30.4984,
+        "status": "measured"
+      }
+    ],
+    "best": {
+      "name": "linear",
+      "rmse_raw": 1.2809364381506136,
+      "r2_raw": 0.9805427822673278,
+      "r2_log": 0.8995266283072512,
+      "loo_rmse_log": 0.34318565542509594,
+      "target_y_gb": 100.62049640999113,
+      "equation": "$y=0.85+1.4\\times10^{-2}x$",
+      "target_ci_low_gb": 78.05378288104266,
+      "target_ci_high_gb": 123.1872099389396
+    },
+    "candidates": [
+      {
+        "name": "linear",
+        "rmse_raw": 1.2809364381506136,
+        "r2_raw": 0.9805427822673278,
+        "r2_log": 0.8995266283072512,
+        "loo_rmse_log": 0.34318565542509594,
+        "target_y_gb": 100.62049640999113,
+        "equation": "$y=0.85+1.4\\times10^{-2}x$",
+        "target_ci_low_gb": 78.05378288104266,
+        "target_ci_high_gb": 123.1872099389396
+      }
+    ]
+  }
+}

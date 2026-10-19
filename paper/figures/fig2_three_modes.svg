@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 624" font-family="Inter, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="flow" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 z" fill="#0072B2"/></marker>
+<marker id="reuse" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 z" fill="#888888"/></marker>
+</defs>
+<rect x="0" y="0" width="1180" height="624" fill="#FFFFFF"/>
+<text x="590.0" y="30" font-size="18" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">Three QPE solvation modes</text>
+<text x="590.0" y="50" font-size="11" text-anchor="middle" fill="#555555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">what is compiled once, what runs per Metropolis MC step, and QPE's role  (H2 + 10 TIP3P, 500 MC steps)</text>
+<text x="140" y="78" font-size="11.5" text-anchor="middle" fill="#666666" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">mode</text>
+<text x="410" y="78" font-size="11.5" text-anchor="middle" fill="#666666" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">compile · one-time</text>
+<text x="710" y="78" font-size="11.5" text-anchor="middle" fill="#666666" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">per MC step</text>
+<text x="1014" y="78" font-size="11.5" text-anchor="middle" fill="#666666" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">Metropolis acceptance</text>
+<rect x="24" y="72" width="1132" height="100" rx="10" fill="#E3EEF7" opacity="0.35"/>
+<rect x="40" y="106" width="200" height="44" rx="8" ry="8" fill="#E3EEF7" stroke="#0072B2" stroke-width="1.7"/>
+<text x="140" y="132" font-size="13" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">fixed</text>
+<text x="140" y="166" font-size="9.2" text-anchor="middle" fill="#555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">vacuum H · QPE every step</text>
+<rect x="282" y="92" width="256" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#0072B2" stroke-width="1.7"/>
+<text x="410" y="114" font-size="11" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">compile vacuum H once</text>
+<text x="410" y="129" font-size="9.4" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">@qjit zero-arg QPE circuit</text>
+<text x="410" y="154" font-size="12" text-anchor="middle" fill="#0072B2" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">7.5 s</text>
+<rect x="582" y="92" width="256" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#0072B2" stroke-width="1.7"/>
+<text x="710" y="114" font-size="11" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">re-run compiled</text>
+<text x="710" y="129" font-size="10" text-anchor="middle" fill="#444" font-weight="normal" font-family="DejaVu Sans Mono, monospace">QPE(H_vac)</text>
+<text x="710" y="154" font-size="12" text-anchor="middle" fill="#0072B2" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">11.2 ms/step</text>
+<rect x="880" y="92" width="268" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#0072B2" stroke-width="1.7"/>
+<text x="1014" y="122" font-size="10" text-anchor="middle" fill="#666" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">E =</text>
+<text x="1014" y="142" font-size="11.5" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">E_QPE(H_vac) + E_MM</text>
+<line x1="538" y1="128" x2="580" y2="128" stroke="#888888" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#reuse)"/>
+<line x1="838" y1="128" x2="878" y2="128" stroke="#0072B2" stroke-width="2.2" marker-end="url(#flow)"/>
+<text x="560.0" y="120" font-size="8.6" text-anchor="middle" fill="#888" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">reused</text>
+<text x="590.0" y="188" font-size="9.6" text-anchor="middle" fill="#555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif" font-style="italic">delta_corr-pol: NO  ·  sigma_QPE = 0 (MM-decoupled)  ·  fastest, total 15.5 s</text>
+<rect x="24" y="186" width="1132" height="100" rx="10" fill="#FBF0DA" opacity="0.35"/>
+<rect x="40" y="220" width="200" height="44" rx="8" ry="8" fill="#FBF0DA" stroke="#E69F00" stroke-width="1.7"/>
+<text x="140" y="246" font-size="13" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">hf_corrected</text>
+<text x="140" y="280" font-size="9.2" text-anchor="middle" fill="#555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">classical accept · QPE diagnostic</text>
+<rect x="282" y="206" width="256" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#E69F00" stroke-width="1.7"/>
+<text x="410" y="228" font-size="11" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">@qjit MC loop</text>
+<text x="410" y="243" font-size="9.4" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">(QPE inlined in loop IR)</text>
+<text x="410" y="268" font-size="12" text-anchor="middle" fill="#E69F00" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">224 s</text>
+<rect x="582" y="206" width="256" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#E69F00" stroke-width="1.7"/>
+<text x="710" y="228" font-size="10" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">QMMM-RHF energy (PySCF)</text>
+<text x="710" y="243" font-size="9.2" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">QPE every N steps (24.5 ms)</text>
+<rect x="880" y="206" width="268" height="72" rx="8" ry="8" fill="#FFFFFF" stroke="#E69F00" stroke-width="1.7"/>
+<text x="1014" y="236" font-size="10" text-anchor="middle" fill="#666" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">E =</text>
+<text x="1014" y="256" font-size="11.5" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">E_HF(solvated) + E_MM</text>
+<line x1="538" y1="242" x2="580" y2="242" stroke="#888888" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#reuse)"/>
+<line x1="838" y1="242" x2="878" y2="242" stroke="#E69F00" stroke-width="2.2" marker-end="url(#flow)"/>
+<text x="560.0" y="234" font-size="8.6" text-anchor="middle" fill="#888" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">reused</text>
+<text x="590.0" y="302" font-size="9.6" text-anchor="middle" fill="#555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif" font-style="italic">delta_corr-pol: partial  ·  QPE used only as a diagnostic  ·  medium, total 233.6 s</text>
+<rect x="24" y="376" width="1132" height="132" rx="10" fill="#DCF1EA" opacity="0.5"/>
+<rect x="24" y="376" width="1132" height="132" rx="10" fill="none" stroke="#009E73" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="40" y="392" font-size="10" text-anchor="start" fill="#009E73" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">compile once / run many — the distinctive mode</text>
+<rect x="40" y="428" width="200" height="50" rx="8" ry="8" fill="#DCF1EA" stroke="#009E73" stroke-width="2.4"/>
+<text x="140" y="452" font-size="14" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">dynamic</text>
+<text x="140" y="490" font-size="9.2" text-anchor="middle" fill="#555" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">MM-embedded H · QPE every step</text>
+<rect x="282" y="406" width="256" height="84" rx="8" ry="8" fill="#FFFFFF" stroke="#009E73" stroke-width="2.0"/>
+<text x="410" y="424" font-size="10.2" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">build H_eff template →</text>
+<text x="410" y="437" font-size="9.0" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">@qjit precompile parametrised QPE</text>
+<text x="410" y="450" font-size="8.4" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">(runtime coeffs, check_hermitian=False)</text>
+<text x="410" y="463" font-size="9.4" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">→ compiled closure</text>
+<text x="410" y="484" font-size="11" text-anchor="middle" fill="#009E73" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">220 s · one-time</text>
+<rect x="582" y="406" width="256" height="84" rx="8" ry="8" fill="#FFFFFF" stroke="#009E73" stroke-width="2.0"/>
+<text x="710" y="428" font-size="10" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">patch JAX coeffs from</text>
+<text x="710" y="442" font-size="10" text-anchor="middle" fill="#444" font-weight="normal" font-family="DejaVu Sans Mono, monospace">Δh_MM (MO basis)</text>
+<text x="710" y="456" font-size="9.4" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">→ reuse compiled closure</text>
+<text x="710" y="484" font-size="10" text-anchor="middle" fill="#009E73" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">5.5 ms/step · 494× no-recompile</text>
+<rect x="880" y="406" width="268" height="84" rx="8" ry="8" fill="#FFFFFF" stroke="#009E73" stroke-width="2.0"/>
+<text x="1014" y="432" font-size="10" text-anchor="middle" fill="#666" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">E =</text>
+<text x="1014" y="452" font-size="11" text-anchor="middle" fill="#1F1F1F" font-weight="bold" font-family="DejaVu Sans Mono, monospace">E_QPE(H_eff(R_MM)) + E_MM</text>
+<text x="1014" y="476" font-size="9.6" text-anchor="middle" fill="#009E73" font-weight="bold" font-family="Inter, Helvetica, Arial, sans-serif">delta_corr-pol: YES (full)</text>
+<line x1="538" y1="446" x2="580" y2="446" stroke="#888888" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#reuse)"/>
+<line x1="838" y1="446" x2="878" y2="446" stroke="#009E73" stroke-width="2.2" marker-end="url(#flow)"/>
+<text x="560.0" y="438" font-size="8.6" text-anchor="middle" fill="#888" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">reused</text>
+<rect x="24" y="574" width="1132" height="34" rx="8" fill="#FAFAFA" stroke="#DDDDDD" stroke-width="1"/>
+<text x="590.0" y="596" font-size="9.8" text-anchor="middle" fill="#444" font-weight="normal" font-family="Inter, Helvetica, Arial, sans-serif">dynamic mode reassembles the Hamiltonian as qml.dot(coeffs, ops) with JAX-traced coefficients inside one @qjit circuit — reused across all solvent configurations, so QPE per MC step is tractable.</text>
+</svg>

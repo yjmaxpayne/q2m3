@@ -7,9 +7,11 @@ q2m3 CI uses a runner selector instead of hard-coding GitHub-hosted runners.
 `select-runner.yml` queries the repository's registered runners and selects:
 
 1. `[self-hosted, Linux, X64]` when a runner with all three labels is online;
-2. `ubuntu-latest` when no matching runner is online;
-3. `ubuntu-latest` when the runner lookup fails;
-4. `ubuntu-latest` for pull requests from forks.
+2. `[self-hosted, Linux, X64]` when the lookup fails but
+   `SELF_HOSTED_RUNNER_HEARTBEAT` is fresh (15 minutes);
+3. `ubuntu-latest` when no matching runner is online;
+4. `ubuntu-latest` when the runner lookup fails and the heartbeat is stale;
+5. `ubuntu-latest` for pull requests from forks.
 
 The selector itself always runs on `ubuntu-latest`. Jobs consume its JSON output:
 
@@ -36,6 +38,20 @@ does not grant it, so configure a repository secret named
 
 Without this secret the selector logs a warning and every job uses
 `ubuntu-latest`. The selector never fails the workflow because of a lookup error.
+
+## Heartbeat fallback
+
+The self-hosted runner host updates the repository variable
+`SELF_HOSTED_RUNNER_HEARTBEAT` every five minutes with the current Unix
+timestamp. The update only runs while the local runner service is online.
+
+When the runner API lookup fails, the selector accepts a heartbeat younger than
+15 minutes and uses the self-hosted runner. A stale heartbeat means the host is
+offline or unreachable, so the selector uses `ubuntu-latest`.
+
+The heartbeat contains no credentials and does not replace the API lookup. When
+`SELF_HOSTED_RUNNER_READ_TOKEN` has the correct permission, the API result is
+authoritative.
 
 ## Scope
 

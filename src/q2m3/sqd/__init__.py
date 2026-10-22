@@ -8,6 +8,7 @@ from typing import Any as _Any
 
 from q2m3._lazy import available_exports as _available_exports
 from q2m3._lazy import lazy_getattr as _lazy_getattr
+from q2m3.sqd.ansatz import build_ccsd_seed_from_integrals
 from q2m3.sqd.config import CCSDSeed, IntegralContext, LUCJConfig, ReferenceConfig, SQDConfig
 from q2m3.sqd.exceptions import (
     BaselineUnavailableError,
@@ -44,6 +45,7 @@ __all__ = [
     "ResourceLimitError",
     "ResourceModelDomainError",
     "SamplingIntegrityError",
+    "build_ccsd_seed_from_integrals",
 ]
 
 _LAZY_EXPORTS = {

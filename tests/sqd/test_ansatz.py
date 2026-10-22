@@ -42,6 +42,44 @@ def data(request):
     )
 
 
+@pytest.fixture(scope="module")
+def water():
+    """Vacuum water STO-3G (4e,4o) whose context carries no molecular frame source."""
+    molecule = MoleculeConfig(
+        "water", ["O", "H", "H"], [[0, 0, 0], [0.13, 0.1, 0.96], [0.88, -0.12, -0.29]], 0, 4, 4
+    )
+    data = build_integrals(molecule, host_available_mb=4096)
+    return replace(data, context=replace(data.context, source={}))
+
+
+def raw_kwargs(data, **updates):
+    kwargs = dict(norb=data.norb, nelec=data.nelec, context=data.context, host_available_mb=4096)
+    return {**kwargs, **updates}
+
+
+def standard_rccsd(data):
+    """Run RHF and RCCSD on a fake molecule built from the same active integrals.
+
+    The SCF and CC paths here share no code with the fixed-frame seed solver.
+    """
+    from pyscf import ao2mo, cc, gto, scf
+
+    mol = gto.M(verbose=0)
+    mol.nelectron = sum(data.nelec)
+    mol.incore_anyway = True
+    mf = scf.RHF(mol)
+    mf.get_hcore = lambda *args: data.h1
+    mf.get_ovlp = lambda *args: np.eye(data.norb)
+    mf._eri = ao2mo.restore(8, data.h2, data.norb)
+    mf.conv_tol = 1e-12
+    mf.kernel()
+    solver = cc.RCCSD(mf)
+    solver.conv_tol = 1e-12
+    solver.kernel()
+    assert mf.converged and solver.converged
+    return mf.e_tot + data.e_core, solver.e_corr
+
+
 def fock_oracle(data, t1, t2):
     """Explicit fermionic matrices; no PySCF CC energy/update or integral conversion."""
     from scipy.linalg import expm
@@ -373,3 +411,52 @@ def test_fully_occupied_contraction_overflow_is_rejected(module, data):
     with np.errstate(over="ignore", invalid="ignore"):
         with pytest.raises(CCSDConvergenceError, match="Nonfinite"):
             module._physical_values(huge, np.empty((n, 0)), np.empty((n, n, 0, 0)))
+
+
+def test_integral_seed_matches_standard_rccsd_without_molecular_source(module, water):
+    seed = module.build_ccsd_seed_from_integrals(
+        water.h1, water.h2, water.e_core, **raw_kwargs(water)
+    )
+    hf, correlation = standard_rccsd(water)
+    assert abs(seed.hf_energy - hf) < 1e-8
+    assert abs(seed.ccsd_energy - seed.hf_energy - correlation) < 1e-8
+    assert seed.frame_id == water.context.frame_id
+    assert seed.hamiltonian_id == water.context.hamiltonian_id
+    module.validate_ccsd_seed_from_integrals(
+        water.h1, water.h2, water.e_core, **raw_kwargs(water, seed_data=seed)
+    )
+
+
+def test_integral_seed_receiver_rejects_shifted_ccsd_energy(module, water):
+    seed = module.build_ccsd_seed_from_integrals(
+        water.h1, water.h2, water.e_core, **raw_kwargs(water)
+    )
+    shifted = replace(seed, ccsd_energy=seed.ccsd_energy + 1e-6)
+    with pytest.raises(ProvenanceMismatchError):
+        module.validate_ccsd_seed_from_integrals(
+            water.h1, water.h2, water.e_core, **raw_kwargs(water, seed_data=shifted)
+        )
+
+
+def test_integral_seed_rejects_integrals_that_drift_from_context(module, water):
+    h1 = water.h1.copy()
+    h1[0, 0] += 1e-9
+    with pytest.raises(ProvenanceMismatchError):
+        module.build_ccsd_seed_from_integrals(h1, water.h2, water.e_core, **raw_kwargs(water))
+
+
+def test_integral_seed_refuses_unconverged_rccsd(module, water):
+    with pytest.raises(CCSDConvergenceError):
+        module.build_ccsd_seed_from_integrals(
+            water.h1, water.h2, water.e_core, **raw_kwargs(water), max_cycle=1
+        )
+
+
+def test_integral_seed_guard_refuses_before_solver_allocates(module, water, monkeypatch):
+    from pyscf import cc
+
+    monkeypatch.setattr(cc, "CCSD", lambda *a, **k: pytest.fail("allocation before guard"))
+    with pytest.raises(ResourceLimitError):
+        module.build_ccsd_seed_from_integrals(
+            water.h1, water.h2, water.e_core, **raw_kwargs(water, host_available_mb=1.0)
+        )

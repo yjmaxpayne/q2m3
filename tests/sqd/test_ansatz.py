@@ -460,3 +460,33 @@ def test_integral_seed_guard_refuses_before_solver_allocates(module, water, monk
         module.build_ccsd_seed_from_integrals(
             water.h1, water.h2, water.e_core, **raw_kwargs(water, host_available_mb=1.0)
         )
+
+
+def test_integral_seed_is_verified_by_the_integral_receiver(module, water, monkeypatch):
+    received = []
+    receiver = module.validate_ccsd_seed_from_integrals
+    monkeypatch.setattr(
+        module,
+        "validate_ccsd_seed_from_integrals",
+        lambda *args, **kwargs: received.append(kwargs) or receiver(*args, **kwargs),
+    )
+    seed = module.build_ccsd_seed_from_integrals(
+        water.h1, water.h2, water.e_core, **raw_kwargs(water)
+    )
+    assert [kwargs["seed_data"] for kwargs in received] == [seed]
+    assert received[0]["context"] is water.context
+
+
+@pytest.mark.parametrize("max_cycle", [True, -1, 201, 1.5])
+def test_integral_seed_rejects_invalid_cycle_bound(module, water, max_cycle):
+    with pytest.raises(ValueError, match="max_cycle"):
+        module.build_ccsd_seed_from_integrals(
+            water.h1, water.h2, water.e_core, **raw_kwargs(water), max_cycle=max_cycle
+        )
+
+
+def test_integral_seed_builder_is_a_package_export(module):
+    import q2m3.sqd as sqd
+
+    assert "build_ccsd_seed_from_integrals" in sqd.__all__
+    assert sqd.build_ccsd_seed_from_integrals is module.build_ccsd_seed_from_integrals

@@ -10,12 +10,15 @@ from typing import Any
 from pyscf import lib
 
 from q2m3._lazy import extra_available
+from q2m3.fragments.active_space import check_correspondence, select_active_spaces
 from q2m3.fragments.counterpoise import SCF_CONV_TOL, Subsystem, counterpoise
 from q2m3.fragments.molecule import Molecule
 from q2m3.fragments.references import frozen_core_mp2
 from q2m3.fragments.result import (
     COUNTERPOISE_SUBSYSTEMS,
     ENERGY_LAYERS,
+    ActiveSpaceRecord,
+    CorrespondenceReport,
     ErrorDecomposition,
     FragmentInteractionResult,
     SubsystemResult,
@@ -31,7 +34,6 @@ _SUBSYSTEM_REASONS = {
     "e_casci": _NO_SQD,
     "e_sqd": _NO_SQD,
     "sqd": _NO_SQD,
-    "active_space": "active space not resolved",
     "resources.qpe": "resource estimate not computed",
     "resources.sqd": "resource estimate not computed",
 }
@@ -40,7 +42,6 @@ _RESULT_REASONS = {
     "errors.active_space": "no same-basis full-space reference",
     "errors.basis": "no same-basis full-space reference and no external reference",
     "errors.model": "no external reference",
-    "correspondence": "active space not resolved",
 }
 
 
@@ -65,34 +66,44 @@ def run(
     """Compute counterpoise-corrected interaction energies of ``molecule``.
 
     A dimer gives a ``FragmentInteractionResult``. A single molecule gives the
-    ``SubsystemResult`` of subsystem ``"M"``. ``mode="classical_only"`` computes HF and
-    frozen-core MP2 and never builds the SQD stage runner.
+    ``SubsystemResult`` of subsystem ``"M"``. Both modes select the AVAS active spaces
+    and, for a dimer, check their correspondence before any correlated step.
+    ``mode="classical_only"`` then computes HF and frozen-core MP2 and never builds the
+    SQD stage runner.
 
     Raises:
         TypeError: ``avas_labels`` is not a sequence of strings, or ``avas_threshold``
             is not a real number.
-        ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``.
+        ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``, or an AVAS label
+            is malformed or matches no AO.
         ImportError: ``mode="full"`` and the optional ``sqd`` backend is missing.
-        NotImplementedError: ``mode="full"`` with the ``sqd`` backend, or
-            ``references`` is not ``None``.
-        FragmentWorkflowError: The RHF of a subsystem does not converge.
+        NotImplementedError: ``mode="full"`` with the ``sqd`` backend and valid active
+            spaces, or ``references`` is not ``None``.
+        FragmentWorkflowError: The RHF of a subsystem does not converge, or label
+            resolution, the ghost guard or the preflight rejects an active space.
+        ActiveSpaceMismatchError: The monomer active spaces do not correspond to the
+            dimer active space.
     """
     labels, threshold = _checked_avas(avas_labels, avas_threshold)
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
-    if mode == "full":
-        if not extra_available("sqd"):
-            raise ImportError(
-                "run(mode='full') requires the optional 'sqd' backend. "
-                "Install it with: uv sync --extra sqd"
-            )
-        raise NotImplementedError("mode='full' is not available yet. Use mode='classical_only'.")
+    if mode == "full" and not extra_available("sqd"):
+        raise ImportError(
+            "run(mode='full') requires the optional 'sqd' backend. "
+            "Install it with: uv sync --extra sqd"
+        )
     if references is not None:
         raise NotImplementedError("imported references are not supported yet")
 
     subsystems = counterpoise(molecule, basis=basis)
+    records, correspondence = _active_spaces(subsystems, labels, threshold)
+    if mode == "full":
+        raise NotImplementedError("mode='full' is not available yet. Use mode='classical_only'.")
     mp2 = {name: frozen_core_mp2(sub) for name, sub in subsystems.items()}
-    results = {name: _classical_result(sub, mp2[name][0]) for name, sub in subsystems.items()}
+    results = {
+        name: _classical_result(sub, mp2[name][0], records[name])
+        for name, sub in subsystems.items()
+    }
     if molecule.fragments is None:
         return results["M"].validate()
 
@@ -108,6 +119,7 @@ def run(
         "cart": False,
         "avas_labels": labels,
         "avas_threshold": threshold,
+        "cos_threshold": correspondence.cos_threshold,
         "seed": seed,
         "scf_conv_tol": SCF_CONV_TOL,
         "frozen_core": {name: nfrozen for name, (_, nfrozen) in mp2.items()},
@@ -122,7 +134,7 @@ def run(
         delta_e=delta_e,
         references=(),
         errors=ErrorDecomposition(),
-        correspondence=None,
+        correspondence=correspondence,
         provenance=provenance,
         null_reasons=null_reasons | _RESULT_REASONS,
     ).validate()
@@ -138,7 +150,18 @@ def _checked_avas(labels: Any, threshold: Any) -> tuple[tuple[str, ...], float]:
     return tuple(labels), float(threshold)
 
 
-def _classical_result(sub: Subsystem, e_mp2: float) -> SubsystemResult:
+def _active_spaces(
+    subsystems: Mapping[str, Subsystem], labels: tuple[str, ...], threshold: float
+) -> tuple[dict[str, ActiveSpaceRecord], CorrespondenceReport | None]:
+    spaces = select_active_spaces(subsystems, labels, threshold)
+    records = {name: record for name, (record, _mo) in spaces.items()}
+    if "AB" not in spaces:
+        return records, None
+    overlap = subsystems["AB"].mol.intor("int1e_ovlp")
+    return records, check_correspondence(spaces["AB"], spaces["A"], spaces["B"], overlap)
+
+
+def _classical_result(sub: Subsystem, e_mp2: float, record: ActiveSpaceRecord) -> SubsystemResult:
     return SubsystemResult(
         name=sub.name,
         real_atoms=sub.real_atoms,
@@ -149,7 +172,7 @@ def _classical_result(sub: Subsystem, e_mp2: float) -> SubsystemResult:
         e_ccsd_t=None,
         e_casci=None,
         e_sqd=None,
-        active_space=None,
+        active_space=record,
         sqd=None,
         resources={},
         null_reasons=dict(_SUBSYSTEM_REASONS),

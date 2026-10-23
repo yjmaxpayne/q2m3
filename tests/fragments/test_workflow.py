@@ -14,16 +14,23 @@ import pytest
 from pyscf import gto, lib, mp, scf
 
 from q2m3.fragments import workflow
+from q2m3.fragments.errors import FragmentWorkflowError
 from q2m3.fragments.molecule import Molecule
-from q2m3.fragments.result import FragmentInteractionResult, SubsystemResult
+from q2m3.fragments.result import (
+    ActiveSpaceRecord,
+    CorrespondenceReport,
+    FragmentInteractionResult,
+    SubsystemResult,
+)
 from q2m3.utils.io import save_json_results
-from tests.fragments.conftest import WATER_DIMER
+from tests.fragments.conftest import AVAS_SETTINGS, WATER_DIMER
 
 DIMER_FRAGMENTS = ((0, 1, 2), (3, 4, 5))
 SUBSYSTEM_ATOMS = {"AB": range(6), "A": range(3), "B": range(3, 6)}
 FROZEN_CORE = {"AB": 2, "A": 1, "B": 1}
-LABELS = ("2 H 1s", "3 O 2p")
-THRESHOLD = 0.2
+LABELS, THRESHOLD = AVAS_SETTINGS["S6"]
+# AVAS spaces of the same dimer with these settings: (nelecas, ncas, ncore).
+ACTIVE_SPACES = {"AB": (12, 8, 4), "A": (6, 4, 2), "B": (6, 4, 2)}
 # MP2 interaction energy of the same dimer from the prototype reference run, in Ha.
 PROTOTYPE_DELTA_E_MP2 = -0.006271604103
 CLASSICAL_THREADS = 2
@@ -122,6 +129,7 @@ def test_provenance_records_the_classical_settings(classical):
         "cart",
         "avas_labels",
         "avas_threshold",
+        "cos_threshold",
         "seed",
         "scf_conv_tol",
         "frozen_core",
@@ -133,6 +141,7 @@ def test_provenance_records_the_classical_settings(classical):
     assert provenance["cart"] is False
     assert provenance["avas_labels"] == LABELS
     assert provenance["avas_threshold"] == THRESHOLD
+    assert provenance["cos_threshold"] == result.correspondence.cos_threshold == 0.90
     assert provenance["seed"] == 7
     assert provenance["scf_conv_tol"] == 1e-10
     versions = provenance["versions"]
@@ -161,11 +170,28 @@ def test_result_serializes_to_strict_json(classical, tmp_path):
     assert math.isclose(loaded["delta_e"]["mp2"], result.delta_e["mp2"], abs_tol=0.0)
 
 
+def test_classical_result_records_the_active_spaces_and_their_correspondence(classical):
+    _, result, _ = classical
+    for name, (nelecas, ncas, ncore) in ACTIVE_SPACES.items():
+        record = result.subsystems[name].active_space
+        assert isinstance(record, ActiveSpaceRecord)
+        assert (record.nelecas, record.ncas, record.ncore) == (nelecas, ncas, ncore)
+        # The anchored AO patterns and the MINAO AOs they select travel with the record.
+        assert record.ao_labels and all(p.startswith("^") for p in record.ao_labels)
+        assert len(record.minao_indices) == len(record.ao_labels)
+        assert "active_space" not in result.subsystems[name].null_reasons
+    report = result.correspondence
+    assert isinstance(report, CorrespondenceReport)
+    assert report.corresponds and report.counts_conserved
+    assert (report.rank_occupied, report.rank_virtual) == (6, 2)
+    assert "correspondence" not in result.null_reasons
+
+
 def test_single_molecule_returns_its_subsystem_result(water_dimer):
     monomer = water_dimer[:3]
     result = workflow.run(
         Molecule.from_xyz(_xyz(monomer)),
-        avas_labels=("O 2p",),
+        avas_labels=LABELS[:3],  # the monomer-A part of the dimer labels
         avas_threshold=THRESHOLD,
         mode="classical_only",
     )
@@ -174,6 +200,9 @@ def test_single_molecule_returns_its_subsystem_result(water_dimer):
     assert result.name == "M" and result.ghost_atoms == ()
     assert result.e_hf == pytest.approx(e_hf, abs=1e-9)
     assert result.e_mp2 == pytest.approx(e_mp2, abs=1e-9)
+    record = result.active_space
+    assert isinstance(record, ActiveSpaceRecord)
+    assert (record.nelecas, record.ncas, record.ncore) == ACTIVE_SPACES["A"]
 
 
 def _no_scf(*args, **kwargs):
@@ -193,9 +222,29 @@ def test_full_mode_without_the_sqd_extra_fails_before_any_scf(monkeypatch, water
 
 def test_full_mode_with_the_sqd_extra_is_not_available_yet(monkeypatch, water_dimer):
     monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
-    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
     with pytest.raises(NotImplementedError):
         workflow.run(_dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD)
+
+
+@pytest.mark.parametrize(
+    ("labels", "threshold"),
+    [(("2 H 1s",), 0.2), AVAS_SETTINGS["S1"]],
+    ids=["labels-only-on-fragment-a", "monomer-without-active-virtual"],
+)
+def test_full_mode_rejects_the_active_space_before_the_sqd_stage(
+    monkeypatch, water_dimer, labels, threshold
+):
+    calls: list = []
+
+    def make_runner():
+        calls.append(("make_runner",))
+        return RecordingRunner(calls)
+
+    monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
+    monkeypatch.setattr(workflow, "_make_runner", make_runner)
+    with pytest.raises(FragmentWorkflowError, match="subsystem B"):
+        workflow.run(_dimer(water_dimer), avas_labels=labels, avas_threshold=threshold)
+    assert calls == []
 
 
 def test_unknown_mode_is_rejected(monkeypatch, water_dimer):

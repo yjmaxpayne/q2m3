@@ -1,4 +1,5 @@
-"""Active-space selection for counterpoise subsystems: AVAS labels, ghost guard, preflight.
+"""Active-space selection for counterpoise subsystems: AVAS labels, ghost guard, preflight,
+and the correspondence of the dimer and monomer active spaces.
 
 AVAS searches its labels on a MINAO copy of the molecule, as regular expressions over the
 AO labels, where ghost atoms appear as ``GHOST-<element>``. Labels are therefore resolved
@@ -15,10 +16,14 @@ from pyscf import gto
 from pyscf.mcscf import avas
 
 from q2m3.fragments.counterpoise import Subsystem
-from q2m3.fragments.errors import FragmentWorkflowError
-from q2m3.fragments.result import ActiveSpaceRecord
+from q2m3.fragments.errors import ActiveSpaceMismatchError, FragmentWorkflowError
+from q2m3.fragments.result import ActiveSpaceRecord, CorrespondenceReport
 
 MAX_NORB = 10
+COS_THRESHOLD = 0.90
+GRAM_CUTOFF = 1e-8
+
+Space = tuple[ActiveSpaceRecord, np.ndarray]
 
 
 def _minao_copy(mol: gto.Mole) -> gto.Mole:
@@ -150,3 +155,77 @@ def select_active_spaces(
         spaces[name] = (record, mo)
     preflight({name: record for name, (record, _mo) in spaces.items()})
     return spaces
+
+
+def check_correspondence(
+    ab: Space, a: Space, b: Space, overlap: np.ndarray, *, cos_threshold: float = COS_THRESHOLD
+) -> CorrespondenceReport:
+    """Check that the monomer active spaces together match the dimer active space.
+
+    Each space is a ``(record, mo_coeff)`` pair, as ``select_active_spaces`` gives it. The
+    active electron and orbital counts of A and B must add up to those of AB. The occupied
+    and virtual blocks are checked separately: the A and B orbitals of a block are
+    orthonormalised together in the AO metric ``overlap``, dropping directions with a Gram
+    eigenvalue below ``GRAM_CUTOFF``. The singular values of ``C_AB^T S Q`` are the cosines
+    of the principal angles. A block matches when its AB dimension equals the rank of the
+    A+B union and every cosine is at least ``cos_threshold``. An empty block has minimum
+    cosine 0.
+
+    Raises:
+        ActiveSpaceMismatchError: A count, dimension or cosine criterion fails. The
+            message gives every failed criterion with its values.
+    """
+    (record_ab, _), (record_a, _), (record_b, _) = ab, a, b
+    counts_conserved = (record_ab.nelecas, record_ab.ncas) == (
+        record_a.nelecas + record_b.nelecas,
+        record_a.ncas + record_b.ncas,
+    )
+    failures = []
+    if not counts_conserved:
+        failures.append(
+            f"counts AB {_counts(record_ab)} != A {_counts(record_a)} + B {_counts(record_b)}"
+        )
+    blocks = {}
+    for block in ("occupied", "virtual"):
+        dimer = _block(ab, block)
+        union = np.hstack([_block(a, block), _block(b, block)])
+        rank, cosines = _principal_cosines(dimer, union, overlap)
+        min_cos = float(min(cosines, default=0.0))
+        if dimer.shape[1] != rank:
+            failures.append(f"{block} block: AB dimension {dimer.shape[1]} != A+B rank {rank}")
+        if not min_cos >= cos_threshold:
+            failures.append(f"{block} block: min cosine {min_cos:.3f} < {cos_threshold:g}")
+        blocks[block] = (min_cos, rank)
+    if failures:
+        raise ActiveSpaceMismatchError(
+            "active spaces of AB, A and B do not correspond: " + "; ".join(failures)
+        )
+    return CorrespondenceReport(
+        counts_conserved=counts_conserved,
+        min_cos_occupied=blocks["occupied"][0],
+        min_cos_virtual=blocks["virtual"][0],
+        rank_occupied=blocks["occupied"][1],
+        rank_virtual=blocks["virtual"][1],
+        cos_threshold=cos_threshold,
+        corresponds=True,
+    )
+
+
+def _counts(record: ActiveSpaceRecord) -> str:
+    return f"({record.nelecas}e,{record.ncas}o)"
+
+
+def _block(space: Space, block: str) -> np.ndarray:
+    record, mo = space
+    occupied = record.nelecas // 2
+    start, stop = (0, occupied) if block == "occupied" else (occupied, record.ncas)
+    return mo[:, record.ncore + start : record.ncore + stop]
+
+
+def _principal_cosines(
+    dimer: np.ndarray, union: np.ndarray, overlap: np.ndarray
+) -> tuple[int, np.ndarray]:
+    values, vectors = np.linalg.eigh(union.T @ overlap @ union)
+    keep = values >= GRAM_CUTOFF
+    q = union @ vectors[:, keep] / np.sqrt(values[keep])
+    return q.shape[1], np.linalg.svd(dimer.T @ overlap @ q, compute_uv=False)

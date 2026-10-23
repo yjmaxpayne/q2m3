@@ -489,8 +489,94 @@ def _ucj_from_validated_seed(seed_data: CCSDSeed, lucj: LUCJConfig) -> Any:
     )
 
 
+def build_ccsd_seed_from_integrals(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    *,
+    norb: int,
+    nelec: tuple[int, int],
+    context: IntegralContext,
+    host_available_mb: float,
+    rss_budget_mb: float = 8192.0,
+    allow_large: bool = False,
+    max_cycle: int = 200,
+) -> CCSDSeed:
+    """Solve fixed-frame RCCSD from the low-level integral contract.
+
+    Only the Hamiltonian hash of ``context`` is recomputed from the arrays. The
+    frame digest is not reconstructed, so the caller is responsible for the
+    ``frame_id`` binding between ``context`` and the integrals.
+
+    Args:
+        h1: Real one-electron integrals in the declared frame.
+        h2: Real chemist two-electron tensor in the declared frame.
+        e_core: Same-Hamiltonian core constant in Hartree.
+        norb: Active spatial orbital count.
+        nelec: Balanced spin populations.
+        context: Frame and Hamiltonian provenance. The source may be empty.
+        host_available_mb: Executor whole-run cap in decimal MB.
+        rss_budget_mb: User whole-run cap in decimal MB.
+        allow_large: Override only the resource soft boundary.
+        max_cycle: Iteration bound, 0..200. Zero exercises convergence refusal.
+
+    Returns:
+        Converged read-only amplitudes carrying the context identifiers.
+
+    Raises:
+        CCSDConvergenceError: Iterations fail or the physical residual is unacceptable.
+        ProvenanceMismatchError: Integrals disagree with the context Hamiltonian hash.
+        ResourceLimitError: Inventory guard refuses allocation.
+    """
+    if (
+        isinstance(max_cycle, bool)
+        or not isinstance(max_cycle, Integral)
+        or not 0 <= max_cycle <= 200
+    ):
+        raise ValueError("max_cycle must be an integer in [0, 200]")
+    data = _ActiveHamiltonian(h1, h2, e_core, norb, nelec, context)
+    _guard_active(data, norb, host_available_mb, rss_budget_mb, allow_large)
+    _authenticate_active(data)
+    o, v = nelec[0], norb - nelec[0]
+    if v:
+        solver, eris, _, _ = _solver(data)
+        solver.max_cycle = int(max_cycle)
+        _, t1, t2 = solver.kernel(eris=eris)
+        if not solver.converged:
+            raise CCSDConvergenceError("Same-frame RCCSD did not converge")
+    else:
+        t1, t2 = np.empty((o, 0)), np.empty((o, o, 0, 0))
+    hf, energy, residual = _physical_values(data, t1, t2)
+    result = CCSDSeed(
+        t1,
+        t2,
+        hf,
+        energy,
+        True,
+        residual,
+        context.frame_id,
+        context.hamiltonian_id,
+        "pyscf.RCCSD.fixed_frame",
+        version("pyscf"),
+    )
+    validate_ccsd_seed_from_integrals(
+        h1,
+        h2,
+        e_core,
+        norb=norb,
+        nelec=nelec,
+        context=context,
+        seed_data=result,
+        host_available_mb=host_available_mb,
+        rss_budget_mb=rss_budget_mb,
+        allow_large=allow_large,
+    )
+    return result
+
+
 __all__ = [
     "build_ccsd_seed",
+    "build_ccsd_seed_from_integrals",
     "validate_ccsd_seed",
     "validate_ccsd_seed_from_integrals",
     "build_lucj",

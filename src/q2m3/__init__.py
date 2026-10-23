@@ -83,6 +83,8 @@ __all__ = [
 _LAZY_EXPORTS = {
     "run_solvation": ("q2m3.solvation.orchestrator", "catalyst"),
     "run_sqd": ("q2m3.sqd.orchestrator", "sqd"),
+    "run": ("q2m3.fragments.workflow", "core"),
+    "Molecule": ("q2m3.fragments.molecule", "core"),
 }
 __all__ += _available_exports(_LAZY_EXPORTS)
 

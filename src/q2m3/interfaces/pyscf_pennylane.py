@@ -502,13 +502,22 @@ class PySCFPennyLaneConverter:
         Extract molecular orbital coefficients from PySCF.
 
         Args:
-            scf_result: PySCF SCF calculation result
+            scf_result: PySCF RHF calculation result
 
         Returns:
-            MO coefficient matrix
+            Copy of the MO coefficient matrix
+
+        Raises:
+            TypeError: If scf_result is not a closed-shell RHF result
         """
-        # Will extract mo_coeff from SCF object
-        pass
+        from pyscf.scf import hf, rohf
+
+        # ROHF (and ROKS) subclass RHF but describe open-shell references.
+        if not isinstance(scf_result, hf.RHF) or isinstance(scf_result, rohf.ROHF):
+            raise TypeError(
+                f"extract_molecular_orbitals requires an RHF result, got {type(scf_result).__name__}"
+            )
+        return np.array(scf_result.mo_coeff, copy=True)
 
     def compute_overlap_integrals(self, mol: Any) -> np.ndarray:
         """

@@ -6,7 +6,7 @@ subsystem energies and rejects stored values that disagree.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -21,6 +21,21 @@ SQD_ESTIMATOR = "q2m3.sqd.resources"
 RESOURCE_ESTIMATORS = {"qpe": QPE_ESTIMATOR, "sqd": SQD_ESTIMATOR}
 COUNTERPOISE_SUBSYSTEMS = ("AB", "A", "B")
 DELTA_E_TOLERANCE_HA = 1e-12
+REFERENCE_CATEGORIES = ("same_basis_full_space", "external")
+REQUIRED_PROVENANCE = (
+    "geometry_sha256",
+    "basis",
+    "cart",
+    "avas_labels",
+    "avas_threshold",
+    "cos_threshold",
+    "seed",
+    "scf_conv_tol",
+    "frozen_core",
+    "versions",
+    "threads",
+)
+FULL_MODE_PROVENANCE = ("ccsd_t_cost",)
 
 _LAYER_FIELDS = {
     "hf": "e_hf",
@@ -74,6 +89,21 @@ class ResourceEstimate:
     versions: Mapping[str, str]
     values: Mapping[str, Any]
     scope: str
+
+
+@dataclass(frozen=True)
+class ExternalReference:
+    """Imported interaction energy of one fragment dimer, in Ha.
+
+    ``category`` is ``"same_basis_full_space"`` when ``basis`` is the workflow basis and
+    ``"external"`` otherwise.
+    """
+
+    fragment_id: str
+    method: str
+    basis: str
+    delta_e: float
+    category: str
 
 
 @dataclass(frozen=True)
@@ -182,7 +212,7 @@ class FragmentInteractionResult:
     basis: str
     subsystems: Mapping[str, SubsystemResult]
     delta_e: Mapping[str, float | None]
-    references: tuple[Any, ...]
+    references: tuple[ExternalReference, ...]
     errors: ErrorDecomposition
     correspondence: CorrespondenceReport | None
     provenance: Mapping[str, Any]
@@ -194,13 +224,17 @@ class FragmentInteractionResult:
 
         Raises:
             ValueError: The subsystems are not ``AB``, ``A``, ``B``; a classical-only
-                result holds an SQD record, or a full result lacks one; a stored
-                interaction energy or algorithm error differs from the recomputed one by
-                more than ``DELTA_E_TOLERANCE_HA``; or a null field has no reason.
+                result holds an SQD record, or a full result lacks one; the provenance
+                lacks a required key; a stored interaction energy or error term differs
+                from the recomputed one by more than ``DELTA_E_TOLERANCE_HA``; the model
+                error is not the sum of the active-space and basis errors; the recorded
+                same-basis reference source is not the one used; a reference category is
+                unknown or repeated; or a null field has no reason.
         """
         if set(self.subsystems) != set(COUNTERPOISE_SUBSYSTEMS):
             raise ValueError(f"subsystems must be AB, A, B; got {', '.join(self.subsystems)}")
         self._check_sqd_records()
+        self._check_provenance()
         for subsystem in self.subsystems.values():
             subsystem.validate()
         expected = {layer: interaction_energy(self.subsystems, layer) for layer in ENERGY_LAYERS}
@@ -211,16 +245,35 @@ class FragmentInteractionResult:
                     f"delta_e[{layer!r}] = {stored!r} does not match the subsystem "
                     f"energies, which give {energy!r}"
                 )
-        algorithm = None
-        if expected["sqd"] is not None and expected["casci"] is not None:
-            algorithm = expected["sqd"] - expected["casci"]
-        if not _agrees(self.errors.algorithm, algorithm):
-            raise ValueError(
-                f"errors.algorithm = {self.errors.algorithm!r} does not match "
-                f"delta_e.sqd - delta_e.casci = {algorithm!r}"
-            )
+        self._check_errors(expected)
         _require_reasons("result", self._null_keys(), self.null_reasons)
         return self
+
+    def _check_provenance(self) -> None:
+        required = REQUIRED_PROVENANCE + (FULL_MODE_PROVENANCE if self.mode == "full" else ())
+        missing = [key for key in required if key not in self.provenance]
+        if missing:
+            raise ValueError(f"provenance lacks required keys: {', '.join(missing)}")
+
+    def _check_errors(self, delta_e: Mapping[str, float | None]) -> None:
+        expected, source = decompose_errors(delta_e, self.references)
+        for term in ERROR_TERMS:
+            stored, value = getattr(self.errors, term), getattr(expected, term)
+            if not _agrees(stored, value):
+                raise ValueError(
+                    f"errors.{term} = {stored!r} does not match the recomputed value {value!r}"
+                )
+        terms = (self.errors.model, self.errors.active_space, self.errors.basis)
+        if None not in terms and not _agrees(terms[0], terms[1] + terms[2]):
+            raise ValueError(
+                f"errors.model = {terms[0]!r} differs from errors.active_space + errors.basis "
+                f"= {terms[1] + terms[2]!r}"
+            )
+        recorded = self.provenance.get("same_basis_reference_source")
+        if recorded != source:
+            raise ValueError(
+                f"provenance same_basis_reference_source = {recorded!r}; the errors use {source!r}"
+            )
 
     def _check_sqd_records(self) -> None:
         if self.mode == "classical_only":
@@ -254,6 +307,57 @@ def interaction_energy(subsystems: Mapping[str, SubsystemResult], layer: str) ->
     return e_ab - e_a - e_b
 
 
+def references_by_category(
+    references: Sequence[ExternalReference],
+) -> dict[str, ExternalReference]:
+    """Map each reference category to its single reference.
+
+    Raises:
+        ValueError: A category is not in ``REFERENCE_CATEGORIES``, or two references share
+            a category.
+    """
+    found: dict[str, ExternalReference] = {}
+    for reference in references:
+        if reference.category not in REFERENCE_CATEGORIES:
+            raise ValueError(
+                f"reference category must be one of {REFERENCE_CATEGORIES}, "
+                f"got {reference.category!r}"
+            )
+        if reference.category in found:
+            raise ValueError(f"more than one {reference.category!r} reference")
+        found[reference.category] = reference
+    return found
+
+
+def decompose_errors(
+    delta_e: Mapping[str, float | None], references: Sequence[ExternalReference]
+) -> tuple[ErrorDecomposition, str | None]:
+    """Return the error terms and the source of the same-basis reference.
+
+    The same-basis full-space reference is the PySCF CCSD(T) interaction energy
+    (``"pyscf_ccsd_t"``) or, when that is null, the imported same-basis reference
+    (``"imported"``). A term is ``None`` when one of its two energies is missing.
+
+    Raises:
+        ValueError: As :func:`references_by_category`.
+    """
+    by_category = references_by_category(references)
+    same, source = delta_e.get("ccsd_t"), "pyscf_ccsd_t"
+    if same is None and "same_basis_full_space" in by_category:
+        same, source = by_category["same_basis_full_space"].delta_e, "imported"
+    if same is None:
+        source = None
+    external = by_category["external"].delta_e if "external" in by_category else None
+    casci = delta_e.get("casci")
+    errors = ErrorDecomposition(
+        algorithm=_difference(delta_e.get("sqd"), casci),
+        active_space=_difference(casci, same),
+        basis=_difference(same, external),
+        model=_difference(casci, external),
+    )
+    return errors, source
+
+
 def promote_sqd_energies(
     sqd: SQDResult | None,
 ) -> tuple[float | None, float | None, dict[str, str]]:
@@ -273,6 +377,12 @@ def promote_sqd_energies(
     if sqd.sqd_energy is None:
         reasons["e_sqd"] = f"sqd_energy is null: {sqd.null_reasons.get('sqd_energy')}"
     return sqd.sqd_energy, e_casci, reasons
+
+
+def _difference(minuend: float | None, subtrahend: float | None) -> float | None:
+    if minuend is None or subtrahend is None:
+        return None
+    return minuend - subtrahend
 
 
 def _agrees(stored: float | None, expected: float | None) -> bool:

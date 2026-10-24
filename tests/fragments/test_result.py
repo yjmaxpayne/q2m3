@@ -47,6 +47,22 @@ def _subsystem(name: str, e_hf: float | None, e_mp2: float | None) -> SubsystemR
     )
 
 
+# A classical-only result has no CCSD(T) cost record.
+CLASSICAL_PROVENANCE_KEYS = (
+    "geometry_sha256",
+    "basis",
+    "cart",
+    "avas_labels",
+    "avas_threshold",
+    "cos_threshold",
+    "seed",
+    "scf_conv_tol",
+    "frozen_core",
+    "versions",
+    "threads",
+)
+
+
 def _result(**changes) -> FragmentInteractionResult:
     subsystems = {name: _subsystem(name, *values) for name, values in ENERGIES.items()}
     ab, a, b = (ENERGIES[name] for name in ("AB", "A", "B"))
@@ -71,7 +87,7 @@ def _result(**changes) -> FragmentInteractionResult:
         "references": (),
         "errors": ErrorDecomposition(),
         "correspondence": None,
-        "provenance": {},
+        "provenance": dict.fromkeys(CLASSICAL_PROVENANCE_KEYS, "recorded"),
         "null_reasons": reasons,
     }
     return FragmentInteractionResult(**(fields | changes))

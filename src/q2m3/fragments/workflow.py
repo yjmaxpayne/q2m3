@@ -6,6 +6,7 @@ import dataclasses
 from collections.abc import Mapping, Sequence
 from importlib.metadata import PackageNotFoundError, version
 from numbers import Real
+from os import PathLike
 from typing import Any
 
 from pyscf import lib
@@ -13,6 +14,8 @@ from pyscf import lib
 from q2m3._lazy import extra_available
 from q2m3.fragments.active_space import check_correspondence, select_active_spaces
 from q2m3.fragments.counterpoise import SCF_CONV_TOL, Subsystem, counterpoise
+from q2m3.fragments.errors import ReferenceImportError
+from q2m3.fragments.importers import import_references
 from q2m3.fragments.integrals import ActiveSpaceIntegrals, build_integrals
 from q2m3.fragments.molecule import Molecule
 from q2m3.fragments.references import CCSDTBudget, CCSDTStage, frozen_core_mp2, run_ccsd_t_stage
@@ -23,10 +26,13 @@ from q2m3.fragments.result import (
     ActiveSpaceRecord,
     CorrespondenceReport,
     ErrorDecomposition,
+    ExternalReference,
     FragmentInteractionResult,
     SubsystemResult,
+    decompose_errors,
     interaction_energy,
     promote_sqd_energies,
+    references_by_category,
 )
 from q2m3.fragments.sqd_stage import SQDJob, SQDStageOutcome, SubprocessSQDRunner
 from q2m3.sqd.config import LUCJConfig, ReferenceConfig
@@ -44,11 +50,14 @@ _SUBSYSTEM_REASONS = {
     "resources.qpe": "resource estimate not computed",
     "resources.sqd": "resource estimate not computed",
 }
-_RESULT_REASONS = {
-    "errors.algorithm": "delta_e.sqd or delta_e.casci is null",
-    "errors.active_space": "no same-basis full-space reference",
-    "errors.basis": "no same-basis full-space reference and no external reference",
-    "errors.model": "no external reference",
+_SAME_BASIS = "same-basis full-space reference"
+_EXTERNAL = "external reference"
+# The two energies each error term subtracts.
+_ERROR_INPUTS = {
+    "algorithm": ("delta_e.sqd", "delta_e.casci"),
+    "active_space": ("delta_e.casci", _SAME_BASIS),
+    "basis": (_SAME_BASIS, _EXTERNAL),
+    "model": ("delta_e.casci", _EXTERNAL),
 }
 
 
@@ -64,7 +73,7 @@ def run(
     avas_threshold: float,
     basis: str = "cc-pvdz",
     mode: str = "full",
-    references: Sequence[Any] | None = None,
+    references: Sequence[str | PathLike[str] | ExternalReference] | None = None,
     seed: int = 0,
     lucj: Any = None,
     reference: Any = None,
@@ -81,13 +90,18 @@ def run(
     integrals, runs SQD for all subsystems in one child interpreter, and estimates the QPE
     and SQD resources. A rejected CCSD(T) leaves ``e_ccsd_t`` null with the reason.
 
+    ``references`` holds reference files, read by ``import_references`` with the
+    fragment id and ``basis`` of this run, and ``ExternalReference`` records. They form
+    the active-space, basis and model error terms of a dimer result.
+
     Raises:
-        TypeError: ``avas_labels`` is not a sequence of strings, or ``avas_threshold``
-            is not a real number.
-        ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``, or an AVAS label
-            is malformed or matches no AO.
+        TypeError: ``avas_labels`` is not a sequence of strings, ``avas_threshold`` is
+            not a real number, or ``references`` is a single string or path.
+        ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``, an AVAS label is
+            malformed or matches no AO, or ``references`` is given for a single molecule.
         ImportError: ``mode="full"`` and the optional ``sqd`` backend is missing.
-        NotImplementedError: ``references`` is not ``None``.
+        ReferenceImportError: A reference file violates the import format, or two
+            references share a category.
         FragmentWorkflowError: The RHF or the CCSD of a subsystem does not converge, or
             label resolution, the ghost guard or the preflight rejects an active space.
         ActiveSpaceMismatchError: The monomer active spaces do not correspond to the
@@ -101,8 +115,8 @@ def run(
             "run(mode='full') requires the optional 'sqd' backend. "
             "Install it with: uv sync --extra sqd"
         )
-    if references is not None:
-        raise NotImplementedError("imported references are not supported yet")
+    fragment_id = molecule.name or molecule.geometry_sha256()
+    imported = _imported_references(references, molecule, fragment_id, basis)
 
     subsystems = counterpoise(molecule, basis=basis)
     spaces, correspondence = _active_spaces(subsystems, labels, threshold)
@@ -135,11 +149,9 @@ def run(
         f"delta_e.{layer}": _null_layer_reason(results, layer)
         for layer, value in delta_e.items()
         if value is None
-    } | _RESULT_REASONS
-    algorithm = None
-    if delta_e["sqd"] is not None and delta_e["casci"] is not None:
-        algorithm = delta_e["sqd"] - delta_e["casci"]
-        del null_reasons["errors.algorithm"]
+    }
+    errors, same_basis_source = decompose_errors(delta_e, imported)
+    null_reasons |= _error_reasons(errors, delta_e, same_basis_source, imported)
     threads: dict[str, Any] = {"classical_stage": lib.num_threads()}
     warnings: tuple[str, ...] = ()
     if outcome is not None:
@@ -157,17 +169,18 @@ def run(
         "frozen_core": {name: nfrozen for name, (_, nfrozen) in mp2.items()},
         "versions": {package: _installed_version(package) for package in VERSIONED_PACKAGES},
         "threads": threads,
+        "same_basis_reference_source": same_basis_source,
     }
     if ccsd_t is not None:
         provenance["ccsd_t_cost"] = ccsd_t.cost
     return FragmentInteractionResult(
-        fragment_id=molecule.name or molecule.geometry_sha256(),
+        fragment_id=fragment_id,
         mode=mode,
         basis=basis,
         subsystems=results,
         delta_e=delta_e,
-        references=(),
-        errors=ErrorDecomposition(algorithm=algorithm),
+        references=imported,
+        errors=errors,
         correspondence=correspondence,
         provenance=provenance,
         null_reasons=null_reasons,
@@ -183,6 +196,47 @@ def _checked_avas(labels: Any, threshold: Any) -> tuple[tuple[str, ...], float]:
     if isinstance(threshold, bool) or not isinstance(threshold, Real):
         raise TypeError(f"avas_threshold must be a real number, got {threshold!r}")
     return tuple(labels), float(threshold)
+
+
+def _imported_references(
+    references: Any, molecule: Molecule, fragment_id: str, basis: str
+) -> tuple[ExternalReference, ...]:
+    if references is None:
+        return ()
+    if isinstance(references, str | PathLike):
+        raise TypeError(f"references must be a sequence of paths or records, got {references!r}")
+    if molecule.fragments is None:
+        raise ValueError("references need a dimer; a single molecule has no interaction energy")
+    found: list[ExternalReference] = []
+    for item in references:
+        if isinstance(item, ExternalReference):
+            found.append(item)
+        else:
+            found.extend(import_references(item, fragment_id=fragment_id, basis=basis))
+    try:
+        references_by_category(found)
+    except ValueError as exc:
+        raise ReferenceImportError(str(exc)) from exc
+    return tuple(found)
+
+
+def _error_reasons(
+    errors: ErrorDecomposition,
+    delta_e: Mapping[str, float | None],
+    same_basis_source: str | None,
+    references: Sequence[ExternalReference],
+) -> dict[str, str]:
+    available = {
+        "delta_e.sqd": delta_e["sqd"] is not None,
+        "delta_e.casci": delta_e["casci"] is not None,
+        _SAME_BASIS: same_basis_source is not None,
+        _EXTERNAL: any(reference.category == "external" for reference in references),
+    }
+    return {
+        f"errors.{term}": "missing " + " and ".join(n for n in inputs if not available[n])
+        for term, inputs in _ERROR_INPUTS.items()
+        if getattr(errors, term) is None
+    }
 
 
 def _active_spaces(

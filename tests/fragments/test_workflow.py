@@ -14,11 +14,12 @@ import pytest
 from pyscf import gto, lib, mp, scf
 
 from q2m3.fragments import workflow
-from q2m3.fragments.errors import FragmentWorkflowError
+from q2m3.fragments.errors import FragmentWorkflowError, ReferenceImportError
 from q2m3.fragments.molecule import Molecule
 from q2m3.fragments.result import (
     ActiveSpaceRecord,
     CorrespondenceReport,
+    ExternalReference,
     FragmentInteractionResult,
     SubsystemResult,
 )
@@ -61,7 +62,7 @@ class RecordingRunner:
         raise AssertionError("classical-only mode must not run the SQD stage")
 
 
-def _classical_run(water_dimer, **kwargs):
+def _classical_run(water_dimer, run_kwargs=None, **kwargs):
     calls: list = []
 
     def make_runner():
@@ -73,7 +74,12 @@ def _classical_run(water_dimer, **kwargs):
     with pytest.MonkeyPatch.context() as patch, lib.with_omp_threads(CLASSICAL_THREADS):
         patch.setattr(workflow, "_make_runner", make_runner)
         result = workflow.run(
-            molecule, avas_labels=LABELS, avas_threshold=THRESHOLD, mode="classical_only", seed=7
+            molecule,
+            avas_labels=LABELS,
+            avas_threshold=THRESHOLD,
+            mode="classical_only",
+            seed=7,
+            **(run_kwargs or {}),
         )
     return molecule, result, calls
 
@@ -135,7 +141,9 @@ def test_provenance_records_the_classical_settings(classical):
         "frozen_core",
         "versions",
         "threads",
+        "same_basis_reference_source",
     }
+    assert provenance["same_basis_reference_source"] is None
     assert provenance["geometry_sha256"] == molecule.geometry_sha256()
     assert provenance["basis"] == result.basis == "cc-pvdz"
     assert provenance["cart"] is False
@@ -247,16 +255,92 @@ def test_unknown_mode_is_rejected(monkeypatch, water_dimer):
         workflow.run(_dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD, mode="fast")
 
 
-def test_imported_references_are_not_supported_yet(monkeypatch, water_dimer):
+EXTERNAL = ExternalReference(
+    fragment_id="water-dimer",
+    method="CCSD(T)",
+    basis="CBS",
+    delta_e=-0.0050,
+    category="external",
+)
+
+
+def test_single_molecule_rejects_references(monkeypatch, water_dimer):
     monkeypatch.setattr(workflow, "counterpoise", _no_scf)
-    with pytest.raises(NotImplementedError):
+    monomer = Molecule.from_xyz(_xyz(water_dimer[:3]))
+    with pytest.raises(ValueError, match="references"):
+        workflow.run(
+            monomer,
+            avas_labels=LABELS,
+            avas_threshold=THRESHOLD,
+            mode="classical_only",
+            references=(EXTERNAL,),
+        )
+
+
+def test_reference_files_are_imported_with_the_run_fragment_and_basis(monkeypatch, water_dimer):
+    calls = []
+
+    def recording_import(path, *, fragment_id, basis):
+        calls.append((path, fragment_id, basis))
+        return ()
+
+    monkeypatch.setattr(workflow, "import_references", recording_import)
+    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
+    molecule = Molecule.from_xyz(_xyz(water_dimer), fragments=DIMER_FRAGMENTS, name="dimer-x")
+    # References are read before any SCF; the SCF guard then stops the run.
+    with pytest.raises(AssertionError, match="SCF stage"):
+        workflow.run(
+            molecule,
+            avas_labels=LABELS,
+            avas_threshold=THRESHOLD,
+            basis="6-31g",
+            mode="classical_only",
+            references=("reference.csv",),
+        )
+    assert calls == [("reference.csv", "dimer-x", "6-31g")]
+
+
+def test_two_references_of_one_category_are_rejected_before_any_scf(monkeypatch, water_dimer):
+    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
+    second = ExternalReference(**(vars(EXTERNAL) | {"method": "S22B"}))
+    with pytest.raises(ReferenceImportError, match="external"):
         workflow.run(
             _dimer(water_dimer),
             avas_labels=LABELS,
             avas_threshold=THRESHOLD,
             mode="classical_only",
-            references=("reference.csv",),
+            references=(EXTERNAL, second),
         )
+
+
+def test_references_must_be_a_sequence_of_paths_or_records(monkeypatch, water_dimer):
+    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
+    with pytest.raises(TypeError, match="references"):
+        workflow.run(
+            _dimer(water_dimer),
+            avas_labels=LABELS,
+            avas_threshold=THRESHOLD,
+            mode="classical_only",
+            references="reference.csv",
+        )
+
+
+def test_imported_references_form_the_basis_error(water_dimer, tmp_path):
+    path = tmp_path / "references.csv"
+    path.write_text(
+        "fragment_id,method,basis,delta_e,unit\nwater-dimer,CCSD(T),cc-pVDZ,-0.0049,Ha\n"
+    )
+    _, result, _ = _classical_run(
+        water_dimer, run_kwargs={"references": (path, EXTERNAL)}, name="water-dimer"
+    )
+    same = ExternalReference("water-dimer", "CCSD(T)", "cc-pVDZ", -0.0049, "same_basis_full_space")
+    assert result.references == (same, EXTERNAL)
+    assert result.provenance["same_basis_reference_source"] == "imported"
+    assert result.errors.basis == -0.0049 - -0.0050
+    assert "errors.basis" not in result.null_reasons
+    # Classical-only mode has no CASCI layer, so the terms that need it stay null.
+    assert result.errors.active_space is None and result.errors.model is None
+    assert "delta_e.casci" in result.null_reasons["errors.model"]
 
 
 @pytest.mark.parametrize(

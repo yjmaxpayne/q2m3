@@ -13,6 +13,7 @@ pure Python and @qjit compiled code.
 # =============================================================================
 HARTREE_TO_KCAL_MOL = 627.5094
 KCAL_TO_HARTREE = 1.0 / HARTREE_TO_KCAL_MOL
+HARTREE_TO_KJ_MOL = HARTREE_TO_KCAL_MOL * 4.184  # thermochemical calorie
 ANGSTROM_TO_BOHR = 1.8897259886
 BOLTZMANN_CONSTANT = 3.1668114e-6  # Hartree/K
 COULOMB_CONSTANT = 332.0637  # kcal/mol * Angstrom / e^2

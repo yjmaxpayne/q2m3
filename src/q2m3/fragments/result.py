@@ -16,6 +16,9 @@ SCHEMA_VERSION = "fragments.result.v1"
 ENERGY_LAYERS = ("hf", "mp2", "casci", "sqd", "ccsd_t")
 ERROR_TERMS = ("algorithm", "active_space", "basis", "model")
 RESOURCE_KEYS = ("qpe", "sqd")
+QPE_ESTIMATOR = "pennylane.estimator.DoubleFactorization"
+SQD_ESTIMATOR = "q2m3.sqd.resources"
+RESOURCE_ESTIMATORS = {"qpe": QPE_ESTIMATOR, "sqd": SQD_ESTIMATOR}
 COUNTERPOISE_SUBSYSTEMS = ("AB", "A", "B")
 DELTA_E_TOLERANCE_HA = 1e-12
 
@@ -60,6 +63,20 @@ class CorrespondenceReport:
 
 
 @dataclass(frozen=True)
+class ResourceEstimate:
+    """One resource estimate of a subsystem and the estimator that produced it.
+
+    ``versions`` maps package names to installed versions, ``values`` holds the estimated
+    quantities, and ``scope`` states what the quantities describe.
+    """
+
+    estimator: str
+    versions: Mapping[str, str]
+    values: Mapping[str, Any]
+    scope: str
+
+
+@dataclass(frozen=True)
 class ErrorDecomposition:
     """Signed error terms of the interaction energy in Ha; ``None`` when not formed."""
 
@@ -74,7 +91,8 @@ class SubsystemResult:
     """Energies and records of one subsystem: ``AB``, ``A``, ``B``, or ``M`` (one molecule).
 
     Every ``None`` field has a ``null_reasons`` entry under its field name; a missing
-    resource estimate uses ``resources.<qpe|sqd>``.
+    resource estimate uses ``resources.<qpe|sqd>``. Each resource slot holds only an
+    estimate from that slot's estimator.
     """
 
     name: Literal["AB", "A", "B", "M"]
@@ -88,16 +106,31 @@ class SubsystemResult:
     e_sqd: float | None
     active_space: ActiveSpaceRecord | None
     sqd: SQDResult | None
-    resources: Mapping[str, Any]
+    resources: Mapping[str, ResourceEstimate | None]
     null_reasons: Mapping[str, str]
 
     def validate(self) -> SubsystemResult:
-        """Check that every null field has a reason.
+        """Check the null reasons and the resource slots.
 
         Raises:
-            ValueError: A null field has no ``null_reasons`` entry.
+            ValueError: A null field has no ``null_reasons`` entry; a resource key is not
+                ``qpe`` or ``sqd``; or a resource slot holds something other than an
+                estimate from that slot's estimator.
         """
-        _require_reasons(f"subsystem {self.name}", self._null_keys(), self.null_reasons)
+        owner = f"subsystem {self.name}"
+        _require_reasons(owner, self._null_keys(), self.null_reasons)
+        unknown = [key for key in self.resources if key not in RESOURCE_KEYS]
+        if unknown:
+            raise ValueError(f"{owner}: unknown resource keys: {', '.join(unknown)}")
+        for key, estimate in self.resources.items():
+            if estimate is None:
+                continue
+            estimator = estimate.estimator if isinstance(estimate, ResourceEstimate) else None
+            if estimator != RESOURCE_ESTIMATORS[key]:
+                raise ValueError(
+                    f"{owner}: resources[{key!r}] holds an estimate from {estimator!r}; "
+                    f"expected {RESOURCE_ESTIMATORS[key]!r}"
+                )
         return self
 
     def _null_keys(self) -> Iterator[str]:

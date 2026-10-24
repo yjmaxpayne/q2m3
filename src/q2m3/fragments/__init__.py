@@ -2,6 +2,7 @@
 
 from q2m3.fragments.errors import (
     ActiveSpaceMismatchError,
+    ExternalProgramError,
     FragmentWorkflowError,
     ReferenceImportError,
 )
@@ -13,6 +14,7 @@ from q2m3.fragments.workflow import run
 
 __all__ = [
     "ActiveSpaceMismatchError",
+    "ExternalProgramError",
     "FragmentInteractionResult",
     "FragmentWorkflowError",
     "Molecule",

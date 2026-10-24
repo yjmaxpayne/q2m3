@@ -11,3 +11,7 @@ class ActiveSpaceMismatchError(FragmentWorkflowError):
 
 class ReferenceImportError(ValueError):
     """An imported reference table violates the required format."""
+
+
+class ExternalProgramError(FragmentWorkflowError):
+    """An external quantum-chemistry program is not available or did not complete."""

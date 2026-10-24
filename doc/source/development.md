@@ -33,6 +33,15 @@ uv run pytest tests/ --cov=src/q2m3 --cov-report=term-missing
 Registered markers include `slow`, `solvation`, `catalyst`, `gpu`, `rdm`, and `sqd`.
 The standard CI path skips slow and GPU tests.
 
+Tests marked `external` need a separate Psi4 environment from conda-forge. They skip
+when `Q2M3_PSI4_PYTHON` is not set. Set it to the absolute path of the Python
+interpreter in that environment:
+
+```bash
+Q2M3_PSI4_PYTHON=/abs/path/to/psi4-env/bin/python \
+  uv run pytest tests/fragments -m external -n 0
+```
+
 ### Installed profiles
 
 Run these commands from the checkout root. Use a separate environment for each

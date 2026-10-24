@@ -15,6 +15,7 @@ PACKAGE_EXPORTS = {
     "FragmentWorkflowError": errors.FragmentWorkflowError,
     "ActiveSpaceMismatchError": errors.ActiveSpaceMismatchError,
     "ReferenceImportError": errors.ReferenceImportError,
+    "ExternalProgramError": errors.ExternalProgramError,
     "import_references": importers.import_references,
     "render_report": report.render_report,
 }

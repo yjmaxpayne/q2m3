@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 19:49+0800\n"
+"POT-Creation-Date: 2026-10-24 22:50+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -281,3 +281,7 @@ msgstr "单体活性空间与二聚体活性空间不对应。"
 #: of q2m3.fragments.errors.ReferenceImportError:1
 msgid "An imported reference table violates the required format."
 msgstr "导入的参考表不符合要求的格式。"
+
+#: of q2m3.fragments.errors.ExternalProgramError:1
+msgid "An external quantum-chemistry program is not available or did not complete."
+msgstr "外部量子化学程序不可用，或没有运行完成。"

@@ -2,13 +2,16 @@
 
 The parent sets the thread variables before this interpreter starts. The child solves
 the job files in index order and writes one result file per job. At the first failure it
-writes ``error.pkl`` and does not run the remaining jobs.
+writes ``error.pkl`` and does not run the remaining jobs. The child gets SIGTERM when the
+parent dies. Its handler kills the other processes of the stage and raises ``SystemExit``.
 """
 
 from __future__ import annotations
 
+import ctypes
 import os
 import pickle
+import signal
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -17,7 +20,7 @@ from typing import Any
 from pyscf import lib
 
 from q2m3.fragments.errors import FragmentWorkflowError
-from q2m3.fragments.sqd_stage import THREAD_VARIABLES
+from q2m3.fragments.sqd_stage import THREAD_VARIABLES, _exit_on_sigterm, _kill_marked
 from q2m3.sqd import build_ccsd_seed_from_integrals, run_sqd_from_integrals
 from q2m3.sqd.exceptions import ResourceLimitError
 from q2m3.sqd.result import SQDResult
@@ -25,6 +28,36 @@ from q2m3.sqd.transport import decode_result, encode_result
 
 # Upper memory limit of every SQD component, in decimal MB.
 COMPONENT_CAP_MB = 8192.0
+# prctl option: deliver a signal to this process when its parent thread exits.
+PR_SET_PDEATHSIG = 1
+
+
+def watch_parent() -> None:
+    """Get SIGTERM when the parent dies, and clean up the stage on SIGTERM.
+
+    The SIGTERM handler kills every other process with the stage marker, then raises
+    ``SystemExit``. The parent can die before the subscription. A parent pid other than
+    the one the parent recorded therefore ends the child at once.
+
+    Raises:
+        OSError: prctl refused the subscription.
+    """
+    owner, stage_id = os.getpid(), os.environ["Q2M3_SQD_STAGE_ID"]
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(PR_SET_PDEATHSIG, signal.SIGTERM, 0, 0, 0) != 0:
+        raise OSError(ctypes.get_errno(), "prctl(PR_SET_PDEATHSIG) failed")
+    if os.getppid() != int(os.environ["Q2M3_SQD_PARENT_PID"]):
+        sys.exit("SQD parent exited before the child started")
+
+    def terminate(signum: int, frame: object) -> None:
+        # The signal can arrive outside the SQD supervisor's finally block, for example
+        # just after it forks a worker. Forked workers inherit this handler, and only
+        # the child cleans up the stage.
+        if os.getpid() == owner:
+            _kill_marked(stage_id, exclude=owner)
+        _exit_on_sigterm(signum, frame)
+
+    signal.signal(signal.SIGTERM, terminate)
 
 
 def run_jobs(job_dir: Path, solve: Callable[[dict[str, Any]], SQDResult]) -> int:
@@ -100,4 +133,5 @@ def _error_bytes(exc: Exception) -> bytes:
 
 
 if __name__ == "__main__":
+    watch_parent()
     sys.exit(run_jobs(Path(sys.argv[1]), solve))

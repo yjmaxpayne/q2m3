@@ -57,7 +57,8 @@ source_suffix = {
 }
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# The sample report is a download and a literal include, not a page.
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "tutorials/water-dimer-report.md"]
 
 language = "en"
 locale_dirs = ["../locales"]

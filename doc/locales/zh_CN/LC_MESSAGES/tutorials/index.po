@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 19:49+0800\n"
+"POT-Creation-Date: 2026-10-24 20:56+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -28,30 +28,30 @@ msgid ""
 "examples before glycine, H3O+, or profiling scripts that require large amounts of memory."
 msgstr "教程涵盖小规模验证，以及较大的 SQD 和溶剂化工作流。先运行 H2 示例，再尝试甘氨酸、H3O+ 或需要大量内存的剖析脚本。"
 
-#: ../../source/tutorials/index.rst:20
+#: ../../source/tutorials/index.rst:21
 msgid "Optional Diagnostic Scripts"
 msgstr "可选诊断脚本"
 
-#: ../../source/tutorials/index.rst:22
+#: ../../source/tutorials/index.rst:23
 msgid "Run these diagnostics after the first-run tutorials:"
 msgstr "完成首次运行教程后，再运行这些诊断："
 
-#: ../../source/tutorials/index.rst:24
+#: ../../source/tutorials/index.rst:25
 msgid "``examples/qmmm/h3o_mc_solvation.py``: H3O+ ionic solvation, 16 GB+ RAM recommended."
 msgstr "``examples/qmmm/h3o_mc_solvation.py``：H3O+ 离子溶剂化，建议至少 16 GB 内存。"
 
-#: ../../source/tutorials/index.rst:25
+#: ../../source/tutorials/index.rst:26
 msgid ""
 "``examples/qpe/h3o_8bit_qpe_benchmark.py``: high-precision H3O+ benchmark with fallback options, "
 "30 GB+ RAM recommended."
 msgstr "``examples/qpe/h3o_8bit_qpe_benchmark.py``：具有后备选项的高精度 H3O+ 基准，建议至少 30 GB 内存。"
 
-#: ../../source/tutorials/index.rst:27
+#: ../../source/tutorials/index.rst:28
 msgid ""
 "``examples/performance/h3o_dynamic_trotter_oom_scan.py``: memory-guarded dynamic Trotter scaling "
 "scan."
 msgstr "``examples/performance/h3o_dynamic_trotter_oom_scan.py``：具有内存保护的动态 Trotter 规模扫描。"
 
-#: ../../source/tutorials/index.rst:29
+#: ../../source/tutorials/index.rst:30
 msgid "``examples/performance/qpe_memory_profile.py``: compilation memory profiler."
 msgstr "``examples/performance/qpe_memory_profile.py``：编译内存剖析。"

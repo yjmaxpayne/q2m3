@@ -1,0 +1,262 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-24 20:56+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/tutorials/fragment-report.md:1
+msgid "Read A Fragment Interaction Report"
+msgstr "阅读片段相互作用能报告"
+
+#: ../../source/tutorials/fragment-report.md:3
+msgid ""
+"This page is for experimental partners. You do not run q2m3 or write code. The computational side"
+" runs the workflow and sends you a Markdown report. The report is in Chinese. This page explains "
+"each section of one real report."
+msgstr "本页面向实验方合作者。你不需要运行 q2m3，也不需要写代码。计算方运行工作流，然后把一份 Markdown 报告发给你。报告用中文书写。本页逐节解读一份真实报告。"
+
+#: ../../source/tutorials/fragment-report.md:7
+msgid "The Example Report"
+msgstr "示例报告"
+
+#: ../../source/tutorials/fragment-report.md:9
+#, python-brace-format
+msgid ""
+"The example report comes from the water-dimer run in [Fragment Interaction Energy](fragment-"
+"interaction.md). That run uses the mode `full` and the cc-pVDZ basis. Download the report: "
+"{download}`water-dimer-report.md`."
+msgstr ""
+"示例报告来自[片段相互作用能](fragment-interaction.md)中的水二聚体运行。该运行使用 `full` 模式与 cc-pVDZ 基组。下载报告：{download"
+"}`water-dimer-report.md`。"
+
+#: ../../source/tutorials/fragment-report.md:18
+msgid "Title And Fixed Statement"
+msgstr "标题与固定说明"
+
+#: ../../source/tutorials/fragment-report.md:20
+msgid ""
+"Every report starts with the title `片段相互作用能报告` (fragment interaction energy report) and the fixed"
+" statement `q2m3 不对 Ks 做统计结论。`. The statement means that q2m3 draws no statistical conclusion "
+"about Ks. q2m3 has no code that computes a correlation coefficient or a p-value."
+msgstr ""
+"每份报告都以标题 `片段相互作用能报告` 和固定说明 `q2m3 不对 Ks 做统计结论。` 开头。这句说明的意思是：q2m3 不对 Ks 得出任何统计结论。q2m3 中没有计算相关系数或 p "
+"值的代码。"
+
+#: ../../source/tutorials/fragment-report.md:25
+msgid ""
+"One report covers all fragment results of one call. Each fragment has its own section. The "
+"section heading gives the fragment name, the mode, and the basis, for example `片段 water-dimer（模式 "
+"full，基组 cc-pvdz）`."
+msgstr "一份报告覆盖一次调用的全部片段结果。每个片段有自己的一节。节标题给出片段名、模式与基组，例如 `片段 water-dimer（模式 full，基组 cc-pvdz）`。"
+
+#: ../../source/tutorials/fragment-report.md:29
+msgid "Interaction Energy"
+msgstr "相互作用能"
+
+#: ../../source/tutorials/fragment-report.md:31
+msgid ""
+"The table `相互作用能 ΔE（counterpoise 校正）` has one row for each method layer. ΔE is E(AB) − E(A) − "
+"E(B). AB is the dimer, and A and B are the two fragments. The three energies use the dimer basis,"
+" which is the counterpoise correction. A negative ΔE means that the dimer has a lower energy than"
+" the two separate fragments."
+msgstr ""
+"表 `相互作用能 ΔE（counterpoise 校正）` 中每个方法层占一行。ΔE 等于 E(AB) − E(A) − E(B)。AB 是二聚体，A 与 B "
+"是两个片段。三个能量都用二聚体基组计算，这就是 counterpoise 校正。ΔE 为负，表示二聚体的能量低于两个分开的片段。"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Layer"
+msgstr "层"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Method"
+msgstr "方法"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "HF"
+msgstr "HF"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Hartree–Fock"
+msgstr "Hartree–Fock"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "MP2"
+msgstr "MP2"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Second-order Møller–Plesset perturbation theory with a frozen core"
+msgstr "冻结芯的二阶 Møller–Plesset 微扰理论"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "CASCI"
+msgstr "CASCI"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Exact diagonalization in the active space"
+msgstr "活性空间内的精确对角化"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "SQD"
+msgstr "SQD"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Sample-based quantum diagonalization in the same active space"
+msgstr "同一活性空间内的基于采样的量子对角化"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "CCSD(T)"
+msgstr "CCSD(T)"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Coupled cluster with a frozen core in the full orbital space"
+msgstr "全轨道空间内冻结芯的耦合簇方法"
+
+#: ../../source/tutorials/fragment-report.md:45
+msgid ""
+"Each energy has two columns: Ha with six decimals and kcal/mol with three decimals. A layer "
+"without a value shows `—`, and the column `空值原因` (reason for the empty value) gives the reason. "
+"The mode `classical_only` gives only the HF and MP2 layers."
+msgstr "每个能量占两列：Ha 保留 6 位小数，kcal/mol 保留 3 位小数。没有值的层显示 `—`，`空值原因` 列给出原因。`classical_only` 模式只给出 HF 与 MP2 两层。"
+
+#: ../../source/tutorials/fragment-report.md:50
+msgid "In the example report, the five layers are between −3.935 and −3.557 kcal/mol."
+msgstr "示例报告中，5 层的值在 −3.935 与 −3.557 kcal/mol 之间。"
+
+#: ../../source/tutorials/fragment-report.md:52
+msgid "Error Decomposition"
+msgstr "误差分解"
+
+#: ../../source/tutorials/fragment-report.md:54
+msgid ""
+"The table `误差分解` (error decomposition) has four rows. Each row gives the signed value and the "
+"absolute value, in Ha and in kcal/mol."
+msgstr "表 `误差分解` 有 4 行。每行给出有符号值与绝对值，单位为 Ha 与 kcal/mol。"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Row"
+msgstr "行"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Definition"
+msgstr "定义"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Example report"
+msgstr "示例报告"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "`算法误差` (algorithm error)"
+msgstr "`算法误差`"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "SQD − CASCI"
+msgstr "SQD − CASCI"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "0.016 kcal/mol"
+msgstr "0.016 kcal/mol"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "`活性空间误差` (active-space error)"
+msgstr "`活性空间误差`"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "CASCI − same-basis full-space reference"
+msgstr "CASCI − 同基组全空间参考"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "0.125 kcal/mol"
+msgstr "0.125 kcal/mol"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "`基组误差` (basis error)"
+msgstr "`基组误差`"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Same-basis full-space reference − external reference"
+msgstr "同基组全空间参考 − 外部参考"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Empty"
+msgstr "空"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "`模型误差` (model error)"
+msgstr "`模型误差`"
+
+#: ../../source/tutorials/fragment-report.md:14
+msgid "Active-space error + basis error"
+msgstr "活性空间误差 + 基组误差"
+
+#: ../../source/tutorials/fragment-report.md:64
+msgid ""
+"The line `同基组全空间参考来源：pyscf_ccsd_t` names the source of the same-basis full-space reference. In "
+"the example report, the source is the CCSD(T) layer of the same run. The basis error and the "
+"model error need an external reference, which the computational side imports. The example run had"
+" no external reference, so the two rows are empty with the reason `missing external reference`."
+msgstr ""
+"`同基组全空间参考来源：pyscf_ccsd_t` 这一行给出同基组全空间参考的来源。示例报告中，来源是同一次运行的 CCSD(T) "
+"层。基组误差与模型误差需要外部参考，外部参考由计算方导入。示例运行没有外部参考，所以这两行为空，原因是 `missing external reference`。"
+
+#: ../../source/tutorials/fragment-report.md:71
+msgid "Resource Estimates"
+msgstr "资源估计"
+
+#: ../../source/tutorials/fragment-report.md:73
+msgid "The last two tables of each fragment section are planning data, not energies."
+msgstr "每个片段一节的最后两张表是规划数据，不是能量。"
+
+#: ../../source/tutorials/fragment-report.md:75
+msgid ""
+"`双因子分解成本估计（QPE 资源）`: a double-factorization cost estimate of quantum phase estimation (QPE) for "
+"the active-space Hamiltonian of AB, A, and B. The columns are λ in Ha, logical qubits, and "
+"Toffoli gates. The table is an estimate, not the result of a QPE circuit."
+msgstr ""
+"`双因子分解成本估计（QPE 资源）`：对 AB、A、B 的活性空间哈密顿量做量子相位估计（QPE）的双因子分解成本估计。列为 λ（单位 Ha）、逻辑比特与 Toffoli "
+"门数。该表是估计值，不是 QPE 线路的运行结果。"
+
+#: ../../source/tutorials/fragment-report.md:79
+msgid ""
+"`SQD 工作量与内存预估`: the qubits (two for each active orbital), the full CI dimension of the active "
+"space, and the predicted peak memory (RSS, in decimal MB) of the two SQD stages, prepare and "
+"sample."
+msgstr "`SQD 工作量与内存预估`：量子比特数（每个活性轨道 2 个）、活性空间的全 CI 维数，以及 SQD 两个阶段（prepare 与 sample）的峰值内存（RSS，十进制 MB）预估。"
+
+#: ../../source/tutorials/fragment-report.md:83
+msgid "You can skip these two tables when you compare the energies with experiments."
+msgstr "把能量与实验对照时，可以跳过这两张表。"
+
+#: ../../source/tutorials/fragment-report.md:85
+msgid "Experimental Ks Values"
+msgstr "实验 Ks 值"
+
+#: ../../source/tutorials/fragment-report.md:87
+msgid ""
+"You can give the computational side a table of experimental labels and Ks values. The "
+"computational side passes the table to `render_report` as `ks_table`. The report then ends with "
+"the section `实验 Ks 值（只并列显示）` (experimental Ks values, listed side by side only). The section has "
+"this form:"
+msgstr ""
+"你可以把一张实验标签与 Ks 值的表交给计算方。计算方把这张表作为 `ks_table` 传给 `render_report`。报告末尾随后增加 `实验 Ks 值（只并列显示）` "
+"一节。该节的格式如下："
+
+#: ../../source/tutorials/fragment-report.md:100
+msgid ""
+"The rows keep the order in which the computational side passes them. q2m3 does not compute a "
+"correlation, a fit, or a p-value from these values. Any comparison between ΔE and Ks is your own "
+"analysis. The example report has no such section because its run had no Ks table."
+msgstr "各行的顺序与计算方传入的顺序相同。q2m3 不从这些值计算相关性、拟合或 p 值。ΔE 与 Ks 之间的任何对照都是你自己的分析。示例报告没有这一节，因为它的运行没有 Ks 表。"

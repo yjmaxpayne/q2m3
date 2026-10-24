@@ -1,4 +1,5 @@
-"""The calculator tutorial runs the water-dimer workflow in at most five lines of code."""
+"""The fragment tutorials: the calculator page runs the water-dimer workflow in at most
+five lines of code, and the report-reading page links the report of that run."""
 
 from __future__ import annotations
 
@@ -7,9 +8,14 @@ import doctest
 import re
 from pathlib import Path
 
-TUTORIAL = Path(__file__).resolve().parents[2] / "doc/source/tutorials/fragment-interaction.md"
+TUTORIALS = Path(__file__).resolve().parents[2] / "doc/source/tutorials"
+TUTORIAL = TUTORIALS / "fragment-interaction.md"
+READING_TUTORIAL = TUTORIALS / "fragment-report.md"
 MAX_CODE_LINES = 5
 _BLOCK = re.compile(r"^```\{(doctest|testsetup|testcleanup)\}[^\n]*\n(.*?)^```", re.M | re.S)
+_FILE_REFERENCE = re.compile(
+    r"\{download\}`(?:[^`<]*<)?([^`<>]+)>?`|^```\{literalinclude\}[ \t]+(\S+)", re.M
+)
 
 
 def _blocks(text: str, kind: str) -> list[str]:
@@ -55,3 +61,44 @@ def test_hidden_setup_runs_no_workflow_code():
     text = TUTORIAL.read_text()
     hidden = _blocks(text, "testsetup") + _blocks(text, "testcleanup")
     assert not any("q2m3" in block for block in hidden)
+
+
+def file_references(text: str) -> list[str]:
+    """Return the local files that a page links with ``{download}`` or shows with
+    ``{literalinclude}``, relative to the page."""
+    return [download or included for download, included in _FILE_REFERENCE.findall(text)]
+
+
+def _report_want() -> str:
+    """Return the expected report output of the calculator tutorial's doctest."""
+    examples = [
+        example
+        for block in _blocks(TUTORIAL.read_text(), "doctest")
+        for example in doctest.DocTestParser().get_examples(block)
+    ]
+    (report,) = [example for example in examples if "render_report(" in example.source]
+    return report.want
+
+
+def test_download_links_and_included_files_are_references():
+    text = (
+        "See {download}`report.md`.\n"
+        "Get {download}`the report <dir/r.md>`.\n"
+        "```{literalinclude} shown.md\n:language: markdown\n```\n"
+    )
+    assert file_references(text) == ["report.md", "dir/r.md", "shown.md"]
+
+
+def test_reading_tutorial_references_existing_files():
+    references = file_references(READING_TUTORIAL.read_text())
+    assert references
+    missing = [name for name in references if not (TUTORIALS / name).is_file()]
+    assert not missing, missing
+
+
+def test_reading_tutorial_shows_the_report_of_the_calculator_run():
+    # The calculator doctest checks a real run against this output in make docs-doctest.
+    want = _report_want()
+    for name in set(file_references(READING_TUTORIAL.read_text())):
+        report = (TUTORIALS / name).read_text()
+        assert doctest.OutputChecker().check_output(want, report, doctest.ELLIPSIS), name

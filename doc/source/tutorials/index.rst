@@ -13,6 +13,7 @@ that require large amounts of memory.
    h2-resource-estimation
    full-oneelectron-embedding
    fragment-interaction
+   fragment-report
    h2-mc-solvation
    three-mode-solvation
 

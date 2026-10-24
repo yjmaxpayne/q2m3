@@ -11,13 +11,14 @@ import math
 from pathlib import Path
 
 import pytest
-from pyscf import mcscf
+from pyscf import cc, mcscf
 
 from q2m3.constants import HARTREE_TO_KCAL_MOL
 from q2m3.fragments import workflow
 from q2m3.fragments.active_space import select_active_spaces
 from q2m3.fragments.counterpoise import counterpoise
 from q2m3.fragments.molecule import Molecule
+from q2m3.fragments.references import CCSDTBudget
 from q2m3.fragments.result import (
     QPE_ESTIMATOR,
     SQD_ESTIMATOR,
@@ -138,10 +139,32 @@ def test_algorithm_error_vanishes_when_sqd_samples_the_whole_space(child_path, m
     assert STAGE_WARNING in result.warnings
 
 
+def test_full_run_computes_the_frozen_core_ccsd_t_reference(s6):
+    subsystems = counterpoise(_dimer(), basis="cc-pvdz")
+    # One frozen 1s orbital per oxygen nucleus; ghost oxygens add none.
+    for name, frozen in {"AB": 2, "A": 1, "B": 1}.items():
+        solver = cc.CCSD(subsystems[name].scf, frozen=frozen)
+        solver.kernel()
+        expected = solver.e_tot + solver.ccsd_t()
+        assert abs(s6.subsystems[name].e_ccsd_t - expected) <= 1e-7
+        assert "e_ccsd_t" not in s6.subsystems[name].null_reasons
+    assert s6.delta_e["ccsd_t"] is not None
+    cost = s6.provenance["ccsd_t_cost"]
+    assert cost["ran"] and set(cost["measured"]) == {"AB", "A", "B"}
+    warned = any(w.startswith("CCSD(T) wall-time model is calibrated") for w in s6.warnings)
+    assert warned is (cost["threads"] != 8)
+
+
 def test_single_molecule_full_run_returns_its_subsystem_with_sqd(child_path):
     monomer = Molecule.from_xyz(_xyz(WATER_DIMER[:3]))
-    subsystem = workflow.run(monomer, avas_labels=("1 H 1s",), avas_threshold=0.2)
+    # A 1 MB budget rejects CCSD(T); the run still completes the SQD stage.
+    subsystem = workflow.run(
+        monomer, avas_labels=("1 H 1s",), avas_threshold=0.2, ccsd_t_budget=CCSDTBudget(rss_mb=1.0)
+    )
     assert subsystem.name == "M"
+    assert subsystem.e_ccsd_t is None
+    assert subsystem.null_reasons["e_ccsd_t"].startswith("predicted rss_mb ")
+    assert subsystem.null_reasons["e_ccsd_t"].endswith(" > budget 1.0")
     assert subsystem.e_sqd == subsystem.sqd.sqd_energy
     assert subsystem.e_casci == subsystem.sqd.baseline_energy
     assert set(subsystem.resources) == {"qpe", "sqd"}

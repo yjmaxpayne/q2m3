@@ -15,7 +15,7 @@ from q2m3.fragments.active_space import check_correspondence, select_active_spac
 from q2m3.fragments.counterpoise import SCF_CONV_TOL, Subsystem, counterpoise
 from q2m3.fragments.integrals import ActiveSpaceIntegrals, build_integrals
 from q2m3.fragments.molecule import Molecule
-from q2m3.fragments.references import frozen_core_mp2
+from q2m3.fragments.references import CCSDTBudget, CCSDTStage, frozen_core_mp2, run_ccsd_t_stage
 from q2m3.fragments.resources import qpe_estimate, sqd_estimate
 from q2m3.fragments.result import (
     COUNTERPOISE_SUBSYSTEMS,
@@ -76,8 +76,10 @@ def run(
     ``SubsystemResult`` of subsystem ``"M"``. Both modes select the AVAS active spaces
     and, for a dimer, check their correspondence before any correlated step. Both modes
     compute HF and frozen-core MP2. ``mode="classical_only"`` never builds the SQD stage
-    runner. ``mode="full"`` also builds the active-space integrals, runs SQD for all
-    subsystems in one child interpreter, and estimates the QPE and SQD resources.
+    runner. ``mode="full"`` also runs the frozen-core CCSD(T) reference when its predicted
+    cost fits ``ccsd_t_budget`` (default ``CCSDTBudget()``), builds the active-space
+    integrals, runs SQD for all subsystems in one child interpreter, and estimates the QPE
+    and SQD resources. A rejected CCSD(T) leaves ``e_ccsd_t`` null with the reason.
 
     Raises:
         TypeError: ``avas_labels`` is not a sequence of strings, or ``avas_threshold``
@@ -86,8 +88,8 @@ def run(
             is malformed or matches no AO.
         ImportError: ``mode="full"`` and the optional ``sqd`` backend is missing.
         NotImplementedError: ``references`` is not ``None``.
-        FragmentWorkflowError: The RHF of a subsystem does not converge, or label
-            resolution, the ghost guard or the preflight rejects an active space.
+        FragmentWorkflowError: The RHF or the CCSD of a subsystem does not converge, or
+            label resolution, the ghost guard or the preflight rejects an active space.
         ActiveSpaceMismatchError: The monomer active spaces do not correspond to the
             dimer active space.
     """
@@ -109,8 +111,10 @@ def run(
         name: _classical_result(sub, mp2[name][0], spaces[name][0])
         for name, sub in subsystems.items()
     }
-    outcome = None
+    outcome = ccsd_t = None
     if mode == "full":
+        nfrozen = {name: frozen for name, (_, frozen) in mp2.items()}
+        ccsd_t = run_ccsd_t_stage(subsystems, nfrozen, ccsd_t_budget or CCSDTBudget())
         integrals = {
             name: build_integrals(
                 molecule, sub, *spaces[name], avas_labels=labels, avas_threshold=threshold
@@ -120,7 +124,7 @@ def run(
         lucj = lucj or LUCJConfig()
         outcome = _run_sqd_stage(integrals, lucj, reference or ReferenceConfig(), seed)
         results = {
-            name: _full_result(results[name], integrals[name], sqd, basis, lucj)
+            name: _full_result(results[name], integrals[name], sqd, basis, lucj, ccsd_t)
             for name, sqd in zip(integrals, outcome.results, strict=True)
         }
     if molecule.fragments is None:
@@ -137,8 +141,10 @@ def run(
         algorithm = delta_e["sqd"] - delta_e["casci"]
         del null_reasons["errors.algorithm"]
     threads: dict[str, Any] = {"classical_stage": lib.num_threads()}
+    warnings: tuple[str, ...] = ()
     if outcome is not None:
         threads["sqd_stage"] = outcome.thread_records
+        warnings = (*outcome.warnings, *ccsd_t.warnings)
     provenance = {
         "geometry_sha256": molecule.geometry_sha256(),
         "basis": basis,
@@ -152,6 +158,8 @@ def run(
         "versions": {package: _installed_version(package) for package in VERSIONED_PACKAGES},
         "threads": threads,
     }
+    if ccsd_t is not None:
+        provenance["ccsd_t_cost"] = ccsd_t.cost
     return FragmentInteractionResult(
         fragment_id=molecule.name or molecule.geometry_sha256(),
         mode=mode,
@@ -163,7 +171,7 @@ def run(
         correspondence=correspondence,
         provenance=provenance,
         null_reasons=null_reasons,
-        warnings=() if outcome is None else outcome.warnings,
+        warnings=warnings,
     ).validate()
 
 
@@ -211,15 +219,19 @@ def _full_result(
     sqd: SQDResult,
     basis: str,
     lucj: LUCJConfig,
+    ccsd_t: CCSDTStage,
 ) -> SubsystemResult:
     e_sqd, e_casci, sqd_reasons = promote_sqd_energies(sqd)
     resources = {
         "qpe": qpe_estimate(integrals, basis=basis),
         "sqd": sqd_estimate(integrals, lucj=lucj),
     }
-    reasons = {"e_ccsd_t": _SUBSYSTEM_REASONS["e_ccsd_t"]} | sqd_reasons
+    reasons = dict(sqd_reasons)
+    if ccsd_t.reason is not None:
+        reasons["e_ccsd_t"] = ccsd_t.reason
     return dataclasses.replace(
         classical,
+        e_ccsd_t=ccsd_t.energies[classical.name],
         e_casci=e_casci,
         e_sqd=e_sqd,
         active_space=integrals.record,

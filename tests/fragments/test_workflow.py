@@ -220,12 +220,6 @@ def test_full_mode_without_the_sqd_extra_fails_before_any_scf(monkeypatch, water
         workflow.run(_dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD)
 
 
-def test_full_mode_with_the_sqd_extra_is_not_available_yet(monkeypatch, water_dimer):
-    monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
-    with pytest.raises(NotImplementedError):
-        workflow.run(_dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD)
-
-
 @pytest.mark.parametrize(
     ("labels", "threshold"),
     [(("2 H 1s",), 0.2), AVAS_SETTINGS["S1"]],

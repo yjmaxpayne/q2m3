@@ -92,7 +92,8 @@ class SubsystemResult:
 
     Every ``None`` field has a ``null_reasons`` entry under its field name; a missing
     resource estimate uses ``resources.<qpe|sqd>``. Each resource slot holds only an
-    estimate from that slot's estimator.
+    estimate from that slot's estimator. ``e_sqd`` and ``e_casci`` are derived from
+    ``sqd`` by :func:`promote_sqd_energies`.
     """
 
     name: Literal["AB", "A", "B", "M"]
@@ -110,15 +111,19 @@ class SubsystemResult:
     null_reasons: Mapping[str, str]
 
     def validate(self) -> SubsystemResult:
-        """Check the null reasons and the resource slots.
+        """Check the null reasons, the resource slots and the SQD record.
 
         Raises:
             ValueError: A null field has no ``null_reasons`` entry; a resource key is not
-                ``qpe`` or ``sqd``; or a resource slot holds something other than an
-                estimate from that slot's estimator.
+                ``qpe`` or ``sqd``; a resource slot holds something other than an
+                estimate from that slot's estimator; ``sqd`` is not exactly an
+                ``SQDResult`` or fails its own validation; the active space is not the
+                one of the SQD run; or ``e_sqd`` or ``e_casci`` differs from the value
+                derived from ``sqd``.
         """
         owner = f"subsystem {self.name}"
         _require_reasons(owner, self._null_keys(), self.null_reasons)
+        self._check_sqd(owner)
         unknown = [key for key in self.resources if key not in RESOURCE_KEYS]
         if unknown:
             raise ValueError(f"{owner}: unknown resource keys: {', '.join(unknown)}")
@@ -132,6 +137,29 @@ class SubsystemResult:
                     f"expected {RESOURCE_ESTIMATORS[key]!r}"
                 )
         return self
+
+    def _check_sqd(self, owner: str) -> None:
+        if self.sqd is not None:
+            if type(self.sqd) is not SQDResult:
+                raise ValueError(
+                    f"{owner}: sqd must be an SQDResult, got {type(self.sqd).__name__}"
+                )
+            self.sqd.validate()
+            expected = self.sqd.provenance["context"]["hamiltonian_id"]
+            actual = None if self.active_space is None else self.active_space.hamiltonian_id
+            if actual != expected:
+                raise ValueError(
+                    f"{owner}: active-space hamiltonian_id {actual!r} differs from the SQD "
+                    f"context hamiltonian_id {expected!r}"
+                )
+        e_sqd, e_casci, _ = promote_sqd_energies(self.sqd)
+        for field, expected_energy in (("e_sqd", e_sqd), ("e_casci", e_casci)):
+            stored = getattr(self, field)
+            if stored != expected_energy:
+                raise ValueError(
+                    f"{owner}: {field} = {stored!r} differs from {expected_energy!r}, "
+                    "the value derived from sqd"
+                )
 
     def _null_keys(self) -> Iterator[str]:
         nullable = ("e_hf", "e_mp2", "e_ccsd_t", "e_casci", "e_sqd", "active_space", "sqd")
@@ -166,35 +194,47 @@ class FragmentInteractionResult:
 
         Raises:
             ValueError: The subsystems are not ``AB``, ``A``, ``B``; a classical-only
-                result holds an SQD record; a stored interaction energy differs from the
-                recomputed one by more than ``DELTA_E_TOLERANCE_HA``; or a null field
-                has no reason.
+                result holds an SQD record, or a full result lacks one; a stored
+                interaction energy or algorithm error differs from the recomputed one by
+                more than ``DELTA_E_TOLERANCE_HA``; or a null field has no reason.
         """
         if set(self.subsystems) != set(COUNTERPOISE_SUBSYSTEMS):
             raise ValueError(f"subsystems must be AB, A, B; got {', '.join(self.subsystems)}")
+        self._check_sqd_records()
+        for subsystem in self.subsystems.values():
+            subsystem.validate()
+        expected = {layer: interaction_energy(self.subsystems, layer) for layer in ENERGY_LAYERS}
+        for layer, energy in expected.items():
+            stored = self.delta_e.get(layer)
+            if not _agrees(stored, energy):
+                raise ValueError(
+                    f"delta_e[{layer!r}] = {stored!r} does not match the subsystem "
+                    f"energies, which give {energy!r}"
+                )
+        algorithm = None
+        if expected["sqd"] is not None and expected["casci"] is not None:
+            algorithm = expected["sqd"] - expected["casci"]
+        if not _agrees(self.errors.algorithm, algorithm):
+            raise ValueError(
+                f"errors.algorithm = {self.errors.algorithm!r} does not match "
+                f"delta_e.sqd - delta_e.casci = {algorithm!r}"
+            )
+        _require_reasons("result", self._null_keys(), self.null_reasons)
+        return self
+
+    def _check_sqd_records(self) -> None:
         if self.mode == "classical_only":
             holding = [name for name, sub in self.subsystems.items() if sub.sqd is not None]
             if holding:
                 raise ValueError(
                     f"mode='classical_only' result holds an SQD record for {', '.join(holding)}"
                 )
-        for subsystem in self.subsystems.values():
-            subsystem.validate()
-        for layer in ENERGY_LAYERS:
-            expected = interaction_energy(self.subsystems, layer)
-            stored = self.delta_e.get(layer)
-            consistent = (stored is None and expected is None) or (
-                stored is not None
-                and expected is not None
-                and abs(stored - expected) <= DELTA_E_TOLERANCE_HA
-            )
-            if not consistent:
-                raise ValueError(
-                    f"delta_e[{layer!r}] = {stored!r} does not match the subsystem "
-                    f"energies, which give {expected!r}"
-                )
-        _require_reasons("result", self._null_keys(), self.null_reasons)
-        return self
+        if self.mode == "full":
+            missing = [
+                name for name in COUNTERPOISE_SUBSYSTEMS if self.subsystems[name].sqd is None
+            ]
+            if missing:
+                raise ValueError(f"mode='full' result has no SQD record for {', '.join(missing)}")
 
     def _null_keys(self) -> Iterator[str]:
         yield from (
@@ -212,6 +252,33 @@ def interaction_energy(subsystems: Mapping[str, SubsystemResult], layer: str) ->
         return None
     e_ab, e_a, e_b = energies
     return e_ab - e_a - e_b
+
+
+def promote_sqd_energies(
+    sqd: SQDResult | None,
+) -> tuple[float | None, float | None, dict[str, str]]:
+    """Return ``e_sqd``, ``e_casci`` and the null reasons of null ones, derived from ``sqd``.
+
+    ``e_casci`` is the baseline energy only for an exact-CASCI T0 baseline. With no SQD
+    record both energies are ``None`` and the caller gives the reasons.
+    """
+    if sqd is None:
+        return None, None, {}
+    reasons = {}
+    e_casci = None
+    if sqd.baseline_tier == "T0" and sqd.baseline_method == "exact_casci":
+        e_casci = sqd.baseline_energy
+    else:
+        reasons["e_casci"] = f"baseline_tier={sqd.baseline_tier}"
+    if sqd.sqd_energy is None:
+        reasons["e_sqd"] = f"sqd_energy is null: {sqd.null_reasons.get('sqd_energy')}"
+    return sqd.sqd_energy, e_casci, reasons
+
+
+def _agrees(stored: float | None, expected: float | None) -> bool:
+    if stored is None or expected is None:
+        return stored is None and expected is None
+    return abs(stored - expected) <= DELTA_E_TOLERANCE_HA
 
 
 def _require_reasons(owner: str, null_keys: Iterator[str], reasons: Mapping[str, str]) -> None:

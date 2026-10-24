@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Mapping, Sequence
 from importlib.metadata import PackageNotFoundError, version
 from numbers import Real
@@ -12,8 +13,10 @@ from pyscf import lib
 from q2m3._lazy import extra_available
 from q2m3.fragments.active_space import check_correspondence, select_active_spaces
 from q2m3.fragments.counterpoise import SCF_CONV_TOL, Subsystem, counterpoise
+from q2m3.fragments.integrals import ActiveSpaceIntegrals, build_integrals
 from q2m3.fragments.molecule import Molecule
 from q2m3.fragments.references import frozen_core_mp2
+from q2m3.fragments.resources import qpe_estimate, sqd_estimate
 from q2m3.fragments.result import (
     COUNTERPOISE_SUBSYSTEMS,
     ENERGY_LAYERS,
@@ -23,7 +26,11 @@ from q2m3.fragments.result import (
     FragmentInteractionResult,
     SubsystemResult,
     interaction_energy,
+    promote_sqd_energies,
 )
+from q2m3.fragments.sqd_stage import SQDJob, SQDStageOutcome, SubprocessSQDRunner
+from q2m3.sqd.config import LUCJConfig, ReferenceConfig
+from q2m3.sqd.result import SQDResult
 
 MODES = ("full", "classical_only")
 VERSIONED_PACKAGES = ("q2m3", "pyscf", "numpy", "ffsim", "qiskit-addon-sqd", "pennylane")
@@ -47,7 +54,7 @@ _RESULT_REASONS = {
 
 def _make_runner() -> Any:
     """Return the runner of the SQD stage."""
-    raise NotImplementedError("the SQD stage runner is not available yet")
+    return SubprocessSQDRunner()
 
 
 def run(
@@ -67,9 +74,10 @@ def run(
 
     A dimer gives a ``FragmentInteractionResult``. A single molecule gives the
     ``SubsystemResult`` of subsystem ``"M"``. Both modes select the AVAS active spaces
-    and, for a dimer, check their correspondence before any correlated step.
-    ``mode="classical_only"`` then computes HF and frozen-core MP2 and never builds the
-    SQD stage runner.
+    and, for a dimer, check their correspondence before any correlated step. Both modes
+    compute HF and frozen-core MP2. ``mode="classical_only"`` never builds the SQD stage
+    runner. ``mode="full"`` also builds the active-space integrals, runs SQD for all
+    subsystems in one child interpreter, and estimates the QPE and SQD resources.
 
     Raises:
         TypeError: ``avas_labels`` is not a sequence of strings, or ``avas_threshold``
@@ -77,8 +85,7 @@ def run(
         ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``, or an AVAS label
             is malformed or matches no AO.
         ImportError: ``mode="full"`` and the optional ``sqd`` backend is missing.
-        NotImplementedError: ``mode="full"`` with the ``sqd`` backend and valid active
-            spaces, or ``references`` is not ``None``.
+        NotImplementedError: ``references`` is not ``None``.
         FragmentWorkflowError: The RHF of a subsystem does not converge, or label
             resolution, the ghost guard or the preflight rejects an active space.
         ActiveSpaceMismatchError: The monomer active spaces do not correspond to the
@@ -96,14 +103,26 @@ def run(
         raise NotImplementedError("imported references are not supported yet")
 
     subsystems = counterpoise(molecule, basis=basis)
-    records, correspondence = _active_spaces(subsystems, labels, threshold)
-    if mode == "full":
-        raise NotImplementedError("mode='full' is not available yet. Use mode='classical_only'.")
+    spaces, correspondence = _active_spaces(subsystems, labels, threshold)
     mp2 = {name: frozen_core_mp2(sub) for name, sub in subsystems.items()}
     results = {
-        name: _classical_result(sub, mp2[name][0], records[name])
+        name: _classical_result(sub, mp2[name][0], spaces[name][0])
         for name, sub in subsystems.items()
     }
+    outcome = None
+    if mode == "full":
+        integrals = {
+            name: build_integrals(
+                molecule, sub, *spaces[name], avas_labels=labels, avas_threshold=threshold
+            )
+            for name, sub in subsystems.items()
+        }
+        lucj = lucj or LUCJConfig()
+        outcome = _run_sqd_stage(integrals, lucj, reference or ReferenceConfig(), seed)
+        results = {
+            name: _full_result(results[name], integrals[name], sqd, basis, lucj)
+            for name, sqd in zip(integrals, outcome.results, strict=True)
+        }
     if molecule.fragments is None:
         return results["M"].validate()
 
@@ -112,7 +131,14 @@ def run(
         f"delta_e.{layer}": _null_layer_reason(results, layer)
         for layer, value in delta_e.items()
         if value is None
-    }
+    } | _RESULT_REASONS
+    algorithm = None
+    if delta_e["sqd"] is not None and delta_e["casci"] is not None:
+        algorithm = delta_e["sqd"] - delta_e["casci"]
+        del null_reasons["errors.algorithm"]
+    threads: dict[str, Any] = {"classical_stage": lib.num_threads()}
+    if outcome is not None:
+        threads["sqd_stage"] = outcome.thread_records
     provenance = {
         "geometry_sha256": molecule.geometry_sha256(),
         "basis": basis,
@@ -124,7 +150,7 @@ def run(
         "scf_conv_tol": SCF_CONV_TOL,
         "frozen_core": {name: nfrozen for name, (_, nfrozen) in mp2.items()},
         "versions": {package: _installed_version(package) for package in VERSIONED_PACKAGES},
-        "threads": {"classical_stage": lib.num_threads()},
+        "threads": threads,
     }
     return FragmentInteractionResult(
         fragment_id=molecule.name or molecule.geometry_sha256(),
@@ -133,10 +159,11 @@ def run(
         subsystems=results,
         delta_e=delta_e,
         references=(),
-        errors=ErrorDecomposition(),
+        errors=ErrorDecomposition(algorithm=algorithm),
         correspondence=correspondence,
         provenance=provenance,
-        null_reasons=null_reasons | _RESULT_REASONS,
+        null_reasons=null_reasons,
+        warnings=() if outcome is None else outcome.warnings,
     ).validate()
 
 
@@ -152,13 +179,12 @@ def _checked_avas(labels: Any, threshold: Any) -> tuple[tuple[str, ...], float]:
 
 def _active_spaces(
     subsystems: Mapping[str, Subsystem], labels: tuple[str, ...], threshold: float
-) -> tuple[dict[str, ActiveSpaceRecord], CorrespondenceReport | None]:
+) -> tuple[dict[str, tuple[ActiveSpaceRecord, Any]], CorrespondenceReport | None]:
     spaces = select_active_spaces(subsystems, labels, threshold)
-    records = {name: record for name, (record, _mo) in spaces.items()}
     if "AB" not in spaces:
-        return records, None
+        return spaces, None
     overlap = subsystems["AB"].mol.intor("int1e_ovlp")
-    return records, check_correspondence(spaces["AB"], spaces["A"], spaces["B"], overlap)
+    return spaces, check_correspondence(spaces["AB"], spaces["A"], spaces["B"], overlap)
 
 
 def _classical_result(sub: Subsystem, e_mp2: float, record: ActiveSpaceRecord) -> SubsystemResult:
@@ -177,6 +203,43 @@ def _classical_result(sub: Subsystem, e_mp2: float, record: ActiveSpaceRecord) -
         resources={},
         null_reasons=dict(_SUBSYSTEM_REASONS),
     )
+
+
+def _full_result(
+    classical: SubsystemResult,
+    integrals: ActiveSpaceIntegrals,
+    sqd: SQDResult,
+    basis: str,
+    lucj: LUCJConfig,
+) -> SubsystemResult:
+    e_sqd, e_casci, sqd_reasons = promote_sqd_energies(sqd)
+    resources = {
+        "qpe": qpe_estimate(integrals, basis=basis),
+        "sqd": sqd_estimate(integrals, lucj=lucj),
+    }
+    reasons = {"e_ccsd_t": _SUBSYSTEM_REASONS["e_ccsd_t"]} | sqd_reasons
+    return dataclasses.replace(
+        classical,
+        e_casci=e_casci,
+        e_sqd=e_sqd,
+        active_space=integrals.record,
+        sqd=sqd,
+        resources=resources,
+        null_reasons=reasons,
+    )
+
+
+def _run_sqd_stage(
+    integrals: Mapping[str, ActiveSpaceIntegrals],
+    lucj: LUCJConfig,
+    reference: ReferenceConfig,
+    seed: int,
+) -> SQDStageOutcome:
+    jobs = [
+        SQDJob(i.h1, i.h2, i.e_core, i.record.ncas, i.nelec, i.context, lucj, reference, seed)
+        for i in integrals.values()
+    ]
+    return _make_runner().run(jobs)
 
 
 def _null_layer_reason(results: Mapping[str, SubsystemResult], layer: str) -> str:

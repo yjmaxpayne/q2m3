@@ -62,6 +62,7 @@ sequenceDiagram
 | `q2m3.core` | QPE, QM/MM orchestration, RDM, resource estimation, device selection | Owns quantum chemistry algorithms and public computational entry points |
 | `q2m3.interfaces` | PySCF/PennyLane conversion and density matrix bridge | Owns framework conversion and MM embedding data exchange |
 | `q2m3.sqd` | CCSD-seeded LUCJ sampling, subspace diagonalization, references, and resource guards | Owns immutable SQD contracts and same-frame provenance. Optional backends remain lazy |
+| `q2m3.fragments` | Counterpoise fragment interaction energies, active-space checks, classical references, SQD stage, error terms, and reports | Depends on `q2m3.sqd` and `q2m3.core`. Those packages do not depend on it. Runs SQD in a child process with single-thread pools |
 | `q2m3.solvation` | MC solvation orchestration, Catalyst QPE bundles, IR cache, analysis | Owns compile-once/reuse-many solvation workflows |
 | `q2m3.sampling` | Classical water geometry, MC moves, force-field helpers | Keeps MC proposal mechanics independent of quantum execution |
 | `q2m3.profiling` | Memory, timing, and Catalyst IR diagnostics | Measures performance without becoming part of the physical model |

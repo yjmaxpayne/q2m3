@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"POT-Creation-Date: 2026-10-24 21:30+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -95,6 +95,22 @@ msgid "Owns immutable SQD contracts and same-frame provenance. Optional backends
 msgstr "负责不可变 SQD 契约及同轨道框架的来源记录。可选后端仍按需加载"
 
 #: ../../source/architecture.md:40
+msgid "`q2m3.fragments`"
+msgstr "`q2m3.fragments`"
+
+#: ../../source/architecture.md:40
+msgid ""
+"Counterpoise fragment interaction energies, active-space checks, classical references, SQD stage,"
+" error terms, and reports"
+msgstr "counterpoise 校正的片段相互作用能、活性空间检查、经典参考计算、SQD 阶段、误差项及报告"
+
+#: ../../source/architecture.md:40
+msgid ""
+"Depends on `q2m3.sqd` and `q2m3.core`. Those packages do not depend on it. Runs SQD in a child "
+"process with single-thread pools"
+msgstr "依赖 `q2m3.sqd` 与 `q2m3.core`。这两个包不依赖本包。SQD 在子进程中运行，各线程池均为单线程"
+
+#: ../../source/architecture.md:40
 msgid "`q2m3.solvation`"
 msgstr "`q2m3.solvation`"
 
@@ -142,11 +158,11 @@ msgstr "文件 I/O 和绘图工具"
 msgid "Keeps low-level helper code out of the algorithm packages"
 msgstr "将底层辅助代码与算法软件包分开"
 
-#: ../../source/architecture.md:70
+#: ../../source/architecture.md:71
 msgid "Device Selection"
 msgstr "设备选择"
 
-#: ../../source/architecture.md:72
+#: ../../source/architecture.md:73
 msgid "Device selection uses two backend systems:"
 msgstr "设备选择使用两套后端系统："
 
@@ -186,7 +202,7 @@ msgstr "编译后的 `@qjit` 执行"
 msgid "JAX default backend and Catalyst availability"
 msgstr "JAX 默认后端及 Catalyst 可用性"
 
-#: ../../source/architecture.md:79
+#: ../../source/architecture.md:80
 msgid ""
 "`device_type=\"auto\"` selects the best available PennyLane device for standard execution. "
 "Catalyst execution still depends on the effective JAX/Catalyst backend. A Lightning GPU device "
@@ -195,11 +211,11 @@ msgstr ""
 "`device_type=\"auto\"` 为标准执行选择当前最合适的 PennyLane 设备。Catalyst 执行仍取决于实际的 JAX/Catalyst 后端。因此，仅有 "
 "Lightning GPU 设备名称不能证明编译后的执行使用 GPU。"
 
-#: ../../source/architecture.md:84
+#: ../../source/architecture.md:85
 msgid "Catalyst And IR Cache"
 msgstr "Catalyst 与 IR 缓存"
 
-#: ../../source/architecture.md:86
+#: ../../source/architecture.md:87
 msgid ""
 "The solvation package treats Catalyst as a compile-once/reuse-many tool. Catalyst compiles the "
 "QPE circuit topology once. The solvation package then supplies fixed or runtime Hamiltonian "
@@ -209,7 +225,7 @@ msgstr ""
 "溶剂化软件包将 Catalyst 用于编译一次、多次复用。Catalyst 编译一次 QPE 电路拓扑，溶剂化软件包随后在 MC 步骤中提供固定或运行时哈密顿量系数。当结构缓存键不变时，IR "
 "缓存可复用存储的 Catalyst LLVM IR。"
 
-#: ../../source/architecture.md:91
+#: ../../source/architecture.md:92
 msgid ""
 "The cache key records the molecule, basis, active space, QPE wire count, Trotter depth, and "
 "circuit style. Runtime solvent coordinates and the number of waters do not change the circuit "
@@ -220,18 +236,18 @@ msgstr ""
 "缓存键记录分子、基组、活性空间、QPE 线路数、Trotter 深度和电路形式。运行时溶剂坐标和水分子数不会以相同方式改变电路拓扑。`embedding_mode` 也属于缓存键，因为 "
 "`full_oneelectron` 固定分子轨道嵌入可能引入非对角单电子算符支撑，而对角系数更新中没有这些支撑。"
 
-#: ../../source/architecture.md:98
+#: ../../source/architecture.md:99
 msgid "SQD Execution Boundary"
 msgstr "SQD 执行边界"
 
-#: ../../source/architecture.md:100
+#: ../../source/architecture.md:101
 msgid ""
 "SQD is optional and does not use QPE or Catalyst. The geometry entry builds a vacuum RHF frame, "
 "active-space integrals, and a same-frame CCSD seed. It then executes the same integral-based "
 "solver that the lower-level entry point uses."
 msgstr "SQD 是可选路径，不使用 QPE 或 Catalyst。几何入口构建真空 RHF 轨道框架、活性空间积分及同框架的 CCSD 种子，然后执行与底层入口相同的积分求解器。"
 
-#: ../../source/architecture.md:125
+#: ../../source/architecture.md:126
 msgid ""
 "Both entries run under one wall deadline and a polled process-tree RSS cap. The geometry entry "
 "includes integral and seed assembly inside that supervised engine call. A caller that assembles "
@@ -243,7 +259,7 @@ msgstr ""
 "`run_sqd_from_integrals`，则必须单独监测该预处理。校准执行器支持 Linux x86_64、串行原生线程、平衡闭壳层空间，以及 "
 "`resource_calibration.json` 记录的精确依赖和配置边界。"
 
-#: ../../source/architecture.md:132
+#: ../../source/architecture.md:133
 msgid ""
 "The orbital frame and Hamiltonian have separate SHA256 identities. SQD accepts an integral run "
 "only when `IntegralContext`, `CCSDSeed`, tensor shapes, permutation symmetries, constants, "
@@ -253,111 +269,111 @@ msgstr ""
 "轨道框架和哈密顿量各有独立的 SHA256 标识。只有 `IntegralContext`、`CCSDSeed`、张量形状、置换对称性、常数、能量和残差相互一致时，SQD "
 "才接受积分运行。这些检查防止求解器静默复用其他轨道框架的振幅或能量。"
 
-#: ../../source/architecture.md:138
+#: ../../source/architecture.md:139
 msgid "Key Design Decisions"
 msgstr "主要设计决策"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Decision"
 msgstr "决策"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Reason"
 msgstr "原因"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Keep H2 as the first-run path"
 msgstr "以 H2 作为首次运行路径"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "It exercises real APIs without the compile memory of H3O+"
 msgstr "它测试实际 API，且不需要 H3O+ 的编译内存"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Mark H3O+ and 8-bit workflows as diagnostics"
 msgstr "将 H3O+ 和 8 位工作流标为诊断"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "They are useful but can exceed laptop memory limits"
 msgstr "它们有诊断价值，但可能超出笔记本内存限制"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Use active spaces explicitly"
 msgstr "显式使用活性空间"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Every energy result needs a clear electron/orbital/qubit context"
 msgstr "每项能量结果都需要明确的电子数、轨道数和量子比特数"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Keep energies in Hartree internally"
 msgstr "内部能量保持使用 Hartree"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Unit conversion is visible and avoids mixed-unit mistakes"
 msgstr "显式转换单位，避免混用单位"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Preserve classical fallback paths"
 msgstr "保留经典后备路径"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "They test QM/MM plumbing when quantum execution is unavailable"
 msgstr "量子执行不可用时，它们可测试 QM/MM 数据连接"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Separate sampling from quantum execution"
 msgstr "将采样与量子执行分开"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "MC proposal logic remains testable without Catalyst"
 msgstr "无须 Catalyst 也能测试 MC 提议逻辑"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Keep full-one-electron embedding fixed-only"
 msgstr "完整单电子嵌入仅用于固定哈密顿量"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid ""
 "Runtime coefficient updates are diagonal-only. Full active-space `Delta h_pq` changes operator "
 "support"
 msgstr "运行时仅更新对角系数。完整活性空间 `Delta h_pq` 会改变算符支撑"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Keep SQD optional and lazy"
 msgstr "SQD 保持可选并按需加载"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid ""
 "Core and configuration imports do not require ffsim or Qiskit. Workflow access gives an "
 "installation hint when the extra is absent"
 msgstr "导入核心和配置不要求 ffsim 或 Qiskit。缺少可选依赖时，访问工作流会提供安装提示"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Authenticate integral SQD inputs"
 msgstr "认证积分 SQD 输入"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid ""
 "Frame and Hamiltonian hashes keep CCSD seeds, integrals, core constants, and results on one "
 "auditable Hamiltonian"
 msgstr "轨道框架和哈密顿量哈希使 CCSD 种子、积分、核心常数和结果对应同一个可审计的哈密顿量"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid "Reject resource extrapolation"
 msgstr "拒绝资源外推"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.md:106
 msgid ""
 "A calibrated bound is safer than treating `allow_large` as permission to bypass unknown or hard "
 "limits"
 msgstr "使用校准边界，比将 `allow_large` 视为可绕过未知限制或硬限制的许可更安全"
 
-#: ../../source/architecture.md:153
+#: ../../source/architecture.md:154
 msgid "Extension Points"
 msgstr "扩展点"
 
-#: ../../source/architecture.md:155
+#: ../../source/architecture.md:156
 msgid ""
 "`q2m3.core.quantum_solver` defines a conservative solver abstraction for future algorithms such "
 "as VQE or QAOA. Current public workflows still route primarily through `QPEEngine` and "

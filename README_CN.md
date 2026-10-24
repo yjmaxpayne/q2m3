@@ -127,6 +127,7 @@ N₂ 结果差于 CCSD，也差于匹配子空间大小的 SCI。
 | 探索固定分子轨道嵌入 | [完整单电子嵌入示例](examples/qmmm/full_oneelectron_embedding.py) |
 | 运行蒙特卡洛溶剂化 | [H₂ MC 教程](https://yjmaxpayne.github.io/q2m3/zh_CN/tutorials/h2-mc-solvation.html) |
 | 完整运行采样对角化 | [从 H₂ 到甘氨酸的 SQD 教程](https://yjmaxpayne.github.io/q2m3/zh_CN/tutorials/sqd-showcase.html) |
+| 计算片段相互作用能 | [片段相互作用能教程](https://yjmaxpayne.github.io/q2m3/zh_CN/tutorials/fragment-interaction.html) |
 | 理解模型与 API | [中文文档站点](https://yjmaxpayne.github.io/q2m3/zh_CN/) |
 
 q2m3 使用 Hartree 计算能量，并在以 kcal/mol 报告前显式转换单位。

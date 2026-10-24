@@ -141,6 +141,7 @@ larger diagnostics.
 | Explore fixed-MO embedding | [Full one-electron example](examples/qmmm/full_oneelectron_embedding.py) |
 | Run Monte Carlo solvation | [H₂ MC tutorial](doc/source/tutorials/h2-mc-solvation.md) |
 | Run sampled diagonalization end to end | [SQD H₂-to-glycine tutorial](doc/source/tutorials/sqd-showcase.md) |
+| Compute fragment interaction energies | [Fragment interaction tutorial](doc/source/tutorials/fragment-interaction.md) |
 | Understand the model and API | [Documentation site](https://yjmaxpayne.github.io/q2m3/) |
 
 q2m3 computes energies in Hartree and converts them explicitly for kcal/mol

@@ -147,6 +147,7 @@ markers = [
     "catalyst: marks tests requiring Catalyst (skip if not installed)",
     "gpu: marks tests requiring lightning.gpu (skip if not available)",
     "rdm: marks tests related to 1-RDM measurement functionality",
+    "external: tests requiring an external Psi4 environment",
 ]
 
 [tool.coverage.run]

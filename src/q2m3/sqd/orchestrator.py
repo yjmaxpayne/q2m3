@@ -9,9 +9,7 @@ import platform
 import signal
 import threading
 import warnings
-from collections.abc import Mapping
-from dataclasses import fields, is_dataclass, replace
-from importlib import import_module
+from dataclasses import fields, replace
 from importlib.metadata import version
 from pathlib import Path
 from time import monotonic, sleep
@@ -39,42 +37,17 @@ from q2m3.sqd.reference import _rss_mb, _tree_pids, run_reference
 from q2m3.sqd.resources import guard_allocation, load_resource_model
 from q2m3.sqd.result import SQDResult
 from q2m3.sqd.sampling import FfsimSampler
+from q2m3.sqd.transport import decode_result, encode_result
 
 _transport_state = threading.local()
 
 
-def _wire(value):
-    """Transport immutable mappings without weakening the public snapshots."""
-    if is_dataclass(value) and not isinstance(value, type):
-        return (
-            "record",
-            type(value).__module__,
-            type(value).__name__,
-            {f.name: _wire(getattr(value, f.name)) for f in fields(value)},
-        )
-    if isinstance(value, Mapping):
-        return ("mapping", {k: _wire(v) for k, v in value.items()})
-    if isinstance(value, tuple):
-        return ("tuple", tuple(_wire(v) for v in value))
-    if isinstance(value, list):
-        return ("list", [_wire(v) for v in value])
-    return ("value", value)
+_wire = encode_result
 
 
 def _unwire(value):
-    cancelled = getattr(_transport_state, "cancelled", None)
-    if cancelled is not None and cancelled.is_set():
-        raise ReferenceTimeoutError("SQD result reconstruction cancelled")
-    kind, *parts = value
-    if kind == "record":
-        module, name, values = parts
-        return getattr(import_module(module), name)(**{k: _unwire(v) for k, v in values.items()})
-    if kind == "mapping":
-        return {k: _unwire(v) for k, v in parts[0].items()}
-    if kind in ("tuple", "list"):
-        values = [_unwire(v) for v in parts[0]]
-        return tuple(values) if kind == "tuple" else values
-    return parts[0]
+    # receive() looks this name up at call time; the cancellation tests replace it.
+    return decode_result(value, cancelled=getattr(_transport_state, "cancelled", None))
 
 
 def _worker(sender, function, args, kwargs):

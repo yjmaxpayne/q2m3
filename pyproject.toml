@@ -37,6 +37,12 @@ dependencies = [
 
 [project.optional-dependencies]
 sqd = ["ffsim>=0.0.83", "qiskit-addon-sqd>=0.12.1"]
+dmrg = [
+    "block2>=0.5.4",
+    # The block2 Linux x86_64 wheel requires MKL, but its sdist metadata does not list it.
+    "mkl<=2024.2.2; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "intel-openmp; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -148,6 +154,7 @@ markers = [
     "gpu: marks tests requiring lightning.gpu (skip if not available)",
     "rdm: marks tests related to 1-RDM measurement functionality",
     "external: tests requiring an external Psi4 environment",
+    "dmrg: tests requiring the optional block2 DMRG backend",
 ]
 
 [tool.coverage.run]

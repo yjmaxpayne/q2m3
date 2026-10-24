@@ -65,6 +65,18 @@ These lower-level producers create the provenance records required by
 
 .. autofunction:: q2m3.sqd.ansatz.build_ccsd_seed
 
+.. autofunction:: q2m3.sqd.ansatz.build_ccsd_seed_from_integrals
+
+Result Transport
+----------------
+
+These functions encode frozen SQD records as tagged tuples that pickle
+without custom reducers, and rebuild them in another process.
+
+.. autofunction:: q2m3.sqd.transport.encode_result
+
+.. autofunction:: q2m3.sqd.transport.decode_result
+
 Resource Policy
 ---------------
 

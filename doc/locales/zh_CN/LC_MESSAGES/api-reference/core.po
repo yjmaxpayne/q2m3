@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
+"POT-Creation-Date: 2026-10-24 19:49+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -692,9 +692,12 @@ msgstr "EFTQC 资源估计模块。"
 
 #: of q2m3.core.resource_estimation:3
 msgid ""
-"This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(). It returns structured "
-"dataclass results for resource estimates for an Early Fault-Tolerant Quantum Computer (EFTQC)."
-msgstr "此模块封装 PySCFPennyLaneConverter.estimate_qpe_resources()，以结构化数据类返回早期容错量子计算机（EFTQC）的资源估计结果。"
+"This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(), and also estimates resources "
+"directly from active-space integrals. It returns structured dataclass results for resource "
+"estimates for an Early Fault-Tolerant Quantum Computer (EFTQC)."
+msgstr ""
+"此模块封装 "
+"PySCFPennyLaneConverter.estimate_qpe_resources()，也直接从活性空间积分估计资源。它以结构化数据类返回早期容错量子计算机（EFTQC）的资源估计结果。"
 
 #: of q2m3.core.resource_estimation.EmbeddingDiagnostics:1
 msgid "Scalar diagnostics for an MM one-electron embedding resource row."
@@ -910,7 +913,8 @@ msgstr "活性空间电子数（可选）。"
 msgid "Active space orbitals (optional)."
 msgstr "活性空间轨道数（可选）。"
 
-#: of q2m3.core.resource_estimation.estimate_resources:12
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:10
+#: q2m3.core.resource_estimation.estimate_resources:12
 msgid "Target energy error in Hartree (default: 0.0016 = 1 kcal/mol)."
 msgstr "目标能量误差，单位为 Hartree（默认：0.0016 = 1 kcal/mol）。"
 
@@ -931,6 +935,40 @@ msgstr "资源结果的 MM 嵌入模式。默认保留原有的完整固定 MO �
 #: of q2m3.core.resource_estimation.estimate_resources:18
 msgid "EFTQCResources dataclass with all resource fields populated."
 msgstr "所有资源字段均已填充的 EFTQCResources 数据类。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:1
+msgid "Estimate EFTQC resources for the Hamiltonian of given active-space integrals."
+msgstr "估计给定活性空间积分对应哈密顿量的 EFTQC 资源。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:3
+msgid ""
+"The estimate is the double-factorization cost of the Hamiltonian, with the same "
+"DoubleFactorization settings as ``estimate_resources``. No circuit is run."
+msgstr "估计值是该哈密顿量的双因子分解成本，DoubleFactorization 的设置与 ``estimate_resources`` 相同。不运行任何电路。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:6
+msgid "Real symmetric one-electron integrals, shape ``(norb, norb)``."
+msgstr "实对称单电子积分，形状为 ``(norb, norb)``。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:7
+msgid "Real two-electron integrals in chemist notation ``(pq|rs)``, shape ``(norb, norb, norb, norb)``."
+msgstr "化学家记号 ``(pq|rs)`` 的实数双电子积分，形状为 ``(norb, norb, norb, norb)``。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:9
+msgid "Basis set label recorded in the result."
+msgstr "写入结果的基组名称。"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:12
+msgid "EFTQCResources for the vacuum active-space Hamiltonian."
+msgstr "真空活性空间哈密顿量的 EFTQCResources。"
+
+#: ../../source/api-reference/core.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.core.resource_estimation.estimate_qpe_resources_from_integrals:14
+msgid "The shapes do not match or the integrals violate the real chemist     permutation symmetry."
+msgstr "形状不匹配，或积分不满足实数化学家记号的置换对称性。"
 
 #: of q2m3.core.resource_estimation.compare_vacuum_solvated:1
 msgid "Compare EFTQC resource requirements between vacuum and solvated systems."
@@ -1036,10 +1074,6 @@ msgstr "可接受的总逻辑失败概率。"
 #: of q2m3.core.resource_estimation.surface_code_distance:13
 msgid "Code distance ``d`` (odd integer in [3, 99])."
 msgstr "码距 ``d`` （[3, 99] 内的奇数）。"
-
-#: ../../source/api-reference/core.rst
-msgid "Raises"
-msgstr "异常"
 
 #: of q2m3.core.resource_estimation.surface_code_distance:15
 msgid "If no distance below 101 meets the budget."
@@ -1419,3 +1453,10 @@ msgid ""
 "Some solvers (like QPE) support circuit pre-compilation for reuse across MC steps with the same "
 "Hamiltonian."
 msgstr "某些求解器（例如 QPE）支持电路预编译，以便在采用相同哈密顿量的不同 MC 步骤间复用。"
+
+#~ msgid ""
+#~ "This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(). It"
+#~ " returns structured dataclass results for resource "
+#~ "estimates for an Early Fault-Tolerant Quantum "
+#~ "Computer (EFTQC)."
+#~ msgstr "此模块封装 PySCFPennyLaneConverter.estimate_qpe_resources()，以结构化数据类返回早期容错量子计算机（EFTQC）的资源估计结果。"

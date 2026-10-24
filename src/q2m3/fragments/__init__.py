@@ -5,7 +5,9 @@ from q2m3.fragments.errors import (
     FragmentWorkflowError,
     ReferenceImportError,
 )
+from q2m3.fragments.importers import import_references
 from q2m3.fragments.molecule import Molecule
+from q2m3.fragments.report import render_report
 from q2m3.fragments.result import FragmentInteractionResult, SubsystemResult
 from q2m3.fragments.workflow import run
 
@@ -16,5 +18,7 @@ __all__ = [
     "Molecule",
     "ReferenceImportError",
     "SubsystemResult",
+    "import_references",
+    "render_report",
     "run",
 ]

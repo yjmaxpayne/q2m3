@@ -1,0 +1,257 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-24 19:49+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/tutorials/fragment-interaction.md:1
+msgid "Fragment Interaction Energy"
+msgstr "片段相互作用能"
+
+#: ../../source/tutorials/fragment-interaction.md:3
+msgid ""
+"This tutorial computes the counterpoise-corrected interaction energy of the S22 water dimer with "
+"one call to `run`. The call returns five energy layers (HF, MP2, CASCI, SQD, and CCSD(T)), an "
+"error decomposition, resource estimates, and the provenance of the run. `render_report` writes "
+"the result as a Markdown report."
+msgstr ""
+"本教程用一次 `run` 调用计算 S22 水二聚体的 counterpoise 校正相互作用能。该调用返回五个能量层（HF、MP2、CASCI、SQD 与 "
+"CCSD(T)）、误差分解、资源估计与本次运行的来源记录。`render_report` 把结果写成 Markdown 报告。"
+
+#: ../../source/tutorials/fragment-interaction.md:9
+msgid "Requirements"
+msgstr "运行要求"
+
+#: ../../source/tutorials/fragment-interaction.md:11
+msgid "The default mode is `mode=\"full\"`. It needs the optional SQD backend:"
+msgstr "默认模式为 `mode=\"full\"`。它需要可选的 SQD 后端："
+
+#: ../../source/tutorials/fragment-interaction.md:17
+msgid ""
+"The SQD stage runs only on Linux x86_64. On other platforms, use `mode=\"classical_only\"`. That "
+"mode needs only the core install. It returns the HF and MP2 layers and the active-space records, "
+"and it does not run SQD or CCSD(T)."
+msgstr ""
+"SQD 阶段只在 Linux x86_64 上运行。在其他平台上，使用 `mode=\"classical_only\"`。该模式只需要核心安装。它返回 HF 与 MP2 "
+"两层和活性空间记录，不运行 SQD 与 CCSD(T)。"
+
+#: ../../source/tutorials/fragment-interaction.md:22
+msgid "Prepare The Geometry"
+msgstr "准备几何"
+
+#: ../../source/tutorials/fragment-interaction.md:24
+msgid ""
+"Save the geometry as `water-dimer.xyz`. Coordinates are in Angstrom. Atoms 0-2 are fragment A and"
+" atoms 3-5 are fragment B."
+msgstr "把几何保存为 `water-dimer.xyz`。坐标以埃为单位。原子 0-2 是片段 A，原子 3-5 是片段 B。"
+
+#: ../../source/tutorials/fragment-interaction.md:31
+msgid "Run The Workflow"
+msgstr "运行工作流"
+
+#: ../../source/tutorials/fragment-interaction.md:63
+msgid ""
+"The run takes less than one minute on a workstation. The report is in Chinese and has these "
+"sections:"
+msgstr "在工作站上，一次运行不到 1 分钟。报告为中文，含下列各节："
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Section"
+msgstr "节"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Content"
+msgstr "内容"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Interaction energy"
+msgstr "相互作用能"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "ΔE of each layer in Ha and kcal/mol. An empty cell gives its reason."
+msgstr "各层的 ΔE，单位为 Ha 与 kcal/mol。空单元格给出空值原因。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Error decomposition"
+msgstr "误差分解"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid ""
+"Algorithm error (SQD − CASCI), active-space error (CASCI − same-basis full-space reference), "
+"basis error, and model error."
+msgstr "算法误差（SQD − CASCI）、活性空间误差（CASCI − 同基组全空间参考）、基组误差与模型误差。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "QPE resources"
+msgstr "QPE 资源"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Double-factorization cost estimate (λ, logical qubits, Toffoli gates) for AB, A, and B."
+msgstr "AB、A、B 的双因子分解成本估计（λ、逻辑比特、Toffoli 门数）。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "SQD workload"
+msgstr "SQD 工作量"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Qubits, full CI dimension, and predicted RSS of the two SQD stages."
+msgstr "量子比特数、全 CI 维数与两个 SQD 阶段的 RSS 预估。"
+
+#: ../../source/tutorials/fragment-interaction.md:73
+msgid ""
+"When CCSD(T) runs, its layer is the same-basis full-space reference. The basis and model errors "
+"need an external reference. Give one with `run(..., references=[\"refs.csv\"])`. The CSV columns "
+"are `fragment_id`, `method`, `basis`, `delta_e`, and `unit` (`Ha`, `kcal/mol`, or `kJ/mol`). "
+"Without an external reference, the two errors are empty and the report gives the reason."
+msgstr ""
+"CCSD(T) 运行时，它的层就是同基组全空间参考。基组误差与模型误差需要外部参考。用 `run(..., references=[\"refs.csv\"])` 传入外部参考。CSV 的列为 "
+"`fragment_id`、`method`、`basis`、`delta_e` 与 `unit`（`Ha`、`kcal/mol` 或 "
+"`kJ/mol`）。没有外部参考时，这两项误差为空，报告给出原因。"
+
+#: ../../source/tutorials/fragment-interaction.md:80
+msgid "Compare With A Hand-Written Route"
+msgstr "与手写流程对照"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Step"
+msgstr "步骤"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Hand-written PySCF route"
+msgstr "手写 PySCF 流程"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "q2m3"
+msgstr "q2m3"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Counterpoise SCF"
+msgstr "Counterpoise SCF"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid ""
+"Build AB, A, and B molecules. Mark the partner atoms as `ghost-` atoms. Run three RHF "
+"calculations."
+msgstr "构造 AB、A、B 三个分子。把对方片段的原子标为 `ghost-` 原子。运行三次 RHF 计算。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "`run`"
+msgstr "`run`"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "MP2"
+msgstr "MP2"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Count the frozen core orbitals without the ghost atoms. Run three MP2 calculations."
+msgstr "不计鬼原子，统计冻结芯轨道数。运行三次 MP2 计算。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Active space"
+msgstr "活性空间"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid ""
+"Run AVAS on each subsystem. Remove the ghost-atom AO labels. Check that the monomer spaces "
+"correspond to the dimer space."
+msgstr "对每个子体系运行 AVAS。去掉鬼原子的 AO 标签。检查单体空间与二聚体空间是否对应。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "`avas_labels`, `avas_threshold`"
+msgstr "`avas_labels`、`avas_threshold`"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "SQD"
+msgstr "SQD"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid ""
+"Build the active-space integrals and their provenance. Run SQD for AB, A, and B with single-"
+"threaded math libraries."
+msgstr "构造活性空间积分及其来源记录。在单线程数学库下对 AB、A、B 运行 SQD。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "CCSD(T) reference"
+msgstr "CCSD(T) 参考"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Estimate the memory and wall time. Run frozen-core CCSD(T) when the estimate fits the budget."
+msgstr "预估内存与墙钟时间。预估在预算内时，运行冻结芯 CCSD(T)。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Resources"
+msgstr "资源"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Run the double-factorization estimate on each set of active-space integrals."
+msgstr "对每组活性空间积分运行双因子分解估计。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Report"
+msgstr "报告"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "Convert the units and write the tables."
+msgstr "换算单位并写出表格。"
+
+#: ../../source/tutorials/fragment-interaction.md:45
+msgid "`render_report`"
+msgstr "`render_report`"
+
+#: ../../source/tutorials/fragment-interaction.md:92
+msgid "Choose The Active Space"
+msgstr "选择活性空间"
+
+#: ../../source/tutorials/fragment-interaction.md:94
+msgid ""
+"`avas_labels` and `avas_threshold` have no default values. A label is `\"<Elem> <shell>\"` for "
+"every atom of an element, or `\"<i> <Elem> <shell>\"` for atom `i` (0-based) of the full "
+"geometry. The same labels apply to the dimer and to both monomers."
+msgstr ""
+"`avas_labels` 与 `avas_threshold` 没有默认值。标签 `\"<Elem> <shell>\"` 表示某元素的全部原子，`\"<i> <Elem> "
+"<shell>\"` 表示完整几何中的原子 `i`（从 0 计）。二聚体与两个单体使用同一组标签。"
+
+#: ../../source/tutorials/fragment-interaction.md:99
+msgid ""
+"The active space of each subsystem can have at most 10 orbitals. The PySCF default threshold 0.2 "
+"selects (16e,12o) for the water dimer, so `run` rejects it. The threshold 0.7 selects (12e,8o) "
+"for the dimer and (6e,4o) for each monomer."
+msgstr ""
+"每个子体系的活性空间至多有 10 个轨道。PySCF 的默认阈值 0.2 为水二聚体选出 (16e,12o)，所以 `run` 拒绝它。阈值 0.7 为二聚体选出 "
+"(12e,8o)，为每个单体选出 (6e,4o)。"
+
+#: ../../source/tutorials/fragment-interaction.md:104
+msgid ""
+"`run` raises `ActiveSpaceMismatchError` when the monomer active spaces do not correspond to the "
+"dimer active space. It raises `FragmentWorkflowError` when an active space has no active virtual "
+"orbital or more than 10 orbitals."
+msgstr ""
+"单体活性空间与二聚体活性空间不对应时，`run` 抛出 `ActiveSpaceMismatchError`。活性空间没有活性虚轨道或超过 10 个轨道时，`run` 抛出 "
+"`FragmentWorkflowError`。"
+
+#: ../../source/tutorials/fragment-interaction.md:108
+msgid "Reproduce A Result"
+msgstr "复现结果"
+
+#: ../../source/tutorials/fragment-interaction.md:110
+msgid ""
+"`result.provenance` records the geometry hash, basis, AVAS labels and threshold, seed, package "
+"versions, and thread settings. To reproduce a result, run the same geometry again with these "
+"values. The deterministic layers and the SQD energies with the same seed agree to 1e-10 Ha."
+msgstr ""
+"`result.provenance` 记录几何哈希、基组、AVAS 标签与阈值、种子、软件包版本与线程设置。要复现结果，用这些值对同一几何再次运行。确定性层与同种子的 SQD 能量在 "
+"1e-10 Ha 内一致。"

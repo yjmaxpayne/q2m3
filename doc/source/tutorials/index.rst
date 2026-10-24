@@ -12,6 +12,7 @@ that require large amounts of memory.
    h2-qpe-validation
    h2-resource-estimation
    full-oneelectron-embedding
+   fragment-interaction
    h2-mc-solvation
    three-mode-solvation
 

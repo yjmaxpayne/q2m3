@@ -5,7 +5,7 @@ from __future__ import annotations
 import q2m3
 import q2m3.fragments as fragments
 from q2m3 import _lazy
-from q2m3.fragments import errors, molecule, result, workflow
+from q2m3.fragments import errors, importers, molecule, report, result, workflow
 
 PACKAGE_EXPORTS = {
     "Molecule": molecule.Molecule,
@@ -15,6 +15,8 @@ PACKAGE_EXPORTS = {
     "FragmentWorkflowError": errors.FragmentWorkflowError,
     "ActiveSpaceMismatchError": errors.ActiveSpaceMismatchError,
     "ReferenceImportError": errors.ReferenceImportError,
+    "import_references": importers.import_references,
+    "render_report": report.render_report,
 }
 
 
@@ -35,3 +37,7 @@ def test_fragments_package_exports_the_workflow_names():
     assert set(fragments.__all__) == set(PACKAGE_EXPORTS)
     for name, value in PACKAGE_EXPORTS.items():
         assert getattr(fragments, name) is value
+
+
+def test_reference_import_and_report_are_public_names():
+    assert {"import_references", "render_report"} <= set(fragments.__all__)

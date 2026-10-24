@@ -11,6 +11,7 @@ package-level exports. Use the module pages for specific entry points.
    core
    interfaces
    sqd
+   fragments
    solvation
    sampling
    profiling
@@ -33,6 +34,8 @@ Package Groups
    * - :doc:`sqd`
      - Sample-based diagonalization workflows, contracts, integral assembly,
        and resource policy.
+   * - :doc:`fragments`
+     - Fragment interaction energies, result contracts, reference import, and report.
    * - :doc:`solvation`
      - MC solvation workflow, Catalyst circuit bundles, IR cache, and analysis.
    * - :doc:`sampling`

@@ -1,0 +1,283 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-24 19:49+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/fragments.rst:2
+msgid "Fragment Interaction API"
+msgstr "片段相互作用 API"
+
+#: ../../source/api-reference/fragments.rst:4
+msgid ""
+"The fragment API computes counterpoise-corrected interaction energies of two-fragment dimers. "
+"``run`` and ``Molecule`` are also top-level exports of ``q2m3``. ``mode=\"classical_only\"`` "
+"needs only the core install. ``mode=\"full\"`` needs the ``sqd`` extra and Linux x86_64. See "
+":doc:`../tutorials/fragment-interaction` for a complete run."
+msgstr ""
+"片段 API 计算双片段二聚体的 counterpoise 校正相互作用能。``run`` 与 ``Molecule`` 也是 ``q2m3`` "
+"的顶层导出。``mode=\"classical_only\"`` 只需要核心安装。``mode=\"full\"`` 需要 ``sqd`` extra 与 Linux x86_64。完整运行见"
+" :doc:`../tutorials/fragment-interaction`。"
+
+#: ../../source/api-reference/fragments.rst:11
+msgid "Workflow"
+msgstr "工作流"
+
+#: of q2m3.fragments.workflow.run:1
+msgid "Compute counterpoise-corrected interaction energies of ``molecule``."
+msgstr "计算 ``molecule`` 的 counterpoise 校正相互作用能。"
+
+#: of q2m3.fragments.workflow.run:3
+msgid ""
+"A dimer gives a ``FragmentInteractionResult``. A single molecule gives the ``SubsystemResult`` of"
+" subsystem ``\"M\"``. Both modes select the AVAS active spaces and, for a dimer, check their "
+"correspondence before any correlated step. Both modes compute HF and frozen-core MP2. "
+"``mode=\"classical_only\"`` never builds the SQD stage runner. ``mode=\"full\"`` also runs the "
+"frozen-core CCSD(T) reference when its predicted cost fits ``ccsd_t_budget`` (default "
+"``CCSDTBudget()``), builds the active-space integrals, runs SQD for all subsystems in one child "
+"interpreter, and estimates the QPE and SQD resources. A rejected CCSD(T) leaves ``e_ccsd_t`` null"
+" with the reason."
+msgstr ""
+"二聚体返回 ``FragmentInteractionResult``。单分子返回子体系 ``\"M\"`` 的 ``SubsystemResult``。两种模式都选择 AVAS "
+"活性空间。对二聚体，两种模式都在任何关联计算之前检查活性空间的对应关系。两种模式都计算 HF 与冻结芯 MP2。``mode=\"classical_only\"`` 从不构造 SQD 阶段的 "
+"runner。``mode=\"full\"`` 还执行下列步骤：预估成本在 ``ccsd_t_budget``\\ （默认 ``CCSDTBudget()``）内时运行冻结芯 CCSD(T) "
+"参考；构造活性空间积分；在一个子解释器中对全部子体系运行 SQD；估计 QPE 与 SQD 资源。CCSD(T) 被拒绝时，``e_ccsd_t`` 为空，并写明原因。"
+
+#: of q2m3.fragments.workflow.run:12
+msgid ""
+"``references`` holds reference files, read by ``import_references`` with the fragment id and "
+"``basis`` of this run, and ``ExternalReference`` records. They form the active-space, basis and "
+"model error terms of a dimer result."
+msgstr ""
+"``references`` 含参考文件与 ``ExternalReference`` 记录。参考文件由 ``import_references`` 按本次运行的片段标识与 ``basis`` "
+"读取。它们构成二聚体结果的活性空间误差、基组误差与模型误差。"
+
+#: ../../source/api-reference/fragments.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.fragments.workflow.run:16
+msgid ""
+"``avas_labels`` is not a sequence of strings, ``avas_threshold`` is     not a real number, or "
+"``references`` is a single string or path."
+msgstr "``avas_labels`` 不是字符串序列，``avas_threshold`` 不是实数，或 ``references`` 是单个字符串或路径。"
+
+#: of q2m3.fragments.workflow.run:17
+msgid ""
+"``mode`` is not ``\"full\"`` or ``\"classical_only\"``, an AVAS label is     malformed or matches"
+" no AO, or ``references`` is given for a single molecule."
+msgstr "``mode`` 不是 ``\"full\"`` 或 ``\"classical_only\"``，某个 AVAS 标签格式错误或不匹配任何 AO，或对单分子传入了 ``references``。"
+
+#: of q2m3.fragments.workflow.run:18
+msgid "``mode=\"full\"`` and the optional ``sqd`` backend is missing."
+msgstr "``mode=\"full\"`` 且缺少可选的 ``sqd`` 后端。"
+
+#: of q2m3.fragments.workflow.run:19
+msgid "A reference file violates the import format, or two     references share a category."
+msgstr "参考文件不符合导入格式，或两条参考属于同一类别。"
+
+#: of q2m3.fragments.workflow.run:20
+msgid ""
+"The RHF or the CCSD of a subsystem does not converge, or     label resolution, the ghost guard or"
+" the preflight rejects an active space."
+msgstr "某个子体系的 RHF 或 CCSD 不收敛，或标签解析、鬼原子守卫或预检拒绝了某个活性空间。"
+
+#: of q2m3.fragments.workflow.run:21
+msgid "The monomer active spaces do not correspond to the     dimer active space."
+msgstr "单体活性空间与二聚体活性空间不对应。"
+
+#: ../../source/api-reference/fragments.rst of q2m3.fragments.result.ExternalReference
+msgid "Parameters"
+msgstr "参数"
+
+#: ../../source/api-reference/fragments.rst of q2m3.fragments.molecule.Molecule.geometry_sha256
+msgid "Return type"
+msgstr "返回类型"
+
+#: of q2m3.fragments.molecule.Molecule:1
+msgid "Geometry in Angstrom, with an optional split into two fragments."
+msgstr "以埃为单位的几何，可选地划分为两个片段。"
+
+#: of q2m3.fragments.molecule.Molecule:3
+msgid ""
+"``charges`` and ``multiplicities`` hold one entry per fragment, or one entry for a single "
+"molecule (``fragments is None``)."
+msgstr "``charges`` 与 ``multiplicities`` 每个片段一项；单分子（``fragments is None``）时只有一项。"
+
+#: of q2m3.fragments.molecule.Molecule.from_xyz:1
+msgid "Build a molecule from an XYZ file path or XYZ text in Angstrom."
+msgstr "从 XYZ 文件路径或以埃为单位的 XYZ 文本构造分子。"
+
+#: of q2m3.fragments.molecule.Molecule.from_xyz:3
+msgid "A string that contains no newline is read as a file path."
+msgstr "不含换行符的字符串按文件路径读取。"
+
+#: of q2m3.fragments.molecule.Molecule.from_xyz:5
+msgid ""
+"The XYZ text is malformed, an element is unknown, the fragments     are not exactly two non-empty"
+" sets that partition the atoms, the number     of charges or multiplicities does not match the "
+"fragments, or a     multiplicity is not 1."
+msgstr "XYZ 文本格式错误；元素未知；片段不是恰好两个划分全部原子的非空集合；电荷数或多重度数与片段数不符；或某个多重度不是 1。"
+
+#: of q2m3.fragments.Molecule.charge:1
+msgid "Total charge of the molecule."
+msgstr "分子的总电荷。"
+
+#: of q2m3.fragments.molecule.Molecule.geometry_sha256:1
+msgid "Lowercase hex SHA-256 of the geometry and fragment definition."
+msgstr "几何与片段定义的小写十六进制 SHA-256。"
+
+#: of q2m3.fragments.molecule.Molecule.geometry_sha256:3
+msgid ""
+"The digested bytes are compact ASCII JSON with sorted keys (``json.dumps(payload, sort_keys=True,"
+" separators=(\",\", \":\"), ensure_ascii=True)``). The payload keys are ``symbols``, "
+"``coordinates_angstrom`` (lists of Python ``float``), ``fragments`` (lists of atom indices, or "
+"``null``), ``charges`` and ``multiplicities``. ``name`` is not digested."
+msgstr ""
+"摘要的字节是键已排序的紧凑 ASCII JSON（``json.dumps(payload, sort_keys=True, separators=(\",\", \":\"), "
+"ensure_ascii=True)``）。载荷的键为 ``symbols``、``coordinates_angstrom``\\ （Python ``float`` "
+"的列表）、``fragments``\\ （原子下标的列表，或 ``null``）、``charges`` 与 ``multiplicities``。``name`` 不参与摘要。"
+
+#: ../../source/api-reference/fragments.rst:19
+msgid "Result Contracts"
+msgstr "结果契约"
+
+#: of q2m3.fragments.result.FragmentInteractionResult:1
+msgid "Counterpoise-corrected interaction energies of one fragment dimer, in Ha."
+msgstr "一个片段二聚体的 counterpoise 校正相互作用能，单位为 Ha。"
+
+#: of q2m3.fragments.result.FragmentInteractionResult:3
+msgid ""
+"``delta_e`` maps each layer in ``ENERGY_LAYERS`` to E(AB) - E(A) - E(B), all three in the dimer "
+"basis. Null entries of ``delta_e`` and ``errors`` have ``null_reasons`` entries under dotted keys"
+" such as ``delta_e.casci`` and ``errors.model``."
+msgstr ""
+"``delta_e`` 把 ``ENERGY_LAYERS`` 的每一层映射到 E(AB) - E(A) - E(B)，三项都在二聚体基组中计算。``delta_e`` 与 ``errors``"
+" 的空值在 ``null_reasons`` 中有条目，键为带点的名字，例如 ``delta_e.casci`` 与 ``errors.model``。"
+
+#: of q2m3.fragments.result.FragmentInteractionResult.validate:1
+msgid "Recompute the interaction energies and check the null reasons."
+msgstr "重算相互作用能，并检查空值原因。"
+
+#: of q2m3.fragments.result.FragmentInteractionResult.validate:3
+msgid ""
+"The subsystems are not ``AB``, ``A``, ``B``; a classical-only     result holds an SQD record, or "
+"a full result lacks one; the provenance     lacks a required key; a stored interaction energy or "
+"error term differs     from the recomputed one by more than ``DELTA_E_TOLERANCE_HA``; the model"
+"     error is not the sum of the active-space and basis errors; the recorded     same-basis "
+"reference source is not the one used; a reference category is     unknown or repeated; or a null "
+"field has no reason."
+msgstr ""
+"子体系不是 ``AB``、``A``、``B``；classical-only 结果含 SQD 记录，或 full 结果缺少 SQD "
+"记录；来源记录缺少必需的键；存储的相互作用能或误差项与重算值之差超过 "
+"``DELTA_E_TOLERANCE_HA``；模型误差不等于活性空间误差与基组误差之和；记录的同基组参考来源不是实际使用的来源；参考类别未知或重复；或某个空值没有原因。"
+
+#: of q2m3.fragments.result.SubsystemResult:1
+msgid "Energies and records of one subsystem: ``AB``, ``A``, ``B``, or ``M`` (one molecule)."
+msgstr "一个子体系的能量与记录：``AB``、``A``、``B`` 或 ``M``\\ （单分子）。"
+
+#: of q2m3.fragments.result.SubsystemResult:3
+msgid ""
+"Every ``None`` field has a ``null_reasons`` entry under its field name; a missing resource "
+"estimate uses ``resources.<qpe|sqd>``. Each resource slot holds only an estimate from that slot's"
+" estimator. ``e_sqd`` and ``e_casci`` are derived from ``sqd`` by :func:`promote_sqd_energies`."
+msgstr ""
+"每个 ``None`` 字段在 ``null_reasons`` 中以字段名为键有一个条目；缺少的资源估计用 ``resources.<qpe|sqd>`` "
+"为键。每个资源槽位只存放该槽位估计器的估计。``e_sqd`` 与 ``e_casci`` 由 :func:`promote_sqd_energies` 从 ``sqd`` 导出。"
+
+#: of q2m3.fragments.result.SubsystemResult.validate:1
+msgid "Check the null reasons, the resource slots and the SQD record."
+msgstr "检查空值原因、资源槽位与 SQD 记录。"
+
+#: of q2m3.fragments.result.SubsystemResult.validate:3
+msgid ""
+"A null field has no ``null_reasons`` entry; a resource key is not     ``qpe`` or ``sqd``; a "
+"resource slot holds something other than an     estimate from that slot's estimator; ``sqd`` is "
+"not exactly an     ``SQDResult`` or fails its own validation; the active space is not the     one"
+" of the SQD run; or ``e_sqd`` or ``e_casci`` differs from the value     derived from ``sqd``."
+msgstr ""
+"某个空值字段在 ``null_reasons`` 中没有条目；资源键不是 ``qpe`` 或 ``sqd``；资源槽位存放的不是该槽位估计器的估计；``sqd`` 不恰好是 "
+"``SQDResult``，或未通过自身的校验；活性空间不是 SQD 运行所用的空间；或 ``e_sqd``、``e_casci`` 与从 ``sqd`` 导出的值不同。"
+
+#: ../../source/api-reference/fragments.rst:28
+msgid "References And Report"
+msgstr "参考与报告"
+
+#: of q2m3.fragments.importers.import_references:1
+msgid "Read the references of ``fragment_id`` from a CSV or QCSchema JSON file."
+msgstr "从 CSV 或 QCSchema JSON 文件读取 ``fragment_id`` 的参考。"
+
+#: of q2m3.fragments.importers.import_references:3
+msgid ""
+"A reference whose basis equals ``basis`` (ignoring case) is a same-basis full-space reference; "
+"any other is an external reference. Values are returned in Ha."
+msgstr "基组等于 ``basis``\\ （不区分大小写）的参考是同基组全空间参考，其余为外部参考。返回值的单位为 Ha。"
+
+#: of q2m3.fragments.importers.import_references:6
+msgid ""
+"The file is neither ``.csv`` nor ``.json``; a CSV column is     missing; a unit is not ``Ha``, "
+"``kcal/mol`` or ``kJ/mol``; a value is not a     number; no CSV row has ``fragment_id``; or the "
+"QCSchema record lacks a field     or names another fragment."
+msgstr ""
+"文件既不是 ``.csv`` 也不是 ``.json``；缺少某个 CSV 列；单位不是 ``Ha``、``kcal/mol`` 或 ``kJ/mol``；某个值不是数字；没有一行 CSV "
+"的片段为 ``fragment_id``；或 QCSchema 记录缺少字段，或指向另一个片段。"
+
+#: of q2m3.fragments.result.ExternalReference:1
+msgid "Imported interaction energy of one fragment dimer, in Ha."
+msgstr "导入的一个片段二聚体的相互作用能，单位为 Ha。"
+
+#: of q2m3.fragments.result.ExternalReference:3
+msgid ""
+"``category`` is ``\"same_basis_full_space\"`` when ``basis`` is the workflow basis and "
+"``\"external\"`` otherwise."
+msgstr "``basis`` 等于工作流基组时，``category`` 为 ``\"same_basis_full_space\"``，否则为 ``\"external\"``。"
+
+#: of q2m3.fragments.report.render_report:1
+msgid "Return one Markdown report for all fragment results of one call."
+msgstr "为一次调用的全部片段结果返回一份 Markdown 报告。"
+
+#: of q2m3.fragments.report.render_report:3
+msgid "Fragment results to report, in report order."
+msgstr "要报告的片段结果，按报告顺序排列。"
+
+#: of q2m3.fragments.report.render_report:4
+msgid "Experimental labels mapped to imported Ks values. They are listed as given."
+msgstr "实验标签到导入 Ks 值的映射。按传入顺序列出。"
+
+#: of q2m3.fragments.report.render_report:7
+msgid "The report contains a term of ``BANNED_TERMS``."
+msgstr "报告含 ``BANNED_TERMS`` 中的词。"
+
+#: ../../source/api-reference/fragments.rst:37
+msgid "Exceptions"
+msgstr "异常"
+
+#: of q2m3.fragments.errors:1
+msgid "Typed failures raised by the fragment interaction-energy workflow."
+msgstr "片段相互作用能工作流抛出的类型化异常。"
+
+#: of q2m3.fragments.errors.FragmentWorkflowError:1
+msgid "The fragment workflow cannot produce a valid result for its input."
+msgstr "片段工作流不能为输入给出有效结果。"
+
+#: of q2m3.fragments.errors.ActiveSpaceMismatchError:1
+msgid "Monomer active spaces do not correspond to the dimer active space."
+msgstr "单体活性空间与二聚体活性空间不对应。"
+
+#: of q2m3.fragments.errors.ReferenceImportError:1
+msgid "An imported reference table violates the required format."
+msgstr "导入的参考表不符合要求的格式。"

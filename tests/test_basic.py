@@ -360,6 +360,58 @@ class TestPySCFPennyLaneConverter:
         print(f"  MM Hamiltonian terms: {n_terms_mm}")
         print(f"  Qubits: {n_qubits_mm}")
 
+    @staticmethod
+    def _converged_h2_scf(kind: str):
+        """Run a converged H2/STO-3G SCF of the requested kind."""
+        from pyscf import dft, gto, qmmm, scf
+
+        mol = gto.M(atom="H 0 0 0; H 0 0 0.74", basis="sto-3g", unit="Angstrom", verbose=0)
+        builders = {
+            "rhf": lambda: scf.RHF(mol),
+            # QM/MM wrapping subclasses RHF; it must stay accepted.
+            "qmmm_rhf": lambda: qmmm.mm_charge(
+                scf.RHF(mol), np.array([[0.0, 0.0, 3.0]]), np.array([-0.8])
+            ),
+            "uhf": lambda: scf.UHF(mol),
+            # ROHF and ROKS subclass RHF but describe open-shell references.
+            "rohf": lambda: scf.ROHF(mol),
+            "roks": lambda: dft.ROKS(mol),
+        }
+        mf = builders[kind]()
+        mf.kernel()
+        return mf
+
+    @pytest.mark.parametrize("kind", ["rhf", "qmmm_rhf"])
+    def test_extract_molecular_orbitals_returns_rhf_coefficient_copy(self, kind):
+        """MO coefficients equal the RHF solution and do not share its memory."""
+        from q2m3.interfaces import PySCFPennyLaneConverter
+
+        mf = self._converged_h2_scf(kind)
+
+        mo_coeff = PySCFPennyLaneConverter().extract_molecular_orbitals(mf)
+
+        assert isinstance(mo_coeff, np.ndarray)
+        assert mo_coeff.shape == mf.mo_coeff.shape
+        assert np.array_equal(mo_coeff, mf.mo_coeff)
+        assert not np.shares_memory(mo_coeff, mf.mo_coeff)
+
+    @pytest.mark.parametrize("kind", ["uhf", "rohf", "roks"])
+    def test_extract_molecular_orbitals_rejects_non_rhf_result(self, kind):
+        """Converged non-RHF results are rejected even though they carry mo_coeff."""
+        from q2m3.interfaces import PySCFPennyLaneConverter
+
+        mf = self._converged_h2_scf(kind)
+
+        with pytest.raises(TypeError, match="RHF"):
+            PySCFPennyLaneConverter().extract_molecular_orbitals(mf)
+
+    def test_extract_molecular_orbitals_rejects_arbitrary_object(self):
+        """Objects that are not SCF results are rejected."""
+        from q2m3.interfaces import PySCFPennyLaneConverter
+
+        with pytest.raises(TypeError, match="RHF"):
+            PySCFPennyLaneConverter().extract_molecular_orbitals(object())
+
 
 class TestIOUtilities:
     """Test input/output utilities."""

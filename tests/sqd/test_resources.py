@@ -144,9 +144,13 @@ def test_empirical_model_domain_and_retained():
 
 
 def test_runtime_profile_and_version_mismatch_rejected():
-    with pytest.raises(ResourceModelDomainError):
-        resources.load_resource_model(profile={"shots": 500_000})
-    with pytest.raises(ResourceModelDomainError):
+    # Pass the shipped manifest so this checks the profile, not the installed extras.
+    artifact = json.loads(
+        Path(resources.__file__).with_name("resource_calibration.json").read_text()
+    )
+    with pytest.raises(ResourceModelDomainError, match="shots"):
+        resources.load_resource_model(versions=artifact["versions"], profile={"shots": 500_000})
+    with pytest.raises(ResourceModelDomainError, match="dependency versions differ"):
         resources.load_resource_model(versions={"ffsim": "0.0.1"})
 
 

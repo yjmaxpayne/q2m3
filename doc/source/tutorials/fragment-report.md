@@ -1,103 +1,140 @@
 # Read A Fragment Interaction Report
 
-This page is for experimental partners. You do not run q2m3 or write code. The
-computational side runs the workflow and sends you a Markdown report. The
-report is in Chinese. This page explains each section of one real report.
+The water-dimer calculation gives five interaction energies. Reading them
+together shows how the method and active space affect the result.
+This tutorial explains the energy differences and the associated resource
+estimates.
 
-## The Example Report
+You can follow this tutorial without running Python. The values come from
+[Fragment Interaction Energy](fragment-interaction.md), which uses cc-pVDZ
+and `mode="full"`. Download the original
+{download}`water-dimer-report.md` to see the generated tables.
+The report uses Chinese headings. The explanations below use English and
+follow the same table order.
 
-The example report comes from the water-dimer run in
-[Fragment Interaction Energy](fragment-interaction.md). That run uses the mode
-`full` and the cc-pVDZ basis. Download the report:
-{download}`water-dimer-report.md`.
+## Start With The Interaction Energy
 
-```{literalinclude} water-dimer-report.md
-:language: markdown
-```
+The first table compares five methods for the same water-dimer geometry.
+Each row gives the counterpoise-corrected interaction energy,
+$\Delta E = E(AB) - E(A) - E(B)$. AB denotes the dimer, and A and B denote
+the two water molecules. All three energies use the dimer basis.
 
-## Title And Fixed Statement
-
-Every report starts with the title `片段相互作用能报告` (fragment interaction
-energy report) and the fixed statement `q2m3 不对 Ks 做统计结论。`. The
-statement means that q2m3 draws no statistical conclusion about Ks. q2m3 has
-no code that computes a correlation coefficient or a p-value.
-
-One report covers all fragment results of one call. Each fragment has its own
-section. The section heading gives the fragment name, the mode, and the basis,
-for example `片段 water-dimer（模式 full，基组 cc-pvdz）`.
-
-## Interaction Energy
-
-The table `相互作用能 ΔE（counterpoise 校正）` has one row for each method
-layer. ΔE is E(AB) − E(A) − E(B). AB is the dimer, and A and B are the two
-fragments. The three energies use the dimer basis, which is the counterpoise
-correction. A negative ΔE means that the dimer has a lower energy than the two
-separate fragments.
-
-| Layer | Method |
-| --- | --- |
-| HF | Hartree–Fock |
-| MP2 | Second-order Møller–Plesset perturbation theory with a frozen core |
-| CASCI | Exact diagonalization in the active space |
-| SQD | Sample-based quantum diagonalization in the same active space |
-| CCSD(T) | Coupled cluster with a frozen core in the full orbital space |
-
-Each energy has two columns: Ha with six decimals and kcal/mol with three
-decimals. A layer without a value shows `—`, and the column `空值原因` (reason
-for the empty value) gives the reason. The mode `classical_only` gives only the
-HF and MP2 layers.
-
-In the example report, the five layers are between −3.935 and −3.557 kcal/mol.
-
-## Error Decomposition
-
-The table `误差分解` (error decomposition) has four rows. Each row gives the
-signed value and the absolute value, in Ha and in kcal/mol.
-
-| Row | Definition | Example report |
+| Method | Calculation | ΔE (kcal/mol) |
 | --- | --- | --- |
-| `算法误差` (algorithm error) | SQD − CASCI | 0.016 kcal/mol |
-| `活性空间误差` (active-space error) | CASCI − same-basis full-space reference | 0.125 kcal/mol |
-| `基组误差` (basis error) | Same-basis full-space reference − external reference | Empty |
-| `模型误差` (model error) | Active-space error + basis error | Empty |
+| HF | Hartree–Fock | −3.682 |
+| MP2 | Second-order Møller–Plesset perturbation theory with a frozen core | −3.935 |
+| CASCI | Exact diagonalization within the selected active space | −3.574 |
+| SQD | Sample-based quantum diagonalization within the same active space | −3.557 |
+| CCSD(T) | Coupled cluster with perturbative triples and a frozen core | −3.699 |
 
-The line `同基组全空间参考来源：pyscf_ccsd_t` names the source of the
-same-basis full-space reference. In the example report, the source is the
-CCSD(T) layer of the same run. The basis error and the model error need an
-external reference, which the computational side imports. The example run had
-no external reference, so the two rows are empty with the reason
-`missing external reference`.
+All five values are negative. Each method therefore places the dimer below
+the separate fragments at this geometry. A more negative value represents
+a stronger calculated interaction. The spread from −3.935 to −3.557 kcal/mol
+shows how the result changes with the electronic structure method.
 
-## Resource Estimates
+The report shows each energy in Ha and kcal/mol, with six and three
+decimal places, respectively. A dash means that the calculation has no
+value for that entry. The adjacent column explains why. For example,
+`classical_only` mode supplies HF and MP2 energies. In `full` mode, CCSD(T)
+runs when its estimated cost fits the calculation budget.
 
-The last two tables of each fragment section are planning data, not energies.
+## Compare SQD With CASCI
 
-- `双因子分解成本估计（QPE 资源）`: a double-factorization cost estimate of
-  quantum phase estimation (QPE) for the active-space Hamiltonian of AB, A, and
-  B. The columns are λ in Ha, logical qubits, and Toffoli gates. The table is an
-  estimate, not the result of a QPE circuit.
-- `SQD 工作量与内存预估`: the qubits (two for each active orbital), the full CI
-  dimension of the active space, and the predicted peak memory (RSS, in decimal
-  MB) of the two SQD stages, prepare and sample.
+CASCI provides an exact solution within the selected active space.
+SQD approximates that solution in the same space. Their difference therefore
+measures the SQD algorithm error for this calculation:
 
-You can skip these two tables when you compare the energies with experiments.
+$$
+\epsilon_{\mathrm{algorithm}} = \Delta E_{\mathrm{SQD}} - \Delta E_{\mathrm{CASCI}}.
+$$
 
-## Experimental Ks Values
+The example report gives +0.016 kcal/mol. SQD predicts a slightly less
+negative interaction energy than CASCI. This comparison isolates the
+algorithm's contribution because both methods use the same active space.
 
-You can give the computational side a table of experimental labels and Ks
-values. The computational side passes the table to `render_report` as
-`ks_table`. The report then ends with the section `实验 Ks 值（只并列显示）`
-(experimental Ks values, listed side by side only). The section has this form:
+The report calculates differences before rounding the energies.
+Subtracting the rounded table entries can therefore give a slightly
+different last digit.
 
-```text
-## 实验 Ks 值（只并列显示）
+## Compare The Active Space With A Larger Calculation
 
-| 实验标签 | Ks |
-|---|---|
-| <label> | <Ks> |
-```
+The next comparison asks how much the selected active space changes the
+interaction energy. In this example, the reference is frozen-core CCSD(T)
+in the full orbital space with the same cc-pVDZ basis:
 
-The rows keep the order in which the computational side passes them. q2m3 does
-not compute a correlation, a fit, or a p-value from these values. Any
-comparison between ΔE and Ks is your own analysis. The example report has no
-such section because its run had no Ks table.
+$$
+\epsilon_{\mathrm{active\ space}} = \Delta E_{\mathrm{CASCI}} - \Delta E_{\mathrm{CCSD(T)}}.
+$$
+
+This difference is +0.125 kcal/mol. The active-space CASCI calculation
+predicts a less negative interaction energy than the CCSD(T) reference.
+Here, this difference exceeds the SQD–CASCI difference.
+Choosing the active space therefore deserves attention alongside the SQD
+settings when you refine this calculation.
+
+The report calls this quantity the *active-space error*. It measures the
+difference from the chosen reference, which here also changes the
+correlation method. CCSD(T) remains an approximate reference.
+The source label `pyscf_ccsd_t` identifies the CCSD(T) calculation from
+the same run. If that calculation has no value, q2m3 can use an imported
+reference with the same basis.
+
+## Add An External Reference
+
+A reference with another basis extends the comparison beyond the current
+calculation. The report combines it with the same-basis reference to give
+two further differences:
+
+| Quantity | Definition |
+| --- | --- |
+| Basis error | Same-basis reference − external reference |
+| Model error | CASCI − external reference |
+
+Each term uses interaction energies. When all references are available,
+the model error equals the active-space error plus the basis error.
+The report shows each difference with its sign and its absolute value,
+in Ha and kcal/mol.
+
+The water-dimer example supplies no external reference, so these two entries
+show a dash and `missing external reference`. To fill them, supply a
+reference file as described in [Adapt The
+Calculation](fragment-interaction.md#adapt-the-calculation).
+Choose a reference with the same geometry and energy definition.
+If its method also differs, the reported basis error includes that method
+difference.
+
+## Relate The Active Space To Computational Cost
+
+The final two tables help plan calculations for the dimer and its monomers.
+They describe QPE resources and SQD workload separately.
+
+The QPE table estimates the cost of quantum phase estimation with a
+double-factorized active-space Hamiltonian. It lists the Hamiltonian norm
+parameter λ in Ha, logical qubits, and Toffoli gates for AB, A, and B.
+These estimates describe a possible QPE calculation. The energies above
+come from the electronic structure methods in the first table.
+
+The SQD table connects the active-space size to the simulated workload:
+
+| Subsystem | SQD qubits | Full CI dimension | Prepare RSS (MB) | Sample RSS (MB) |
+| --- | --- | --- | --- | --- |
+| AB | 16 | 784 | 690.5 | 715.0 |
+| A | 8 | 16 | 683.3 | 707.7 |
+| B | 8 | 16 | 683.3 | 707.7 |
+
+SQD uses two qubits per active orbital. The full configuration-interaction
+(CI) dimension counts the determinants for the active space and its spin populations.
+RSS means resident set size. The two RSS columns predict peak memory for
+the prepare and sample stages in decimal MB.
+
+Read these estimates when you choose a larger active space or plan a series
+of calculations. For an energy comparison, start with the interaction
+energies and their differences from the selected references.
+
+## Include Experimental Ks Values
+
+If you also have experimental Ks values, pass a mapping of labels to values
+as `ks_table` in `render_report`. The report appends them in the supplied
+order, so collaborators can read the measurements alongside the calculations.
+Statistical analysis of their relationship to ΔE remains a separate step.
+The water-dimer example has no Ks table.

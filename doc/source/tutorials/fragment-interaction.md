@@ -1,39 +1,93 @@
 # Fragment Interaction Energy
 
-This tutorial computes the counterpoise-corrected interaction energy of the
-S22 water dimer with one call to `run`. The call returns five energy layers
-(HF, MP2, CASCI, SQD, and CCSD(T)), an error decomposition, resource estimates,
-and the provenance of the run. `render_report` writes the result as a Markdown
-report.
+The interaction between two water molecules changes their total energy.
+This tutorial calculates that change for the S22 water dimer. You will define
+the two fragments, choose an active space, and compare five electronic
+structure methods in one calculation.
 
-## Requirements
+## From Fragments To Interaction Energy
 
-The default mode is `mode="full"`. It needs the optional SQD backend:
+Each water molecule is one fragment. We call them A and B, and call the
+complete dimer AB. For each method, q2m3 calculates the interaction energy as
+
+$$
+\Delta E = E(AB) - E(A) - E(B).
+$$
+
+A negative value means that the dimer has lower energy than the separate
+fragments at the same geometry. All three calculations use the dimer basis.
+For each monomer, the partner's atoms retain their basis functions but
+contribute no nuclei or electrons. These are *ghost atoms*. This procedure
+gives the counterpoise-corrected interaction energy.
+
+The workflow first calculates Hartree–Fock (HF) and second-order
+Møller–Plesset perturbation theory (MP2) energies. It then compares two
+methods within a selected active space: complete active-space configuration
+interaction (CASCI) and sample-based quantum diagonalization (SQD).
+A frozen-core CCSD(T) calculation supplies a reference from the full orbital
+space when its estimated cost fits the calculation budget.
+
+## Prepare The Calculation
+
+The example uses the default `mode="full"` and the cc-pVDZ basis.
+Install the optional SQD backend from the repository root:
 
 ```bash
 uv sync --frozen --extra sqd
 ```
 
-The SQD stage runs only on Linux x86_64. On other platforms, use
-`mode="classical_only"`. That mode needs only the core install. It returns the
-HF and MP2 layers and the active-space records, and it does not run SQD or
-CCSD(T).
+The SQD backend supports Linux x86_64. For a calculation with only core
+dependencies, use `mode="classical_only"` in the `run` call below. This mode
+returns HF and MP2 energies and the selected active spaces. It skips CASCI,
+SQD, CCSD(T), and resource estimates.
 
-## Prepare The Geometry
-
-Save the geometry as `water-dimer.xyz`. Coordinates are in Angstrom. Atoms 0-2
-are fragment A and atoms 3-5 are fragment B.
+Download {download}`water-dimer.xyz` into your working directory.
+The coordinates use Angstrom. Atom indices start at zero, so atoms 0–2 form
+fragment A and atoms 3–5 form fragment B.
 
 ```{literalinclude} water-dimer.xyz
 :language: text
 ```
 
-## Run The Workflow
+## Choose The Active Space
+
+CASCI and SQD treat the same selected electrons and orbitals explicitly.
+The atomic valence active space (AVAS) procedure selects these orbitals from
+the atomic shells you specify. The `avas_labels` parameter identifies the
+shells, and `avas_threshold` controls the selection. Both parameters require
+an explicit value.
+
+For this example, use `avas_labels=["O 2p", "H 1s"]` and
+`avas_threshold=0.7`. The resulting spaces are:
+
+| Subsystem | Active electrons | Active orbitals | SQD qubits |
+| --- | --- | --- | --- |
+| Dimer AB | 12 | 8 | 16 |
+| Monomer A | 6 | 4 | 8 |
+| Monomer B | 6 | 4 | 8 |
+
+An element label such as `"O 2p"` selects that shell on every oxygen atom.
+An indexed label such as `"0 O 2p"` refers only to atom 0 in the full
+geometry. q2m3 applies the same labels to all three subsystems and retains
+only labels on real atoms in each monomer.
+
+The current workflow accepts at most 10 active orbitals per subsystem.
+For these labels, the PySCF default threshold of 0.2 selects 12 orbitals for
+the dimer. The example uses 0.7 to obtain the smaller spaces above.
+q2m3 also checks that the monomer active spaces correspond to the dimer
+active space before it calculates correlated energies.
+
+## Calculate And Display The Energies
+
+Run the following Python code from the directory containing
+`water-dimer.xyz`. `Molecule.from_xyz` assigns the atoms to the two
+fragments. `run` calculates their interaction energies, and `render_report`
+formats the result as Markdown.
 
 ```{testsetup}
 import os
 
-# make docs-doctest runs from the repository root; the tutorial reads its XYZ file.
+# The documentation test starts from the repository root.
 _cwd = os.getcwd()
 os.chdir("doc/source/tutorials")
 ```
@@ -60,54 +114,47 @@ os.chdir(_cwd)
 ...
 ```
 
-The run takes less than one minute on a workstation. The report is in Chinese
-and has these sections:
+The report currently uses Chinese headings. Its energy columns give
+$\Delta E$ in Hartree (Ha) and kcal/mol. In this example, every method gives
+a negative interaction energy. SQD gives about −3.557 kcal/mol, close to
+the CASCI value of −3.574 kcal/mol within the same active space.
 
-| Section | Content |
+The `result` object also stores the energies, active spaces, and resource
+estimates for AB, A, and B. Use `result.delta_e` to access the interaction
+energies in Hartree. Continue with [Read A Fragment Interaction
+Report](fragment-report.md) to interpret the method differences and resource
+estimates.
+
+## Adapt The Calculation
+
+For another dimer, replace the geometry and fragment indices first.
+Then choose AVAS labels for the shells relevant to that interaction.
+Inspect the selected spaces before you compare energies across geometries.
+
+If the selected monomer and dimer spaces do not correspond, q2m3 raises
+`ActiveSpaceMismatchError`. Revisit the labels and threshold for the whole
+dimer. `FragmentWorkflowError` can also indicate an unsupported active space,
+such as one without an active virtual orbital or with more than 10 orbitals.
+The exception message identifies the subsystem and the failed condition.
+
+To compare against a reference calculation, add
+`references=["refs.csv"]` to the `run` call. The CSV needs these columns:
+
+| Column | Content |
 | --- | --- |
-| Interaction energy | ΔE of each layer in Ha and kcal/mol. An empty cell gives its reason. |
-| Error decomposition | Algorithm error (SQD − CASCI), active-space error (CASCI − same-basis full-space reference), basis error, and model error. |
-| QPE resources | Double-factorization cost estimate (λ, logical qubits, Toffoli gates) for AB, A, and B. |
-| SQD workload | Qubits, full CI dimension, and predicted RSS of the two SQD stages. |
+| `fragment_id` | The molecule name, `water-dimer` in this example |
+| `method` | The reference method |
+| `basis` | The reference basis |
+| `delta_e` | The reference interaction energy |
+| `unit` | `Ha`, `kcal/mol`, or `kJ/mol` |
 
-When CCSD(T) runs, its layer is the same-basis full-space reference. The basis
-and model errors need an external reference. Give one with
-`run(..., references=["refs.csv"])`. The CSV columns are `fragment_id`,
-`method`, `basis`, `delta_e`, and `unit` (`Ha`, `kcal/mol`, or `kJ/mol`).
-Without an external reference, the two errors are empty and the report gives
-the reason.
+Use a reference for the same geometry and interaction-energy definition.
+q2m3 classifies a row with the calculation basis as a same-basis reference.
+It classifies a row with another basis as an external reference.
+Supply at most one reference in each category.
+The next tutorial explains how these references enter the energy comparisons.
 
-## Compare With A Hand-Written Route
-
-| Step | Hand-written PySCF route | q2m3 |
-| --- | --- | --- |
-| Counterpoise SCF | Build AB, A, and B molecules. Mark the partner atoms as `ghost-` atoms. Run three RHF calculations. | `run` |
-| MP2 | Count the frozen core orbitals without the ghost atoms. Run three MP2 calculations. | `run` |
-| Active space | Run AVAS on each subsystem. Remove the ghost-atom AO labels. Check that the monomer spaces correspond to the dimer space. | `avas_labels`, `avas_threshold` |
-| SQD | Build the active-space integrals and their provenance. Run SQD for AB, A, and B with single-threaded math libraries. | `run` |
-| CCSD(T) reference | Estimate the memory and wall time. Run frozen-core CCSD(T) when the estimate fits the budget. | `run` |
-| Resources | Run the double-factorization estimate on each set of active-space integrals. | `run` |
-| Report | Convert the units and write the tables. | `render_report` |
-
-## Choose The Active Space
-
-`avas_labels` and `avas_threshold` have no default values. A label is
-`"<Elem> <shell>"` for every atom of an element, or `"<i> <Elem> <shell>"` for
-atom `i` (0-based) of the full geometry. The same labels apply to the dimer and
-to both monomers.
-
-The active space of each subsystem can have at most 10 orbitals. The PySCF
-default threshold 0.2 selects (16e,12o) for the water dimer, so `run` rejects
-it. The threshold 0.7 selects (12e,8o) for the dimer and (6e,4o) for each
-monomer.
-
-`run` raises `ActiveSpaceMismatchError` when the monomer active spaces do not
-correspond to the dimer active space. It raises `FragmentWorkflowError` when an
-active space has no active virtual orbital or more than 10 orbitals.
-
-## Reproduce A Result
-
-`result.provenance` records the geometry hash, basis, AVAS labels and
-threshold, seed, package versions, and thread settings. To reproduce a result,
-run the same geometry again with these values. The deterministic layers and the
-SQD energies with the same seed agree to 1e-10 Ha.
+Keep the geometry and calculation settings with your result.
+`result.provenance` records the geometry hash, basis, AVAS settings, seed,
+package versions, and thread settings. Use these records when you repeat
+the calculation or compare results from different environments.

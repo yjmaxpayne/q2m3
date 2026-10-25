@@ -1,0 +1,475 @@
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
+"Language: zh_CN\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/user-guide/core-concepts.rst:2
+msgid "Core Concepts"
+msgstr "核心概念"
+
+#: ../../source/user-guide/core-concepts.rst:4
+msgid ""
+"q2m3 combines quantum chemistry, quantum algorithms, and molecular mechanics. The "
+":doc:`/glossary` defines the terms used below."
+msgstr "q2m3 结合量子化学、量子算法和分子力学。:doc:`/glossary` 定义下文使用的术语。"
+
+#: ../../source/user-guide/core-concepts.rst:8
+msgid "QM/MM Partitioning"
+msgstr "QM/MM 分区"
+
+#: ../../source/user-guide/core-concepts.rst:10
+msgid ""
+"QM/MM separates a system into a quantum mechanical region and a molecular mechanics environment. "
+"q2m3 currently uses PySCF for the classical quantum chemistry side and TIP3P/SPC/E-style point "
+"charges for explicit water environments. q2m3 stores energies in Hartree internally. The unit "
+"kcal/mol appears only after an explicit conversion."
+msgstr ""
+"QM/MM 将体系分为量子力学区域和分子力学环境。q2m3 目前使用 PySCF 完成经典量子化学计算，并以 TIP3P/SPC/E 式点电荷表示显式水环境。q2m3 内部以 Hartree "
+"存储能量，仅在显式转换后使用 kcal/mol。"
+
+#: ../../source/user-guide/core-concepts.rst:16
+msgid ""
+"The current embedding model is electrostatic point-charge embedding. It does not include a "
+"polarizable MM force field or advanced solvent response model."
+msgstr "当前嵌入模型为静电点电荷嵌入，不包含可极化 MM 力场或高级溶剂响应模型。"
+
+#: ../../source/user-guide/core-concepts.rst:20
+msgid "QPE Workflow"
+msgstr "QPE 工作流"
+
+#: ../../source/user-guide/core-concepts.rst:22
+msgid ""
+"QPE estimates an eigenphase of the time-evolution operator and converts that phase back into an "
+"energy. The PennyLane QPE paths prepare an HF state, apply controlled Trotter time evolution and "
+"inverse QFT, and decode the phase. A classical fallback tests the QM/MM data pipeline when no "
+"PennyLane Hamiltonian is available."
+msgstr ""
+"QPE 估计时间演化算符的本征相位，再将相位转换为能量。PennyLane QPE 路径制备 HF 态，执行受控 Trotter 时间演化和逆 QFT，然后解码相位。没有 PennyLane "
+"哈密顿量时，经典后备路径可测试 QM/MM 数据管线。"
+
+#: ../../source/user-guide/core-concepts.rst:45
+msgid "Active Spaces"
+msgstr "活性空间"
+
+#: ../../source/user-guide/core-concepts.rst:47
+msgid ""
+"Active-space truncation reduces the simulation size. Report the active electrons, spatial "
+"orbitals, and resulting qubit count. For Jordan-Wigner mappings, each spatial orbital contributes"
+" two spin-orbital qubits."
+msgstr "活性空间截断可缩小模拟规模。报告活性电子数、空间轨道数和量子比特数。Jordan-Wigner 映射中，每个空间轨道对应两个自旋轨道量子比特。"
+
+#: ../../source/user-guide/core-concepts.rst:54
+msgid "System"
+msgstr "体系"
+
+#: ../../source/user-guide/core-concepts.rst:55
+msgid "Typical active space"
+msgstr "典型活性空间"
+
+#: ../../source/user-guide/core-concepts.rst:56
+msgid "System qubits"
+msgstr "系统量子比特数"
+
+#: ../../source/user-guide/core-concepts.rst:57
+msgid "Notes"
+msgstr "说明"
+
+#: ../../source/user-guide/core-concepts.rst:58
+msgid "H2"
+msgstr "H2"
+
+#: ../../source/user-guide/core-concepts.rst:59
+msgid "2 electrons, 2 orbitals"
+msgstr "2 个电子，2 个轨道"
+
+#: ../../source/user-guide/core-concepts.rst:60
+msgid "4"
+msgstr "4"
+
+#: ../../source/user-guide/core-concepts.rst:61
+msgid "First-run validation path"
+msgstr "首次运行验证路径"
+
+#: ../../source/user-guide/core-concepts.rst:62
+msgid "H3O+"
+msgstr "H3O+"
+
+#: ../../source/user-guide/core-concepts.rst:63
+msgid "4 electrons, 4 orbitals"
+msgstr "4 个电子，4 个轨道"
+
+#: ../../source/user-guide/core-concepts.rst:64
+msgid "8"
+msgstr "8"
+
+#: ../../source/user-guide/core-concepts.rst:65
+msgid "Optional ionic solvation diagnostics"
+msgstr "可选离子溶剂化诊断"
+
+#: ../../source/user-guide/core-concepts.rst:66
+msgid "Glycine"
+msgstr "甘氨酸"
+
+#: ../../source/user-guide/core-concepts.rst:67
+msgid "6, 8, or 10 electrons in the same number of orbitals"
+msgstr "6、8 或 10 个电子，轨道数与电子数相同"
+
+#: ../../source/user-guide/core-concepts.rst:68
+msgid "12, 16, or 20"
+msgstr "12、16 或 20"
+
+#: ../../source/user-guide/core-concepts.rst:69
+msgid "SQD scaling tutorial. Each space has its own Hamiltonian and reference"
+msgstr "SQD 规模扩展教程。每个活性空间都有独立的哈密顿量和参考计算"
+
+#: ../../source/user-guide/core-concepts.rst:71
+msgid ""
+"The full H3O+ STO-3G space is larger than the default examples. The public H3O+ scripts therefore"
+" use conservative active-space and Trotter settings."
+msgstr "完整 H3O+ STO-3G 空间大于默认示例。因此，公开 H3O+ 脚本采用保守的活性空间和 Trotter 设置。"
+
+#: ../../source/user-guide/core-concepts.rst:75
+msgid "Sample-Based Quantum Diagonalization"
+msgstr "基于采样的量子对角化"
+
+#: ../../source/user-guide/core-concepts.rst:77
+msgid ""
+"SQD samples a CCSD-seeded LUCJ state with ffsim. It diagonalizes the Hamiltonian in the recovered"
+" determinant subspace. The result includes HF, active-space CCSD, selected-CI, random-subspace, "
+"and reference energies. All comparisons use the same Hamiltonian. See :doc:`sqd` for the "
+"reference policy."
+msgstr ""
+"SQD 使用 ffsim 采样以 CCSD 为种子的 LUCJ 态。它在恢复的行列式子空间中对角化哈密顿量。结果包含 HF、活性空间 CCSD、选择 "
+"CI、随机子空间和参考能量。所有比较使用同一哈密顿量。参考策略见 :doc:`sqd`。"
+
+#: ../../source/user-guide/core-concepts.rst:82
+msgid ""
+"The signed primary error is ``1000 * (E_SQD - E_reference)`` in mHa, so a positive value places "
+"SQD above the reference. Only a T0 exact-active-space result supports an exact-error claim. Seed "
+"spread is descriptive. It is not a confidence interval. The sampled determinant fraction also "
+"does not equal simulator-memory savings because ffsim still represents the full fixed-particle-"
+"number state."
+msgstr ""
+"主要带符号误差为 ``1000 * (E_SQD - E_reference)``，单位 mHa；正值表示 SQD 高于参考能量。只有 T0 "
+"活性空间内精确结果才支持精确误差声明。种子离散程度是描述性统计，不是置信区间。采样行列式比例也不等于模拟器内存节省比例，因为 ffsim 仍表示完整的固定粒子数态。"
+
+#: ../../source/user-guide/core-concepts.rst:89
+msgid ""
+"SQD runs on a classical simulator. It does not execute on quantum hardware or demonstrate quantum"
+" advantage."
+msgstr "SQD 在经典模拟器上运行。它不执行量子硬件计算，也不证明量子优势。"
+
+#: ../../source/user-guide/core-concepts.rst:93
+msgid "Fragment interaction energies"
+msgstr "片段相互作用能"
+
+#: ../../source/user-guide/core-concepts.rst:95
+msgid ""
+"The fragment workflow computes ``E(AB) - E(A) - E(B)`` for a dimer. Counterpoise uses the dimer "
+"basis for all three calculations. AVAS selects active orbitals from explicit atomic-shell labels "
+"and a threshold. The workflow checks correspondence between the dimer and monomer active spaces."
+msgstr ""
+"片段工作流为二聚体计算 ``E(AB) - E(A) - E(B)``。Counterpoise 在三个计算中均使用二聚体基组。AVAS "
+"根据显式原子壳层标签和阈值选择活性轨道。工作流检查二聚体与单体活性空间的对应关系。"
+
+#: ../../source/user-guide/core-concepts.rst:100
+msgid ""
+"``classical_only`` computes HF and frozen-core MP2. ``full`` adds budgeted CCSD(T), active-space "
+"SQD, and resource estimates. Only a T0 exact-CASCI reference supplies the CASCI energy. Missing "
+"reference values remain absent with reasons. See :doc:`/tutorials/fragment-interaction` for a "
+"complete calculation."
+msgstr ""
+"``classical_only`` 计算 HF 和冻结芯 MP2。``full`` 增加受预算限制的 CCSD(T)、活性空间 SQD 和资源估算。只有 T0 exact-CASCI 参考提供"
+" CASCI 能量。缺失的参考值保留为空并附带原因。完整计算见 :doc:`/tutorials/fragment-interaction`。"
+
+#: ../../source/user-guide/core-concepts.rst:106
+msgid ""
+"These interaction energies describe fixed geometries. They do not represent a solvent ensemble or"
+" a solvation free energy."
+msgstr "这些相互作用能描述固定几何，不代表溶剂系综或溶剂化自由能。"
+
+#: ../../source/user-guide/core-concepts.rst:110
+msgid "Phase Decoding And Energy Shifts"
+msgstr "相位解码与能量平移"
+
+#: ../../source/user-guide/core-concepts.rst:112
+msgid ""
+"QPE measures a phase modulo one. Large negative molecular energies can therefore produce phase "
+"wrapping. When needed, q2m3 uses shifted QPE parameters to estimate a smaller energy difference "
+"relative to a Hartree-Fock reference."
+msgstr "QPE 测量模一相位，因此较大的负分子能量可能产生相位回绕。必要时，q2m3 使用平移后的 QPE 参数，估计相对 Hartree-Fock 参考的较小能量差。"
+
+#: ../../source/user-guide/core-concepts.rst:117
+msgid "Two phase-extraction conventions exist in the current code:"
+msgstr "当前代码存在两种相位提取约定："
+
+#: ../../source/user-guide/core-concepts.rst:122
+msgid "Path"
+msgstr "路径"
+
+#: ../../source/user-guide/core-concepts.rst:123
+msgid "Implementation"
+msgstr "实现"
+
+#: ../../source/user-guide/core-concepts.rst:124
+msgid "Interpretation"
+msgstr "解释"
+
+#: ../../source/user-guide/core-concepts.rst:125
+msgid "Sampled QPE"
+msgstr "采样 QPE"
+
+#: ../../source/user-guide/core-concepts.rst:126
+msgid "``QPEEngine._extract_energy_from_samples()``"
+msgstr "``QPEEngine._extract_energy_from_samples()``"
+
+#: ../../source/user-guide/core-concepts.rst:127
+msgid "Uses the most frequent measured bitstring"
+msgstr "使用测量中频率最高的位串"
+
+#: ../../source/user-guide/core-concepts.rst:128
+msgid "Analytical solvation"
+msgstr "解析溶剂化"
+
+#: ../../source/user-guide/core-concepts.rst:129
+msgid "``q2m3.solvation.phase_extraction``"
+msgstr "``q2m3.solvation.phase_extraction``"
+
+#: ../../source/user-guide/core-concepts.rst:130
+msgid "Uses a probability-weighted expected bin"
+msgstr "使用概率加权的期望离散箱"
+
+#: ../../source/user-guide/core-concepts.rst:132
+msgid "Do not compare those paths without noting the decoding convention and shot model."
+msgstr "比较这些路径时，必须说明解码约定和采样模型。"
+
+#: ../../source/user-guide/core-concepts.rst:136
+msgid "RDM Measurement"
+msgstr "RDM 测量"
+
+#: ../../source/user-guide/core-concepts.rst:138
+msgid ""
+"The one-particle reduced density matrix (1-RDM) connects quantum states to classical observables."
+" q2m3 estimates 1-RDMs for Mulliken populations and charge checks. Correlated RDM feedback into "
+"SQD/MM is not implemented."
+msgstr "单粒子约化密度矩阵（1-RDM）连接量子态与经典可观测量。q2m3 估算 1-RDM，用于 Mulliken 布居和电荷检查。SQD/MM 尚未实现关联 RDM 反馈。"
+
+#: ../../source/user-guide/core-concepts.rst:142
+msgid ""
+"RDM values must obey physical constraints such as Hermiticity, electron count, and non-negative "
+"occupations. Measurement noise can violate these constraints, so the estimator includes "
+"projection utilities for physically valid matrices."
+msgstr "RDM 值必须满足厄米性、电子数和非负占据等物理约束。测量噪声可能破坏这些约束，因此估计器提供投影工具以获得物理有效矩阵。"
+
+#: ../../source/user-guide/core-concepts.rst:147
+msgid "Resource Estimation"
+msgstr "资源估计"
+
+#: ../../source/user-guide/core-concepts.rst:149
+msgid ""
+"The ``q2m3.core.resource_estimation`` API estimates EFTQC resources such as Hamiltonian 1-norm, "
+"logical qubits, Toffoli gates, system qubits, and target error. Use these estimates to plan "
+"quantum hardware resources. They are not the same as Catalyst compile memory or LLVM IR size."
+msgstr ""
+"``q2m3.core.resource_estimation`` API 估计哈密顿量 1-范数、逻辑量子比特数、Toffoli 门数、系统量子比特数和目标误差等 EFTQC "
+"资源。这些估计用于规划量子硬件资源，与 Catalyst 编译内存或 LLVM IR 大小不同。"
+
+#: ../../source/user-guide/core-concepts.rst:154
+msgid ""
+"The H2 resource example demonstrates that MM point charges mainly change one-electron terms. For "
+"small H2/STO-3G runs, the two-electron integrals dominate the resource estimate, so vacuum and "
+"solvated estimates are close."
+msgstr "H2 资源示例表明，MM 点电荷主要改变单电子项。在小规模 H2/STO-3G 运行中，双电子积分主导资源估计，因此真空和溶剂化估计接近。"
+
+#: ../../source/user-guide/core-concepts.rst:159
+msgid "Fixed-MO Full-One-Electron Embedding"
+msgstr "固定分子轨道完整单电子嵌入"
+
+#: ../../source/user-guide/core-concepts.rst:161
+msgid ""
+"Explicit MM point charges perturb the one-electron Hamiltonian. q2m3 exposes two public resource-"
+"estimation modes for this perturbation:"
+msgstr "显式 MM 点电荷扰动单电子哈密顿量。q2m3 为该扰动提供两种公开资源估计模式："
+
+#: ../../source/user-guide/core-concepts.rst:167 ../../source/user-guide/core-concepts.rst:213
+msgid "Mode"
+msgstr "模式"
+
+#: ../../source/user-guide/core-concepts.rst:168
+msgid "Included active-space perturbation"
+msgstr "纳入的活性空间扰动"
+
+#: ../../source/user-guide/core-concepts.rst:169
+msgid "Intended use"
+msgstr "预期用途"
+
+#: ../../source/user-guide/core-concepts.rst:170
+msgid "``diagonal``"
+msgstr "``diagonal``"
+
+#: ../../source/user-guide/core-concepts.rst:171
+msgid "Diagonal ``Delta h_pp`` terms only"
+msgstr "仅包含对角 ``Delta h_pp`` 项"
+
+#: ../../source/user-guide/core-concepts.rst:172
+msgid "Compatibility row for dynamic coefficient-update workflows"
+msgstr "与动态系数更新工作流兼容的结果行"
+
+#: ../../source/user-guide/core-concepts.rst:173
+msgid "``full_oneelectron``"
+msgstr "``full_oneelectron``"
+
+#: ../../source/user-guide/core-concepts.rst:174
+msgid "Full fixed-MO ``Delta h_pq`` matrix"
+msgstr "完整的固定分子轨道 ``Delta h_pq`` 矩阵"
+
+#: ../../source/user-guide/core-concepts.rst:175
+msgid "Resource rows and fixed-Hamiltonian operator support"
+msgstr "资源结果行及固定哈密顿量算符支撑"
+
+#: ../../source/user-guide/core-concepts.rst:177
+msgid ""
+"Both modes are fixed-MO models. They reuse the vacuum molecular-orbital frame and hold the two-"
+"electron tensor at its vacuum value. They compute no orbital relaxation, polarizable MM response,"
+" or relaxed solvation energy. The diagnostic ``delta_h_offdiag_fro`` reports the Frobenius norm "
+"of the off-diagonal active-space perturbation that ``diagonal`` mode omits and "
+"``full_oneelectron`` mode includes."
+msgstr ""
+"两种模式均为固定分子轨道模型，复用真空分子轨道框架，并将双电子张量固定在真空值。它们不计算轨道弛豫、可极化 MM 响应或弛豫后的溶剂化能。诊断量 ``delta_h_offdiag_fro`` "
+"报告活性空间非对角扰动的 Frobenius 范数；``diagonal`` 模式忽略该扰动，``full_oneelectron`` 模式包含它。"
+
+#: ../../source/user-guide/core-concepts.rst:185
+msgid "Catalyst Guidance"
+msgstr "Catalyst 使用建议"
+
+#: ../../source/user-guide/core-concepts.rst:187
+msgid ""
+"Use Catalyst when repeated executions can reuse a compiled circuit. MC solvation can reuse the "
+"circuit when only Hamiltonian coefficients change. A single execution may not recover the "
+"compilation cost."
+msgstr "重复执行可复用编译电路时使用 Catalyst。MC 溶剂化在仅改变哈密顿量系数时可复用电路。单次执行可能无法抵消编译成本。"
+
+#: ../../source/user-guide/core-concepts.rst:194
+msgid "Use case"
+msgstr "使用场景"
+
+#: ../../source/user-guide/core-concepts.rst:195
+msgid "Recommended path"
+msgstr "建议路径"
+
+#: ../../source/user-guide/core-concepts.rst:196
+msgid "H2 first validation"
+msgstr "H2 首次验证"
+
+#: ../../source/user-guide/core-concepts.rst:197
+msgid "Standard PennyLane or existing example script"
+msgstr "标准 PennyLane 或现有示例脚本"
+
+#: ../../source/user-guide/core-concepts.rst:198
+msgid "MC with fixed vacuum Hamiltonian"
+msgstr "固定真空哈密顿量的 MC"
+
+#: ../../source/user-guide/core-concepts.rst:199
+msgid "Catalyst fixed mode with IR cache"
+msgstr "使用 IR 缓存的 Catalyst fixed 模式"
+
+#: ../../source/user-guide/core-concepts.rst:200
+msgid "MC with runtime MM embedding"
+msgstr "运行时 MM 嵌入的 MC"
+
+#: ../../source/user-guide/core-concepts.rst:201
+msgid "Catalyst dynamic mode, treated as a heavier diagnostic"
+msgstr "Catalyst dynamic 模式，作为较高成本诊断"
+
+#: ../../source/user-guide/core-concepts.rst:202
+msgid "Fixed full-one-electron embedding"
+msgstr "固定完整单电子嵌入"
+
+#: ../../source/user-guide/core-concepts.rst:203
+msgid "Fixed Hamiltonian/operator path only"
+msgstr "仅固定哈密顿量 / 算符路径"
+
+#: ../../source/user-guide/core-concepts.rst:204
+msgid "H3O+ high precision or Trotter scans"
+msgstr "H3O+ 高精度或 Trotter 扫描"
+
+#: ../../source/user-guide/core-concepts.rst:205
+msgid "Optional diagnostics on high-memory machines"
+msgstr "在大内存机器上运行的可选诊断"
+
+#: ../../source/user-guide/core-concepts.rst:208
+msgid "Three Solvation Modes"
+msgstr "三种溶剂化模式"
+
+#: ../../source/user-guide/core-concepts.rst:214
+msgid "Energy model"
+msgstr "能量模型"
+
+#: ../../source/user-guide/core-concepts.rst:215
+msgid "Purpose"
+msgstr "用途"
+
+#: ../../source/user-guide/core-concepts.rst:216
+msgid "``fixed``"
+msgstr "``fixed``"
+
+#: ../../source/user-guide/core-concepts.rst:217
+msgid "``E_QPE(H_vac) + E_MM``"
+msgstr "``E_QPE(H_vac) + E_MM``"
+
+#: ../../source/user-guide/core-concepts.rst:218
+msgid "Fast compile-once baseline"
+msgstr "编译一次的快速基线"
+
+#: ../../source/user-guide/core-concepts.rst:219
+msgid "``hf_corrected``"
+msgstr "``hf_corrected``"
+
+#: ../../source/user-guide/core-concepts.rst:220
+msgid "``E_HF(R) + E_MM`` with interval QPE diagnostics"
+msgstr "``E_HF(R) + E_MM``，并按间隔执行 QPE 诊断"
+
+#: ../../source/user-guide/core-concepts.rst:221
+msgid "Intermediate mode for throughput"
+msgstr "兼顾吞吐量的中间模式"
+
+#: ../../source/user-guide/core-concepts.rst:222
+msgid "``dynamic``"
+msgstr "``dynamic``"
+
+#: ../../source/user-guide/core-concepts.rst:223
+msgid "``E_QPE(H_eff) + E_MM``"
+msgstr "``E_QPE(H_eff) + E_MM``"
+
+#: ../../source/user-guide/core-concepts.rst:224
+msgid "Runtime diagonal MM embedding"
+msgstr "运行时对角 MM 嵌入"
+
+#: ../../source/user-guide/core-concepts.rst:226
+msgid ""
+"q2m3 uses the difference between fixed and dynamic correlation behavior to study ``delta_corr-"
+"pol``, the correlation-polarization coupling term."
+msgstr "q2m3 利用 fixed 与 dynamic 模式的电子相关行为差异，研究电子相关与极化耦合项 ``delta_corr-pol``。"
+
+#: ../../source/user-guide/core-concepts.rst:229
+msgid ""
+"The current dynamic runtime coefficient path updates diagonal coefficients. It does not accept "
+"``embedding_mode=\"full_oneelectron\"`` because off-diagonal one-electron terms can change the "
+"operator support that Catalyst compiled for a given circuit."
+msgstr ""
+"当前动态运行时系数路径更新对角系数。它不接受 ``embedding_mode=\"full_oneelectron\"``，因为非对角单电子项可能改变 Catalyst "
+"为给定电路编译的算符支撑。"

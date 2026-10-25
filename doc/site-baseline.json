@@ -57,6 +57,7 @@
     "api-reference/profiling.html",
     "api-reference/sampling.html",
     "api-reference/solvation.html",
+    "api-reference/sqd-results.html",
     "api-reference/sqd.html",
     "api-reference/utils.html",
     "architecture.html",
@@ -77,6 +78,10 @@
     "tutorials/h2-resource-estimation.html",
     "tutorials/index.html",
     "tutorials/sqd-showcase.html",
-    "tutorials/three-mode-solvation.html"
+    "tutorials/three-mode-solvation.html",
+    "user-guide/core-concepts.html",
+    "user-guide/index.html",
+    "user-guide/sqd-validation.html",
+    "user-guide/sqd.html"
   ]
 }

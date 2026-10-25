@@ -1,371 +1,233 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: ../../source/getting-started.md:1
-msgid "Getting Started"
+#: ../../source/getting-started.rst:2
+msgid "Getting started"
 msgstr "快速开始"
 
-#: ../../source/getting-started.md:3
+#: ../../source/getting-started.rst:4
 msgid ""
-"Use this guide to install q2m3 from source and run H2 validation. Start with these small examples"
-" before the high-memory Catalyst diagnostics."
-msgstr "使用本指南从源码安装 q2m3 并运行 H2 验证。先完成这些小规模示例，再尝试高内存 Catalyst 诊断。"
+"Install q2m3 from source with Python 3.11 or newer and ``uv``. Run the H2 examples before larger "
+"SQD or Catalyst calculations."
+msgstr "使用 Python 3.11 或更新版本及 ``uv`` 从源码安装 q2m3。运行较大的 SQD 或 Catalyst 计算前，先运行 H2 示例。"
 
-#: ../../source/getting-started.md:6
-msgid "Requirements"
-msgstr "要求"
-
-#: ../../source/getting-started.md:8
-msgid ""
-"q2m3 targets Python 3.11 or newer and uses `uv` for environment management. The core package "
-"requires PySCF, PennyLane, NumPy, SciPy, Matplotlib, and Rich. Optional workflows add SQD, "
-"Catalyst/JAX, GPU backends, and molecular visualization tools."
-msgstr ""
-"q2m3 面向 Python 3.11 或更新版本，并使用 `uv` 管理环境。核心包要求 PySCF、PennyLane、NumPy、SciPy、Matplotlib 和 "
-"Rich。可选工作流增加 SQD、Catalyst/JAX、GPU 后端及分子可视化工具。"
-
-#: ../../source/getting-started.md
-msgid "Need"
-msgstr "需求"
-
-#: ../../source/getting-started.md
-msgid "Install command"
-msgstr "安装命令"
-
-#: ../../source/getting-started.md
-msgid "Core package only"
-msgstr "仅核心包"
-
-#: ../../source/getting-started.md
-msgid "`uv sync`"
-msgstr "`uv sync`"
-
-#: ../../source/getting-started.md
-msgid "Development tools"
-msgstr "开发工具"
-
-#: ../../source/getting-started.md
-msgid "`uv sync --extra dev`"
-msgstr "`uv sync --extra dev`"
-
-#: ../../source/getting-started.md
-msgid "Sample-based quantum diagonalization"
-msgstr "基于采样的量子对角化"
-
-#: ../../source/getting-started.md
-msgid "`uv sync --frozen --extra sqd`"
-msgstr "`uv sync --frozen --extra sqd`"
-
-#: ../../source/getting-started.md
-msgid "Catalyst solvation workflow"
-msgstr "Catalyst 溶剂化工作流"
-
-#: ../../source/getting-started.md
-msgid "`uv sync --extra catalyst --extra solvation`"
-msgstr "`uv sync --extra catalyst --extra solvation`"
-
-#: ../../source/getting-started.md
-msgid "Documentation build"
-msgstr "文档构建"
-
-#: ../../source/getting-started.md
-msgid "`uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz`"
-msgstr "`uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz`"
-
-#: ../../source/getting-started.md
-msgid "Full local development set"
-msgstr "完整本地开发依赖"
-
-#: ../../source/getting-started.md
-msgid "`uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz`"
-msgstr "`uv sync --frozen --extra dev --extra sqd --extra catalyst --extra solvation --extra viz`"
-
-#: ../../source/getting-started.md:23
-msgid ""
-"GPU support is optional. The `gpu` extra installs CUDA-oriented packages. Use it only on machines"
-" with compatible NVIDIA drivers and CUDA runtime support."
-msgstr "GPU 支持为可选项。`gpu` 可选依赖安装面向 CUDA 的软件包。仅在具有兼容 NVIDIA 驱动和 CUDA 运行时支持的机器上使用。"
-
-#: ../../source/getting-started.md:27
-msgid "Installation"
+#: ../../source/getting-started.rst:8
+msgid "Install"
 msgstr "安装"
 
-#: ../../source/getting-started.md:36
-msgid "`uv run` automatically uses the managed `.venv`, so activating the environment is optional."
-msgstr "`uv run` 自动使用受管理的 `.venv`，因此可以不激活环境。"
-
-#: ../../source/getting-started.md:39
-msgid "First Validation"
-msgstr "首次验证"
-
-#: ../../source/getting-started.md:41
-msgid "Start with the small H2 examples. They test the same public APIs as the larger workflows."
-msgstr "从小规模 H2 示例开始。它们测试与较大工作流相同的公开 API。"
-
-#: ../../source/getting-started.md:49
-msgid "The maintained H2 validation script does three things:"
-msgstr "维护中的 H2 验证脚本执行三项检查："
-
-#: ../../source/getting-started.md:51
-msgid "It checks vacuum and MM-embedded Hamiltonians."
-msgstr "检查真空和 MM 嵌入哈密顿量。"
-
-#: ../../source/getting-started.md:52
-msgid "It compares PySCF Hartree-Fock references with QPE estimates."
-msgstr "比较 PySCF Hartree-Fock 参考值和 QPE 估计值。"
-
-#: ../../source/getting-started.md:53
-msgid "It reports the solvation stabilization in kcal/mol after explicit conversion from Hartree."
-msgstr "从 Hartree 显式转换后，以 kcal/mol 报告溶剂化稳定能。"
-
-#: ../../source/getting-started.md:56
-msgid "Quick API Check"
-msgstr "快速 API 检查"
-
-#: ../../source/getting-started.md:58
+#: ../../source/getting-started.rst:16
 msgid ""
-"The package-level constants are Python floats. You can use them in pure Python, NumPy, and code "
-"that supplies values to Catalyst."
-msgstr "包级常量为 Python 浮点数，可用于纯 Python、NumPy 以及向 Catalyst 提供数值的代码。"
+"``uv run`` uses the project's ``.venv``. Activation is optional. The core dependencies include "
+"PySCF, PennyLane, NumPy, SciPy, Matplotlib, and Rich."
+msgstr "``uv run`` 使用项目的 ``.venv``，无需手动激活。核心依赖包括 PySCF、PennyLane、NumPy、SciPy、Matplotlib 和 Rich。"
 
-#: ../../source/getting-started.md:66
-msgid "Runtime And Memory Tiers"
-msgstr "运行时间与内存层级"
+#: ../../source/getting-started.rst:19
+msgid "Add extras for the workflow you need:"
+msgstr "按工作流添加 extras："
 
-#: ../../source/getting-started.md:68
+#: ../../source/getting-started.rst:24 ../../source/getting-started.rst:64
+msgid "Workflow"
+msgstr "工作流"
+
+#: ../../source/getting-started.rst:25
+msgid "Command"
+msgstr "命令"
+
+#: ../../source/getting-started.rst:26
+msgid "Development"
+msgstr "开发"
+
+#: ../../source/getting-started.rst:27
+msgid "``uv sync --frozen --extra dev``"
+msgstr "``uv sync --frozen --extra dev``"
+
+#: ../../source/getting-started.rst:28
+msgid "SQD"
+msgstr "SQD"
+
+#: ../../source/getting-started.rst:29
+msgid "``uv sync --frozen --extra sqd``"
+msgstr "``uv sync --frozen --extra sqd``"
+
+#: ../../source/getting-started.rst:30
+msgid "Catalyst solvation"
+msgstr "Catalyst 溶剂化"
+
+#: ../../source/getting-started.rst:31
+msgid "``uv sync --frozen --extra catalyst --extra solvation``"
+msgstr "``uv sync --frozen --extra catalyst --extra solvation``"
+
+#: ../../source/getting-started.rst:32
+msgid "Documentation"
+msgstr "文档"
+
+#: ../../source/getting-started.rst:33
+msgid "``uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz``"
+msgstr "``uv sync --frozen --extra docs --extra sqd --extra catalyst --extra solvation --extra viz``"
+
+#: ../../source/getting-started.rst:35
 msgid ""
-"Do not run every script in `examples/` as a smoke test. Catalyst compile memory scales with "
-"estimation wires, Trotter depth, and Hamiltonian term count."
-msgstr "不要将 `examples/` 中的全部脚本作为冒烟测试。Catalyst 编译内存随估计线路数、Trotter 深度和哈密顿量项数增长。"
+"The ``gpu`` extra requires compatible NVIDIA drivers and CUDA runtime support. CPU examples do "
+"not require it."
+msgstr "``gpu`` extra 要求兼容的 NVIDIA 驱动和 CUDA 运行时。CPU 示例无需该 extra。"
 
-#: ../../source/getting-started.md:61
-msgid "Tier"
-msgstr "层级"
+#: ../../source/getting-started.rst:39
+msgid "Run H2 validation"
+msgstr "运行 H2 检查"
 
-#: ../../source/getting-started.md:61
-msgid "Scripts"
-msgstr "脚本"
-
-#: ../../source/getting-started.md:61
-msgid "Expected environment"
-msgstr "预期环境"
-
-#: ../../source/getting-started.md:61
-msgid "First run"
-msgstr "首次运行"
-
-#: ../../source/getting-started.md:61
-msgid "`h2_qpe_validation.py`, `h2_resource_estimation.py`"
-msgstr "`h2_qpe_validation.py`、`h2_resource_estimation.py`"
-
-#: ../../source/getting-started.md:61
-msgid "CPU laptop or workstation"
-msgstr "CPU 笔记本或工作站"
-
-#: ../../source/getting-started.md:61
-msgid "Standard MC"
-msgstr "标准 MC"
-
-#: ../../source/getting-started.md:61
-msgid "`h2_mc_solvation.py`"
-msgstr "`h2_mc_solvation.py`"
-
-#: ../../source/getting-started.md:61
-msgid "Catalyst/JAX installed. 8 GB+ RAM recommended"
-msgstr "已安装 Catalyst/JAX。建议至少 8 GB 内存"
-
-#: ../../source/getting-started.md:61
-msgid "H3O+ MC"
-msgstr "H3O+ MC"
-
-#: ../../source/getting-started.md:61
-msgid "`h3o_mc_solvation.py`"
-msgstr "`h3o_mc_solvation.py`"
-
-#: ../../source/getting-started.md:61
-msgid "Catalyst/JAX installed. 16 GB+ RAM recommended"
-msgstr "已安装 Catalyst/JAX。建议至少 16 GB 内存"
-
-#: ../../source/getting-started.md:61
-msgid "High-memory diagnostics"
-msgstr "高内存诊断"
-
-#: ../../source/getting-started.md:61
-msgid "`h3o_8bit_qpe_benchmark.py`, `h3o_dynamic_trotter_oom_scan.py`, `qpe_memory_profile.py`"
-msgstr "`h3o_8bit_qpe_benchmark.py`、`h3o_dynamic_trotter_oom_scan.py`、`qpe_memory_profile.py`"
-
-#: ../../source/getting-started.md:61
-msgid "30 GB+ RAM recommended. Use provided guards/options"
-msgstr "建议至少 30 GB 内存。使用提供的保护机制和选项"
-
-#: ../../source/getting-started.md:78
-msgid "Basic Solvation Run"
-msgstr "基本溶剂化运行"
-
-#: ../../source/getting-started.md:84
+#: ../../source/getting-started.rst:46
 msgid ""
-"This command runs fixed-mode H2 MC solvation with IR caching. The first run may compile Catalyst "
-"IR. Later runs can reuse the cache when the circuit structure does not change."
-msgstr "该命令运行启用 IR 缓存的 fixed 模式 H2 MC 溶剂化。首次运行可能编译 Catalyst IR；当电路结构不变时，后续运行可复用缓存。"
-
-#: ../../source/getting-started.md:88
-msgid "First SQD Run"
-msgstr "首次 SQD 运行"
-
-#: ../../source/getting-started.md:90
-msgid ""
-"SQD currently requires Linux x86_64 and a source checkout. Set native numerical thread counts "
-"before Python starts. The calibrated resource model covers serial execution."
-msgstr "SQD 目前要求 Linux x86_64 和源码仓库。在 Python 启动前设置原生数值线程数。校准资源模型覆盖串行执行。"
-
-#: ../../source/getting-started.md:99
-msgid ""
-"This four-qubit H₂ case is a convention and integration regression: its sampled subspace reaches "
-"all four determinants. Continue with the [SQD showcase tutorial](tutorials/sqd-showcase.md) for "
-"sparse glycine runs, authenticated integral input, and fixed point-charge embedding."
+"The first script compares vacuum and MM-embedded HF and QPE energies. Inspect every ``[OK]`` and "
+"``[FAIL]`` line. Its exit status does not report failed checks. The second script estimates "
+"quantum hardware resources. See :doc:`tutorials/h2-qpe-validation` and :doc:`tutorials/h2"
+"-resource-estimation` for interpretation."
 msgstr ""
-"这个四量子比特 H₂ 案例检查约定和集成回归：其采样子空间达到全部四个行列式。继续阅读 [SQD 展示教程](tutorials/sqd-"
-"showcase.md)，了解稀疏甘氨酸运行、经过认证的积分输入和固定点电荷嵌入。"
+"第一个脚本对比真空与 MM 嵌入体系的 HF 和 QPE 能量。检查每一行 ``[OK]`` 和 ``[FAIL]``。其退出状态不反映检查失败。第二个脚本估算量子硬件资源。结果解释见 "
+":doc:`tutorials/h2-qpe-validation` 和 :doc:`tutorials/h2-resource-estimation`。"
 
-#: ../../source/getting-started.md:104
+#: ../../source/getting-started.rst:51
+msgid "Energies use Hartree internally. Convert explicitly before reporting kcal/mol:"
+msgstr "内部能量单位为 Hartree。报告 kcal/mol 前须显式转换："
+
+#: ../../source/getting-started.rst:59
+msgid "Choose the next workflow"
+msgstr "选择后续工作流"
+
+#: ../../source/getting-started.rst:65
+msgid "Requirements and scope"
+msgstr "要求与范围"
+
+#: ../../source/getting-started.rst:66
+msgid ":doc:`tutorials/h2-mc-solvation`"
+msgstr ":doc:`tutorials/h2-mc-solvation`"
+
+#: ../../source/getting-started.rst:67
+msgid "Catalyst and solvation extras. 8 GB+ RAM recommended."
+msgstr "需要 catalyst 和 solvation extras。建议至少 8 GB 内存。"
+
+#: ../../source/getting-started.rst:68
+msgid ":doc:`tutorials/sqd-showcase`"
+msgstr ":doc:`tutorials/sqd-showcase`"
+
+#: ../../source/getting-started.rst:69
+msgid "SQD extra, Linux x86_64, and serial native threads."
+msgstr "需要 SQD extra、Linux x86_64 和串行原生线程。"
+
+#: ../../source/getting-started.rst:70
+msgid ":doc:`tutorials/fragment-interaction`"
+msgstr ":doc:`tutorials/fragment-interaction`"
+
+#: ../../source/getting-started.rst:71
+msgid "Core install for ``classical_only``. SQD extra and Linux x86_64 for ``full``."
+msgstr "``classical_only`` 只需核心安装。``full`` 需要 SQD extra 和 Linux x86_64。"
+
+#: ../../source/getting-started.rst:72
+msgid "H3O+ MC diagnostics"
+msgstr "H3O+ MC 诊断"
+
+#: ../../source/getting-started.rst:73
+msgid "Catalyst and solvation extras. 16 GB+ RAM recommended."
+msgstr "需要 catalyst 和 solvation extras。建议至少 16 GB 内存。"
+
+#: ../../source/getting-started.rst:74
+msgid "8-bit QPE and dynamic-Trotter diagnostics"
+msgstr "8 位 QPE 与动态 Trotter 诊断"
+
+#: ../../source/getting-started.rst:75
+msgid "30 GB+ RAM recommended. Use the scripts' memory guards."
+msgstr "建议至少 30 GB 内存。使用脚本提供的内存限制。"
+
+#: ../../source/getting-started.rst:77
+msgid ""
+"The memory recommendations are not measured upper bounds. See :doc:`tutorials/index` for "
+"diagnostic script paths. Catalyst compilation depends on estimation wires, Trotter depth, and "
+"Hamiltonian term count."
+msgstr "建议内存不是实测上限。诊断脚本路径见 :doc:`tutorials/index`。Catalyst 编译取决于估算线数、Trotter 深度和哈密顿量项数。"
+
+#: ../../source/getting-started.rst:82
 msgid "Troubleshooting"
 msgstr "故障排查"
 
-#: ../../source/getting-started.md:61
+#: ../../source/getting-started.rst:87
 msgid "Symptom"
 msgstr "现象"
 
-#: ../../source/getting-started.md:61
-msgid "Likely cause"
-msgstr "可能原因"
-
-#: ../../source/getting-started.md:61
+#: ../../source/getting-started.rst:88
 msgid "Action"
 msgstr "操作"
 
-#: ../../source/getting-started.md:61
-msgid "Import error for `catalyst` or `jax`"
-msgstr "导入 `catalyst` 或 `jax` 出错"
+#: ../../source/getting-started.rst:89
+msgid "Missing ``catalyst`` or ``jax``"
+msgstr "缺少 ``catalyst`` 或 ``jax``"
 
-#: ../../source/getting-started.md:61
-msgid "Solvation extras are missing"
-msgstr "缺少溶剂化可选依赖"
+#: ../../source/getting-started.rst:90
+msgid "Install the ``catalyst`` and ``solvation`` extras."
+msgstr "安装 ``catalyst`` 和 ``solvation`` extras。"
 
-#: ../../source/getting-started.md:61
-msgid "Run `uv sync --extra catalyst --extra solvation`"
-msgstr "运行 `uv sync --extra catalyst --extra solvation`"
+#: ../../source/getting-started.rst:91
+msgid "Missing ``ffsim`` or ``qiskit_addon_sqd``"
+msgstr "缺少 ``ffsim`` 或 ``qiskit_addon_sqd``"
 
-#: ../../source/getting-started.md:61
-msgid "Import error for `ffsim` or `qiskit_addon_sqd`"
-msgstr "导入 `ffsim` 或 `qiskit_addon_sqd` 出错"
+#: ../../source/getting-started.rst:92
+msgid "Install the ``sqd`` extra."
+msgstr "安装 ``sqd`` extra。"
 
-#: ../../source/getting-started.md:61
-msgid "SQD extra is missing"
-msgstr "缺少 SQD 可选依赖"
+#: ../../source/getting-started.rst:93
+msgid "SQD rejects the platform, threads, or memory request"
+msgstr "SQD 拒绝平台、线程或内存请求"
 
-#: ../../source/getting-started.md:61
-msgid "Run `uv sync --frozen --extra sqd`"
-msgstr "运行 `uv sync --frozen --extra sqd`"
+#: ../../source/getting-started.rst:94
+msgid "Check :doc:`user-guide/sqd`. ``allow_large`` cannot bypass domain or hard limits."
+msgstr "检查 :doc:`user-guide/sqd`。``allow_large`` 无法绕过适用域或硬上限。"
 
-#: ../../source/getting-started.md:61
-msgid "SQD rejects the platform or thread settings"
-msgstr "SQD 拒绝平台或线程设置"
+#: ../../source/getting-started.rst:95
+msgid "Slow first MC run"
+msgstr "首次 MC 运行缓慢"
 
-#: ../../source/getting-started.md:61
-msgid "The calibrated executor requires Linux x86_64 and serial BLAS/OpenMP"
-msgstr "校准执行器要求 Linux x86_64 和串行 BLAS/OpenMP"
+#: ../../source/getting-started.rst:96
+msgid "Allow compilation to finish. Later runs can reuse compatible IR."
+msgstr "等待编译完成。后续运行可复用兼容的 IR。"
 
-#: ../../source/getting-started.md:61
-msgid "Set all documented thread variables to `1` before Python starts. Use a supported host"
-msgstr "在 Python 启动前将文档中列出的全部线程变量设为 `1`。使用支持的主机"
+#: ../../source/getting-started.rst:97
+msgid "H3O+ run exceeds memory"
+msgstr "H3O+ 运行超出内存"
 
-#: ../../source/getting-started.md:61
-msgid "SQD rejects a size or memory request"
-msgstr "SQD 拒绝规模或内存请求"
+#: ../../source/getting-started.rst:98
+msgid "Start with H2. Reduce Trotter depth or use more memory."
+msgstr "先运行 H2。降低 Trotter 深度或增加可用内存。"
 
-#: ../../source/getting-started.md:61
-msgid "The request is outside the calibrated domain or reaches a host/user/hard cap"
-msgstr "请求超出校准域，或达到主机、用户或硬上限"
+#: ../../source/getting-started.rst:99
+msgid "GPU device is unavailable"
+msgstr "GPU 设备不可用"
 
-#: ../../source/getting-started.md:61
-msgid ""
-"Reduce the documented active-space profile or budget. `allow_large` cannot bypass hard/domain "
-"limits"
-msgstr "减小文档规定的活性空间配置或预算。`allow_large` 无法绕过硬限制或域限制"
+#: ../../source/getting-started.rst:100
+msgid "Check ``q2m3.core.device_utils``. CPU options include ``lightning.qubit`` and ``default.qubit``."
+msgstr "检查 ``q2m3.core.device_utils``。CPU 可选 ``lightning.qubit`` 或 ``default.qubit``。"
 
-#: ../../source/getting-started.md:61
-msgid "Very slow first MC run"
-msgstr "首次 MC 运行很慢"
+#: ../../source/getting-started.rst:102
+msgid "Large QPE–HF difference"
+msgstr "QPE–HF 差值较大"
 
-#: ../../source/getting-started.md:61
-msgid "Catalyst is compiling QPE IR"
-msgstr "Catalyst 正在编译 QPE IR"
+#: ../../source/getting-started.rst:103
+msgid "Check estimation wires, ``base_time``, energy shift, and Trotter depth."
+msgstr "检查估算线数、``base_time``、能量偏移和 Trotter 深度。"
 
-#: ../../source/getting-started.md:61
-msgid "Let the first compile finish, then reuse the cache"
-msgstr "等待首次编译完成，然后复用缓存"
-
-#: ../../source/getting-started.md:61
-msgid "H3O+ example is killed or times out"
-msgstr "H3O+ 示例被终止或超时"
-
-#: ../../source/getting-started.md:61
-msgid "H3O+ IR is much larger than H2 IR"
-msgstr "H3O+ IR 远大于 H2 IR"
-
-#: ../../source/getting-started.md:61
-msgid "Use the H2 examples first. Lower Trotter depth or run on a larger machine"
-msgstr "先使用 H2 示例。降低 Trotter 深度，或换用更大机器"
-
-#: ../../source/getting-started.md:61
-msgid "GPU device is not selected"
-msgstr "未选择 GPU 设备"
-
-#: ../../source/getting-started.md:61
-msgid "CUDA, Lightning GPU, and JAX CUDA availability are separate checks"
-msgstr "CUDA、Lightning GPU 和 JAX CUDA 的可用性分别检查"
-
-#: ../../source/getting-started.md:61
-msgid "Inspect `q2m3.core.device_utils` and fall back to `lightning.qubit` or `default.qubit`"
-msgstr "检查 `q2m3.core.device_utils`，并回退到 `lightning.qubit` 或 `default.qubit`"
-
-#: ../../source/getting-started.md:61
-msgid "QPE energy differs from HF by a large amount"
-msgstr "QPE 能量与 HF 相差很大"
-
-#: ../../source/getting-started.md:61
-msgid "Low precision, phase wrapping, or Trotter error"
-msgstr "精度低、相位回绕或 Trotter 误差"
-
-#: ../../source/getting-started.md:61
-msgid ""
-"Check estimation wires, `base_time`, energy shift, and Trotter depth before interpreting the "
-"value as chemistry"
-msgstr "解释其化学意义前，先检查估计线路数、`base_time`、能量平移和 Trotter 深度"
-
-#: ../../source/getting-started.md:117
-msgid "Next Steps"
-msgstr "后续步骤"
-
-#: ../../source/getting-started.md:119
-msgid ""
-"Read [Core Concepts](core-concepts.md) for the scientific model. Then run the tutorials in order,"
-" from H2 QPE validation through the three-mode solvation comparison."
-msgstr "阅读[核心概念](core-concepts.md)了解科学模型，再按顺序运行从 H2 QPE 验证到三模式溶剂化比较的教程。"
+#: ../../source/getting-started.rst:105
+msgid "Read :doc:`user-guide/core-concepts` before interpreting energy differences as chemistry."
+msgstr "从化学角度解释能量差前，先阅读 :doc:`user-guide/core-concepts`。"

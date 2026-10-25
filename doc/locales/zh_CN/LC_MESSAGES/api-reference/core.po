@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 19:49+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -1453,10 +1452,3 @@ msgid ""
 "Some solvers (like QPE) support circuit pre-compilation for reuse across MC steps with the same "
 "Hamiltonian."
 msgstr "某些求解器（例如 QPE）支持电路预编译，以便在采用相同哈密顿量的不同 MC 步骤间复用。"
-
-#~ msgid ""
-#~ "This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(). It"
-#~ " returns structured dataclass results for resource "
-#~ "estimates for an Early Fault-Tolerant Quantum "
-#~ "Computer (EFTQC)."
-#~ msgstr "此模块封装 PySCFPennyLaneConverter.estimate_qpe_resources()，以结构化数据类返回早期容错量子计算机（EFTQC）的资源估计结果。"

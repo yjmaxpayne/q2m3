@@ -1,25 +1,29 @@
 """The fragment tutorials: the calculator page runs the water-dimer workflow in at most
-five lines of code, and the report-reading page links the report of that run."""
+five lines of code, and the report-reading page explains the energies from that run."""
 
 from __future__ import annotations
 
 import ast
 import doctest
 import re
+import textwrap
 from pathlib import Path
 
 TUTORIALS = Path(__file__).resolve().parents[2] / "doc/source/tutorials"
-TUTORIAL = TUTORIALS / "fragment-interaction.md"
-READING_TUTORIAL = TUTORIALS / "fragment-report.md"
+TUTORIAL = TUTORIALS / "fragment-interaction.rst"
+READING_TUTORIAL = TUTORIALS / "fragment-report.rst"
 MAX_CODE_LINES = 5
-_BLOCK = re.compile(r"^```\{(doctest|testsetup|testcleanup)\}[^\n]*\n(.*?)^```", re.M | re.S)
+_BLOCK = re.compile(
+    r"^\.\. (doctest|testsetup|testcleanup)::[^\n]*\n\n((?:[ \t]+[^\n]*\n|\n)+)",
+    re.M,
+)
 _FILE_REFERENCE = re.compile(
-    r"\{download\}`(?:[^`<]*<)?([^`<>]+)>?`|^```\{literalinclude\}[ \t]+(\S+)", re.M
+    r":download:`(?:[^`<]*<)?([^`<>]+)>?`|^\.\. literalinclude::[ \t]+(\S+)", re.M
 )
 
 
 def _blocks(text: str, kind: str) -> list[str]:
-    return [body for name, body in _BLOCK.findall(text) if name == kind]
+    return [textwrap.dedent(body) for name, body in _BLOCK.findall(text) if name == kind]
 
 
 def code_lines(block: str) -> list[str]:
@@ -64,8 +68,8 @@ def test_hidden_setup_runs_no_workflow_code():
 
 
 def file_references(text: str) -> list[str]:
-    """Return the local files that a page links with ``{download}`` or shows with
-    ``{literalinclude}``, relative to the page."""
+    """Return the local files that a page links with ``:download:`` or shows with
+    ``literalinclude``, relative to the page."""
     return [download or included for download, included in _FILE_REFERENCE.findall(text)]
 
 
@@ -82,23 +86,31 @@ def _report_want() -> str:
 
 def test_download_links_and_included_files_are_references():
     text = (
-        "See {download}`report.md`.\n"
-        "Get {download}`the report <dir/r.md>`.\n"
-        "```{literalinclude} shown.md\n:language: markdown\n```\n"
+        "See :download:`report.md`.\n"
+        "Get :download:`the report <dir/r.md>`.\n"
+        ".. literalinclude:: shown.md\n   :language: markdown\n"
     )
     assert file_references(text) == ["report.md", "dir/r.md", "shown.md"]
 
 
-def test_reading_tutorial_references_existing_files():
-    references = file_references(READING_TUTORIAL.read_text())
+def test_calculator_tutorial_references_existing_files():
+    references = file_references(TUTORIAL.read_text())
     assert references
     missing = [name for name in references if not (TUTORIALS / name).is_file()]
     assert not missing, missing
 
 
-def test_reading_tutorial_shows_the_report_of_the_calculator_run():
-    # The calculator doctest checks a real run against this output in make docs-doctest.
-    want = _report_want()
-    for name in set(file_references(READING_TUTORIAL.read_text())):
-        report = (TUTORIALS / name).read_text()
-        assert doctest.OutputChecker().check_output(want, report, doctest.ELLIPSIS), name
+def test_reading_tutorial_matches_the_calculator_run():
+    # Sphinx checks these expected energies against a real calculation.
+    expected = dict(re.findall(r"^\| ([^|]+) \| [^|]+ \| ([^|]+) \| \|$", _report_want(), re.M))
+    reading = READING_TUTORIAL.read_text()
+    actual = dict(
+        re.findall(
+            r"^   \* - (HF|MP2|CASCI|SQD|CCSD\(T\))\n     - [^\n]+\n     - ([^\n]+)",
+            reading.replace("−", "-"),
+            re.M,
+        )
+    )
+    assert len(expected) == 5
+    assert actual == expected
+    assert ":doc:`Fragment Interaction Energy <fragment-interaction>`" in reading

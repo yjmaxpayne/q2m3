@@ -1,0 +1,200 @@
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
+"Language: zh_CN\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/user-guide/sqd-validation.rst:2
+msgid "SQD measured results"
+msgstr "SQD 实测结果"
+
+#: ../../source/user-guide/sqd-validation.rst:4
+msgid ""
+"These are historical measurements from the SQD delivery. They are not accuracy or memory "
+"guarantees for new calculations. The measured environment used Linux x86_64, Python 3.12.3, NumPy"
+" 2.4.1, SciPy 1.16.3, ffsim 0.0.84, Qiskit 2.5.2, and qiskit-addon-sqd 0.13.1."
+msgstr ""
+"这些是 SQD 交付时的历史测量，不保证新计算的精度或内存。测量环境为 Linux x86_64、Python 3.12.3、NumPy 2.4.1、SciPy 1.16.3、ffsim "
+"0.0.84、Qiskit 2.5.2 和 qiskit-addon-sqd 0.13.1。"
+
+#: ../../source/user-guide/sqd-validation.rst:9
+msgid ""
+"The approved default benchmark scope used reps 2/shots 100000. All eight runs used T0, and their "
+"measured whole-process-tree peaks were below 2 billion bytes (maximum 1,021,018,112 bytes). "
+"Sampling alone peaked at 732,467,200 bytes. Measurements used 10 ms polling and do not guarantee "
+"capture of every instantaneous peak or certify arbitrary geometries, MM systems, plugins or T2 "
+"paths."
+msgstr ""
+"获准的默认基准范围使用重复数 2、采样数 100000。全部八次运行使用 T0，实测完整进程树峰值均低于 20 亿字节（最高 1,021,018,112 字节）。仅采样阶段的峰值为 "
+"732,467,200 字节。测量使用 10 ms 轮询，不能保证捕获每个瞬时峰值，也不认证任意几何、MM 体系、插件或 T2 路径。"
+
+#: ../../source/user-guide/sqd-validation.rst:19
+msgid "Case"
+msgstr "案例"
+
+#: ../../source/user-guide/sqd-validation.rst:20
+msgid "Active space"
+msgstr "活性空间"
+
+#: ../../source/user-guide/sqd-validation.rst:21
+msgid "SQD − T0 (mHa)"
+msgstr "SQD − T0（mHa）"
+
+#: ../../source/user-guide/sqd-validation.rst:22
+msgid "Interpretation"
+msgstr "解释"
+
+#: ../../source/user-guide/sqd-validation.rst:23
+msgid "H₂/STO-3G"
+msgstr "H₂/STO-3G"
+
+#: ../../source/user-guide/sqd-validation.rst:24
+msgid "2e2o"
+msgstr "2e2o"
+
+#: ../../source/user-guide/sqd-validation.rst:25 ../../source/user-guide/sqd-validation.rst:29
+msgid "0"
+msgstr "0"
+
+#: ../../source/user-guide/sqd-validation.rst:26
+msgid "Full space 4/4. Convention regression"
+msgstr "全空间 4/4。约定回归检查"
+
+#: ../../source/user-guide/sqd-validation.rst:27
+msgid "H₃O⁺/STO-3G"
+msgstr "H₃O⁺/STO-3G"
+
+#: ../../source/user-guide/sqd-validation.rst:28
+msgid "4e4o"
+msgstr "4e4o"
+
+#: ../../source/user-guide/sqd-validation.rst:30
+msgid "Full space 36/36. Convention regression"
+msgstr "全空间 36/36。约定回归检查"
+
+#: ../../source/user-guide/sqd-validation.rst:31
+msgid "Glycine/STO-3G, seeds 0–4"
+msgstr "甘氨酸 / STO-3G，种子 0–4"
+
+#: ../../source/user-guide/sqd-validation.rst:32
+msgid "6e6o"
+msgstr "6e6o"
+
+#: ../../source/user-guide/sqd-validation.rst:33
+msgid "mean 0.525399, sample std 0.111683, range 0.325821–0.579774"
+msgstr "均值 0.525399，样本标准差 0.111683，范围 0.325821–0.579774"
+
+#: ../../source/user-guide/sqd-validation.rst:34
+msgid "Subspaces 64–90/400. All five worse than CCSD. Mixed against SCI"
+msgstr "子空间 64–90/400。五次均差于 CCSD。相对 SCI 的结果有好有坏"
+
+#: ../../source/user-guide/sqd-validation.rst:35
+msgid "N₂, 1.1 Å/cc-pVDZ, seed 0"
+msgstr "N₂，1.1 Å/cc-pVDZ，种子 0"
+
+#: ../../source/user-guide/sqd-validation.rst:36
+msgid "10e10o"
+msgstr "10e10o"
+
+#: ../../source/user-guide/sqd-validation.rst:37
+msgid "18.782945"
+msgstr "18.782945"
+
+#: ../../source/user-guide/sqd-validation.rst:38
+msgid "Subspace 342/63504. Worse than SCI by 8.918280 mHa and CCSD by 16.801641 mHa"
+msgstr "子空间 342/63504。比 SCI 差 8.918280 mHa，比 CCSD 差 16.801641 mHa"
+
+#: ../../source/user-guide/sqd-validation.rst:40
+msgid ""
+"These deltas use each run's own Hamiltonian/frame/core reference. Historical absolute energies "
+"must not be mixed into them. The calibration rejected historical glycine runs with reps 4/shots "
+"200000. It also rejected N₂ runs with reps 4/shots 500000. Their energy and full-run memory "
+"benchmarks remain unmeasured. Rejecting a run before execution does not constitute a successful "
+"memory benchmark."
+msgstr ""
+"这些差值使用各次运行自身的哈密顿量、框架和芯常数参考。不得混入历史绝对能量。校准模型拒绝了 reps 4/shots 200000 的历史甘氨酸运行。它也拒绝了 reps 4/shots "
+"500000 的 N₂ 运行。它们的能量和完整运行内存仍未测量。执行前拒绝运行，不等于通过内存基准。"
+
+#: ../../source/user-guide/sqd-validation.rst:46
+msgid ""
+"E1 (four orbital bases) and E6 (restricted connectivity) remain **inconclusive** because their "
+"original numerical matrices exceed the certified domain. E1 requires all per-seed and mean ranges"
+" to lie strictly on one side of 2 mHa for a directional conclusion. Missing points cannot pass. "
+"E6 compares restricted-minus-full errors per seed against 5 mHa. Missing points or threshold "
+"crossings are inconclusive."
+msgstr ""
+"E1（四种轨道基底）和 E6（受限连通性）仍然**无定论**，因为其原始数值矩阵超出认证域。E1 要求所有单种子和均值范围均严格位于 2 mHa "
+"的同一侧，才能得出方向性结论。缺失点不能通过。E6 将每个种子的受限减完整误差与 5 mHa 比较。缺失点或跨越阈值均无定论。"
+
+#: ../../source/user-guide/sqd-validation.rst:53
+msgid ""
+"H₃O⁺ checks show that the operator uses the supplied connectivity. They do not establish better "
+"energies or hardware readiness. The checks do not certify hardware layout, SWAP overhead, noise, "
+"or ancillas. The delivery did not run E3. Its status remains ``not_run``."
+msgstr "H₃O⁺ 检查表明算符使用了传入的连通性。它们不证明能量更优或硬件就绪。这些检查不认证硬件布局、SWAP 开销、噪声或辅助比特。交付未运行 E3，其状态保持 ``not_run``。"
+
+#: ../../source/user-guide/sqd-validation.rst:61
+msgid "Study"
+msgstr "研究"
+
+#: ../../source/user-guide/sqd-validation.rst:62
+msgid "Status"
+msgstr "状态"
+
+#: ../../source/user-guide/sqd-validation.rst:63
+msgid "Evidence boundary"
+msgstr "证据边界"
+
+#: ../../source/user-guide/sqd-validation.rst:64
+msgid "E1"
+msgstr "E1"
+
+#: ../../source/user-guide/sqd-validation.rst:65 ../../source/user-guide/sqd-validation.rst:71
+msgid "inconclusive"
+msgstr "无定论"
+
+#: ../../source/user-guide/sqd-validation.rst:66
+msgid "Original four-basis numerical matrix exceeds the certified domain"
+msgstr "原始四基底数值矩阵超出认证域"
+
+#: ../../source/user-guide/sqd-validation.rst:67
+msgid "E3"
+msgstr "E3"
+
+#: ../../source/user-guide/sqd-validation.rst:68
+msgid "not_run"
+msgstr "not_run"
+
+#: ../../source/user-guide/sqd-validation.rst:69
+msgid "Not executed in this delivery"
+msgstr "本次交付中未执行"
+
+#: ../../source/user-guide/sqd-validation.rst:70
+msgid "E6"
+msgstr "E6"
+
+#: ../../source/user-guide/sqd-validation.rst:72
+msgid "Original restricted/full numerical matrix is incomplete"
+msgstr "原始受限 / 完整数值矩阵不完整"
+
+#: ../../source/user-guide/sqd-validation.rst:74
+msgid ""
+"The :doc:`/tutorials/sqd-showcase` identifies the maintained example commands. Historical reports"
+" under ``tmp/`` and evidence under ``.plan/`` are not installed package assets. Retain the "
+"original reports when citing these historical measurements."
+msgstr ""
+":doc:`/tutorials/sqd-showcase` 列出维护中的示例命令。``tmp/`` 中的历史报告和 ``.plan/`` "
+"中的证据不属于安装包资源。引用这些历史测量时，保留原始报告。"

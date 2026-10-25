@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 19:49+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -26,10 +25,10 @@ msgstr "SQD API"
 msgid ""
 "The SQD API is optional. Install it with ``uv sync --frozen --extra sqd``. Configuration and "
 "result contracts remain importable without the optional sampling backend. Workflow functions load"
-" on access when ``ffsim`` and ``qiskit-addon-sqd`` are installed."
+" on access when the environment contains ``ffsim`` and ``qiskit-addon-sqd``."
 msgstr ""
-"SQD API 是可选组件。使用 ``uv sync --frozen --extra sqd`` 安装。未安装可选采样后端时，仍可导入配置和结果契约。安装 ``ffsim`` 和 "
-"``qiskit-addon-sqd`` 后，工作流函数在访问时加载。"
+"SQD API 为可选项。使用 ``uv sync --frozen --extra sqd`` 安装。配置与结果类型无需可选采样后端即可导入。环境包含 ``ffsim`` 和 "
+"``qiskit-addon-sqd`` 时，工作流函数在访问时加载。"
 
 #: ../../source/api-reference/sqd.rst:10
 msgid "Public Workflows"
@@ -247,6 +246,10 @@ msgstr "已复制的只读 RCCSD 振幅及所声明的求解器来源记录。"
 msgid "Result Contracts"
 msgstr "结果契约"
 
+#: ../../source/api-reference/sqd.rst:37
+msgid "See :doc:`sqd-results` for field units and absence rules."
+msgstr "字段单位与缺失值规则见 :doc:`sqd-results`。"
+
 #: of q2m3.sqd.result.SQDResult:1
 msgid "Complete SQD report, with absent work represented by None and a reason."
 msgstr "完整的 SQD 报告；未执行的工作以 None 和原因表示。"
@@ -295,15 +298,15 @@ msgstr "T2 基线的独立耦合簇可靠性标志。"
 msgid "Check each flag against its own diagnostic, returning this record."
 msgstr "逐一根据对应诊断检查各标志，并返回此记录。"
 
-#: ../../source/api-reference/sqd.rst:53
+#: ../../source/api-reference/sqd.rst:55
 msgid "Authenticated Integral Assembly"
 msgstr "经来源验证的积分构建"
 
-#: ../../source/api-reference/sqd.rst:55
+#: ../../source/api-reference/sqd.rst:57
 msgid ""
 "These lower-level producers create the provenance records required by ``run_sqd_from_integrals``."
-" The integral tensor uses real chemist ordering. ``e_core`` is added exactly once."
-msgstr "这些底层生成函数创建 ``run_sqd_from_integrals`` 所需的来源记录。积分张量采用实数化学家记号顺序。``e_core`` 恰好加一次。"
+" The integral tensor uses real chemist ordering. The solver adds ``e_core`` exactly once."
+msgstr "这些底层函数生成 ``run_sqd_from_integrals`` 所需的来源记录。积分张量使用实数化学家顺序。求解器只加一次 ``e_core``。"
 
 #: of q2m3.sqd.integrals.IntegralData:1
 msgid "Immutable chemist Hamiltonian, complete MO snapshot and its provenance."
@@ -493,11 +496,11 @@ msgstr "已收敛的只读振幅，带有 context 的标识。"
 msgid "Integrals disagree with the context Hamiltonian hash."
 msgstr "积分与 context 的哈密顿量哈希不一致。"
 
-#: ../../source/api-reference/sqd.rst:71
+#: ../../source/api-reference/sqd.rst:73
 msgid "Result Transport"
 msgstr "结果传输"
 
-#: ../../source/api-reference/sqd.rst:73
+#: ../../source/api-reference/sqd.rst:75
 msgid ""
 "These functions encode frozen SQD records as tagged tuples that pickle without custom reducers, "
 "and rebuild them in another process."
@@ -559,7 +562,7 @@ msgstr "重建期间 ``cancelled`` 被置位。"
 msgid "If a record type is defined outside ``q2m3.sqd.``."
 msgstr "记录类型定义在 ``q2m3.sqd.`` 之外。"
 
-#: ../../source/api-reference/sqd.rst:81
+#: ../../source/api-reference/sqd.rst:83
 msgid "Resource Policy"
 msgstr "资源策略"
 
@@ -684,7 +687,7 @@ msgstr "不可变模型。执行器必须遵守记录的在用数组调度、求
 msgid "Missing artifact, unvalidated model or runtime mismatch."
 msgstr "产物缺失、模型未经验证或运行环境不匹配。"
 
-#: ../../source/api-reference/sqd.rst:90
+#: ../../source/api-reference/sqd.rst:92
 msgid "Exceptions"
 msgstr "异常"
 

@@ -11,6 +11,7 @@ package-level exports. Use the module pages for specific entry points.
    core
    interfaces
    sqd
+   sqd-results
    fragments
    solvation
    sampling

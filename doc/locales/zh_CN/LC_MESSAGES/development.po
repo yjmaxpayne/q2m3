@@ -1,216 +1,220 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 22:50+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: ../../source/development.md:1
+#: ../../source/development.rst:2
 msgid "Development"
 msgstr "开发"
 
-#: ../../source/development.md:3
+#: ../../source/development.rst:4
 msgid ""
-"q2m3 uses a src-layout package, `uv` for dependency management, Ruff for linting, Black for "
+"q2m3 uses a src-layout package, ``uv`` for dependency management, Ruff for linting, Black for "
 "formatting, and pytest for tests."
-msgstr "q2m3 使用 src 布局，以 `uv` 管理依赖、Ruff 检查代码、Black 格式化代码，并用 pytest 测试。"
+msgstr "q2m3 使用 src 布局，以 ``uv`` 管理依赖、Ruff 检查代码、Black 格式化代码，并用 pytest 测试。"
 
-#: ../../source/development.md:6
+#: ../../source/development.rst:8
 msgid "Environment Setup"
 msgstr "环境配置"
 
-#: ../../source/development.md:13
-msgid "Install only the extras required by your task:"
-msgstr "只安装任务所需的可选依赖："
+#: ../../source/development.rst:10
+msgid ""
+"Install the development tools and extras required by your task. See :doc:`getting-started` for "
+"the workflow extras."
+msgstr "安装任务所需的开发工具和 extras。工作流 extras 见 :doc:`getting-started`。"
 
-#: ../../source/development.md:22
+#: ../../source/development.rst:18
 msgid "Testing"
 msgstr "测试"
 
-#: ../../source/development.md:24
+#: ../../source/development.rst:20
 msgid "Use the narrowest useful command first."
 msgstr "先使用范围最小且能验证目标的命令。"
 
-#: ../../source/development.md:33
+#: ../../source/development.rst:29
 msgid ""
-"Registered markers include `slow`, `solvation`, `catalyst`, `gpu`, `rdm`, and `sqd`. The standard"
-" CI path skips slow and GPU tests."
-msgstr "已注册的标记包括 `slow`、`solvation`、`catalyst`、`gpu`、`rdm` 和 `sqd`。标准 CI 路径跳过慢速测试和 GPU 测试。"
+"Registered markers include ``slow``, ``solvation``, ``catalyst``, ``gpu``, ``rdm``, and ``sqd``. "
+"The standard CI path skips slow and GPU tests."
+msgstr "已注册的标记包括 ``slow``、``solvation``、``catalyst``、``gpu``、``rdm`` 和 ``sqd``。标准 CI 路径跳过慢速测试和 GPU 测试。"
 
-#: ../../source/development.md:36
+#: ../../source/development.rst:32
 msgid ""
-"Tests marked `external` need a separate Psi4 environment from conda-forge. They skip when "
-"`Q2M3_PSI4_PYTHON` is not set. Set it to the absolute path of the Python interpreter in that "
-"environment:"
+"Tests marked ``external`` require a separate Psi4 environment from conda-forge. They skip when "
+"``Q2M3_PSI4_PYTHON`` is unset. Set this variable to that environment's Python interpreter:"
 msgstr ""
-"带 `external` 标记的测试需要一个从 conda-forge 安装的独立 Psi4 环境。未设置 "
-"`Q2M3_PSI4_PYTHON` 时，这些测试跳过。把它设为该环境中 Python 解释器的绝对路径："
+"标记为 ``external`` 的测试需要独立的 conda-forge Psi4 环境。未设置 ``Q2M3_PSI4_PYTHON`` 时，测试跳过。将该变量设为这个环境的 Python "
+"解释器路径："
 
-#: ../../source/development.md:45
+#: ../../source/development.rst:42
 msgid "Installed profiles"
 msgstr "安装配置"
 
-#: ../../source/development.md:47
+#: ../../source/development.rst:44
 msgid ""
 "Run these commands from the checkout root. Use a separate environment for each profile. The "
-"`core` environment must contain neither SQD nor Catalyst extras. The `sqd` environment must "
-"contain SQD dependencies and must not contain Catalyst. A full-extra environment cannot validate "
+"``core`` environment must contain neither SQD nor Catalyst extras. The ``sqd`` environment must "
+"contain SQD dependencies and must not contain Catalyst. A full-extra environment cannot check "
 "either isolation boundary."
 msgstr ""
-"从仓库根目录运行这些命令。每种配置使用独立环境。`core` 环境不得包含 SQD 或 Catalyst 可选依赖。`sqd` 环境必须包含 SQD 依赖，且不得包含 "
-"Catalyst。安装全部可选依赖的环境无法验证这两种依赖隔离边界。"
+"从仓库根目录执行这些命令。每个配置使用独立环境。``core`` 环境不得包含 SQD 或 Catalyst extras。``sqd`` 环境必须包含 SQD 依赖，不得包含 "
+"Catalyst。包含全部 extras 的环境无法检查这两个隔离边界。"
 
-#: ../../source/development.md:52
+#: ../../source/development.rst:49
 msgid "Set these variables before Python starts:"
 msgstr "在 Python 启动前设置这些变量："
 
-#: ../../source/development.md:70
+#: ../../source/development.rst:67
 msgid ""
 "Collection checks dependency isolation and test selection. It does not satisfy the execution "
-"gate. Run each complete profile without a test-path restriction to validate its required nodes "
-"and coverage. A passing subset is insufficient. Profiles exclude slow and GPU tests by default. "
-"Non-Catalyst profiles also exclude Catalyst and solvation tests."
+"gate. Run each complete profile without a test-path restriction to check its required nodes and "
+"coverage. A passing subset is insufficient. Profiles exclude slow and GPU tests by default. Non-"
+"Catalyst profiles also exclude Catalyst and solvation tests."
 msgstr ""
-"收集检查可验证依赖隔离和测试选择，但不能满足执行门控。请运行每个完整配置，不限制测试路径，以验证其必需节点和覆盖率。仅有子集通过并不充分。各配置默认排除慢速测试和 GPU 测试。非 "
-"Catalyst 配置还排除 Catalyst 和溶剂化测试。"
+"测试收集检查依赖隔离与测试选择，不满足执行门槛。运行完整配置时不得限制测试路径，以检查必需节点和覆盖率。仅通过子集不足以满足要求。各配置默认排除 slow 和 GPU 测试。非 Catalyst"
+" 配置还排除 Catalyst 与 solvation 测试。"
 
-#: ../../source/development.md:76
+#: ../../source/development.rst:73
 msgid ""
-"For the optional serial slow run, use the provisioned `sqd-catalyst` environment and the exported"
-" variables above:"
-msgstr "可选的串行慢速测试使用已配置的 `sqd-catalyst` 环境，以及上文导出的变量："
+"For the optional serial slow run, use the provisioned ``sqd-catalyst`` environment and the "
+"exported variables above:"
+msgstr "可选的串行慢速测试使用已配置的 ``sqd-catalyst`` 环境，以及上文导出的变量："
 
-#: ../../source/development.md:83
+#: ../../source/development.rst:80
 msgid ""
 "This command still excludes GPU tests. Larger tutorial campaigns belong in the manual slow-"
 "science workflow. Shared CI does not promise to regenerate local calibration, historical G2B or "
 "replay studies, or placeholder experiment reports."
 msgstr "该命令仍排除 GPU 测试。较大的教程实验应放入手动 slow-science 工作流。共享 CI 不保证重新生成本地校准、历史 G2B 或回放研究，也不保证生成占位实验报告。"
 
-#: ../../source/development.md:87
+#: ../../source/development.rst:84
 msgid ""
-"Shared artifact checks live in `tests/examples/test_sqd_showcase.py`. They check saved fields, "
+"Shared artifact checks live in ``tests/examples/test_sqd_showcase.py``. They check saved fields, "
 "signed errors, controls, failures, and output directories. "
-"`test_real_h2_tutorial_matches_independent_casci` checks the real H₂ tutorial. "
-"`test_saved_showcase_directories` additionally requires `Q2M3_SHOWCASE_ROOT` with the `ci-scan`, "
-"`ci-embedding`, and `ci-integrals` directories. Without that input, the test skips. Collection "
-"alone does not validate those artifacts."
+"``test_real_h2_tutorial_matches_independent_casci`` checks the real H₂ tutorial. "
+"``test_saved_showcase_directories`` additionally requires ``Q2M3_SHOWCASE_ROOT`` with the ``ci-"
+"scan``, ``ci-embedding``, and ``ci-integrals`` directories. Without that input, the test skips. "
+"Collection alone does not check those artifacts."
 msgstr ""
 "共享产物检查位于 "
-"`tests/examples/test_sqd_showcase.py`，检查保存字段、带符号误差、对照、失败和输出目录。`test_real_h2_tutorial_matches_independent_casci`"
-" 检查实际 H₂ 教程。`test_saved_showcase_directories` 还要求 `Q2M3_SHOWCASE_ROOT` 中存在 `ci-scan`、`ci-"
-"embedding` 和 `ci-integrals` 目录。缺少该输入时，测试会跳过。仅收集测试不能验证这些产物。"
+"``tests/examples/test_sqd_showcase.py``。它们检查保存字段、有符号误差、对照、失败记录和输出目录。``test_real_h2_tutorial_matches_independent_casci``"
+" 检查真实 H₂ 教程。``test_saved_showcase_directories`` 还要求设置 ``Q2M3_SHOWCASE_ROOT``，且目录含 ``ci-scan"
+"``、``ci-embedding`` 和 ``ci-integrals``。缺少该输入时，测试跳过。仅收集测试无法检查这些产物。"
 
-#: ../../source/development.md:94
+#: ../../source/development.rst:92
 msgid "Linting And Formatting"
 msgstr "代码检查与格式化"
 
-#: ../../source/development.md:102
+#: ../../source/development.rst:100
 msgid "For GitHub-facing changes, also run:"
 msgstr "面向 GitHub 的改动还需运行："
 
-#: ../../source/development.md:108
+#: ../../source/development.rst:107
 msgid "Documentation Workflow"
 msgstr "文档工作流"
 
-#: ../../source/development.md:110
+#: ../../source/development.rst:109
 msgid ""
-"English sources remain in `doc/source/`. Chinese translations, including API text extracted from "
-"source docstrings, remain in `doc/locales/zh_CN/LC_MESSAGES/`. Keep source docstrings in English."
+"Write English pages as RST in ``doc/source/``. Chinese catalogs live in "
+"``doc/locales/zh_CN/LC_MESSAGES/``. They include API text from English docstrings. Keep source "
+"docstrings in English."
 msgstr ""
-"英文源文件保留在 `doc/source/`。中文译文保存在 `doc/locales/zh_CN/LC_MESSAGES/`，其中包括从源码文档字符串提取的 API "
-"正文。源码文档字符串保持英文。"
+"在 ``doc/source/`` 中使用 RST 编写英文页面。中文目录位于 ``doc/locales/zh_CN/LC_MESSAGES/``，包含英文 docstring 提取的 API"
+" 文本。源码 docstring 保持英文。"
 
-#: ../../source/development.md:114
+#: ../../source/development.rst:114
 msgid "When you change documentation or an API docstring:"
 msgstr "修改文档或 API 文档字符串时："
 
-#: ../../source/development.md:116
+#: ../../source/development.rst:116
 msgid "Edit and simplify the English source."
 msgstr "编辑并简化英文源文。"
 
-#: ../../source/development.md:117
+#: ../../source/development.rst:117
 msgid "Extract messages and update the translation catalogs."
 msgstr "提取消息并更新翻译目录。"
 
-#: ../../source/development.md:118
+#: ../../source/development.rst:118
 msgid ""
 "Review the Chinese translations. Preserve conditions, units, formulas, reference targets, and "
 "negative or inconclusive results."
 msgstr "审校中文译文。保留条件、单位、公式、引用目标，以及负面或无定论的结果。"
 
-#: ../../source/development.md:120
+#: ../../source/development.rst:120
 msgid "Build and check both languages."
 msgstr "构建并检查两种语言。"
 
-#: ../../source/development.md:131
+#: ../../source/development.rst:131
 msgid ""
-"`make docs` extracts messages, checks translations, and builds both languages with warnings "
-"treated as errors. It also checks the generated site. English remains the default at `/q2m3/`. "
-"Chinese is at `/q2m3/zh_CN/`. Use the sidebar language links to open the corresponding page in "
+"``make docs`` extracts messages, checks translations, and builds both languages with warnings "
+"treated as errors. It also checks the generated site. English remains the default at ``/q2m3/``. "
+"Chinese is at ``/q2m3/zh_CN/``. Use the sidebar language links to open the corresponding page in "
 "either language. The switch does not preserve query parameters or section anchors."
 msgstr ""
-"`make docs` 提取消息、检查译文，并以警告视为错误的方式构建两种语言；还会检查生成的站点。英文默认入口为 `/q2m3/`，中文位于 "
-"`/q2m3/zh_CN/`。使用侧栏语言链接打开另一种语言的对应页面。切换不保留查询参数或段落锚点。"
+"``make docs`` 提取消息、检查译文，并以警告视为错误的方式构建两种语言；还会检查生成的站点。英文默认入口为 ``/q2m3/``，中文位于 "
+"``/q2m3/zh_CN/``。使用侧栏语言链接打开另一种语言的对应页面。切换不保留查询参数或段落锚点。"
 
-#: ../../source/development.md:137
+#: ../../source/development.rst:137
 msgid ""
-"The project UI message list is `doc/ui-messages.json`. Update it when theme text changes. `doc"
-"/site-baseline.json` records the starting commit and published page paths. Change its page list "
-"only when you intend to add or remove published pages."
+"The project UI message list is ``doc/ui-messages.json``. Update it when theme text changes. ``doc"
+"/site-baseline.json`` records the starting commit and published page paths. Change its page list "
+"only when you intend to add or remove published pages. Page moves also require catalog moves, "
+"incoming link updates, and redirect checks. ``conf.py`` and ``_templates/redirect.html`` preserve"
+" the former SQD and concepts URLs."
 msgstr ""
-"项目界面消息清单位于 `doc/ui-messages.json`。主题文字变化后，更新此清单。`doc/site-baseline.json` "
-"记录起点提交和已发布页面路径。仅当有意新增或删除已发布页面时，才修改其中的页面列表。"
+"项目界面消息清单位于 ``doc/ui-messages.json``。主题文本改变时更新此文件。``doc/site-baseline.json`` "
+"记录初始提交和发布页面路径。只有计划增删发布页面时才修改页面清单。移动页面还需移动翻译目录、更新传入链接和检查跳转。``conf.py`` 与 "
+"``_templates/redirect.html`` 保留原 SQD 和核心概念网址。"
 
-#: ../../source/development.md:141
+#: ../../source/development.rst:143
 msgid "For an English-only preview, use:"
 msgstr "仅预览英文时，使用："
 
-#: ../../source/development.md:147
+#: ../../source/development.rst:149
 msgid ""
-"Commit PO catalogs. POT, MO, HTML, and doctree files are build artifacts. English HTML is written"
-" to `doc/build/html/`. Chinese HTML is written to its `zh_CN/` subdirectory. The builds use "
-"separate doctrees."
+"Commit PO catalogs. POT, MO, HTML, and doctree files are build artifacts. Sphinx writes English "
+"HTML to ``doc/build/html/``. It writes Chinese HTML to the ``zh_CN/`` subdirectory. The builds "
+"use separate doctrees."
 msgstr ""
-"提交 PO 翻译目录。POT、MO、HTML 和 doctree 文件均为构建产物。英文 HTML 写入 `doc/build/html/`，中文 HTML 写入其 `zh_CN/` "
-"子目录。两种语言使用独立的 doctree。"
+"提交 PO 目录。POT、MO、HTML 和 doctree 文件属于构建产物。Sphinx 将英文 HTML 写入 ``doc/build/html/``。中文 HTML 位于 "
+"``zh_CN/`` 子目录。两种语言使用独立 doctree。"
 
-#: ../../source/development.md:151
+#: ../../source/development.rst:153
 msgid ""
 "Keep default documentation examples small. Put H3O+, 8-bit QPE, dynamic Trotter scans, and memory"
 " profiles in optional diagnostic sections. First-run tutorials should use the smaller examples."
 msgstr "默认文档示例应保持小规模。将 H3O+、8 位 QPE、动态 Trotter 扫描和内存剖析放入可选诊断章节。入门教程应使用较小示例。"
 
-#: ../../source/development.md:155
+#: ../../source/development.rst:158
 msgid "Contribution Notes"
 msgstr "贡献说明"
 
-#: ../../source/development.md:157
+#: ../../source/development.rst:160
 msgid ""
 "Check public documentation against source code, tests, maintained examples, and the current "
 "README. If these sources conflict with older planning notes, use current source code and tests."
 msgstr "对照源码、测试、维护中的示例和当前 README 检查公开文档。如果这些来源与旧计划说明冲突，以当前源码和测试为准。"
 
-#: ../../source/development.md:161
+#: ../../source/development.rst:164
 msgid ""
 "Scientific claims should name the active space, qubit count, QPE precision, Trotter settings, and"
 " unit conversion assumptions when those values affect the interpretation."
 msgstr "当科学结论的解释依赖相关取值时，应说明活性空间、量子比特数、QPE 精度、Trotter 设置和单位转换假设。"
 
-#: ../../source/development.md:165
+#: ../../source/development.rst:168
 msgid ""
 "Contributors should not commit generated coverage reports, Sphinx build output, Catalyst IR cache"
 " files, benchmark outputs, or temporary profiling artifacts."

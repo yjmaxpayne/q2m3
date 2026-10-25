@@ -2,8 +2,8 @@
 
 [English](README.md) | [简体中文](README_CN.md)
 
-These examples connect the [calculation tutorial](../../doc/source/tutorials/fragment-interaction.md)
-to the [report tutorial](../../doc/source/tutorials/fragment-report.md).
+These examples connect the [calculation tutorial](../../doc/source/tutorials/fragment-interaction.rst)
+to the [report tutorial](../../doc/source/tutorials/fragment-report.rst).
 Run each module from the checkout root.
 The examples use public q2m3 APIs and bundled input files.
 They require no downloads at runtime.

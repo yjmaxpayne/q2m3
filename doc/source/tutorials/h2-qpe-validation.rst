@@ -1,14 +1,15 @@
-# H2 QPE Validation
+H2 QPE Validation
+=================
 
-This tutorial checks the small H2 path used as the first q2m3 smoke test.
-It compares vacuum and MM-embedded H2 Hamiltonians and reports stabilization
-in kcal/mol after explicit conversion from Hartree.
+Compare vacuum and MM-embedded H2 energies.
+The script reports stabilization in kcal/mol after conversion from Hartree.
 
-## Run The Script
+Run The Script
+--------------
 
-```bash
-uv run python examples/qpe/h2_qpe_validation.py
-```
+.. code-block:: bash
+
+   uv run python examples/qpe/h2_qpe_validation.py
 
 The script performs four steps:
 
@@ -17,43 +18,56 @@ The script performs four steps:
 3. Execute QPE for both Hamiltonians.
 4. Compare HF and QPE stabilization energies.
 
-## What The Example Builds
+What The Example Builds
+-----------------------
 
-| Component | Value |
-| --- | --- |
-| Molecule | H2 |
-| Bond length | 0.74 Angstrom |
-| Basis | STO-3G |
-| Active space | 2 electrons, 2 orbitals |
-| System qubits | 4 |
-| MM environment | 2 TIP3P waters as point charges |
-| Default QPE register | 4 estimation wires |
+.. list-table::
+   :header-rows: 1
+
+   * - Component
+     - Value
+   * - Molecule
+     - H2
+   * - Bond length
+     - 0.74 Angstrom
+   * - Basis
+     - STO-3G
+   * - Active space
+     - 2 electrons, 2 orbitals
+   * - System qubits
+     - 4
+   * - MM environment
+     - 2 TIP3P waters as point charges
+   * - Default QPE register
+     - 4 estimation wires
 
 The example places the MM point charges about 3 Angstrom from H2. This small
 environment tests the MM embedding path.
 
-## Interpreting Results
+Interpreting Results
+--------------------
 
-Use the current script's `run_validation_checks` and printed results as the
-integration check. Its example-specific thresholds are `0.1 kcal/mol` for
-PennyLane HF expectation values versus PySCF HF, and `2.0 Ha` for absolute
+Use the current script's ``run_validation_checks`` and printed results as the
+integration check. Its example-specific thresholds are ``0.1 kcal/mol`` for
+PennyLane HF expectation values versus PySCF HF, and ``2.0 Ha`` for absolute
 QPE–HF differences. These deliberately loose POC checks do not establish
 chemical accuracy. The script prints failures without setting a failing exit
-status, so inspect every `[OK]` / `[FAIL]` line.
+status, so inspect every ``[OK]`` / ``[FAIL]`` line.
 
-The signed offset is `E_QPE - E_HF`. It includes finite phase resolution,
+The signed offset is ``E_QPE - E_HF``. It includes finite phase resolution,
 Trotter error, and sampling effects. Do not identify it directly with
 correlation energy. The default run uses 100 shots, so QPE results can vary.
-The script defines stabilization as `(E_vacuum - E_solvated)` converted to
+The script defines stabilization as ``(E_vacuum - E_solvated)`` converted to
 kcal/mol: a positive value means the solvated system has lower energy.
 The script skips its sign check when the absolute QPE stabilization is at most
-`0.01 kcal/mol`.
+``0.01 kcal/mol``.
 
 To compare regressions, save the output, source revision, dependency
 versions, device, and QPE parameters. Historical README
 numbers are not acceptance thresholds.
 
-## Common Adjustments
+Common Adjustments
+------------------
 
 Use more estimation wires for better phase resolution. Increase Trotter
 steps only after you check that memory and runtime are acceptable. If the energy

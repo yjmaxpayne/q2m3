@@ -18,5 +18,7 @@
   "Copyright &#169; %(copyright)s",
   "Made with ",
   "<a href=\"https://www.sphinx-doc.org/\">Sphinx</a> and ",
-  "'s"
+  "'s",
+  "Page moved",
+  "Open the current page"
 ]

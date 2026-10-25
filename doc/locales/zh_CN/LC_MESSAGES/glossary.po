@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -54,132 +53,190 @@ msgid ""
 msgstr "基于采样的量子对角化。q2m3 在 ffsim 中制备以 CCSD 为种子的 LUCJ 态，采样固定粒子数行列式，并使用 qiskit-addon-sqd 在恢复的子空间中求解哈密顿量。"
 
 #: ../../source/glossary.rst:19
+msgid "HF"
+msgstr "HF"
+
+#: ../../source/glossary.rst:21
+msgid ""
+"Hartree-Fock. A mean-field electronic reference. RHF denotes restricted Hartree-Fock for the "
+"closed-shell workflows."
+msgstr "Hartree-Fock。平均场电子参考。RHF 表示闭壳层工作流中的限制性 Hartree-Fock。"
+
+#: ../../source/glossary.rst:23
+msgid "CCSD"
+msgstr "CCSD"
+
+#: ../../source/glossary.rst:25
+msgid ""
+"Coupled cluster with single and double excitations. CCSD(T) adds a perturbative triples "
+"correction."
+msgstr "包含单、双激发的耦合簇方法。CCSD(T) 添加微扰三激发修正。"
+
+#: ../../source/glossary.rst:27
+msgid "CASCI"
+msgstr "CASCI"
+
+#: ../../source/glossary.rst:29
+msgid ""
+"Complete active-space configuration interaction. The SQD T0 reference solves the finite active-"
+"space Hamiltonian exactly."
+msgstr "完全活性空间组态相互作用。SQD 的 T0 参考精确求解有限活性空间哈密顿量。"
+
+#: ../../source/glossary.rst:31
+msgid "SCI"
+msgstr "SCI"
+
+#: ../../source/glossary.rst:33
+msgid "Selected configuration interaction. The calculation retains selected determinants."
+msgstr "选择组态相互作用。计算只保留选定的行列式。"
+
+#: ../../source/glossary.rst:34
+msgid "AVAS"
+msgstr "AVAS"
+
+#: ../../source/glossary.rst:36
+msgid ""
+"Atomic valence active space. The fragment workflow uses AO labels to select active orbitals. AO "
+"means atomic orbital."
+msgstr "原子价活性空间。片段工作流通过 AO 标签选择活性轨道。AO 指原子轨道。"
+
+#: ../../source/glossary.rst:38
+msgid "MO"
+msgstr "MO"
+
+#: ../../source/glossary.rst:40
+msgid "Molecular orbital. Fixed-MO embedding retains the vacuum orbital frame."
+msgstr "分子轨道。固定 MO 嵌入保留真空轨道框架。"
+
+#: ../../source/glossary.rst:41
 msgid "LUCJ"
 msgstr "LUCJ"
 
-#: ../../source/glossary.rst:21
+#: ../../source/glossary.rst:43
 msgid ""
 "Local unitary cluster Jastrow ansatz used by the SQD workflow. Its repetition count and optional "
 "spin-channel connectivity are explicit run inputs."
 msgstr "SQD 工作流使用的局域幺正簇 Jastrow 拟设。重复次数和可选的自旋通道连通性均为显式运行输入。"
 
-#: ../../source/glossary.rst:24
+#: ../../source/glossary.rst:46
 msgid "reference tier"
 msgstr "参考层级"
 
-#: ../../source/glossary.rst:26
+#: ../../source/glossary.rst:48
 msgid ""
 "The SQD baseline policy: T0 exact active-space CASCI, T1 selected CI, explicitly registered T1+ "
 "plugins, or diagnostic T2 CCSD(T). A tier records method and uncertainty semantics. It is not an "
 "accuracy label by itself."
 msgstr "SQD 基准策略：T0 为活性空间内精确 CASCI，T1 为选择 CI，T1+ 为显式注册的插件，T2 为诊断性 CCSD(T)。层级记录方法和不确定性的含义，本身不是精度标签。"
 
-#: ../../source/glossary.rst:30
+#: ../../source/glossary.rst:52
 msgid "EFTQC"
 msgstr "EFTQC"
 
-#: ../../source/glossary.rst:32
+#: ../../source/glossary.rst:54
 msgid ""
 "Early fault-tolerant quantum computer. q2m3 uses this term for resource-estimation studies such "
 "as logical qubit and Toffoli counts."
 msgstr "早期容错量子计算机。q2m3 在逻辑量子比特数和 Toffoli 门数等资源估计研究中使用此术语。"
 
-#: ../../source/glossary.rst:34
+#: ../../source/glossary.rst:56
 msgid "RDM"
 msgstr "RDM"
 
-#: ../../source/glossary.rst:36
+#: ../../source/glossary.rst:58
 msgid ""
 "Reduced density matrix. q2m3 uses the 1-RDM for Mulliken population analysis and quantum-to-"
 "classical observable transfer."
 msgstr "约化密度矩阵。q2m3 使用 1-RDM 进行 Mulliken 布居分析，并将量子可观测量传递到经典计算。"
 
-#: ../../source/glossary.rst:38
+#: ../../source/glossary.rst:60
 msgid "active space"
 msgstr "活性空间"
 
-#: ../../source/glossary.rst:40
+#: ../../source/glossary.rst:62
 msgid ""
 "The selected electrons and orbitals included in a quantum calculation. q2m3 documents active "
 "spaces as electrons/orbitals and the resulting system qubit count."
 msgstr "量子计算中选定的电子和轨道。q2m3 以电子数 / 轨道数及对应系统量子比特数记录活性空间。"
 
-#: ../../source/glossary.rst:43
+#: ../../source/glossary.rst:65
 msgid "Trotterization"
 msgstr "Trotter 分解"
 
-#: ../../source/glossary.rst:45
+#: ../../source/glossary.rst:67
 msgid ""
 "Approximation of Hamiltonian time evolution by decomposing it into products of simpler "
 "exponentials. Trotter depth affects QPE accuracy and Catalyst compile size."
 msgstr "将哈密顿量的时间演化分解为较简单指数算符的乘积，以得到近似。Trotter 深度影响 QPE 精度和 Catalyst 编译规模。"
 
-#: ../../source/glossary.rst:48
+#: ../../source/glossary.rst:70
 msgid "delta_corr-pol"
 msgstr "delta_corr-pol"
 
-#: ../../source/glossary.rst:50
+#: ../../source/glossary.rst:72
 msgid ""
 "Correlation-polarization coupling: the change in electronic correlation energy caused by the MM "
 "environment."
 msgstr "电子相关与极化的耦合：MM 环境引起的电子相关能变化。"
 
-#: ../../source/glossary.rst:52
+#: ../../source/glossary.rst:74
 msgid "Catalyst"
 msgstr "Catalyst"
 
-#: ../../source/glossary.rst:54
+#: ../../source/glossary.rst:76
 msgid ""
-"The PennyLane compilation stack used for ``@qjit`` workflows. q2m3 uses it where compile-once"
-"/reuse-many execution is intended."
-msgstr "用于 ``@qjit`` 工作流的 PennyLane 编译栈。q2m3 在预期编译一次、多次复用的场景中使用它。"
+"The PennyLane compilation stack used for ``@qjit`` workflows. q2m3 uses it for repeated execution"
+" of compiled circuits."
+msgstr "用于 ``@qjit`` 工作流的 PennyLane 编译工具。q2m3 用它重复执行编译电路。"
 
-#: ../../source/glossary.rst:56
+#: ../../source/glossary.rst:78
 msgid "IR cache"
 msgstr "IR 缓存"
 
-#: ../../source/glossary.rst:58
+#: ../../source/glossary.rst:80
 msgid ""
 "A cache of Catalyst intermediate representation artifacts used to avoid repeating expensive "
 "compilation stages for unchanged circuit structure."
 msgstr "Catalyst 中间表示产物的缓存。当电路结构不变时，可避免重复执行成本较高的编译阶段。"
 
-#: ../../source/glossary.rst:60
+#: ../../source/glossary.rst:82
 msgid "Hartree"
 msgstr "Hartree"
 
-#: ../../source/glossary.rst:62
+#: ../../source/glossary.rst:84
 msgid "Internal energy unit used by q2m3."
 msgstr "q2m3 使用的内部能量单位。"
 
-#: ../../source/glossary.rst:63
+#: ../../source/glossary.rst:85
 msgid "kcal/mol"
 msgstr "kcal/mol"
 
-#: ../../source/glossary.rst:65
+#: ../../source/glossary.rst:87
 msgid "Reporting unit used only after explicit conversion from Hartree."
 msgstr "仅在从 Hartree 显式转换后使用的报告单位。"
 
-#: ../../source/glossary.rst:66
+#: ../../source/glossary.rst:88
 msgid "Hamiltonian 1-norm"
 msgstr "哈密顿量 1-范数"
 
-#: ../../source/glossary.rst:68
+#: ../../source/glossary.rst:90
 msgid "Sum-of-coefficients measure used by the EFTQC resource-estimation path."
 msgstr "EFTQC 资源估计路径使用的系数求和度量。"
 
-#: ../../source/glossary.rst:69
+#: ../../source/glossary.rst:91
 msgid "MM embedding"
 msgstr "MM 嵌入"
 
-#: ../../source/glossary.rst:71
+#: ../../source/glossary.rst:93
 msgid "Electrostatic coupling of classical point charges into the QM Hamiltonian."
 msgstr "将经典点电荷以静电耦合形式引入 QM 哈密顿量。"
 
-#: ../../source/glossary.rst:73
+#: ../../source/glossary.rst:95
 msgid "phase wrapping"
 msgstr "相位回绕"
 
-#: ../../source/glossary.rst:75
-msgid "Ambiguity caused when the energy phase exceeds the finite QPE register range and wraps modulo one."
-msgstr "能量相位超出有限 QPE 寄存器范围并按模一回绕时产生的歧义。"
+#: ../../source/glossary.rst:97
+msgid ""
+"Ambiguity from measuring phase modulo one. Different energies can map to the same phase at a "
+"given evolution time."
+msgstr "相位测量模一造成的歧义。在给定演化时间下，不同能量可能映射到同一相位。"

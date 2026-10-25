@@ -95,6 +95,23 @@ def test_stale_catalog_is_rejected(catalogs):
     assert translations.check_catalogs(pot, locale)
 
 
+def test_update_uses_project_copyright_for_existing_and_new_catalogs(catalogs):
+    pot, locale = catalogs
+    source = Catalog()
+    source.add("New page.")
+    save(pot / "new.pot", source)
+    translations.update_catalogs(pot, locale)
+    for relative in ("api/core.po", "new.po"):
+        path = locale / relative
+        with path.open("rb") as stream:
+            catalog = read_po(stream, locale="zh_CN")
+        assert catalog.project == "q2m3"
+        assert catalog.last_translator == translations.AUTHOR
+        assert catalog.header_comment == translations.CATALOG_HEADER
+        assert "ORGANIZATION" not in path.read_text()
+        assert "EMAIL@ADDRESS" not in path.read_text()
+
+
 def test_project_interface_inventory_is_required_even_without_template_messages(catalogs):
     pot, locale = catalogs
     assert translations.check_catalogs(pot, locale, ui_messages=("Search",))

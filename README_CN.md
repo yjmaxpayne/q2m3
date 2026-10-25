@@ -62,8 +62,8 @@ uv sync
 
 ## 开发、引用与许可证
 
-[开发指南](doc/source/development.md)列出了测试、代码检查和文档构建命令。
-请遵循[贡献约定](doc/source/development.md#contribution-notes)。
+[开发指南](doc/source/development.rst)列出了测试、代码检查和文档构建命令。
+请遵循[贡献约定](doc/source/development.rst#contribution-notes)。
 不要提交生成的输出文件。
 
 研究工作应引用实际使用的版本。

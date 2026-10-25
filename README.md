@@ -63,8 +63,8 @@ model assumptions, and API references.
 
 ## Development, citation, and license
 
-See the [development guide](doc/source/development.md) for tests, code checks,
-and documentation builds. Follow the [contribution notes](doc/source/development.md#contribution-notes).
+See the [development guide](doc/source/development.rst) for tests, code checks,
+and documentation builds. Follow the [contribution notes](doc/source/development.rst#contribution-notes).
 Do not commit generated outputs.
 
 For research use, cite the release that produced your results.

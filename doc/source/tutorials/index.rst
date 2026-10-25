@@ -12,7 +12,6 @@ compare the methods and interpret the resource estimates.
 .. toctree::
    :maxdepth: 1
 
-   sqd-showcase
    h2-qpe-validation
    h2-resource-estimation
    full-oneelectron-embedding
@@ -20,6 +19,7 @@ compare the methods and interpret the resource estimates.
    fragment-report
    h2-mc-solvation
    three-mode-solvation
+   sqd-showcase
 
 Optional Diagnostic Scripts
 ---------------------------

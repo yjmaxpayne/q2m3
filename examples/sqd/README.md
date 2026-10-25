@@ -100,7 +100,7 @@ directory by default, so this command needs the checkout root for `examples`.
 The monitor polls the command and its currently visible descendants every
 10 ms. It excludes the observer and can miss short peaks. Time is in seconds,
 and reported RSS is in decimal MB. See the
-[monitor contract](../../doc/source/tutorials/sqd-showcase.md)
+[monitor contract](../../doc/source/tutorials/sqd-showcase.rst)
 for default environment values, override rules, and the ten result keys.
 
 ## Example results

@@ -1,385 +1,387 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-25 10:35+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: ../../source/tutorials/fragment-report.md:1
+#: ../../source/tutorials/fragment-report.rst:2
 msgid "Read A Fragment Interaction Report"
 msgstr "阅读片段相互作用能报告"
 
-#: ../../source/tutorials/fragment-report.md:3
+#: ../../source/tutorials/fragment-report.rst:4
 msgid ""
-"The water-dimer calculation gives five interaction energies. Reading them together shows how the "
-"method and active space affect the result. This tutorial explains the energy differences and the "
-"associated resource estimates."
+"The water-dimer calculation gives five interaction energies. Reading them together "
+"shows how the method and active space affect the result. This tutorial explains the "
+"energy differences and the associated resource estimates."
 msgstr "水二聚体计算给出五个相互作用能。将它们一起比较，可以了解方法和活性空间如何影响结果。本教程解释这些能量差异及相关资源估计。"
 
-#: ../../source/tutorials/fragment-report.md:8
-#, python-brace-format
-msgid ""
-"You can follow this tutorial without running Python. The values come from [Fragment Interaction "
-"Energy](fragment-interaction.md), which uses cc-pVDZ and `mode=\"full\"`. Download the original "
-"{download}`water-dimer-report.md` to see the generated tables. The report uses Chinese headings. "
-"The explanations below use English and follow the same table order."
-msgstr ""
-"你无需运行 Python 就能阅读本教程。数值来自[片段相互作用能](fragment-interaction.md)教程，该计算使用 cc-pVDZ 和 "
-"`mode=\"full\"`。下载原始 {download}`water-dimer-report.md`，即可查看生成的表格。报告使用中文标题。下文按报告中的表格顺序逐项解释。"
-
-#: ../../source/tutorials/fragment-report.md:15
+#: ../../source/tutorials/fragment-report.rst:17
 msgid "Start With The Interaction Energy"
 msgstr "从相互作用能开始"
 
-#: ../../source/tutorials/fragment-report.md:17
+#: ../../source/tutorials/fragment-report.rst:19
 msgid ""
-"The first table compares five methods for the same water-dimer geometry. Each row gives the "
-"counterpoise-corrected interaction energy, $\\Delta E = E(AB) - E(A) - E(B)$. AB denotes the "
-"dimer, and A and B denote the two water molecules. All three energies use the dimer basis."
+"The first table compares five methods for the same water-dimer geometry. Each row "
+"gives the counterpoise-corrected interaction energy, :math:`\\Delta E = E(AB) - E(A) "
+"- E(B)`. AB denotes the dimer, and A and B denote the two water molecules. All three "
+"energies use the dimer basis."
 msgstr ""
-"第一张表比较同一水二聚体几何下的五种方法。每行给出 counterpoise 校正相互作用能：$\\Delta E = E(AB) - E(A) - E(B)$。AB 表示二聚体，A 和 B "
-"表示两个水分子。三次能量计算都使用二聚体基组。"
+"第一张表比较同一水二聚体几何下的五种方法。每行给出 counterpoise 校正相互作用能：:math:`\\Delta E = E(AB) - E(A) - "
+"E(B)`。AB 表示二聚体，A 和 B 表示两个水分子。三次能量计算都使用二聚体基组。"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:27
 msgid "Method"
 msgstr "方法"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:28
 msgid "Calculation"
 msgstr "计算方法"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:29
 msgid "ΔE (kcal/mol)"
 msgstr "ΔE (kcal/mol)"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:30
 msgid "HF"
 msgstr "HF"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:31
 msgid "Hartree–Fock"
 msgstr "Hartree–Fock"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:32
 msgid "−3.682"
 msgstr "−3.682"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:33
 msgid "MP2"
 msgstr "MP2"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:34
 msgid "Second-order Møller–Plesset perturbation theory with a frozen core"
 msgstr "冻结芯的二阶 Møller–Plesset 微扰理论"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:35
 msgid "−3.935"
 msgstr "−3.935"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:36
 msgid "CASCI"
 msgstr "CASCI"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:37
 msgid "Exact diagonalization within the selected active space"
 msgstr "在选定活性空间内精确对角化"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:38
 msgid "−3.574"
 msgstr "−3.574"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:39
 msgid "SQD"
 msgstr "SQD"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:40
 msgid "Sample-based quantum diagonalization within the same active space"
 msgstr "在同一活性空间内进行基于采样的量子对角化"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:41
 msgid "−3.557"
 msgstr "−3.557"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:42
 msgid "CCSD(T)"
 msgstr "CCSD(T)"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:43
 msgid "Coupled cluster with perturbative triples and a frozen core"
 msgstr "使用冻结核和微扰三激发的耦合簇方法"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:44
 msgid "−3.699"
 msgstr "−3.699"
 
-#: ../../source/tutorials/fragment-report.md:30
+#: ../../source/tutorials/fragment-report.rst:46
 msgid ""
-"All five values are negative. Each method therefore places the dimer below the separate fragments"
-" at this geometry. A more negative value represents a stronger calculated interaction. The spread"
-" from −3.935 to −3.557 kcal/mol shows how the result changes with the electronic structure "
-"method."
+"All five values are negative. Each method therefore places the dimer below the "
+"separate fragments at this geometry. A more negative value represents a stronger "
+"calculated interaction. The spread from −3.935 to −3.557 kcal/mol shows how the "
+"result changes with the electronic structure method."
 msgstr ""
 "五个值均为负值。因此，每种方法都将该几何下二聚体的能量置于独立片段能量之和以下。数值越负，计算得到的相互作用越强。−3.935 至 −3.557 kcal/mol "
 "的分布显示了电子结构方法对结果的影响。"
 
-#: ../../source/tutorials/fragment-report.md:35
+#: ../../source/tutorials/fragment-report.rst:51
 msgid ""
-"The report shows each energy in Ha and kcal/mol, with six and three decimal places, respectively."
-" A dash means that the calculation has no value for that entry. The adjacent column explains why."
-" For example, `classical_only` mode supplies HF and MP2 energies. In `full` mode, CCSD(T) runs "
-"when its estimated cost fits the calculation budget."
+"The report shows each energy in Ha and kcal/mol, with six and three decimal places, "
+"respectively. A dash means that the calculation has no value for that entry. The "
+"adjacent column explains why. For example, ``classical_only`` mode supplies HF and "
+"MP2 energies. In ``full`` mode, CCSD(T) runs when its estimated cost fits the "
+"calculation budget."
 msgstr ""
-"报告以 Ha 和 kcal/mol 显示各能量，分别保留六位和三位小数。破折号表示计算未给出该项数值。相邻列说明原因。例如，`classical_only` 模式提供 HF 和 MP2 能量。在"
-" `full` 模式中，估计成本符合计算预算时才运行 CCSD(T)。"
+"报告以 Ha 和 kcal/mol 显示各能量，分别保留六位和三位小数。破折号表示计算未给出该项数值。相邻列说明原因。例如，``classical_only`` 模式提供"
+" HF 和 MP2 能量。在 ``full`` 模式中，估计成本符合计算预算时才运行 CCSD(T)。"
 
-#: ../../source/tutorials/fragment-report.md:41
+#: ../../source/tutorials/fragment-report.rst:58
 msgid "Compare SQD With CASCI"
 msgstr "比较 SQD 与 CASCI"
 
-#: ../../source/tutorials/fragment-report.md:43
+#: ../../source/tutorials/fragment-report.rst:60
 msgid ""
-"CASCI provides an exact solution within the selected active space. SQD approximates that solution"
-" in the same space. Their difference therefore measures the SQD algorithm error for this "
-"calculation:"
+"CASCI provides an exact solution within the selected active space. SQD approximates "
+"that solution in the same space. Their difference therefore measures the SQD "
+"algorithm error for this calculation:"
 msgstr "CASCI 在选定活性空间内给出精确解。SQD 在同一空间内近似该解。因此，两者之差衡量本次计算的 SQD 算法误差："
 
-#: ../../source/tutorials/fragment-report.md:47
+#: ../../source/tutorials/fragment-report.rst:64
 msgid ""
-"\n"
-"\\epsilon_{\\mathrm{algorithm}} = \\Delta E_{\\mathrm{SQD}} - \\Delta E_{\\mathrm{CASCI}}.\n"
+"\\epsilon_{\\mathrm{algorithm}} = \\Delta E_{\\mathrm{SQD}} - \\Delta "
+"E_{\\mathrm{CASCI}}."
 msgstr ""
-"\n"
-"\\epsilon_{\\mathrm{algorithm}} = \\Delta E_{\\mathrm{SQD}} - \\Delta E_{\\mathrm{CASCI}}.\n"
+"\\epsilon_{\\mathrm{algorithm}} = \\Delta E_{\\mathrm{SQD}} - \\Delta "
+"E_{\\mathrm{CASCI}}."
 
-#: ../../source/tutorials/fragment-report.md:51
+#: ../../source/tutorials/fragment-report.rst:68
 msgid ""
-"The example report gives +0.016 kcal/mol. SQD predicts a slightly less negative interaction "
-"energy than CASCI. This comparison isolates the algorithm's contribution because both methods use"
-" the same active space."
+"The example report gives +0.016 kcal/mol. SQD predicts a slightly less negative "
+"interaction energy than CASCI. This comparison isolates the algorithm's contribution "
+"because both methods use the same active space."
 msgstr "示例报告给出 +0.016 kcal/mol。SQD 预测的相互作用能比 CASCI 略微偏正。由于两种方法使用相同的活性空间，这一比较分离出了算法的贡献。"
 
-#: ../../source/tutorials/fragment-report.md:55
+#: ../../source/tutorials/fragment-report.rst:72
 msgid ""
-"The report calculates differences before rounding the energies. Subtracting the rounded table "
-"entries can therefore give a slightly different last digit."
+"The report calculates differences before rounding the energies. Subtracting the "
+"rounded table entries can therefore give a slightly different last digit."
 msgstr "报告先计算差值，再对能量舍入。因此，直接相减表中已舍入的数值，末位可能略有不同。"
 
-#: ../../source/tutorials/fragment-report.md:59
+#: ../../source/tutorials/fragment-report.rst:77
 msgid "Compare The Active Space With A Larger Calculation"
 msgstr "比较活性空间与更大范围的计算"
 
-#: ../../source/tutorials/fragment-report.md:61
+#: ../../source/tutorials/fragment-report.rst:79
 msgid ""
-"The next comparison asks how much the selected active space changes the interaction energy. In "
-"this example, the reference is frozen-core CCSD(T) in the full orbital space with the same cc-"
-"pVDZ basis:"
+"The next comparison asks how much the selected active space changes the interaction "
+"energy. In this example, the reference is frozen-core CCSD(T) in the full orbital "
+"space with the same cc-pVDZ basis:"
 msgstr "下一步比较选定活性空间对相互作用能的影响。本例的参考是在全轨道空间中运行的冻结核 CCSD(T)，基组同为 cc-pVDZ："
 
-#: ../../source/tutorials/fragment-report.md:65
+#: ../../source/tutorials/fragment-report.rst:83
 msgid ""
-"\n"
 "\\epsilon_{\\mathrm{active\\ space}} = \\Delta E_{\\mathrm{CASCI}} - \\Delta "
-"E_{\\mathrm{CCSD(T)}}.\n"
+"E_{\\mathrm{CCSD(T)}}."
 msgstr ""
-"\n"
 "\\epsilon_{\\mathrm{active\\ space}} = \\Delta E_{\\mathrm{CASCI}} - \\Delta "
-"E_{\\mathrm{CCSD(T)}}.\n"
+"E_{\\mathrm{CCSD(T)}}."
 
-#: ../../source/tutorials/fragment-report.md:69
+#: ../../source/tutorials/fragment-report.rst:87
 msgid ""
-"This difference is +0.125 kcal/mol. The active-space CASCI calculation predicts a less negative "
-"interaction energy than the CCSD(T) reference. Here, this difference exceeds the SQD–CASCI "
-"difference. Choosing the active space therefore deserves attention alongside the SQD settings "
-"when you refine this calculation."
+"This difference is +0.125 kcal/mol. The active-space CASCI calculation predicts a "
+"less negative interaction energy than the CCSD(T) reference. Here, this difference "
+"exceeds the SQD–CASCI difference. Choosing the active space therefore deserves "
+"attention alongside the SQD settings when you refine this calculation."
 msgstr ""
-"这一差值为 +0.125 kcal/mol。活性空间 CASCI 计算预测的相互作用能比 CCSD(T) 参考偏正。这里的差值大于 SQD–CASCI 差值。因此，改进本次计算时，活性空间选择和"
-" SQD 设置都值得关注。"
+"这一差值为 +0.125 kcal/mol。活性空间 CASCI 计算预测的相互作用能比 CCSD(T) 参考偏正。这里的差值大于 SQD–CASCI "
+"差值。因此，改进本次计算时，活性空间选择和 SQD 设置都值得关注。"
 
-#: ../../source/tutorials/fragment-report.md:75
+#: ../../source/tutorials/fragment-report.rst:93
 msgid ""
-"The report calls this quantity the *active-space error*. It measures the difference from the "
-"chosen reference, which here also changes the correlation method. CCSD(T) remains an approximate "
-"reference. The source label `pyscf_ccsd_t` identifies the CCSD(T) calculation from the same run. "
-"If that calculation has no value, q2m3 can use an imported reference with the same basis."
+"The report calls this quantity the *active-space error*. It measures the difference "
+"from the chosen reference, which here also changes the correlation method. CCSD(T) "
+"remains an approximate reference. The source label ``pyscf_ccsd_t`` identifies the "
+"CCSD(T) calculation from the same run. If that calculation has no value, q2m3 can use"
+" an imported reference with the same basis."
 msgstr ""
-"报告将这个量称为*活性空间误差*。它衡量相对于选定参考的差异。这里的参考还改变了相关方法。CCSD(T) 仍然是近似参考。来源标签 `pyscf_ccsd_t` 表示同次运行中的 CCSD(T)"
-" 计算。若该计算没有数值，q2m3 可以使用导入的同基组参考。"
+"报告将这个量称为*活性空间误差*。它衡量相对于选定参考的差异。这里的参考还改变了相关方法。CCSD(T) 仍然是近似参考。来源标签 ``pyscf_ccsd_t`` "
+"表示同次运行中的 CCSD(T) 计算。若该计算没有数值，q2m3 可以使用导入的同基组参考。"
 
-#: ../../source/tutorials/fragment-report.md:82
+#: ../../source/tutorials/fragment-report.rst:101
 msgid "Add An External Reference"
 msgstr "添加外部参考"
 
-#: ../../source/tutorials/fragment-report.md:84
+#: ../../source/tutorials/fragment-report.rst:103
 msgid ""
-"A reference with another basis extends the comparison beyond the current calculation. The report "
-"combines it with the same-basis reference to give two further differences:"
+"A reference with another basis extends the comparison beyond the current calculation."
+" The report combines it with the same-basis reference to give two further "
+"differences:"
 msgstr "使用另一基组的参考可以将比较扩展到当前计算之外。报告结合外部参考与同基组参考，给出另外两个差值："
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:110
 msgid "Quantity"
 msgstr "物理量"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:111
 msgid "Definition"
 msgstr "定义"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:112
 msgid "Basis error"
 msgstr "基组误差"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:113
 msgid "Same-basis reference − external reference"
 msgstr "同基组参考 − 外部参考"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:114
 msgid "Model error"
 msgstr "模型误差"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:115
 msgid "CASCI − external reference"
 msgstr "CASCI − 外部参考"
 
-#: ../../source/tutorials/fragment-report.md:93
+#: ../../source/tutorials/fragment-report.rst:117
 msgid ""
-"Each term uses interaction energies. When all references are available, the model error equals "
-"the active-space error plus the basis error. The report shows each difference with its sign and "
-"its absolute value, in Ha and kcal/mol."
+"Each term uses interaction energies. When all references are available, the model "
+"error equals the active-space error plus the basis error. The report shows each "
+"difference with its sign and its absolute value, in Ha and kcal/mol."
 msgstr "各项均使用相互作用能。当所有参考都可用时，模型误差等于活性空间误差加基组误差。报告以 Ha 和 kcal/mol 显示每个差值的有符号值和绝对值。"
 
-#: ../../source/tutorials/fragment-report.md:98
+#: ../../source/tutorials/fragment-report.rst:122
 msgid ""
-"The water-dimer example supplies no external reference, so these two entries show a dash and "
-"`missing external reference`. To fill them, supply a reference file as described in [Adapt The "
-"Calculation](fragment-interaction.md#adapt-the-calculation). Choose a reference with the same "
-"geometry and energy definition. If its method also differs, the reported basis error includes "
-"that method difference."
+"The water-dimer example supplies no external reference, so these two entries show a "
+"dash and ``missing external reference``. To fill them, supply a reference file as "
+"described in :ref:`Adapt The Calculation <fragment-adapt-calculation>`. Choose a "
+"reference with the same geometry and energy definition. If its method also differs, "
+"the reported basis error includes that method difference."
 msgstr ""
-"水二聚体示例未提供外部参考，所以这两项显示破折号和 `missing external reference`。若要补全，请按[调整计算](fragment-interaction.md"
-"#adapt-the-calculation)提供参考文件。请使用相同几何和能量定义的参考。若参考方法也不同，报告中的基组误差还会包含方法差异。"
+"水二聚体示例未提供外部参考，所以这两项显示破折号和 ``missing external reference``。若要补全，请按 :ref:`调整计算 "
+"<fragment-adapt-calculation>` 提供参考文件。请使用相同几何和能量定义的参考。若参考方法也不同，报告中的基组误差还会包含方法差异。"
 
-#: ../../source/tutorials/fragment-report.md:106
+#: ../../source/tutorials/fragment-report.rst:130
 msgid "Relate The Active Space To Computational Cost"
 msgstr "将活性空间与计算成本联系起来"
 
-#: ../../source/tutorials/fragment-report.md:108
+#: ../../source/tutorials/fragment-report.rst:132
 msgid ""
-"The final two tables help plan calculations for the dimer and its monomers. They describe QPE "
-"resources and SQD workload separately."
+"The final two tables help plan calculations for the dimer and its monomers. They "
+"describe QPE resources and SQD workload separately."
 msgstr "最后两张表帮助规划二聚体及其单体的计算。它们分别描述 QPE 资源和 SQD 工作量。"
 
-#: ../../source/tutorials/fragment-report.md:111
+#: ../../source/tutorials/fragment-report.rst:135
 msgid ""
-"The QPE table estimates the cost of quantum phase estimation with a double-factorized active-"
-"space Hamiltonian. It lists the Hamiltonian norm parameter λ in Ha, logical qubits, and Toffoli "
-"gates for AB, A, and B. These estimates describe a possible QPE calculation. The energies above "
-"come from the electronic structure methods in the first table."
+"The QPE table estimates the cost of quantum phase estimation with a double-factorized"
+" active-space Hamiltonian. It lists the Hamiltonian norm parameter λ in Ha, logical "
+"qubits, and Toffoli gates for AB, A, and B. These estimates describe a possible QPE "
+"calculation. The energies above come from the electronic structure methods in the "
+"first table."
 msgstr ""
-"QPE 表估计使用双因子分解活性空间哈密顿量时的量子相位估计成本。它列出 AB、A、B 的哈密顿量范数参数 λ（Ha）、逻辑比特数和 Toffoli 门数。这些估计描述一种可能的 QPE "
-"计算。上文的能量来自第一张表中的电子结构方法。"
+"QPE 表估计使用双因子分解活性空间哈密顿量时的量子相位估计成本。它列出 AB、A、B 的哈密顿量范数参数 λ（Ha）、逻辑比特数和 Toffoli "
+"门数。这些估计描述一种可能的 QPE 计算。上文的能量来自第一张表中的电子结构方法。"
 
-#: ../../source/tutorials/fragment-report.md:117
+#: ../../source/tutorials/fragment-report.rst:141
 msgid "The SQD table connects the active-space size to the simulated workload:"
 msgstr "SQD 表将活性空间大小与模拟工作量联系起来："
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:146
 msgid "Subsystem"
 msgstr "子体系"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:147
 msgid "SQD qubits"
 msgstr "SQD 量子比特数"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:148
 msgid "Full CI dimension"
 msgstr "全 CI 维数"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:149
 msgid "Prepare RSS (MB)"
 msgstr "Prepare RSS (MB)"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:150
 msgid "Sample RSS (MB)"
 msgstr "Sample RSS (MB)"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:151
 msgid "AB"
 msgstr "AB"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:152
+#: ../../source/tutorials/fragment-report.rst:158
+#: ../../source/tutorials/fragment-report.rst:163
 msgid "16"
 msgstr "16"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:153
 msgid "784"
 msgstr "784"
 
-#: ../../source/tutorials/fragment-report.md
-msgid "690.5"
-msgstr "690.5"
+#: ../../source/tutorials/fragment-report.rst:154
+#: ../../source/tutorials/fragment-report.rst:155
+msgid "1031.7"
+msgstr "1031.7"
 
-#: ../../source/tutorials/fragment-report.md
-msgid "715.0"
-msgstr "715.0"
-
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:156
 msgid "A"
 msgstr "A"
 
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:157
+#: ../../source/tutorials/fragment-report.rst:162
 msgid "8"
 msgstr "8"
 
-#: ../../source/tutorials/fragment-report.md
-msgid "683.3"
-msgstr "683.3"
+#: ../../source/tutorials/fragment-report.rst:159
+#: ../../source/tutorials/fragment-report.rst:160
+#: ../../source/tutorials/fragment-report.rst:164
+#: ../../source/tutorials/fragment-report.rst:165
+msgid "1024.5"
+msgstr "1024.5"
 
-#: ../../source/tutorials/fragment-report.md
-msgid "707.7"
-msgstr "707.7"
-
-#: ../../source/tutorials/fragment-report.md
+#: ../../source/tutorials/fragment-report.rst:161
 msgid "B"
 msgstr "B"
 
-#: ../../source/tutorials/fragment-report.md:125
+#: ../../source/tutorials/fragment-report.rst:167
 msgid ""
-"SQD uses two qubits per active orbital. The full configuration-interaction (CI) dimension counts "
-"the determinants for the active space and its spin populations. RSS means resident set size. The "
-"two RSS columns predict peak memory for the prepare and sample stages in decimal MB."
+"SQD uses two qubits per active orbital. The full configuration-interaction (CI) "
+"dimension counts the determinants for the active space and its spin populations. RSS "
+"means resident set size. The two RSS columns predict peak memory for the prepare and "
+"sample stages in decimal MB."
 msgstr ""
-"SQD 为每个活性轨道使用两个量子比特。全组态相互作用（CI）维数统计该活性空间及其自旋占据下的行列式数目。RSS 表示驻留集大小。两列 RSS 以十进制 MB 预测 prepare 和 "
-"sample 阶段的峰值内存。"
+"SQD 为每个活性轨道使用两个量子比特。全组态相互作用（CI）维数统计该活性空间及其自旋占据下的行列式数目。RSS 表示驻留集大小。两列 RSS 以十进制 MB 预测 "
+"prepare 和 sample 阶段的峰值内存。"
 
-#: ../../source/tutorials/fragment-report.md:130
+#: ../../source/tutorials/fragment-report.rst:172
 msgid ""
-"Read these estimates when you choose a larger active space or plan a series of calculations. For "
-"an energy comparison, start with the interaction energies and their differences from the selected"
-" references."
+"Read these estimates when you choose a larger active space or plan a series of "
+"calculations. For an energy comparison, start with the interaction energies and their"
+" differences from the selected references."
 msgstr "选择更大的活性空间或规划一系列计算时，请参考这些估计。比较能量时，先看相互作用能及其相对于选定参考的差值。"
 
-#: ../../source/tutorials/fragment-report.md:134
+#: ../../source/tutorials/fragment-report.rst:177
 msgid "Include Experimental Ks Values"
 msgstr "加入实验 Ks 值"
 
-#: ../../source/tutorials/fragment-report.md:136
+#: ../../source/tutorials/fragment-report.rst:179
 msgid ""
-"If you also have experimental Ks values, pass a mapping of labels to values as `ks_table` in "
-"`render_report`. The report appends them in the supplied order, so collaborators can read the "
-"measurements alongside the calculations. Statistical analysis of their relationship to ΔE remains"
-" a separate step. The water-dimer example has no Ks table."
+"If you also have experimental Ks values, pass a mapping of labels to values as "
+"``ks_table`` in ``render_report``. The report appends them in the supplied order, so "
+"collaborators can read the measurements alongside the calculations. Statistical "
+"analysis of their relationship to ΔE remains a separate step. The water-dimer example"
+" has no Ks table."
 msgstr ""
-"若还有实验 Ks 值，请在 `render_report` 中通过 `ks_table` 传入标签到数值的映射。报告按传入顺序追加这些值，供合作者将测量值与计算结果一起阅读。它们与 ΔE "
-"之间关系的统计分析仍是独立步骤。水二聚体示例没有 Ks 表。"
+"若还有实验 Ks 值，请在 ``render_report`` 中通过 ``ks_table`` "
+"传入标签到数值的映射。报告按传入顺序追加这些值，供合作者将测量值与计算结果一起阅读。它们与 ΔE 之间关系的统计分析仍是独立步骤。水二聚体示例没有 Ks 表。"
+
+#: ../../source/tutorials/fragment-report.rst:9
+msgid ""
+"You can read the tables below without running Python. To reproduce them, follow "
+":doc:`Fragment Interaction Energy <fragment-interaction>` with cc-pVDZ and "
+"``mode=\"full\"``. The generated report uses Chinese headings. The explanations below"
+" follow its table order."
+msgstr ""
+"无需运行 Python，即可阅读下列表格。如需复现，请按 :doc:`片段相互作用能 <fragment-interaction>` 使用 cc-pVDZ 和 "
+"``mode=\"full\"``。生成的报告使用中文标题。下文按报告中的表格顺序解释结果。"

@@ -1,0 +1,17 @@
+{% extends "page.html" %}
+{% set title = _('Page moved') %}
+{% set target = pathto(documentation_redirects[pagename]) %}
+{% set body %}
+<section>
+  <h1>{{ _('Page moved') }}</h1>
+  <p><a href="{{ target }}">{{ _('Open the current page') }}</a></p>
+</section>
+<script>
+  const target = {{ target | tojson }};
+  const sectionTargets = {% if pagename == 'sqd' %}{
+    "#complete-result-field-reference": {{ pathto('api-reference/sqd-results') | tojson }},
+    "#resource-limits-and-measured-outcomes": {{ (pathto('user-guide/sqd') ~ '#resource-limits') | tojson }}
+  }{% else %}{}{% endif %};
+  window.location.replace(sectionTargets[window.location.hash] || target + window.location.hash);
+</script>
+{% endset %}

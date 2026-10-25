@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 19:49+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -28,86 +27,86 @@ msgid ""
 "Use the module pages for specific entry points."
 msgstr "API 参考按软件包组织函数和类。先查看软件包级导出项。具体入口见各模块页面。"
 
-#: ../../source/api-reference/index.rst:21
+#: ../../source/api-reference/index.rst:22
 msgid "Package Groups"
 msgstr "软件包分组"
 
-#: ../../source/api-reference/index.rst:26
+#: ../../source/api-reference/index.rst:27
 msgid "Page"
 msgstr "页面"
 
-#: ../../source/api-reference/index.rst:27
+#: ../../source/api-reference/index.rst:28
 msgid "Scope"
 msgstr "范围"
 
-#: ../../source/api-reference/index.rst:28
+#: ../../source/api-reference/index.rst:29
 msgid ":doc:`package`"
 msgstr ":doc:`package`"
 
-#: ../../source/api-reference/index.rst:29
+#: ../../source/api-reference/index.rst:30
 msgid "Top-level exports, constants, and molecule configuration."
 msgstr "顶层导出项、常量和分子配置。"
 
-#: ../../source/api-reference/index.rst:30
+#: ../../source/api-reference/index.rst:31
 msgid ":doc:`core`"
 msgstr ":doc:`core`"
 
-#: ../../source/api-reference/index.rst:31
+#: ../../source/api-reference/index.rst:32
 msgid "QPE, QM/MM orchestration, RDM, resource estimation, and device utilities."
 msgstr "QPE、QM/MM 编排、RDM、资源估计和设备工具。"
 
-#: ../../source/api-reference/index.rst:32
+#: ../../source/api-reference/index.rst:33
 msgid ":doc:`interfaces`"
 msgstr ":doc:`interfaces`"
 
-#: ../../source/api-reference/index.rst:33
+#: ../../source/api-reference/index.rst:34
 msgid "PySCF/PennyLane conversion and density matrix bridge."
 msgstr "PySCF/PennyLane 转换和密度矩阵桥接。"
 
-#: ../../source/api-reference/index.rst:34
+#: ../../source/api-reference/index.rst:35
 msgid ":doc:`sqd`"
 msgstr ":doc:`sqd`"
 
-#: ../../source/api-reference/index.rst:35
+#: ../../source/api-reference/index.rst:36
 msgid "Sample-based diagonalization workflows, contracts, integral assembly, and resource policy."
 msgstr "基于采样的对角化工作流、契约、积分组装和资源策略。"
 
-#: ../../source/api-reference/index.rst:37
+#: ../../source/api-reference/index.rst:38
 msgid ":doc:`fragments`"
 msgstr ":doc:`fragments`"
 
-#: ../../source/api-reference/index.rst:38
+#: ../../source/api-reference/index.rst:39
 msgid "Fragment interaction energies, result contracts, reference import, and report."
 msgstr "片段相互作用能、结果契约、参考导入与报告。"
 
-#: ../../source/api-reference/index.rst:39
+#: ../../source/api-reference/index.rst:40
 msgid ":doc:`solvation`"
 msgstr ":doc:`solvation`"
 
-#: ../../source/api-reference/index.rst:40
+#: ../../source/api-reference/index.rst:41
 msgid "MC solvation workflow, Catalyst circuit bundles, IR cache, and analysis."
 msgstr "MC 溶剂化工作流、Catalyst 电路包、IR 缓存和分析。"
 
-#: ../../source/api-reference/index.rst:41
+#: ../../source/api-reference/index.rst:42
 msgid ":doc:`sampling`"
 msgstr ":doc:`sampling`"
 
-#: ../../source/api-reference/index.rst:42
+#: ../../source/api-reference/index.rst:43
 msgid "Classical MC moves, water geometry, force-field helpers, and Metropolis sampling."
 msgstr "经典 MC 移动、水分子几何、力场辅助函数和 Metropolis 采样。"
 
-#: ../../source/api-reference/index.rst:43
+#: ../../source/api-reference/index.rst:44
 msgid ":doc:`profiling`"
 msgstr ":doc:`profiling`"
 
-#: ../../source/api-reference/index.rst:44
+#: ../../source/api-reference/index.rst:45
 msgid "Memory, timing, Catalyst IR, and QPE compilation profiling."
 msgstr "内存、计时、Catalyst IR 和 QPE 编译性能分析。"
 
-#: ../../source/api-reference/index.rst:45
+#: ../../source/api-reference/index.rst:46
 msgid ":doc:`utils`"
 msgstr ":doc:`utils`"
 
-#: ../../source/api-reference/index.rst:46
+#: ../../source/api-reference/index.rst:47
 msgid "I/O and plotting helpers."
 msgstr "输入输出与绘图辅助函数。"

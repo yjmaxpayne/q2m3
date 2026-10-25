@@ -132,7 +132,7 @@ def test_resource_limits_precede_backend_allocations(monkeypatch):
     sampler = FfsimSampler(host_available_mb=4096, rss_budget_mb=4096)
     with pytest.raises(ResourceModelDomainError, match="shots"):
         sampler.sample(np.array([1, 0, 0, 0]), 2, (1, 1), shots=100001)
-    too_many_reps = ffsim.UCJOpSpinBalanced.from_t_amplitudes(np.zeros((1, 1, 1, 1)), n_reps=3)
+    too_many_reps = ffsim.UCJOpSpinBalanced.from_t_amplitudes(np.zeros((1, 1, 1, 1)), n_reps=37)
     with pytest.raises(ResourceModelDomainError, match="n_reps"):
         sampler.prepare(too_many_reps, 2, (1, 1))
     allocate.assert_not_called()

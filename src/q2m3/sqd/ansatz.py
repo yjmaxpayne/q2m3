@@ -33,7 +33,7 @@ from q2m3.sqd.resources import Stage, guard_allocation, load_resource_model
 
 @dataclass(frozen=True)
 class _SeedInventory:
-    """Serial real RCCSD, DIIS6, <=200 cycles, or rank-2 UCJ decomposition.
+    """Serial real RCCSD, DIIS6, <=200 cycles, or up to 36 UCJ factors.
 
     128 float64 n^4 arrays cover ERIs, t2/DIIS, simultaneous receiver inputs,
     update scratch and double-factorization matrices. 64 n^2 arrays cover

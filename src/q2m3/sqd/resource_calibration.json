@@ -1,7 +1,7 @@
 {
   "schema": "sqd.rss.v1",
   "status": "validated_holdout",
-  "model_id": "serial-active-space-20260917-v1",
+  "model_id": "serial-active-space-20261025-ucj36-v2",
   "versions": {
     "numpy": "2.4.1",
     "scipy": "1.16.3",
@@ -16,7 +16,7 @@
   },
   "profile": {
     "shots": 100000,
-    "n_reps": 2,
+    "n_reps": 36,
     "num_batches": 2,
     "max_iterations": 2,
     "max_space": 12,
@@ -33,56 +33,56 @@
   },
   "coefficients": {
     "integrals": [
-      677.03808,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "ccsd": [
-      677.35552,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "prepare": [
-      682.8032000000001,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "sample": [
-      707.25056,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "diagonalize": [
-      692.781,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "reference": [
-      692.8704,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ],
     "comparison": [
-      692.9836799999999,
+      1024.0,
       1.25,
       1.25,
       1.25,
       1.25
     ]
   },
-  "method": "NNLS over training maxima; allocation floors; max positive residual + 64 MB; times 1.25",
+  "method": "NNLS over training maxima; allocation floors; max positive residual + 64 MB; times 1.25; UCJ36 extension: preserve slopes, raise all import/native intercepts to 1024 MB, independently test preparation and sampling",
   "preregistration_sha256": "3961e6182f009923a9cb5d8dee63cd4ed521d52e796d8e2a6abf3706d7efa097",
   "validation": {
     "fit_points": 6,
@@ -91,5 +91,82 @@
     "all_passed": true,
     "minimum_margin_mb": 199.503872,
     "observations_sha256": "d2d86c94662a0b3d31d08253b7c9e71efb42e3f6b87908ec43a8e741cbdf82e4"
+  },
+  "ucj_profile_extension": {
+    "base_model_id": "serial-active-space-20260917-v1",
+    "date": "2026-10-25",
+    "scope": "Only preparation and sampling depend on factor count. Other stage slopes and domains are retained. All stage intercepts use a 1024 MB import/native reserve.",
+    "fit_measurements": 27,
+    "holdout_measurements": 27,
+    "repeats_per_point": 3,
+    "fit_seeds": [
+      0,
+      1,
+      2
+    ],
+    "holdout_seeds": [
+      100,
+      101,
+      102
+    ],
+    "points_norb_occupied": [
+      [
+        2,
+        1
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        6
+      ],
+      [
+        10,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        7,
+        3
+      ],
+      [
+        10,
+        4
+      ]
+    ],
+    "profile": {
+      "n_reps": 36,
+      "shots": 100000,
+      "threads": 1
+    },
+    "python": "3.11.17",
+    "platform": "Linux x86_64",
+    "fit_peak_rss_mb": 772.79232,
+    "holdout_peak_rss_mb": 772.825088,
+    "holdout_minimum_margin_mb": 275.005232,
+    "all_passed": true,
+    "poll_interval_s": 0.005,
+    "process_rss_cap_mb": 2048,
+    "process_wall_cap_s": 90,
+    "probe": "tests/sqd/ucj_profile_probe.py",
+    "probe_ast_sha256": "61e8507a215da8adaa7c041919135dd5fbfe1f9d781f1aa540316fa522a4a3bc",
+    "fit_observations_sha256": "3a7ad72ac3bee57306de7d7f60d9597f0178144eaaf1735a4e6d3ac1a3665e6d",
+    "holdout_observations_sha256": "7f1713a55b77d57583bc34da2cc3b306c68b51a96b47a289c124e112accd1471",
+    "limitations": "Polled worker process-tree RSS; synthetic dense amplitudes; empirical estimates require production process-tree caps. No shot-domain extension.",
+    "fit_initial_minimum_margin_mb": -67.71111999999994,
+    "reserve_selection": "The initial profile underpredicted one import transient. The 1024 MB floor was chosen before the independent holdout runs."
   }
 }

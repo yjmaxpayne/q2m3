@@ -196,7 +196,7 @@ values.
 
 The calibrated single-thread Linux model covers balanced closed shells,
 2–10 active orbitals, at most 252 determinants per spin and 63504 total,
-repetitions/batches/iterations at most 2, and shots at most 100000.
+at most 36 UCJ factors, two batches, two iterations, and 100000 shots.
 Other stage-specific input/domain checks still apply. Public diagonalization
 uses two batches, two iterations and `min(300, shots)` samples per batch.
 Unknown/out-of-domain bounds raise `ResourceModelDomainError` before the

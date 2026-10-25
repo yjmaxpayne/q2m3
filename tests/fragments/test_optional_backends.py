@@ -64,3 +64,33 @@ def test_fragment_modules_do_not_load_optional_backends(tmp_path):
     assert Path(report["origin"]).is_relative_to(SRC), report["origin"]
     assert "q2m3.fragments.errors" in report["imported"]
     assert report["loaded"] == []
+
+
+def test_sqd_worker_helpers_import_without_the_sqd_backend(tmp_path):
+    script = """
+import importlib.abc
+import sys
+
+blocked = {"ffsim", "qiskit", "qiskit_addon_sqd"}
+
+class Block(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split(".")[0] in blocked:
+            raise ModuleNotFoundError("blocked: " + fullname, name=fullname)
+
+sys.meta_path.insert(0, Block())
+from q2m3.fragments import _sqd_child
+assert callable(_sqd_child.host_available_mb)
+assert not blocked.intersection(sys.modules)
+"""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(SRC), env.get("PYTHONPATH")]))
+    process = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert process.returncode == 0, process.stderr

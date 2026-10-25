@@ -21,7 +21,6 @@ from pyscf import lib
 
 from q2m3.fragments.errors import FragmentWorkflowError
 from q2m3.fragments.sqd_stage import THREAD_VARIABLES, _exit_on_sigterm, _kill_marked
-from q2m3.sqd import build_ccsd_seed_from_integrals, run_sqd_from_integrals
 from q2m3.sqd.exceptions import ResourceLimitError
 from q2m3.sqd.result import SQDResult
 from q2m3.sqd.transport import decode_result, encode_result
@@ -87,6 +86,8 @@ def solve(job: dict[str, Any]) -> SQDResult:
     available = host_available_mb(reference.rss_budget_mb)
     if available <= 0:
         raise ResourceLimitError(f"No memory left for the SQD job: host_available_mb={available}")
+    from q2m3.sqd import build_ccsd_seed_from_integrals, run_sqd_from_integrals
+
     arrays = (job["h1"], job["h2"], job["e_core"])
     shape = {"norb": job["norb"], "nelec": job["nelec"], "context": context}
     seed_data = build_ccsd_seed_from_integrals(

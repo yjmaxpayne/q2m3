@@ -38,7 +38,14 @@ version = _resolve_version()
 release = version
 html_context = {
     "display_version": first_release if release.startswith(f"{first_release}.dev") else release,
+    "documentation_redirects": {
+        "core-concepts": "user-guide/core-concepts",
+        "sqd": "user-guide/sqd",
+    },
 }
+
+# Keep published entry URLs after moving their sources into the user guide.
+html_additional_pages = {name: "redirect.html" for name in html_context["documentation_redirects"]}
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -46,15 +53,11 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "myst_parser",
     "sphinx_copybutton",
     "sphinxcontrib.mermaid",
 ]
 
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".md": "markdown",
-}
+source_suffix = {".rst": "restructuredtext"}
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
@@ -77,14 +80,6 @@ napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = False
-
-myst_enable_extensions = [
-    "colon_fence",
-    "dollarmath",
-    "linkify",
-]
-myst_heading_anchors = 3
-myst_linkify_fuzzy_links = False
 
 doctest_global_setup = """
 import numpy as np

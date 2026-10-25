@@ -29,7 +29,8 @@ The glycine example accepts `--active-space 6|8|10`, `--seed`, `--shots`, and
 `data/output/examples/`. Its two artificial TIP3P waters contain six charges with
 a net charge of zero. They are a fixed environment, not a sampled solvent.
 
-Vacuum MOs and two-electron tensors remain fixed. The model excludes
+Vacuum MOs and two-electron tensors remain fixed.
+Runtime MC coefficient updates are diagonal-only. The model excludes
 polarization and orbital relaxation. Separate reference energy shifts from
 changes in the SQD solver residual. These are not solvation free energies.
 

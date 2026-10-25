@@ -5,15 +5,21 @@ The tutorials cover small validation runs and larger SQD and solvation
 workflows. Run the H2 examples before glycine, H3O+, or profiling scripts
 that require large amounts of memory.
 
+For fragment interactions, start with :doc:`fragment-interaction` to calculate
+the water-dimer interaction energy. Continue with :doc:`fragment-report` to
+compare the methods and interpret the resource estimates.
+
 .. toctree::
    :maxdepth: 1
 
-   sqd-showcase
    h2-qpe-validation
    h2-resource-estimation
    full-oneelectron-embedding
+   fragment-interaction
+   fragment-report
    h2-mc-solvation
    three-mode-solvation
+   sqd-showcase
 
 Optional Diagnostic Scripts
 ---------------------------

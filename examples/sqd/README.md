@@ -24,7 +24,7 @@ export NUMEXPR_NUM_THREADS=1 JAX_PLATFORMS=cpu
    The script converts the existing neutral NH₂–CH₂–COOH geometry to Cartesian
    coordinates. Then the workflow runs these steps:
    - Vacuum RHF orbitals define an active space.
-   - CCSD amplitudes initialize two LUCJ layers.
+   - CCSD amplitudes initialize two UCJ factors.
    - ffsim samples occupations.
    - SQD diagonalizes the sampled subspace.
 
@@ -100,7 +100,7 @@ directory by default, so this command needs the checkout root for `examples`.
 The monitor polls the command and its currently visible descendants every
 10 ms. It excludes the observer and can miss short peaks. Time is in seconds,
 and reported RSS is in decimal MB. See the
-[monitor contract](../../doc/source/tutorials/sqd-showcase.md#4-verify-the-integral-adapter)
+[monitor contract](../../doc/source/tutorials/sqd-showcase.rst)
 for default environment values, override rules, and the ten result keys.
 
 ## Example results
@@ -108,7 +108,7 @@ for default environment values, override rules, and the ten result keys.
 A run on 2026-09-19 used Python 3.12.3, NumPy 2.4.1, SciPy 1.16.3,
 PySCF 2.14.0, ffsim 0.0.84 and qiskit-addon-sqd 0.13.1 from the frozen
 installation above, with OMP/MKL/OpenBLAS thread counts set to 1.
-The default glycine scan used two LUCJ layers, 100,000 shots and seeds 0–4.
+The default glycine scan used two UCJ factors, 100,000 shots and seeds 0–4.
 All 15 calculations completed with their own T0/exact CASCI reference.
 These historical observations describe that installation and those inputs.
 Shared CI does not promise to regenerate this campaign or its measurement files.

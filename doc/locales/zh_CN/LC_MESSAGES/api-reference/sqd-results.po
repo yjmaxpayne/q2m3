@@ -1,0 +1,432 @@
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
+"Language: zh_CN\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/api-reference/sqd-results.rst:2
+msgid "SQD result fields"
+msgstr "SQD 结果字段"
+
+#: ../../source/api-reference/sqd-results.rst:4
+msgid ""
+"The following 40 names match the ``sqd.result.v1`` contract. JSON preserves these names and uses "
+"``null`` for Python ``None``. Every absent top-level value requires a ``null_reasons`` entry. "
+"Required metadata is not omitted. Nested objects retain their own units and reasons. A consumer "
+"must keep the method, tier, downgrade reason and warnings beside the reference energy."
+msgstr ""
+"以下 40 个名称与 ``sqd.result.v1`` 契约一致。JSON 保留这些名称，并用 ``null`` 表示 Python ``None``。每个缺失的顶层值都要求对应的 "
+"``null_reasons`` 条目。必需元数据不得省略。嵌套对象保留自身单位和原因。使用方必须将方法、层级、降级原因和警告与参考能量一起保留。"
+
+#: ../../source/api-reference/sqd-results.rst:13
+msgid "Field"
+msgstr "字段"
+
+#: ../../source/api-reference/sqd-results.rst:14
+msgid "Unit"
+msgstr "单位"
+
+#: ../../source/api-reference/sqd-results.rst:15
+msgid "Meaning and absence rule"
+msgstr "含义与缺失规则"
+
+#: ../../source/api-reference/sqd-results.rst:16
+msgid "``schema_version``"
+msgstr "``schema_version``"
+
+#: ../../source/api-reference/sqd-results.rst:17 ../../source/api-reference/sqd-results.rst:20
+#: ../../source/api-reference/sqd-results.rst:29 ../../source/api-reference/sqd-results.rst:45
+#: ../../source/api-reference/sqd-results.rst:48 ../../source/api-reference/sqd-results.rst:54
+#: ../../source/api-reference/sqd-results.rst:57 ../../source/api-reference/sqd-results.rst:111
+#: ../../source/api-reference/sqd-results.rst:120 ../../source/api-reference/sqd-results.rst:140
+msgid "metadata"
+msgstr "元数据"
+
+#: ../../source/api-reference/sqd-results.rst:18
+msgid "Required, ``sqd.result.v1``"
+msgstr "必需，``sqd.result.v1``"
+
+#: ../../source/api-reference/sqd-results.rst:19
+msgid "``status``"
+msgstr "``status``"
+
+#: ../../source/api-reference/sqd-results.rst:21
+msgid "Required, ``completed`` or ``reference_only``"
+msgstr "必需，``completed`` 或 ``reference_only``"
+
+#: ../../source/api-reference/sqd-results.rst:22
+msgid "``sqd_energy``"
+msgstr "``sqd_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:23 ../../source/api-reference/sqd-results.rst:26
+#: ../../source/api-reference/sqd-results.rst:32 ../../source/api-reference/sqd-results.rst:35
+#: ../../source/api-reference/sqd-results.rst:38 ../../source/api-reference/sqd-results.rst:41
+msgid "Ha"
+msgstr "Ha"
+
+#: ../../source/api-reference/sqd-results.rst:24
+msgid "SQD energy. Absent in reference-only mode"
+msgstr "SQD 能量。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:25
+msgid "``hf_energy``"
+msgstr "``hf_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:27
+msgid "Required same-Hamiltonian determinant expectation"
+msgstr "必需，同一哈密顿量的行列式期望值"
+
+#: ../../source/api-reference/sqd-results.rst:28
+msgid "``hf_reference_kind``"
+msgstr "``hf_reference_kind``"
+
+#: ../../source/api-reference/sqd-results.rst:30
+msgid "Required ``canonical_rhf`` or ``fixed_frame_determinant``"
+msgstr "必需，``canonical_rhf`` 或 ``fixed_frame_determinant``"
+
+#: ../../source/api-reference/sqd-results.rst:31
+msgid "``baseline_energy``"
+msgstr "``baseline_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:33
+msgid "Required selected reference energy"
+msgstr "必需，选定的参考能量"
+
+#: ../../source/api-reference/sqd-results.rst:34
+msgid "``iso_active_space_ccsd_energy``"
+msgstr "``iso_active_space_ccsd_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:36
+msgid "Same-space CCSD. May be absent if not run in reference-only mode"
+msgstr "同活性空间 CCSD。如果仅参考模式未运行此计算，可缺失"
+
+#: ../../source/api-reference/sqd-results.rst:37
+msgid "``iso_ndet_sci_energy``"
+msgstr "``iso_ndet_sci_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:39
+msgid "Matched-spin-dimension SCI. Absent in reference-only mode"
+msgstr "匹配自旋维数的 SCI。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:40
+msgid "``iso_ndet_random_energy``"
+msgstr "``iso_ndet_random_energy``"
+
+#: ../../source/api-reference/sqd-results.rst:42
+msgid ""
+"Matched random comparison. Absent in reference-only mode or with an explicit unavailable/budget "
+"reason"
+msgstr "匹配的随机对照。仅参考模式或有明确不可用 / 预算原因时缺失"
+
+#: ../../source/api-reference/sqd-results.rst:44
+msgid "``baseline_tier``"
+msgstr "``baseline_tier``"
+
+#: ../../source/api-reference/sqd-results.rst:46
+msgid "Required T0/T1/T1+/T2. Never infer from a legacy alias"
+msgstr "必需，T0/T1/T1+/T2。不得根据旧别名推断"
+
+#: ../../source/api-reference/sqd-results.rst:47
+msgid "``baseline_method``"
+msgstr "``baseline_method``"
+
+#: ../../source/api-reference/sqd-results.rst:49
+msgid "Required actual method. CASCI stays ``exact_casci``"
+msgstr "必需，实际方法。CASCI 保持为 ``exact_casci``"
+
+#: ../../source/api-reference/sqd-results.rst:50
+msgid "``baseline_uncertainty_mHa``"
+msgstr "``baseline_uncertainty_mHa``"
+
+#: ../../source/api-reference/sqd-results.rst:51 ../../source/api-reference/sqd-results.rst:77
+#: ../../source/api-reference/sqd-results.rst:80
+msgid "mHa"
+msgstr "mHa"
+
+#: ../../source/api-reference/sqd-results.rst:52
+msgid "T0 is zero. Unknown approximate uncertainty is absent with reason"
+msgstr "T0 为零。近似不确定性未知时缺失，并附原因"
+
+#: ../../source/api-reference/sqd-results.rst:53
+msgid "``baseline_uncertainty_kind``"
+msgstr "``baseline_uncertainty_kind``"
+
+#: ../../source/api-reference/sqd-results.rst:55
+msgid "Required ``exact_active_space``, ``solver_estimate`` or ``unknown``"
+msgstr "必需，``exact_active_space``、``solver_estimate`` 或 ``unknown``"
+
+#: ../../source/api-reference/sqd-results.rst:56
+msgid "``baseline_downgrade_reason``"
+msgstr "``baseline_downgrade_reason``"
+
+#: ../../source/api-reference/sqd-results.rst:58
+msgid "Absent for T0. Required nonempty text for every lower tier"
+msgstr "T0 时缺失。每个较低层级都要求非空文本"
+
+#: ../../source/api-reference/sqd-results.rst:59
+msgid "``baseline_untrustworthy``"
+msgstr "``baseline_untrustworthy``"
+
+#: ../../source/api-reference/sqd-results.rst:60 ../../source/api-reference/sqd-results.rst:114
+#: ../../source/api-reference/sqd-results.rst:117
+msgid "boolean"
+msgstr "布尔值"
+
+#: ../../source/api-reference/sqd-results.rst:61
+msgid "Required trust flag. Does not turn an approximation into T0"
+msgstr "必需，可信性标记。不能将近似变成 T0"
+
+#: ../../source/api-reference/sqd-results.rst:62
+msgid "``baseline_t1_residual``"
+msgstr "``baseline_t1_residual``"
+
+#: ../../source/api-reference/sqd-results.rst:63 ../../source/api-reference/sqd-results.rst:70
+#: ../../source/api-reference/sqd-results.rst:73
+msgid "structured metadata"
+msgstr "结构化元数据"
+
+#: ../../source/api-reference/sqd-results.rst:64
+msgid ""
+"T1 cutoff/energy record. Absent when inapplicable. Energies are Ha, loose residual is mHa, and "
+"cannot bound the tight energy error"
+msgstr "T1 截断 / 能量记录。不适用时缺失。能量单位为 Ha，宽松残差单位为 mHa，且不能界定严格截断能量的误差"
+
+#: ../../source/api-reference/sqd-results.rst:66
+msgid "``t1_diagnostic``"
+msgstr "``t1_diagnostic``"
+
+#: ../../source/api-reference/sqd-results.rst:67 ../../source/api-reference/sqd-results.rst:83
+msgid "dimensionless"
+msgstr "无量纲"
+
+#: ../../source/api-reference/sqd-results.rst:68
+msgid "T2 CCSD amplitude diagnostic. Absent when T2 is not used"
+msgstr "T2 CCSD 振幅诊断。未使用 T2 时缺失"
+
+#: ../../source/api-reference/sqd-results.rst:69
+msgid "``t2_diagnostics``"
+msgstr "``t2_diagnostics``"
+
+#: ../../source/api-reference/sqd-results.rst:71
+msgid "T2 flags, CCSD convergence, energies in Ha and dimensionless ratios. Absent when inapplicable"
+msgstr "T2 标记、CCSD 收敛、Ha 能量和无量纲比值。不适用时缺失"
+
+#: ../../source/api-reference/sqd-results.rst:72
+msgid "``reference_attempts``"
+msgstr "``reference_attempts``"
+
+#: ../../source/api-reference/sqd-results.rst:74
+msgid "Required ordered attempt records, including reasons, wall seconds and decimal MB peak where known"
+msgstr "必需，有序尝试记录，包括原因、实际秒数，以及已知时的十进制 MB 峰值"
+
+#: ../../source/api-reference/sqd-results.rst:76
+msgid "``delta_mHa``"
+msgstr "``delta_mHa``"
+
+#: ../../source/api-reference/sqd-results.rst:78
+msgid "SQD minus baseline. Absent in reference-only mode"
+msgstr "SQD 减基准。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:79
+msgid "``delta_vs_sci_mHa``"
+msgstr "``delta_vs_sci_mHa``"
+
+#: ../../source/api-reference/sqd-results.rst:81
+msgid "SQD minus same-size SCI. Absent in reference-only mode"
+msgstr "SQD 减同大小 SCI。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:82
+msgid "``ratio_sqd_over_sci``"
+msgstr "``ratio_sqd_over_sci``"
+
+#: ../../source/api-reference/sqd-results.rst:84
+msgid ""
+"T0-relative error ratio. Absent for nonexact baseline, invalid denominator or reference-only "
+"mode, with reason"
+msgstr "相对于 T0 的误差比。基准非精确、分母无效或仅参考模式时缺失，并附原因"
+
+#: ../../source/api-reference/sqd-results.rst:86
+msgid "``unique_dets_vs_shots``"
+msgstr "``unique_dets_vs_shots``"
+
+#: ../../source/api-reference/sqd-results.rst:87 ../../source/api-reference/sqd-results.rst:90
+#: ../../source/api-reference/sqd-results.rst:105
+msgid "counts"
+msgstr "计数"
+
+#: ../../source/api-reference/sqd-results.rst:88
+msgid "Cumulative ``(shots, unique sampled pairs)`` curve. Absent in reference-only mode"
+msgstr "累积 ``(shots, unique sampled pairs)`` 曲线。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:89
+msgid "``active_space``"
+msgstr "``active_space``"
+
+#: ../../source/api-reference/sqd-results.rst:91
+msgid "Required ``(electrons, spatial orbitals)``"
+msgstr "必需，``(electrons, spatial orbitals)``"
+
+#: ../../source/api-reference/sqd-results.rst:92
+msgid "``n_reps``"
+msgstr "``n_reps``"
+
+#: ../../source/api-reference/sqd-results.rst:93 ../../source/api-reference/sqd-results.rst:96
+#: ../../source/api-reference/sqd-results.rst:102 ../../source/api-reference/sqd-results.rst:108
+msgid "count"
+msgstr "计数"
+
+#: ../../source/api-reference/sqd-results.rst:94
+msgid "Executed LUCJ repetitions. Absent in reference-only mode"
+msgstr "已执行的 LUCJ 重复数。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:95
+msgid "``shots``"
+msgstr "``shots``"
+
+#: ../../source/api-reference/sqd-results.rst:97
+msgid "Executed sampling shots. Absent in reference-only mode"
+msgstr "已执行的采样次数。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:98
+msgid "``seed``"
+msgstr "``seed``"
+
+#: ../../source/api-reference/sqd-results.rst:99
+msgid "integer"
+msgstr "整数"
+
+#: ../../source/api-reference/sqd-results.rst:100
+msgid "Required actual random seed, including reference-only runs"
+msgstr "必需，实际随机种子，包括仅参考运行"
+
+#: ../../source/api-reference/sqd-results.rst:101
+msgid "``subspace_dim``"
+msgstr "``subspace_dim``"
+
+#: ../../source/api-reference/sqd-results.rst:103
+msgid "Product of alpha/beta dimensions. Absent in reference-only mode"
+msgstr "alpha/beta 维数的乘积。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:104
+msgid "``subspace_dims``"
+msgstr "``subspace_dims``"
+
+#: ../../source/api-reference/sqd-results.rst:106
+msgid "``(d_alpha, d_beta)``. Absent in reference-only mode"
+msgstr "``(d_alpha, d_beta)``。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:107
+msgid "``full_ci_dim``"
+msgstr "``full_ci_dim``"
+
+#: ../../source/api-reference/sqd-results.rst:109
+msgid "Required full fixed-particle-number space dimension"
+msgstr "必需，完整固定粒子数空间维数"
+
+#: ../../source/api-reference/sqd-results.rst:110
+msgid "``embedding_mode``"
+msgstr "``embedding_mode``"
+
+#: ../../source/api-reference/sqd-results.rst:112
+msgid "Required actual embedding mode"
+msgstr "必需，实际嵌入模式"
+
+#: ../../source/api-reference/sqd-results.rst:113
+msgid "``two_electron_tensor_fixed``"
+msgstr "``two_electron_tensor_fixed``"
+
+#: ../../source/api-reference/sqd-results.rst:115
+msgid "Required fixed-tensor assumption"
+msgstr "必需，固定张量假设"
+
+#: ../../source/api-reference/sqd-results.rst:116
+msgid "``fixed_mo``"
+msgstr "``fixed_mo``"
+
+#: ../../source/api-reference/sqd-results.rst:118
+msgid "Required orbital-frame assumption"
+msgstr "必需，轨道框架假设"
+
+#: ../../source/api-reference/sqd-results.rst:119
+msgid "``backend``"
+msgstr "``backend``"
+
+#: ../../source/api-reference/sqd-results.rst:121
+msgid "Executed sampling backend. Absent in reference-only mode"
+msgstr "已执行的采样后端。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:122
+msgid "``versions``"
+msgstr "``versions``"
+
+#: ../../source/api-reference/sqd-results.rst:123 ../../source/api-reference/sqd-results.rst:126
+#: ../../source/api-reference/sqd-results.rst:129 ../../source/api-reference/sqd-results.rst:136
+msgid "mapping"
+msgstr "映射"
+
+#: ../../source/api-reference/sqd-results.rst:124
+msgid "Required exact dependency version snapshot"
+msgstr "必需，精确依赖版本快照"
+
+#: ../../source/api-reference/sqd-results.rst:125
+msgid "``diagnostics``"
+msgstr "``diagnostics``"
+
+#: ../../source/api-reference/sqd-results.rst:127
+msgid "Required additional diagnostics. Retain embedded flags/reasons"
+msgstr "必需，附加诊断。保留内嵌标记和原因"
+
+#: ../../source/api-reference/sqd-results.rst:128
+msgid "``provenance``"
+msgstr "``provenance``"
+
+#: ../../source/api-reference/sqd-results.rst:130
+msgid "Required immutable input/frame/Hamiltonian/seed source snapshot"
+msgstr "必需，不可变的输入 / 轨道框架 / 哈密顿量 / 种子来源快照"
+
+#: ../../source/api-reference/sqd-results.rst:131
+msgid "``timings_s``"
+msgstr "``timings_s``"
+
+#: ../../source/api-reference/sqd-results.rst:132
+msgid "s"
+msgstr "s"
+
+#: ../../source/api-reference/sqd-results.rst:133
+msgid ""
+"Required geometry/integrals/ccsd/prepare/sample/diagonalize/reference/comparison/total keys. "
+"Unexecuted stages are absent with reasons, not fabricated zero timings"
+msgstr ""
+"必需包含 geometry/integrals/ccsd/prepare/sample/diagonalize/reference/comparison/total "
+"键。未执行阶段缺失并附原因，不得伪造零计时"
+
+#: ../../source/api-reference/sqd-results.rst:135
+msgid "``null_reasons``"
+msgstr "``null_reasons``"
+
+#: ../../source/api-reference/sqd-results.rst:137
+msgid ""
+"Required reasons for missing values, including ``reference_only``, ``not_applicable`` or the "
+"actual failure-to-define reason"
+msgstr "必须记录缺失值的原因，包括 ``reference_only``、``not_applicable`` 或无法定义该值的具体原因"
+
+#: ../../source/api-reference/sqd-results.rst:139
+msgid "``warnings``"
+msgstr "``warnings``"
+
+#: ../../source/api-reference/sqd-results.rst:141
+msgid "Required warning collection. Every non-T0 baseline has a visible warning"
+msgstr "必需，警告集合。每个非 T0 基准均有可见警告"

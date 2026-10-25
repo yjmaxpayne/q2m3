@@ -3,8 +3,8 @@ SQD API
 
 The SQD API is optional. Install it with ``uv sync --frozen --extra sqd``.
 Configuration and result contracts remain importable without the optional
-sampling backend. Workflow functions load on access when
-``ffsim`` and ``qiskit-addon-sqd`` are installed.
+sampling backend. Workflow functions load on access when the environment contains
+``ffsim`` and ``qiskit-addon-sqd``.
 
 Public Workflows
 ----------------
@@ -34,6 +34,8 @@ Configuration Contracts
 Result Contracts
 ----------------
 
+See :doc:`sqd-results` for field units and absence rules.
+
 .. autoclass:: q2m3.sqd.SQDResult
    :members:
 
@@ -54,7 +56,7 @@ Authenticated Integral Assembly
 
 These lower-level producers create the provenance records required by
 ``run_sqd_from_integrals``. The integral tensor uses real chemist ordering.
-``e_core`` is added exactly once.
+The solver adds ``e_core`` exactly once.
 
 .. autoclass:: q2m3.sqd.integrals.IntegralData
    :members:
@@ -64,6 +66,18 @@ These lower-level producers create the provenance records required by
 .. autofunction:: q2m3.sqd.integrals.hamiltonian_id
 
 .. autofunction:: q2m3.sqd.ansatz.build_ccsd_seed
+
+.. autofunction:: q2m3.sqd.ansatz.build_ccsd_seed_from_integrals
+
+Result Transport
+----------------
+
+These functions encode frozen SQD records as tagged tuples that pickle
+without custom reducers, and rebuild them in another process.
+
+.. autofunction:: q2m3.sqd.transport.encode_result
+
+.. autofunction:: q2m3.sqd.transport.decode_result
 
 Resource Policy
 ---------------

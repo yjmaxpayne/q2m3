@@ -4,7 +4,8 @@
 """
 EFTQC resource estimation module.
 
-This module wraps PySCFPennyLaneConverter.estimate_qpe_resources().
+This module wraps PySCFPennyLaneConverter.estimate_qpe_resources(), and also estimates
+resources directly from active-space integrals.
 It returns structured dataclass results for resource estimates for an Early Fault-Tolerant
 Quantum Computer (EFTQC).
 """
@@ -14,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from pennylane.estimator import DoubleFactorization
 
 from q2m3.interfaces import PySCFPennyLaneConverter
 
@@ -162,6 +164,72 @@ def estimate_resources(
         embedding_mode=str(raw["embedding_mode"]),
         embedding_diagnostics=_embedding_diagnostics_from_raw(raw),
         walk_operator_calls=int(raw["qpe_iterations"]),
+    )
+
+
+def estimate_qpe_resources_from_integrals(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    *,
+    basis: str,
+    target_error: float = 0.0016,
+) -> EFTQCResources:
+    """Estimate EFTQC resources for the Hamiltonian of given active-space integrals.
+
+    The estimate is the double-factorization cost of the Hamiltonian, with the same
+    DoubleFactorization settings as ``estimate_resources``. No circuit is run.
+
+    Args:
+        h1: Real symmetric one-electron integrals, shape ``(norb, norb)``.
+        h2: Real two-electron integrals in chemist notation ``(pq|rs)``, shape
+            ``(norb, norb, norb, norb)``.
+        basis: Basis set label recorded in the result.
+        target_error: Target energy error in Hartree (default: 0.0016 = 1 kcal/mol).
+
+    Returns:
+        EFTQCResources for the vacuum active-space Hamiltonian.
+
+    Raises:
+        ValueError: The shapes do not match or the integrals violate the real chemist
+            permutation symmetry.
+    """
+    h1 = np.asarray(h1, dtype=float)
+    h2 = np.asarray(h2, dtype=float)
+    norb = h1.shape[0]
+    if h1.shape != (norb, norb) or h2.shape != (norb,) * 4:
+        raise ValueError(
+            f"h1 must have shape (n, n) and h2 shape (n, n, n, n); got {h1.shape} and {h2.shape}"
+        )
+    for array, transpose in (
+        (h1, h1.T),
+        (h2, h2.transpose(1, 0, 2, 3)),
+        (h2, h2.transpose(0, 1, 3, 2)),
+        (h2, h2.transpose(2, 3, 0, 1)),
+    ):
+        if not np.allclose(array, transpose, atol=1e-12, rtol=0):
+            raise ValueError("Integrals violate real chemist permutation symmetry")
+    # swapaxes(1, 3) undoes the chemist-to-PennyLane conversion of qml.qchem integrals.
+    algo = DoubleFactorization(
+        one_electron=h1,
+        two_electron=np.swapaxes(h2, 1, 3),
+        error=target_error,
+        tol_factor=1e-5,
+        tol_eigval=1e-5,
+        chemist_notation=False,
+    )
+    hamiltonian_1norm = float(np.asarray(algo.lamb).item())
+    return EFTQCResources(
+        hamiltonian_1norm=hamiltonian_1norm,
+        logical_qubits=int(algo.qubits),
+        toffoli_gates=int(algo.gates),
+        n_terms=None,
+        target_error=float(target_error),
+        n_system_qubits=2 * norb,
+        basis=basis,
+        n_mm_charges=0,
+        walk_operator_calls=int(
+            DoubleFactorization.estimation_cost(hamiltonian_1norm, target_error)
+        ),
     )
 
 

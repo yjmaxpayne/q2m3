@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -26,10 +25,10 @@ msgstr "SQD API"
 msgid ""
 "The SQD API is optional. Install it with ``uv sync --frozen --extra sqd``. Configuration and "
 "result contracts remain importable without the optional sampling backend. Workflow functions load"
-" on access when ``ffsim`` and ``qiskit-addon-sqd`` are installed."
+" on access when the environment contains ``ffsim`` and ``qiskit-addon-sqd``."
 msgstr ""
-"SQD API 是可选组件。使用 ``uv sync --frozen --extra sqd`` 安装。未安装可选采样后端时，仍可导入配置和结果契约。安装 ``ffsim`` 和 "
-"``qiskit-addon-sqd`` 后，工作流函数在访问时加载。"
+"SQD API 为可选项。使用 ``uv sync --frozen --extra sqd`` 安装。配置与结果类型无需可选采样后端即可导入。环境包含 ``ffsim`` 和 "
+"``qiskit-addon-sqd`` 时，工作流函数在访问时加载。"
 
 #: ../../source/api-reference/sqd.rst:10
 msgid "Public Workflows"
@@ -56,8 +55,8 @@ msgstr "原子坐标，单位为埃。"
 msgid "Even active electron count."
 msgstr "偶数个活性电子。"
 
-#: of q2m3.sqd.integrals.hamiltonian_id:11 q2m3.sqd.orchestrator.run_sqd:6
-#: q2m3.sqd.orchestrator.run_sqd_from_integrals:6
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:10 q2m3.sqd.integrals.hamiltonian_id:11
+#: q2m3.sqd.orchestrator.run_sqd:6 q2m3.sqd.orchestrator.run_sqd_from_integrals:6
 msgid "Active spatial orbital count."
 msgstr "活性空间轨道数。"
 
@@ -247,6 +246,10 @@ msgstr "已复制的只读 RCCSD 振幅及所声明的求解器来源记录。"
 msgid "Result Contracts"
 msgstr "结果契约"
 
+#: ../../source/api-reference/sqd.rst:37
+msgid "See :doc:`sqd-results` for field units and absence rules."
+msgstr "字段单位与缺失值规则见 :doc:`sqd-results`。"
+
 #: of q2m3.sqd.result.SQDResult:1
 msgid "Complete SQD report, with absent work represented by None and a reason."
 msgstr "完整的 SQD 报告；未执行的工作以 None 和原因表示。"
@@ -295,15 +298,15 @@ msgstr "T2 基线的独立耦合簇可靠性标志。"
 msgid "Check each flag against its own diagnostic, returning this record."
 msgstr "逐一根据对应诊断检查各标志，并返回此记录。"
 
-#: ../../source/api-reference/sqd.rst:53
+#: ../../source/api-reference/sqd.rst:55
 msgid "Authenticated Integral Assembly"
 msgstr "经来源验证的积分构建"
 
-#: ../../source/api-reference/sqd.rst:55
+#: ../../source/api-reference/sqd.rst:57
 msgid ""
 "These lower-level producers create the provenance records required by ``run_sqd_from_integrals``."
-" The integral tensor uses real chemist ordering. ``e_core`` is added exactly once."
-msgstr "这些底层生成函数创建 ``run_sqd_from_integrals`` 所需的来源记录。积分张量采用实数化学家记号顺序。``e_core`` 恰好加一次。"
+" The integral tensor uses real chemist ordering. The solver adds ``e_core`` exactly once."
+msgstr "这些底层函数生成 ``run_sqd_from_integrals`` 所需的来源记录。积分张量使用实数化学家顺序。求解器只加一次 ``e_core``。"
 
 #: of q2m3.sqd.integrals.IntegralData:1
 msgid "Immutable chemist Hamiltonian, complete MO snapshot and its provenance."
@@ -406,7 +409,7 @@ msgstr "化学家记号的实数双电子张量，单位为 Hartree。"
 msgid "Core plus nuclear constant in Hartree."
 msgstr "核心加核常数，单位为 Hartree。"
 
-#: of q2m3.sqd.integrals.hamiltonian_id:12
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:11 q2m3.sqd.integrals.hamiltonian_id:12
 msgid "Balanced spin populations."
 msgstr "平衡的自旋电子数。"
 
@@ -426,19 +429,19 @@ msgstr "在所提供的固定参考系中求解 RCCSD，不重新运行 SCF。"
 msgid "Immutable Hamiltonian and complete molecular-frame source."
 msgstr "不可变哈密顿量和完整的分子参考系来源记录。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:4
+#: of q2m3.sqd.ansatz.build_ccsd_seed:4 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:13
 msgid "Executor whole-run cap in decimal MB."
 msgstr "执行器为整次运行设置的上限，以十进制 MB 计。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:5
+#: of q2m3.sqd.ansatz.build_ccsd_seed:5 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:14
 msgid "User whole-run cap in decimal MB."
 msgstr "用户为整次运行设置的上限，以十进制 MB 计。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:6
+#: of q2m3.sqd.ansatz.build_ccsd_seed:6 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:15
 msgid "Override only the resource soft boundary."
 msgstr "仅覆盖资源软边界。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:7
+#: of q2m3.sqd.ansatz.build_ccsd_seed:7 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:16
 msgid "Iteration bound, 0..200. Zero exercises convergence refusal."
 msgstr "迭代次数上限，范围为 0..200。设为零时检验不收敛拒绝路径。"
 
@@ -446,7 +449,7 @@ msgstr "迭代次数上限，范围为 0..200。设为零时检验不收敛拒�
 msgid "Converged read-only amplitudes with independently verified Ha residual."
 msgstr "已收敛的只读振幅，包含经独立验证、以 Ha 为单位的残差。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:11
+#: of q2m3.sqd.ansatz.build_ccsd_seed:11 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:20
 msgid "Iterations fail or the physical residual is unacceptable."
 msgstr "迭代失败或物理残差不可接受。"
 
@@ -454,11 +457,112 @@ msgstr "迭代失败或物理残差不可接受。"
 msgid "Supplied Hamiltonian/frame/energy is inconsistent."
 msgstr "所提供的哈密顿量/参考系/能量不一致。"
 
-#: of q2m3.sqd.ansatz.build_ccsd_seed:13
+#: of q2m3.sqd.ansatz.build_ccsd_seed:13 q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:22
 msgid "Inventory guard refuses allocation."
 msgstr "资源清单保护检查拒绝分配内存。"
 
-#: ../../source/api-reference/sqd.rst:69
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:1
+msgid "Solve fixed-frame RCCSD from the low-level integral contract."
+msgstr "按底层积分契约，在固定轨道框架中求解 RCCSD。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:3
+msgid ""
+"Only the Hamiltonian hash of ``context`` is recomputed from the arrays. The frame digest is not "
+"reconstructed, so the caller is responsible for the ``frame_id`` binding between ``context`` and "
+"the integrals."
+msgstr "只根据数组重算 ``context`` 的哈密顿量哈希。框架摘要不重建，所以 ``context`` 与积分之间的 ``frame_id`` 绑定由调用方负责。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:7
+msgid "Real one-electron integrals in the declared frame."
+msgstr "声明框架中的实数单电子积分。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:8
+msgid "Real chemist two-electron tensor in the declared frame."
+msgstr "声明框架中的实数化学家记号双电子张量。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:9
+msgid "Same-Hamiltonian core constant in Hartree."
+msgstr "同一哈密顿量的核心常数，单位为 Hartree。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:12
+msgid "Frame and Hamiltonian provenance. The source may be empty."
+msgstr "框架与哈密顿量的来源记录。source 可以为空。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:18
+msgid "Converged read-only amplitudes carrying the context identifiers."
+msgstr "已收敛的只读振幅，带有 context 的标识。"
+
+#: of q2m3.sqd.ansatz.build_ccsd_seed_from_integrals:21
+msgid "Integrals disagree with the context Hamiltonian hash."
+msgstr "积分与 context 的哈密顿量哈希不一致。"
+
+#: ../../source/api-reference/sqd.rst:73
+msgid "Result Transport"
+msgstr "结果传输"
+
+#: ../../source/api-reference/sqd.rst:75
+msgid ""
+"These functions encode frozen SQD records as tagged tuples that pickle without custom reducers, "
+"and rebuild them in another process."
+msgstr "这两个函数把冻结的 SQD 记录编码为带标签的元组。这些元组不需要自定义 reducer 就能 pickle。函数还能在另一个进程中重建记录。"
+
+#: of q2m3.sqd.transport.encode_result:1
+msgid "Encode a value as nested tagged tuples that pickle without custom reducers."
+msgstr "把值编码为嵌套的带标签元组。这些元组不需要自定义 reducer 就能 pickle。"
+
+#: of q2m3.sqd.transport.encode_result:3
+msgid ""
+"Dataclass records become ``(\"record\", module, name, fields)``. Mappings, including read-only "
+"snapshots, become plain dictionaries, so the record constructor must freeze them again on decode."
+msgstr "数据类记录变为 ``(\"record\", module, name, fields)``。映射（含只读快照）变为普通字典，所以解码时记录的构造函数必须再次冻结它们。"
+
+#: of q2m3.sqd.transport.encode_result:7
+msgid "A dataclass record, mapping, tuple, list or plain value."
+msgstr "数据类记录、映射、元组、列表或普通值。"
+
+#: of q2m3.sqd.transport.encode_result:9
+msgid "The tagged encoding of ``value``."
+msgstr "``value`` 的带标签编码。"
+
+#: of q2m3.sqd.transport.decode_result:1
+msgid "Rebuild a value encoded by :func:`encode_result`."
+msgstr "重建由 :func:`encode_result` 编码的值。"
+
+#: of q2m3.sqd.transport.decode_result:3
+msgid ""
+"Records are rebuilt through their constructors, so their validation runs again. Only record types"
+" defined under ``q2m3.sqd.`` are rebuilt. This limits which types can be constructed; it does not"
+" make untrusted payloads safe. Callers must only unpickle payloads that the parent process wrote "
+"to its own private directory or pipe."
+msgstr ""
+"记录经其构造函数重建，所以校验会再次运行。只重建定义在 ``q2m3.sqd.`` "
+"下的记录类型。这一限制约束可构造的类型，但不能使不可信的载荷变得安全。调用方只能反序列化父进程写入其私有目录或管道的载荷。"
+
+#: of q2m3.sqd.transport.decode_result:9
+msgid "``SQDConfig`` cannot be decoded: its ``molecule`` field is a ``q2m3.molecule.MoleculeConfig``."
+msgstr "``SQDConfig`` 不能解码：它的 ``molecule`` 字段是 ``q2m3.molecule.MoleculeConfig``。"
+
+#: of q2m3.sqd.transport.decode_result:12
+msgid "The tagged encoding."
+msgstr "带标签的编码。"
+
+#: of q2m3.sqd.transport.decode_result:13
+msgid "Flag checked before each node is rebuilt."
+msgstr "重建每个节点之前检查的标志。"
+
+#: of q2m3.sqd.transport.decode_result:15
+msgid "The rebuilt value."
+msgstr "重建后的值。"
+
+#: of q2m3.sqd.transport.decode_result:17
+msgid "If ``cancelled`` is set during reconstruction."
+msgstr "重建期间 ``cancelled`` 被置位。"
+
+#: of q2m3.sqd.transport.decode_result:18
+msgid "If a record type is defined outside ``q2m3.sqd.``."
+msgstr "记录类型定义在 ``q2m3.sqd.`` 之外。"
+
+#: ../../source/api-reference/sqd.rst:83
 msgid "Resource Policy"
 msgstr "资源策略"
 
@@ -583,7 +687,7 @@ msgstr "不可变模型。执行器必须遵守记录的在用数组调度、求
 msgid "Missing artifact, unvalidated model or runtime mismatch."
 msgstr "产物缺失、模型未经验证或运行环境不匹配。"
 
-#: ../../source/api-reference/sqd.rst:78
+#: ../../source/api-reference/sqd.rst:92
 msgid "Exceptions"
 msgstr "异常"
 

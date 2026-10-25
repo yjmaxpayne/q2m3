@@ -376,6 +376,121 @@ class TestResourceEstimation:
             )
 
 
+# Water monomer of the S22 water dimer (system 2); the coordinate unit is set per test.
+WATER_MONOMER = (
+    ("O", (-1.551007, -0.114520, 0.000000)),
+    ("H", (-1.934259, 0.762503, 0.000000)),
+    ("H", (-0.599677, 0.040712, 0.000000)),
+)
+
+
+def _water_cas44_integrals(unit: str) -> tuple[np.ndarray, np.ndarray]:
+    """Return (4e,4o) STO-3G integrals over canonical RHF orbitals, ``h2`` in chemist notation."""
+    from pyscf import ao2mo, gto, mcscf, scf
+
+    mf = scf.RHF(gto.M(atom=list(WATER_MONOMER), basis="sto-3g", unit=unit, verbose=0))
+    mf.conv_tol = 1e-10
+    mf.kernel()
+    cas = mcscf.CASCI(mf, 4, 4)
+    h1, _ = cas.get_h1eff()
+    return 0.5 * (h1 + h1.T), ao2mo.restore(1, cas.get_h2eff(), 4)
+
+
+class TestEstimateQPEResourcesFromIntegrals:
+    """Double-factorization resources from active-space integrals in chemist notation."""
+
+    @pytest.fixture(scope="class")
+    def angstrom(self):
+        return _water_cas44_integrals("Angstrom")
+
+    def test_water_monomer_matches_reference_double_factorization(self, angstrom):
+        from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
+
+        result = estimate_qpe_resources_from_integrals(*angstrom, basis="sto-3g")
+
+        # Reference values from a direct DoubleFactorization run on the same integrals.
+        assert result.hamiltonian_1norm == pytest.approx(4.717106721305003, abs=1e-6)
+        assert result.logical_qubits == 131
+        assert result.toffoli_gates == 5025720
+        assert result.n_system_qubits == 8
+        assert result.basis == "sto-3g"
+        assert result.n_mm_charges == 0
+        assert result.embedding_mode == "none"
+
+    def test_bohr_reading_agrees_with_geometry_path(self):
+        # The geometry path passes Angstrom coordinates to qml.qchem.Molecule, whose
+        # default unit is bohr. Reading the same numbers as Bohr on the integral path
+        # therefore gives the same Hamiltonian. When the geometry path converts units,
+        # replace this test by a comparison at the same Angstrom geometry.
+        from q2m3.core.resource_estimation import (
+            estimate_qpe_resources_from_integrals,
+            estimate_resources,
+        )
+
+        from_integrals = estimate_qpe_resources_from_integrals(
+            *_water_cas44_integrals("Bohr"), basis="sto-3g"
+        )
+        symbols = [symbol for symbol, _ in WATER_MONOMER]
+        coords = np.array([xyz for _, xyz in WATER_MONOMER])
+        from_geometry = estimate_resources(
+            symbols, coords, basis="sto-3g", active_electrons=4, active_orbitals=4
+        )
+
+        assert abs(from_integrals.hamiltonian_1norm - from_geometry.hamiltonian_1norm) <= 1e-6
+        assert from_integrals.logical_qubits == from_geometry.logical_qubits
+        assert from_integrals.toffoli_gates == from_geometry.toffoli_gates
+
+    def test_target_error_and_basis_label_are_passed_through(self, angstrom):
+        from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
+
+        result = estimate_qpe_resources_from_integrals(
+            *angstrom, basis="label", target_error=0.0032
+        )
+
+        # Doubling the target error halves the walk-operator calls; lambda is unchanged.
+        assert result.hamiltonian_1norm == pytest.approx(4.717106721305003, abs=1e-6)
+        assert result.logical_qubits == 129
+        assert result.toffoli_gates == 2512860
+        assert result.target_error == 0.0032
+        assert result.walk_operator_calls == int(
+            np.ceil(np.pi * result.hamiltonian_1norm / (2 * 0.0032))
+        )
+        assert result.basis == "label"
+
+    @pytest.mark.parametrize(
+        "h1_shape, h2_shape",
+        [((4, 3), (4, 4, 4, 4)), ((4, 4), (4, 4, 4, 3)), ((4, 4), (3, 3, 3, 3))],
+    )
+    def test_rejects_mismatched_shapes(self, h1_shape, h2_shape):
+        from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
+
+        with pytest.raises(ValueError, match="shape"):
+            estimate_qpe_resources_from_integrals(
+                np.zeros(h1_shape), np.zeros(h2_shape), basis="sto-3g"
+            )
+
+    def test_rejects_asymmetric_one_electron_matrix(self, angstrom):
+        from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
+
+        h1, h2 = angstrom
+        h1 = h1.copy()
+        h1[0, 1] += 1e-10
+        with pytest.raises(ValueError, match="symmetry"):
+            estimate_qpe_resources_from_integrals(h1, h2, basis="sto-3g")
+
+    def test_rejects_tensor_without_pair_exchange_symmetry(self):
+        from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
+
+        # Symmetric within each index pair but not under exchange of the two pairs.
+        rng = np.random.default_rng(7)
+        h2 = rng.normal(size=(4, 4, 4, 4))
+        h2 = h2 + h2.transpose(1, 0, 2, 3)
+        h2 = h2 + h2.transpose(0, 1, 3, 2)
+        assert not np.allclose(h2, h2.transpose(2, 3, 0, 1))
+        with pytest.raises(ValueError, match="symmetry"):
+            estimate_qpe_resources_from_integrals(np.eye(4), h2, basis="sto-3g")
+
+
 class TestQuantumQMMMResourceEstimation:
     """Integration tests for resource estimation in QuantumQMMM workflow."""
 

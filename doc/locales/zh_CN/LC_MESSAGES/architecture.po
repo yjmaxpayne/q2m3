@@ -1,368 +1,363 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: ../../source/architecture.md:1
+#: ../../source/architecture.rst:2
 msgid "Architecture"
 msgstr "架构"
 
-#: ../../source/architecture.md:3
+#: ../../source/architecture.rst:5
+msgid "Package boundaries"
+msgstr "包边界"
+
+#: ../../source/architecture.rst:7
 msgid ""
-"q2m3 separates classical chemistry, quantum circuits, MC sampling, and diagnostics. PySCF, NumPy,"
-" PennyLane, JAX, and Catalyst require different data formats and execution conditions."
-msgstr "q2m3 将经典化学、量子电路、MC 采样和诊断分开。PySCF、NumPy、PennyLane、JAX 和 Catalyst 各有不同的数据格式和执行条件。"
+"q2m3 has separate entry points for QPE, solvation, SQD, and fragment interaction energies. The "
+"diagram shows their main computational dependencies."
+msgstr "q2m3 为 QPE、溶剂化、SQD 和片段相互作用能提供独立入口。图中展示主要计算依赖。"
 
-#: ../../source/architecture.md:7
-msgid "Package Overview"
-msgstr "软件包概览"
-
-#: ../../source/architecture.md:35
-msgid "Data Flow"
-msgstr "数据流"
-
-#: ../../source/architecture.md:37
-msgid ""
-"The main workflow converts molecular data to a qubit Hamiltonian. QPE or a fallback solver then "
-"supplies data for classical observables."
-msgstr "主要工作流将分子数据转换为量子比特哈密顿量，再通过 QPE 或后备求解器为经典可观测量提供数据。"
-
-#: ../../source/architecture.md:58
-msgid "Module Boundaries"
-msgstr "模块边界"
-
-#: ../../source/architecture.md:40
+#: ../../source/architecture.rst:44
 msgid "Package"
 msgstr "软件包"
 
-#: ../../source/architecture.md:40
+#: ../../source/architecture.rst:45 ../../source/architecture.rst:188
 msgid "Responsibility"
 msgstr "职责"
 
-#: ../../source/architecture.md:40
-msgid "Boundary rule"
-msgstr "边界规则"
+#: ../../source/architecture.rst:46
+msgid "``q2m3.fragments``"
+msgstr "``q2m3.fragments``"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.core`"
-msgstr "`q2m3.core`"
+#: ../../source/architecture.rst:47
+msgid "Fragment inputs, counterpoise subsystems, active spaces, interaction energies, and reports."
+msgstr "片段输入、counterpoise 子体系、活性空间、相互作用能和报告。"
 
-#: ../../source/architecture.md:40
-msgid "QPE, QM/MM orchestration, RDM, resource estimation, device selection"
-msgstr "QPE、QM/MM 编排、RDM、资源估计、设备选择"
+#: ../../source/architecture.rst:48
+msgid "``q2m3.sqd``"
+msgstr "``q2m3.sqd``"
 
-#: ../../source/architecture.md:40
-msgid "Owns quantum chemistry algorithms and public computational entry points"
-msgstr "负责量子化学算法和公开计算入口"
+#: ../../source/architecture.rst:49
+msgid "LUCJ sampling, subspace solvers, reference tiers, input provenance, and resource guards."
+msgstr "LUCJ 采样、子空间求解器、参考等级、输入来源和资源限制。"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.interfaces`"
-msgstr "`q2m3.interfaces`"
+#: ../../source/architecture.rst:50
+msgid "``q2m3.core``"
+msgstr "``q2m3.core``"
 
-#: ../../source/architecture.md:40
-msgid "PySCF/PennyLane conversion and density matrix bridge"
-msgstr "PySCF/PennyLane 转换及密度矩阵桥接"
+#: ../../source/architecture.rst:51
+msgid "QPE circuits, QM/MM orchestration, RDMs, quantum resource estimates, and device selection."
+msgstr "QPE 电路、QM/MM 编排、RDM、量子资源估算和设备选择。"
 
-#: ../../source/architecture.md:40
-msgid "Owns framework conversion and MM embedding data exchange"
-msgstr "负责框架转换和 MM 嵌入数据交换"
+#: ../../source/architecture.rst:52
+msgid "``q2m3.interfaces``"
+msgstr "``q2m3.interfaces``"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.sqd`"
-msgstr "`q2m3.sqd`"
+#: ../../source/architecture.rst:53
+msgid "Chemistry conversion, fixed-MO embedding, and density matrices."
+msgstr "化学数据转换、固定 MO 嵌入和密度矩阵。"
 
-#: ../../source/architecture.md:40
-msgid "CCSD-seeded LUCJ sampling, subspace diagonalization, references, and resource guards"
-msgstr "以 CCSD 为种子的 LUCJ 采样、子空间对角化、参考计算及资源保护"
+#: ../../source/architecture.rst:54
+msgid "``q2m3.solvation``"
+msgstr "``q2m3.solvation``"
 
-#: ../../source/architecture.md:40
-msgid "Owns immutable SQD contracts and same-frame provenance. Optional backends remain lazy"
-msgstr "负责不可变 SQD 契约及同轨道框架的来源记录。可选后端仍按需加载"
+#: ../../source/architecture.rst:55
+msgid "Catalyst circuit construction, IR caching, MC execution, and solvation analysis."
+msgstr "Catalyst 电路构建、IR 缓存、MC 执行和溶剂化分析。"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.solvation`"
-msgstr "`q2m3.solvation`"
+#: ../../source/architecture.rst:56
+msgid "``q2m3.sampling``"
+msgstr "``q2m3.sampling``"
 
-#: ../../source/architecture.md:40
-msgid "MC solvation orchestration, Catalyst QPE bundles, IR cache, analysis"
-msgstr "MC 溶剂化编排、Catalyst QPE 电路包、IR 缓存、分析"
+#: ../../source/architecture.rst:57
+msgid "Classical MC moves, water geometry, and MM force-field helpers."
+msgstr "经典 MC 移动、水分子几何和 MM 力场辅助函数。"
 
-#: ../../source/architecture.md:40
-msgid "Owns compile-once/reuse-many solvation workflows"
-msgstr "负责编译一次、多次复用的溶剂化工作流"
+#: ../../source/architecture.rst:58
+msgid "``q2m3.profiling``"
+msgstr "``q2m3.profiling``"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.sampling`"
-msgstr "`q2m3.sampling`"
+#: ../../source/architecture.rst:59
+msgid "Runtime, memory, and compilation measurements."
+msgstr "运行时间、内存和编译测量。"
 
-#: ../../source/architecture.md:40
-msgid "Classical water geometry, MC moves, force-field helpers"
-msgstr "经典水分子几何、MC 移动及力场辅助函数"
+#: ../../source/architecture.rst:60
+msgid "``q2m3.utils``"
+msgstr "``q2m3.utils``"
 
-#: ../../source/architecture.md:40
-msgid "Keeps MC proposal mechanics independent of quantum execution"
-msgstr "使 MC 提议机制独立于量子执行"
+#: ../../source/architecture.rst:61
+msgid "File I/O and plotting."
+msgstr "文件读写和绘图。"
 
-#: ../../source/architecture.md:40
-msgid "`q2m3.profiling`"
-msgstr "`q2m3.profiling`"
+#: ../../source/architecture.rst:64
+msgid "Fragment workflow"
+msgstr "片段工作流"
 
-#: ../../source/architecture.md:40
-msgid "Memory, timing, and Catalyst IR diagnostics"
-msgstr "内存、计时及 Catalyst IR 诊断"
-
-#: ../../source/architecture.md:40
-msgid "Measures performance without becoming part of the physical model"
-msgstr "测量性能，不参与物理模型"
-
-#: ../../source/architecture.md:40
-msgid "`q2m3.utils`"
-msgstr "`q2m3.utils`"
-
-#: ../../source/architecture.md:40
-msgid "File I/O and plotting utilities"
-msgstr "文件 I/O 和绘图工具"
-
-#: ../../source/architecture.md:40
-msgid "Keeps low-level helper code out of the algorithm packages"
-msgstr "将底层辅助代码与算法软件包分开"
-
-#: ../../source/architecture.md:70
-msgid "Device Selection"
-msgstr "设备选择"
-
-#: ../../source/architecture.md:72
-msgid "Device selection uses two backend systems:"
-msgstr "设备选择使用两套后端系统："
-
-#: ../../source/architecture.md:40
-msgid "Backend family"
-msgstr "后端类别"
-
-#: ../../source/architecture.md:40
-msgid "Used for"
-msgstr "用途"
-
-#: ../../source/architecture.md:40
-msgid "Detection surface"
-msgstr "检测接口"
-
-#: ../../source/architecture.md:40
-msgid "PennyLane devices"
-msgstr "PennyLane 设备"
-
-#: ../../source/architecture.md:40
-msgid "Standard QPE execution"
-msgstr "标准 QPE 执行"
-
-#: ../../source/architecture.md:40
-msgid "`lightning.gpu`, `lightning.qubit`, `default.qubit`"
-msgstr "`lightning.gpu`、`lightning.qubit`、`default.qubit`"
-
-#: ../../source/architecture.md:40
-msgid "JAX/Catalyst backend"
-msgstr "JAX/Catalyst 后端"
-
-#: ../../source/architecture.md:40
-msgid "Compiled `@qjit` execution"
-msgstr "编译后的 `@qjit` 执行"
-
-#: ../../source/architecture.md:40
-msgid "JAX default backend and Catalyst availability"
-msgstr "JAX 默认后端及 Catalyst 可用性"
-
-#: ../../source/architecture.md:79
+#: ../../source/architecture.rst:66
 msgid ""
-"`device_type=\"auto\"` selects the best available PennyLane device for standard execution. "
-"Catalyst execution still depends on the effective JAX/Catalyst backend. A Lightning GPU device "
-"name therefore does not by itself prove that compiled execution runs on the GPU."
+"q2m3 exports ``q2m3.run`` and ``q2m3.Molecule`` lazily. They resolve to "
+"``q2m3.fragments.workflow.run`` and ``q2m3.fragments.molecule.Molecule``. The workflow accepts "
+"geometry with an optional two-fragment partition. It does not call ``QuantumQMMM`` or the "
+"solvation orchestrator."
 msgstr ""
-"`device_type=\"auto\"` 为标准执行选择当前最合适的 PennyLane 设备。Catalyst 执行仍取决于实际的 JAX/Catalyst 后端。因此，仅有 "
-"Lightning GPU 设备名称不能证明编译后的执行使用 GPU。"
+"q2m3 延迟导出 ``q2m3.run`` 和 ``q2m3.Molecule``。它们分别指向 ``q2m3.fragments.workflow.run`` 和 "
+"``q2m3.fragments.molecule.Molecule``。工作流接收几何，可指定两个片段的划分。它不调用 ``QuantumQMMM`` 或溶剂化编排器。"
 
-#: ../../source/architecture.md:84
-msgid "Catalyst And IR Cache"
-msgstr "Catalyst 与 IR 缓存"
-
-#: ../../source/architecture.md:86
+#: ../../source/architecture.rst:71
 msgid ""
-"The solvation package treats Catalyst as a compile-once/reuse-many tool. Catalyst compiles the "
-"QPE circuit topology once. The solvation package then supplies fixed or runtime Hamiltonian "
-"coefficients across MC steps. The IR cache stores Catalyst LLVM IR for reuse when the structural "
-"cache key does not change."
+"For a dimer, counterpoise constructs ``AB``, ``A``, and ``B`` in the dimer basis. Each monomer "
+"retains the other fragment's basis functions as ghost atoms. A single molecule uses subsystem "
+"``M``."
+msgstr "对于二聚体，counterpoise 在二聚体基组中构建 ``AB``、``A`` 和 ``B``。每个单体以虚原子形式保留另一片段的基函数。单分子使用子体系 ``M``。"
+
+#: ../../source/architecture.rst:97
+msgid ""
+"Both modes check AVAS spaces before correlated calculations. Dimer runs also check whether "
+"monomer spaces correspond to the dimer space. A mismatch raises ``ActiveSpaceMismatchError``."
+msgstr "两种模式均在关联计算前检查 AVAS 空间。二聚体计算还检查单体空间与二聚体空间的对应关系。不匹配时抛出 ``ActiveSpaceMismatchError``。"
+
+#: ../../source/architecture.rst:101
+msgid ""
+"``classical_only`` computes HF and frozen-core MP2 without constructing an SQD runner. ``full`` "
+"requires the SQD extra. It adds:"
+msgstr "``classical_only`` 计算 HF 和冻结芯 MP2，不构建 SQD 执行器。``full`` 需要 SQD extra。它增加以下计算："
+
+#: ../../source/architecture.rst:104
+msgid "A frozen-core CCSD(T) reference when its predicted cost fits ``CCSDTBudget``."
+msgstr "预测成本符合 ``CCSDTBudget`` 时，计算冻结芯 CCSD(T) 参考。"
+
+#: ../../source/architecture.rst:105
+msgid "Active-space integrals and an ``IntegralContext`` for each subsystem."
+msgstr "为各子体系构建活性空间积分和 ``IntegralContext``。"
+
+#: ../../source/architecture.rst:106
+msgid "A CCSD seed and SQD calculation for each subsystem."
+msgstr "为各子体系构建 CCSD 种子并执行 SQD。"
+
+#: ../../source/architecture.rst:107
+msgid "QPE cost estimates and SQD workload and memory estimates from those integrals."
+msgstr "从这些积分估算 QPE 成本、SQD 工作量和内存。"
+
+#: ../../source/architecture.rst:109
+msgid ""
+"A budget-rejected CCSD(T) reference remains absent with a reason. The QPE estimate uses double "
+"factorization. It does not execute a ``QPEEngine`` circuit."
+msgstr "预算拒绝 CCSD(T) 时，参考值保持缺失并附带原因。QPE 估算使用双因子分解，不执行 ``QPEEngine`` 电路。"
+
+#: ../../source/architecture.rst:113
+msgid "Execution and result boundaries"
+msgstr "执行与结果边界"
+
+#: ../../source/architecture.rst:115
+msgid ""
+"``SubprocessSQDRunner`` starts one child interpreter for all subsystem jobs. The child runs jobs "
+"serially. Its OpenMP, MKL, OpenBLAS, and Rayon thread counts are one. The parent retains its "
+"thread settings."
 msgstr ""
-"溶剂化软件包将 Catalyst 用于编译一次、多次复用。Catalyst 编译一次 QPE 电路拓扑，溶剂化软件包随后在 MC 步骤中提供固定或运行时哈密顿量系数。当结构缓存键不变时，IR "
-"缓存可复用存储的 Catalyst LLVM IR。"
+"``SubprocessSQDRunner`` 为所有子体系任务启动一个子解释器。子解释器串行执行任务。其 OpenMP、MKL、OpenBLAS 和 Rayon "
+"线程数均为一。父进程保留原线程设置。"
 
-#: ../../source/architecture.md:91
+#: ../../source/architecture.rst:119
 msgid ""
-"The cache key records the molecule, basis, active space, QPE wire count, Trotter depth, and "
-"circuit style. Runtime solvent coordinates and the number of waters do not change the circuit "
-"topology in the same way. `embedding_mode` is also part of the key because `full_oneelectron` "
-"fixed-MO embedding can introduce off-diagonal one-electron operator support that is not present "
-"in a diagonal coefficient update."
+"The child builds each CCSD seed before calling ``run_sqd_from_integrals``. SQD applies its own "
+"supervisor, resource caps, and reference policy. The first job failure stops later jobs. The "
+"parent propagates the failure and cleans up stage processes."
 msgstr ""
-"缓存键记录分子、基组、活性空间、QPE 线路数、Trotter 深度和电路形式。运行时溶剂坐标和水分子数不会以相同方式改变电路拓扑。`embedding_mode` 也属于缓存键，因为 "
-"`full_oneelectron` 固定分子轨道嵌入可能引入非对角单电子算符支撑，而对角系数更新中没有这些支撑。"
+"子解释器在调用 ``run_sqd_from_integrals`` 前构建各 CCSD 种子。SQD "
+"使用自身的监督执行器、资源上限和参考策略。首个任务失败后不再执行后续任务。父进程传递失败并清理本阶段进程。"
 
-#: ../../source/architecture.md:98
-msgid "SQD Execution Boundary"
-msgstr "SQD 执行边界"
-
-#: ../../source/architecture.md:100
+#: ../../source/architecture.rst:123
 msgid ""
-"SQD is optional and does not use QPE or Catalyst. The geometry entry builds a vacuum RHF frame, "
-"active-space integrals, and a same-frame CCSD seed. It then executes the same integral-based "
-"solver that the lower-level entry point uses."
-msgstr "SQD 是可选路径，不使用 QPE 或 Catalyst。几何入口构建真空 RHF 轨道框架、活性空间积分及同框架的 CCSD 种子，然后执行与底层入口相同的积分求解器。"
-
-#: ../../source/architecture.md:125
-msgid ""
-"Both entries run under one wall deadline and a polled process-tree RSS cap. The geometry entry "
-"includes integral and seed assembly inside that supervised engine call. A caller that assembles "
-"integrals before invoking `run_sqd_from_integrals` must monitor that preprocessing separately. "
-"The calibrated executor supports Linux x86_64, serial native threads, balanced closed-shell "
-"spaces, and the exact dependency/profile bounds recorded in `resource_calibration.json`."
+"For each energy layer, the dimer result computes ``E(AB) - E(A) - E(B)`` in Hartree. A missing "
+"subsystem energy makes that interaction energy absent. Only a T0 ``exact_casci`` baseline "
+"supplies ``e_casci``. The result retains each complete ``SQDResult``, provenance, warnings, and "
+"absence reasons."
 msgstr ""
-"两个入口都受统一的实际时间截止点和轮询进程树 RSS 上限约束。几何入口将积分与种子组装包含在受监督的引擎调用内。如果调用者先组装积分，再调用 "
-"`run_sqd_from_integrals`，则必须单独监测该预处理。校准执行器支持 Linux x86_64、串行原生线程、平衡闭壳层空间，以及 "
-"`resource_calibration.json` 记录的精确依赖和配置边界。"
+"各能量层均以 Hartree 计算 ``E(AB) - E(A) - E(B)``。任一子体系能量缺失时，该相互作用能也缺失。只有 T0 ``exact_casci`` 基准可提供 "
+"``e_casci``。结果保留各完整 ``SQDResult``、来源记录、警告和缺失原因。"
 
-#: ../../source/architecture.md:132
+#: ../../source/architecture.rst:128
 msgid ""
-"The orbital frame and Hamiltonian have separate SHA256 identities. SQD accepts an integral run "
-"only when `IntegralContext`, `CCSDSeed`, tensor shapes, permutation symmetries, constants, "
-"energies, and residuals agree. These checks prevent the solver from silently reusing amplitudes "
-"or energies from a different frame."
+"Error decomposition separates algorithm, active-space, basis, and model differences. The same-"
+"basis reference uses computed CCSD(T), or an imported reference when CCSD(T) is absent. Missing "
+"inputs leave the corresponding error absent. ``render_report`` derives a Markdown report from the"
+" results. Imported experimental Ks values appear beside the results without statistical "
+"conclusions."
 msgstr ""
-"轨道框架和哈密顿量各有独立的 SHA256 标识。只有 `IntegralContext`、`CCSDSeed`、张量形状、置换对称性、常数、能量和残差相互一致时，SQD "
-"才接受积分运行。这些检查防止求解器静默复用其他轨道框架的振幅或能量。"
+"误差分解区分算法、活性空间、基组和模型差异。同基组参考优先使用计算得到的 CCSD(T)。CCSD(T) 缺失时使用导入参考。输入缺失时，相应误差保持缺失。``render_report`` "
+"从结果生成 Markdown 报告。导入的实验 Ks 值与结果并列展示，不附带统计结论。"
 
-#: ../../source/architecture.md:138
-msgid "Key Design Decisions"
-msgstr "主要设计决策"
+#: ../../source/architecture.rst:135
+msgid "Optional fragment tools"
+msgstr "可选片段工具"
 
-#: ../../source/architecture.md:105
-msgid "Decision"
-msgstr "决策"
+#: ../../source/architecture.rst:137
+msgid "These tools require explicit calls. ``run`` does not invoke them:"
+msgstr "以下工具需要显式调用。``run`` 不调用它们："
 
-#: ../../source/architecture.md:105
-msgid "Reason"
-msgstr "原因"
-
-#: ../../source/architecture.md:105
-msgid "Keep H2 as the first-run path"
-msgstr "以 H2 作为首次运行路径"
-
-#: ../../source/architecture.md:105
-msgid "It exercises real APIs without the compile memory of H3O+"
-msgstr "它测试实际 API，且不需要 H3O+ 的编译内存"
-
-#: ../../source/architecture.md:105
-msgid "Mark H3O+ and 8-bit workflows as diagnostics"
-msgstr "将 H3O+ 和 8 位工作流标为诊断"
-
-#: ../../source/architecture.md:105
-msgid "They are useful but can exceed laptop memory limits"
-msgstr "它们有诊断价值，但可能超出笔记本内存限制"
-
-#: ../../source/architecture.md:105
-msgid "Use active spaces explicitly"
-msgstr "显式使用活性空间"
-
-#: ../../source/architecture.md:105
-msgid "Every energy result needs a clear electron/orbital/qubit context"
-msgstr "每项能量结果都需要明确的电子数、轨道数和量子比特数"
-
-#: ../../source/architecture.md:105
-msgid "Keep energies in Hartree internally"
-msgstr "内部能量保持使用 Hartree"
-
-#: ../../source/architecture.md:105
-msgid "Unit conversion is visible and avoids mixed-unit mistakes"
-msgstr "显式转换单位，避免混用单位"
-
-#: ../../source/architecture.md:105
-msgid "Preserve classical fallback paths"
-msgstr "保留经典后备路径"
-
-#: ../../source/architecture.md:105
-msgid "They test QM/MM plumbing when quantum execution is unavailable"
-msgstr "量子执行不可用时，它们可测试 QM/MM 数据连接"
-
-#: ../../source/architecture.md:105
-msgid "Separate sampling from quantum execution"
-msgstr "将采样与量子执行分开"
-
-#: ../../source/architecture.md:105
-msgid "MC proposal logic remains testable without Catalyst"
-msgstr "无须 Catalyst 也能测试 MC 提议逻辑"
-
-#: ../../source/architecture.md:105
-msgid "Keep full-one-electron embedding fixed-only"
-msgstr "完整单电子嵌入仅用于固定哈密顿量"
-
-#: ../../source/architecture.md:105
+#: ../../source/architecture.rst:139
 msgid ""
-"Runtime coefficient updates are diagonal-only. Full active-space `Delta h_pq` changes operator "
-"support"
-msgstr "运行时仅更新对角系数。完整活性空间 `Delta h_pq` 会改变算符支撑"
+"``structure`` reads experimental dimers, normalizes X-H bonds, and supports DFT-D3(BJ) geometry "
+"optimization."
+msgstr "``structure`` 读取实验二聚体、规范 X-H 键长，并支持 DFT-D3(BJ) 几何优化。"
 
-#: ../../source/architecture.md:105
-msgid "Keep SQD optional and lazy"
-msgstr "SQD 保持可选并按需加载"
+#: ../../source/architecture.rst:140
+msgid "``external.psi4`` runs an external Psi4 interpreter for an HF counterpoise comparison."
+msgstr "``external.psi4`` 使用外部 Psi4 解释器执行 HF counterpoise 对照。"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.rst:141
+msgid "``diagnostics.entropy`` computes DMRG orbital entropies and mutual information."
+msgstr "``diagnostics.entropy`` 计算 DMRG 轨道熵和互信息。"
+
+#: ../../source/architecture.rst:143
 msgid ""
-"Core and configuration imports do not require ffsim or Qiskit. Workflow access gives an "
-"installation hint when the extra is absent"
-msgstr "导入核心和配置不要求 ffsim 或 Qiskit。缺少可选依赖时，访问工作流会提供安装提示"
+"``importers`` reads CSV or QCSchema reference energies. ``run(references=...)`` invokes this "
+"importer when callers supply reference paths."
+msgstr "``importers`` 读取 CSV 或 QCSchema 参考能量。调用者传入参考文件路径时，``run(references=...)`` 调用该导入器。"
 
-#: ../../source/architecture.md:105
-msgid "Authenticate integral SQD inputs"
-msgstr "认证积分 SQD 输入"
-
-#: ../../source/architecture.md:105
+#: ../../source/architecture.rst:146
 msgid ""
-"Frame and Hamiltonian hashes keep CCSD seeds, integrals, core constants, and results on one "
-"auditable Hamiltonian"
-msgstr "轨道框架和哈密顿量哈希使 CCSD 种子、积分、核心常数和结果对应同一个可审计的哈密顿量"
+"These workflows do not implement polarizable MM or an SQD-MC loop. Fragment interaction energies "
+"are not solvation free energies."
+msgstr "这些工作流不实现可极化 MM 或 SQD-MC 循环。片段相互作用能不是溶剂化自由能。"
 
-#: ../../source/architecture.md:105
-msgid "Reject resource extrapolation"
-msgstr "拒绝资源外推"
+#: ../../source/architecture.rst:150
+msgid "QPE and solvation"
+msgstr "QPE 与溶剂化"
 
-#: ../../source/architecture.md:105
+#: ../../source/architecture.rst:152
 msgid ""
-"A calibrated bound is safer than treating `allow_large` as permission to bypass unknown or hard "
-"limits"
-msgstr "使用校准边界，比将 `allow_large` 视为可绕过未知限制或硬限制的许可更安全"
-
-#: ../../source/architecture.md:153
-msgid "Extension Points"
-msgstr "扩展点"
-
-#: ../../source/architecture.md:155
-msgid ""
-"`q2m3.core.quantum_solver` defines a conservative solver abstraction for future algorithms such "
-"as VQE or QAOA. Current public workflows still route primarily through `QPEEngine` and "
-"`QuantumQMMM`. The solver abstraction supports future extensions. It does not yet replace the "
-"integrated execution path."
+"``QuantumQMMM.compute_ground_state`` constructs a Hamiltonian through the PySCF/PennyLane "
+"converter. It calls ``QPEEngine`` for energy estimation and can request RDM measurements. A "
+"classical fallback exercises the QM/MM pipeline when no PennyLane Hamiltonian is available."
 msgstr ""
-"`q2m3.core.quantum_solver` 为 VQE 或 QAOA 等未来算法定义保守的求解器抽象。当前公开工作流仍主要通过 `QPEEngine` 和 `QuantumQMMM` "
-"执行。该抽象支持未来扩展，尚不能替代集成执行路径。"
+"``QuantumQMMM.compute_ground_state`` 通过 PySCF/PennyLane 转换器构建哈密顿量。它调用 ``QPEEngine`` 估算能量，也可请求 RDM"
+" 测量。没有 PennyLane 哈密顿量时，经典回退路径用于检查 QM/MM 数据流程。"
+
+#: ../../source/architecture.rst:156
+msgid ""
+"Solvation uses a separate orchestrator with ``fixed``, ``hf_corrected``, and ``dynamic`` modes. "
+"Catalyst compiles circuit structure for repeated execution. The IR cache keys include molecule, "
+"basis, active space, estimation wires, Trotter depth, circuit style, and embedding mode. Dynamic "
+"updates change diagonal coefficients. Full-one-electron embedding requires a fixed Hamiltonian "
+"because off-diagonal terms can change operator support. See :doc:`user-guide/core-concepts` for "
+"the energy models and physical limits."
+msgstr ""
+"溶剂化使用独立编排器，支持 ``fixed``、``hf_corrected`` 和 ``dynamic`` 模式。Catalyst 编译电路结构以供重复执行。IR "
+"缓存键包含分子、基组、活性空间、估算线数、Trotter 深度、电路类型和嵌入模式。动态更新只改变对角系数。非对角项可能改变算符集合，因此完整单电子嵌入要求固定哈密顿量。能量模型和物理限制见 "
+":doc:`user-guide/core-concepts`。"
+
+#: ../../source/architecture.rst:163
+msgid ""
+"``device_type=\"auto\"`` selects an available PennyLane device. Catalyst execution depends "
+"separately on the JAX/Catalyst backend. A Lightning GPU device name alone does not establish GPU "
+"execution for a compiled circuit."
+msgstr ""
+"``device_type=\"auto\"`` 选择可用的 PennyLane 设备。Catalyst 执行另由 JAX/Catalyst 后端决定。仅有 Lightning GPU "
+"设备名称，不能证明编译电路在 GPU 上执行。"
+
+#: ../../source/architecture.rst:168
+msgid "SQD entry points"
+msgstr "SQD 入口"
+
+#: ../../source/architecture.rst:170
+msgid ""
+"The geometry entry constructs a vacuum RHF frame, active-space integrals, and a CCSD seed. The "
+"integral entry accepts those data with an authenticated ``IntegralContext`` and ``CCSDSeed``. "
+"Fragments uses the integral entry with its AVAS-selected subsystem Hamiltonians. Both entries "
+"share the SQD executor."
+msgstr ""
+"几何入口构建真空 RHF 框架、活性空间积分和 CCSD 种子。积分入口接收这些数据及经过认证的 ``IntegralContext`` 和 ``CCSDSeed``。片段工作流将 AVAS "
+"选择的子体系哈密顿量交给积分入口。两个入口共享 SQD 执行器。"
+
+#: ../../source/architecture.rst:175
+msgid ""
+"The executor checks frame and Hamiltonian hashes, tensor shapes, symmetries, constants, energies,"
+" and residuals. It applies a shared wall deadline and polls process-tree RSS. Preprocessing "
+"performed before ``run_sqd_from_integrals`` is outside that call's resource measurement. See :doc"
+":`user-guide/sqd` for platform and calibration limits."
+msgstr ""
+"执行器检查框架和哈密顿量哈希、张量形状、对称性、常数、能量和残差。它使用共享墙钟截止时间，轮询进程树 RSS。调用 ``run_sqd_from_integrals`` "
+"前的预处理不在该调用的资源测量范围内。平台与校准限制见 :doc:`user-guide/sqd`。"
+
+#: ../../source/architecture.rst:181
+msgid "Source map"
+msgstr "源码位置"
+
+#: ../../source/architecture.rst:183
+msgid "Paths below are relative to ``src/q2m3``."
+msgstr "以下路径相对于 ``src/q2m3``。"
+
+#: ../../source/architecture.rst:189
+msgid "Source"
+msgstr "源码"
+
+#: ../../source/architecture.rst:190
+msgid "Public fragment entry and orchestration"
+msgstr "片段公开入口与编排"
+
+#: ../../source/architecture.rst:191
+msgid "``__init__.py``, ``fragments/workflow.py``"
+msgstr "``__init__.py``, ``fragments/workflow.py``"
+
+#: ../../source/architecture.rst:192
+msgid "Geometry, counterpoise, and AVAS checks"
+msgstr "几何、counterpoise 和 AVAS 检查"
+
+#: ../../source/architecture.rst:193
+msgid "``fragments/molecule.py``, ``fragments/counterpoise.py``, ``fragments/active_space.py``"
+msgstr "``fragments/molecule.py``, ``fragments/counterpoise.py``, ``fragments/active_space.py``"
+
+#: ../../source/architecture.rst:194
+msgid "Integral assembly and classical references"
+msgstr "积分组装与经典参考"
+
+#: ../../source/architecture.rst:195
+msgid "``fragments/integrals.py``, ``fragments/references.py``"
+msgstr "``fragments/integrals.py``, ``fragments/references.py``"
+
+#: ../../source/architecture.rst:196
+msgid "SQD child process and transport"
+msgstr "SQD 子进程与数据传递"
+
+#: ../../source/architecture.rst:197
+msgid "``fragments/sqd_stage.py``, ``fragments/_sqd_child.py``, ``sqd/transport.py``"
+msgstr "``fragments/sqd_stage.py``, ``fragments/_sqd_child.py``, ``sqd/transport.py``"
+
+#: ../../source/architecture.rst:198
+msgid "Results, imported references, and reports"
+msgstr "结果、导入参考与报告"
+
+#: ../../source/architecture.rst:199
+msgid "``fragments/result.py``, ``fragments/importers.py``, ``fragments/report.py``"
+msgstr "``fragments/result.py``, ``fragments/importers.py``, ``fragments/report.py``"
+
+#: ../../source/architecture.rst:200
+msgid "Resource estimates"
+msgstr "资源估算"
+
+#: ../../source/architecture.rst:201
+msgid "``fragments/resources.py``, ``core/resource_estimation.py``, ``sqd/resources.py``"
+msgstr "``fragments/resources.py``, ``core/resource_estimation.py``, ``sqd/resources.py``"
+
+#: ../../source/architecture.rst:202
+msgid "QPE and solvation entry points"
+msgstr "QPE 与溶剂化入口"
+
+#: ../../source/architecture.rst:203
+msgid "``core/quantum_qmmm.py``, ``solvation/orchestrator.py``"
+msgstr "``core/quantum_qmmm.py``, ``solvation/orchestrator.py``"

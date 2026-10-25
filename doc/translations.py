@@ -4,12 +4,20 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 from babel.messages.catalog import Catalog
 from babel.messages.pofile import read_po, write_po
 
 ROOT = Path(__file__).resolve().parent
+AUTHOR = "Ye Jun <yjmaxpayne@hotmail.com>"
+CATALOG_HEADER = (
+    "# Simplified Chinese translations for q2m3.\n"
+    f"# Copyright (c) 2026 {AUTHOR}\n"
+    "# Distributed under the MIT license.\n"
+    f"# {AUTHOR}, 2026."
+)
 
 
 def read_catalog(path: Path, locale: str | None = None) -> Catalog:
@@ -80,6 +88,15 @@ def update_catalogs(pot_dir: Path, locale_dir: Path, ui_messages: tuple[str, ...
         path = locale_dir / relative
         catalog = read_catalog(path, "zh_CN") if path.exists() else Catalog(locale="zh_CN")
         catalog.update(source, no_fuzzy_matching=True)
+        catalog.project = "q2m3"
+        catalog.version = source.version
+        catalog.copyright_holder = AUTHOR
+        catalog.msgid_bugs_address = "yjmaxpayne@hotmail.com"
+        catalog.last_translator = AUTHOR
+        catalog.revision_date = datetime.now(UTC)
+        catalog.language_team = "Simplified Chinese"
+        catalog.header_comment = CATALOG_HEADER
+        catalog.fuzzy = False
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("wb") as stream:
             write_po(stream, catalog, width=100, omit_header=False, include_previous=True)

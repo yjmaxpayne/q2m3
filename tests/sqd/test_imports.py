@@ -139,7 +139,14 @@ def test_public_import_profile(blocked):
 
 @pytest.mark.parametrize(
     "extra, missing",
-    [("sqd", "ffsim"), ("sqd", "qiskit_addon_sqd"), ("catalyst", "catalyst"), ("catalyst", "jax")],
+    [
+        ("sqd", "ffsim"),
+        ("sqd", "qiskit_addon_sqd"),
+        ("catalyst", "catalyst"),
+        ("catalyst", "jax"),
+        ("dmrg", "pyblock2"),
+        ("dmrg", "block2"),
+    ],
 )
 @pytest.mark.parametrize("failure", [None, ImportError, ValueError])
 def test_missing_probe_excludes_exports_and_prevents_loading(monkeypatch, extra, missing, failure):

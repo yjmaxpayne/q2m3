@@ -1,0 +1,29 @@
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
+"Language: zh_CN\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/user-guide/index.rst:2
+msgid "User guide"
+msgstr "用户指南"
+
+#: ../../source/user-guide/index.rst:4
+msgid ""
+"Read the concepts before choosing a workflow. Use the SQD guide for entry points, reference "
+"tiers, and resource limits. The measured results describe specific runs, not general accuracy "
+"guarantees."
+msgstr "选择工作流前先阅读核心概念。SQD 指南说明入口、参考等级和资源限制。实测结果只描述特定运行，不保证一般精度。"

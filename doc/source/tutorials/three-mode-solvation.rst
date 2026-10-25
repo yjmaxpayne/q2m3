@@ -1,0 +1,73 @@
+Three-Mode Solvation Comparison
+===============================
+
+Compare ``fixed``, ``hf_corrected``, and ``dynamic`` solvation modes.
+Run :doc:`h2-mc-solvation` first. This comparison includes the more expensive dynamic circuit.
+
+Run The Script
+--------------
+
+.. code-block:: bash
+
+   uv run python examples/qmmm/h2_three_mode_comparison.py
+
+Modes
+-----
+
+.. list-table::
+   :header-rows: 1
+
+   * - Mode
+     - Formula
+     - Role
+   * - ``fixed``
+     - ``E_QPE(H_vac) + E_MM``
+     - Fast baseline that ignores solvent changes in correlation
+   * - ``hf_corrected``
+     - ``E_HF(R) + E_MM``
+     - HF-level MM embedding with interval QPE diagnostics
+   * - ``dynamic``
+     - ``E_QPE(H_eff) + E_MM``
+     - Runtime MM-embedded QPE coefficients
+
+The comparison delegates analysis to ``q2m3.solvation.analysis.run_mode_comparison()``.
+
+Compile-Once Idea
+-----------------
+
+.. mermaid::
+
+   flowchart LR
+       accTitle: Three Mode Execution
+       accDescr: Fixed and dynamic modes compile reusable QPE structures while the MC loop updates solvent coordinates and energies.
+
+       mc["MC solvent states"]
+       fixed["fixed<br/>vacuum Hamiltonian"]
+       hf["hf_corrected<br/>HF energy path"]
+       dynamic["dynamic<br/>runtime coefficients"]
+       analysis["mode comparison<br/>delta_corr-pol"]
+
+       mc --> fixed
+       mc --> hf
+       mc --> dynamic
+       fixed --> analysis
+       hf --> analysis
+       dynamic --> analysis
+
+Dynamic mode uses Hamiltonian coefficients that Catalyst can trace at runtime.
+Catalyst compiles the circuit structure once. The coefficients change across MC steps.
+
+Reading The Result
+------------------
+
+The key scientific quantity is ``delta_corr-pol``, the correlation-polarization
+coupling term. For small H2 runs, it measures whether QPE energy changes materially when
+MM embedding changes the Hamiltonian as well as the classical correction.
+
+Optional H3O+ Diagnostics
+-------------------------
+
+H3O+ workflows use a larger active space and many more Hamiltonian terms. The
+public H3O+ scripts are useful for ionic-solvation diagnostics, but they are not
+the default tutorial path. Use a 16 GB+ RAM machine for ``h3o_mc_solvation.py``
+and a 30 GB+ RAM machine for 8-bit or dynamic Trotter diagnostics.

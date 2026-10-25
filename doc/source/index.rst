@@ -45,32 +45,39 @@ What is q2m3?
 
 |badge-python| |badge-license| |badge-docs-ci| |badge-docs-site| |badge-codecov| |badge-doi| |badge-pennylane| |badge-catalyst| |badge-pyscf|
 
-q2m3 is a hybrid quantum-classical QM/MM framework for small-molecule
-quantum chemistry workflows. These workflows combine PySCF, PennyLane QPE circuits,
-sample-based quantum diagonalization, explicit MM point charges, Monte Carlo
-solvation, and EFTQC resource estimation.
+q2m3 is a Python framework for small-molecule QM/MM calculations.
+It combines PySCF chemistry with PennyLane quantum phase estimation (QPE)
+and sample-based quantum diagonalization (SQD).
+Fragment workflows apply the counterpoise correction to interaction energies from several electronic structure methods.
 
-Start with the small H2 examples. SQD glycine, Catalyst, H3O+, 8-bit QPE,
-and dynamic-Trotter diagnostics are optional. They can require much more
-memory or compilation time.
+The project supports fixed point-charge embedding, Monte Carlo solvation,
+and quantum resource estimates. It does not include polarizable MM or an SQD-MC loop.
+The SQD implementation uses a classical simulator.
+
+Start with :doc:`getting-started` and the H2 tutorials.
+Larger SQD calculations and Catalyst diagnostics can require more memory and compilation time.
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
+   :caption: Learn
 
    getting-started
-   core-concepts
-   architecture
-   sqd
+   user-guide/index
    tutorials/index
-   development
-   glossary
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference
 
    api-reference/index
+   glossary
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contribute
+
+   architecture
+   development
 
 Project Links
 -------------
@@ -82,14 +89,11 @@ Project Links
 Citation
 --------
 
-If you use q2m3 in research, cite the Zenodo archive. The concept
-DOI `10.5281/zenodo.20114945 <https://doi.org/10.5281/zenodo.20114945>`_
-always resolves to the latest published release. Use a version-specific
-DOI (for example
-`10.5281/zenodo.20114946 <https://doi.org/10.5281/zenodo.20114946>`_ for
-``v0.1.1``) when you need to reference the exact code behind a result.
-``CITATION.cff`` in the repository root lists both DOIs and powers
-GitHub's "Cite this repository" button.
+Cite the Zenodo archive when you use q2m3 in research.
+The concept DOI identifies the project across releases.
+Use a version DOI to identify the exact code behind a result.
+``CITATION.cff`` lists the project citation and the ``v0.1.1`` DOI
+`10.5281/zenodo.20114946 <https://doi.org/10.5281/zenodo.20114946>`_.
 
 .. code-block:: bibtex
 

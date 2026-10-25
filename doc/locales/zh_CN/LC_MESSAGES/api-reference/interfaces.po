@@ -1,17 +1,16 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -150,7 +149,8 @@ msgstr "n_qubits: 所需量子比特数"
 msgid "hf_state: Hartree-Fock reference state as numpy array"
 msgstr "hf_state: numpy 数组形式的 Hartree-Fock 参考态"
 
-#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
+#: ../../source/api-reference/interfaces.rst of
+#: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.estimate_qpe_resources
 #: q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.pyscf_to_pennylane_hamiltonian
 msgid "Raises"
 msgstr "异常"
@@ -260,12 +260,16 @@ msgid "Extract molecular orbital coefficients from PySCF."
 msgstr "从 PySCF 提取分子轨道系数。"
 
 #: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:3
-msgid "PySCF SCF calculation result"
-msgstr "PySCF SCF 计算结果"
+msgid "PySCF RHF calculation result"
+msgstr "PySCF RHF 计算结果"
 
 #: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:5
-msgid "MO coefficient matrix"
-msgstr "MO 系数矩阵"
+msgid "Copy of the MO coefficient matrix"
+msgstr "分子轨道系数矩阵的副本"
+
+#: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.extract_molecular_orbitals:7
+msgid "If scf_result is not a closed-shell RHF result"
+msgstr "scf_result 不是闭壳层 RHF 结果"
 
 #: of q2m3.interfaces.pyscf_pennylane.PySCFPennyLaneConverter.compute_overlap_integrals:1
 msgid "Compute overlap integrals for Mulliken analysis."

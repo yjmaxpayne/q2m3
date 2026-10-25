@@ -1,0 +1,73 @@
+H2 Resource Estimation
+======================
+
+This tutorial estimates EFTQC hardware resources for H2 with
+``q2m3.core.resource_estimation``. It compares vacuum and MM-embedded Hamiltonians.
+
+Run The Script
+--------------
+
+.. code-block:: bash
+
+   uv run python examples/resources/h2_resource_estimation.py
+
+Minimal API Pattern
+-------------------
+
+.. code-block:: python
+
+   import numpy as np
+
+   from q2m3.core import compare_vacuum_solvated, estimate_resources
+
+   h2_symbols = ["H", "H"]
+   h2_coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+
+   vacuum = estimate_resources(symbols=h2_symbols, coords=h2_coords, basis="sto-3g")
+   print(vacuum.logical_qubits)
+   print(vacuum.toffoli_gates)
+
+   comparison = compare_vacuum_solvated(
+       symbols=h2_symbols,
+       coords=h2_coords,
+       mm_charges=np.array([-0.834, 0.417, 0.417, -0.834, 0.417, 0.417]),
+       mm_coords=np.array(
+           [
+               [3.0, 0.0, 0.0],
+               [3.5, 0.8, 0.0],
+               [3.5, -0.8, 0.0],
+               [-3.0, 0.0, 0.0],
+               [-3.5, 0.8, 0.0],
+               [-3.5, -0.8, 0.0],
+           ]
+       ),
+   )
+   print(comparison.delta_lambda_percent)
+
+Current H2 Reference Values
+---------------------------
+
+The H2/STO-3G example reports these values for its default cost model:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Metric
+     - H2/STO-3G reference
+   * - Logical qubits
+     - ``115``
+   * - Toffoli gates
+     - ``1,224,608``
+   * - Target error
+     - Chemical-accuracy scale by default
+
+MM embedding is expected to change the resource estimate only slightly.
+Point charges mainly change one-electron terms. For this
+small H2 example, two-electron integrals dominate the resource estimate.
+
+Interpretation Boundaries
+-------------------------
+
+Resource estimates describe an EFTQC algorithmic cost model. They do not
+predict local Catalyst compile memory, host RAM usage, or wall-clock runtime
+for PennyLane simulation.

@@ -17,6 +17,28 @@ Glossary
       state in ffsim, samples fixed-particle-number determinants, and solves the
       Hamiltonian in the recovered subspace with qiskit-addon-sqd.
 
+   HF
+      Hartree-Fock. A mean-field electronic reference.
+      RHF denotes restricted Hartree-Fock for the closed-shell workflows.
+
+   CCSD
+      Coupled cluster with single and double excitations.
+      CCSD(T) adds a perturbative triples correction.
+
+   CASCI
+      Complete active-space configuration interaction.
+      The SQD T0 reference solves the finite active-space Hamiltonian exactly.
+
+   SCI
+      Selected configuration interaction. The calculation retains selected determinants.
+
+   AVAS
+      Atomic valence active space. The fragment workflow uses AO labels to select
+      active orbitals. AO means atomic orbital.
+
+   MO
+      Molecular orbital. Fixed-MO embedding retains the vacuum orbital frame.
+
    LUCJ
       Local unitary cluster Jastrow ansatz used by the SQD workflow. Its
       repetition count and optional spin-channel connectivity are explicit run
@@ -52,7 +74,7 @@ Glossary
 
    Catalyst
       The PennyLane compilation stack used for ``@qjit`` workflows. q2m3 uses
-      it where compile-once/reuse-many execution is intended.
+      it for repeated execution of compiled circuits.
 
    IR cache
       A cache of Catalyst intermediate representation artifacts used to avoid
@@ -72,5 +94,5 @@ Glossary
       Hamiltonian.
 
    phase wrapping
-      Ambiguity caused when the energy phase exceeds the finite QPE register
-      range and wraps modulo one.
+      Ambiguity from measuring phase modulo one. Different energies can map
+      to the same phase at a given evolution time.

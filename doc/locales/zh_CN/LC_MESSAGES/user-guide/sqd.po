@@ -1,0 +1,354 @@
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
+"Language: zh_CN\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/user-guide/sqd.rst:2
+msgid "Sample-based quantum diagonalization (SQD)"
+msgstr "基于采样的量子对角化（SQD）"
+
+#: ../../source/user-guide/sqd.rst:4
+msgid ""
+"SQD samples a CCSD-seeded LUCJ state with ffsim. It solves the recovered subspace with qiskit-"
+"addon-sqd. Both public entry points return an ``SQDResult`` with comparisons for the same "
+"Hamiltonian. This classical simulation does not demonstrate quantum advantage or hardware "
+"execution."
+msgstr ""
+"SQD 使用 ffsim 采样以 CCSD 为种子的 LUCJ 态。它用 qiskit-addon-sqd 求解恢复的子空间。两个公开入口均返回 "
+"``SQDResult``，其中各项对比使用同一哈密顿量。这种经典模拟不证明量子优势或硬件执行。"
+
+#: ../../source/user-guide/sqd.rst:10
+msgid "Installation and platform"
+msgstr "安装与平台"
+
+#: ../../source/user-guide/sqd.rst:12
+msgid "Use this source checkout on Linux x86_64 for the SQD implementation and examples:"
+msgstr "在 Linux x86_64 上使用此源码仓库运行 SQD 实现和示例："
+
+#: ../../source/user-guide/sqd.rst:20
+msgid ""
+"The public supervisor requires Linux x86_64 because it uses ``/proc`` and ``multiprocessing`` "
+"with ``fork``. The supervisor rejects other platforms before execution."
+msgstr "公开监督执行器使用 ``/proc`` 及带 ``fork`` 的 ``multiprocessing``，因此要求 Linux x86_64。它会在执行前拒绝其他平台。"
+
+#: ../../source/user-guide/sqd.rst:24
+msgid ""
+"The ``sqd`` extra installs ffsim and qiskit-addon-sqd. Catalyst is optional. Use ``uv.lock`` to "
+"reproduce the dependency versions."
+msgstr "``sqd`` extra 安装 ffsim 和 qiskit-addon-sqd。Catalyst 为可选项。使用 ``uv.lock`` 复现依赖版本。"
+
+#: ../../source/user-guide/sqd.rst:27
+msgid ""
+"``src/q2m3/sqd/resource_calibration.json`` defines the measured resource model and dependency "
+"versions. The model does not cover other platforms or arbitrary dependency versions. Installed "
+"Catalyst must match the calibration version. Catalyst may be absent."
+msgstr ""
+"``src/q2m3/sqd/resource_calibration.json`` 定义实测资源模型和依赖版本。模型不覆盖其他平台或任意依赖版本。若安装 "
+"Catalyst，其版本必须匹配校准版本。也可以不安装 Catalyst。"
+
+#: ../../source/user-guide/sqd.rst:31
+msgid ""
+"Use :doc:`/tutorials/sqd-showcase` for a sequence of example runs. See :doc:`/api-reference/sqd` "
+"for signatures and configuration types."
+msgstr "按 :doc:`/tutorials/sqd-showcase` 依次运行示例。函数签名和配置类型见 :doc:`/api-reference/sqd`。"
+
+#: ../../source/user-guide/sqd.rst:34
+msgid ""
+"Ordinary ``import q2m3`` still imports PennyLane. The SQD algorithm does not call PennyLane or "
+"Catalyst. SQD workflow exports load on access. Without the extra, they raise ``ImportError`` with"
+" the installation command. To check availability, test ``\"run_sqd\" in q2m3.__all__``. Do not "
+"use ``hasattr``, because it can trigger that error. Configuration/result types do not import "
+"ffsim or Qiskit."
+msgstr ""
+"普通 ``import q2m3`` 仍导入 PennyLane。SQD 算法不调用 PennyLane 或 Catalyst。SQD "
+"工作流导出在访问时加载。缺少可选依赖时，它们抛出带安装命令的 ``ImportError``。检查可用性时，测试 ``\"run_sqd\" in q2m3.__all__``。不要使用 "
+"``hasattr``，因为它可能触发该错误。配置和结果类型不导入 ffsim 或 Qiskit。"
+
+#: ../../source/user-guide/sqd.rst:42
+msgid "Two runnable public entry points"
+msgstr "两个可运行的公开入口"
+
+#: ../../source/user-guide/sqd.rst:44
+msgid ""
+"Save either Python block as a file. After the installation above, run ``uv run --no-sync python "
+"FILE.py``. Both use H₂ at 0.74 Å/STO-3G, explicitly ``(2 electrons, 2 spatial orbitals)``, or "
+"four system qubits. The small 128-shot smoke case uses seed 31 and two LUCJ repetitions. It "
+"reaches the full four-determinant space. Agreement with CASCI is a regression check, not evidence"
+" that sampling outperforms classical solvers."
+msgstr ""
+"将任一 Python 代码块保存为文件。完成上述安装后，运行 ``uv run --no-sync python FILE.py``。两者均使用 0.74 Å/STO-3G 的 H₂，并显式指定"
+" ``(2 electrons, 2 spatial orbitals)``，对应四个系统量子比特。小规模 128 次采样冒烟案例使用种子 31 和两次 LUCJ "
+"重复，达到完整的四行列式空间。与 CASCI 一致属于回归检查，不能证明采样优于经典求解器。"
+
+#: ../../source/user-guide/sqd.rst:51
+msgid "The geometry entry point builds integrals and a same-frame CCSD seed:"
+msgstr "几何入口构建积分及同轨道框架的 CCSD 种子："
+
+#: ../../source/user-guide/sqd.rst:74
+msgid ""
+"The integral entry point accepts already assembled chemist-order tensors. This example uses the "
+"guarded producers to supply authenticated frame and CCSD data. ``host_available_mb`` is a "
+"conservative memory cap, not a request to allocate that much memory. Here, currently available "
+"Linux memory bounds it."
+msgstr ""
+"积分入口接受已组装的 chemist 顺序张量。本示例使用具有资源保护的生成函数，提供经过认证的轨道框架和 CCSD 数据。``host_available_mb`` "
+"是保守内存上限，不是要求分配等量内存。此处以当前 Linux 可用内存限制它。"
+
+#: ../../source/user-guide/sqd.rst:113
+msgid ""
+"Both examples yield approximately −1.13728383449 Ha in the measured profile. "
+"``run_sqd_from_integrals`` requires ``context``. Bare ``t1``/``t2`` arrays are not an accepted "
+"substitute for ``CCSDSeed``. The solver checks these inputs:"
+msgstr ""
+"在实测配置中，两个示例均得到约 −1.13728383449 Ha。``run_sqd_from_integrals`` 要求传入 ``context``。裸 ``t1``/``t2`` "
+"数组不能替代 ``CCSDSeed``。求解器检查以下输入："
+
+#: ../../source/user-guide/sqd.rst:117
+msgid "shape"
+msgstr "形状"
+
+#: ../../source/user-guide/sqd.rst:118
+msgid "finite values"
+msgstr "有限数值"
+
+#: ../../source/user-guide/sqd.rst:119
+msgid "balanced electron counts"
+msgstr "平衡电子数"
+
+#: ../../source/user-guide/sqd.rst:120
+msgid "Hamiltonian/frame identity"
+msgstr "哈密顿量 / 轨道框架标识"
+
+#: ../../source/user-guide/sqd.rst:121
+msgid "HF/CCSD energy"
+msgstr "HF/CCSD 能量"
+
+#: ../../source/user-guide/sqd.rst:122
+msgid "CCSD residuals"
+msgstr "CCSD 残差"
+
+#: ../../source/user-guide/sqd.rst:124
+msgid ""
+"Failed or unconverged seeds raise an error. For a deliberate baseline-only run, set "
+"``mode=\"reference_only\"`` (and ``seed_data=None`` at the integral entry). The workflow never "
+"silently substitutes HF for a failed SQD run."
+msgstr ""
+"种子失败或未收敛时抛出错误。有意仅运行基准时，设置 ``mode=\"reference_only\"``，并在积分入口设置 ``seed_data=None``。工作流绝不会静默用 HF "
+"替代失败的 SQD 运行。"
+
+#: ../../source/user-guide/sqd.rst:129
+msgid "Fixed orbital frame and MM embedding"
+msgstr "固定轨道框架与 MM 嵌入"
+
+#: ../../source/user-guide/sqd.rst:131
+msgid ""
+"Coordinates, including ``mm_coords``, are in Å. ``mm_charges`` are in elementary charges. "
+"Energies and integral constants are Hartree. The high-level entry accepts both MM arrays and "
+"``embedding_mode=\"diagonal\"`` (default) or ``\"full_oneelectron\"``. The latter requires MM "
+"charges. The vacuum MO frame and two-electron tensor stay fixed. Diagonal mode adds only diagonal"
+" active one-electron terms. Full mode also retains off-diagonal terms."
+msgstr ""
+"坐标包括 ``mm_coords``，单位为 Å。``mm_charges`` 单位为元电荷。能量和积分常数单位为 Hartree。高层入口接受两组 MM 数组，以及 "
+"``embedding_mode=\"diagonal\"``（默认）或 ``\"full_oneelectron\"``。后者要求 MM "
+"电荷。真空分子轨道框架和双电子张量保持不变。对角模式仅添加活性空间对角单电子项，完整模式还保留非对角项。"
+
+#: ../../source/user-guide/sqd.rst:138
+msgid ""
+"All solver arms share the same active span, Hamiltonian, frame and core constant. ``e_core`` "
+"already includes the MM nuclear contribution: do not add it again at the low-level entry. The "
+"low-level ``h2`` is chemist ordered and is not transposed again. In an embedded fixed frame, "
+"``hf_energy`` is the reference determinant expectation, not a relaxed embedded SCF minimum. Tests"
+" cover static MM and the H₂O adapter. SQD MC integration, correlated RDM feedback and polarizable"
+" MM are outside this delivery."
+msgstr ""
+"各求解分支共享活性空间、哈密顿量、框架和芯常数。``e_core`` 已包含 MM 核贡献，底层入口不得再次添加。底层 ``h2`` "
+"使用化学家顺序，不再次转置。在嵌入的固定框架中，``hf_energy`` 表示参考行列式期望值，不是弛豫嵌入 SCF 最小值。测试覆盖静态 MM 和 H₂O 适配器。此实现不包含 SQD MC"
+" 集成、关联 RDM 反馈或可极化 MM。"
+
+#: ../../source/user-guide/sqd.rst:147
+msgid "Reference ladder and result consumers"
+msgstr "参考阶梯与结果使用方"
+
+#: ../../source/user-guide/sqd.rst:149
+msgid ""
+"``ReferenceConfig`` defaults to 900 seconds and 8192 decimal MB. The reference ladder shares the "
+"remaining budget across attempts:"
+msgstr "``ReferenceConfig`` 默认设置为 900 秒和 8192 十进制 MB。参考阶梯的各次尝试共享剩余预算："
+
+#: ../../source/user-guide/sqd.rst:155
+msgid "Tier"
+msgstr "层级"
+
+#: ../../source/user-guide/sqd.rst:156
+msgid "Method"
+msgstr "方法"
+
+#: ../../source/user-guide/sqd.rst:157
+msgid "Meaning"
+msgstr "含义"
+
+#: ../../source/user-guide/sqd.rst:158
+msgid "T0"
+msgstr "T0"
+
+#: ../../source/user-guide/sqd.rst:159
+msgid "``exact_casci``"
+msgstr "``exact_casci``"
+
+#: ../../source/user-guide/sqd.rst:160
+msgid "Exact within this finite active Hamiltonian"
+msgstr "在该有限活性哈密顿量内精确"
+
+#: ../../source/user-guide/sqd.rst:161
+msgid "T1"
+msgstr "T1"
+
+#: ../../source/user-guide/sqd.rst:162
+msgid "Selected CI"
+msgstr "选择 CI"
+
+#: ../../source/user-guide/sqd.rst:163
+msgid "Tight-cutoff result. Cutoff differences do not bound its error"
+msgstr "严格截断结果。截断差异不能界定其误差"
+
+#: ../../source/user-guide/sqd.rst:164
+msgid "T1+"
+msgstr "T1+"
+
+#: ../../source/user-guide/sqd.rst:165
+msgid "Explicitly enabled plugin"
+msgstr "显式启用的插件"
+
+#: ../../source/user-guide/sqd.rst:166
+msgid "Solver-specific approximation and uncertainty"
+msgstr "求解器特定近似与不确定性"
+
+#: ../../source/user-guide/sqd.rst:167
+msgid "T2"
+msgstr "T2"
+
+#: ../../source/user-guide/sqd.rst:168
+msgid "CCSD(T)"
+msgstr "CCSD(T)"
+
+#: ../../source/user-guide/sqd.rst:169
+msgid "Approximate fallback with diagnostics and trust flags"
+msgstr "带诊断和可信性标记的近似后备计算"
+
+#: ../../source/user-guide/sqd.rst:171
+msgid ""
+"T0 cannot be disabled to force a downgrade. Only explicit unavailability, budget exhaustion or "
+"controlled timeout permits trying a lower tier. The workflow must report numerical failures. "
+"Every non-T0 result carries ``baseline_downgrade_reason`` and a warning."
+msgstr ""
+"不得通过禁用 T0 强制降级。仅在明确不可用、预算耗尽或受控超时时，才允许尝试较低层级。工作流必须报告数值失败。每个非 T0 结果均包含 "
+"``baseline_downgrade_reason`` 和警告。"
+
+#: ../../source/user-guide/sqd.rst:176
+msgid ""
+"If uncertainty is unknown, the result records ``None`` and a reason. It must not record zero. T2 "
+"reports the T1 diagnostic, convergence, triples correction and triples/correlation ratio. Flags "
+"can mark it untrustworthy. Zero T0 uncertainty excludes basis/model/experimental errors."
+msgstr ""
+"不确定性未知时，结果记录 ``None`` 及原因，不得记录零。T2 报告 T1 诊断、收敛、三重激发校正及三重激发 / 相关能比值。标记可将它判为不可信。T0 "
+"不确定性为零不包含基组、模型或实验误差。"
+
+#: ../../source/user-guide/sqd.rst:181
+msgid ""
+"Use ``baseline_energy``, ``baseline_method``, ``baseline_tier``, ``baseline_uncertainty_mHa``, "
+"``baseline_downgrade_reason``, ``warnings`` and ``null_reasons``. Output schema ``sqd.result.v1``"
+" has 40 fields and writes only canonical ``baseline_*`` keys. An old ``shci_energy`` number alone"
+" cannot tell whether it came from CASCI or SHCI. Readers must require explicit method, tier, "
+"units and uncertainty semantics. They must reject conflicting aliases."
+msgstr ""
+"使用 "
+"``baseline_energy``、``baseline_method``、``baseline_tier``、``baseline_uncertainty_mHa``、``baseline_downgrade_reason``、``warnings``"
+" 和 ``null_reasons``。输出模式 ``sqd.result.v1`` 有 40 个字段，只写入规范的 ``baseline_*`` 键。旧 ``shci_energy`` "
+"数值本身无法说明它来自 CASCI 还是 SHCI。读取方必须要求显式方法、层级、单位和不确定性含义，并拒绝冲突别名。"
+
+#: ../../source/user-guide/sqd.rst:188
+msgid ""
+"``delta_mHa = 1000 * (sqd_energy - baseline_energy)`` and ``delta_vs_sci_mHa = 1000 * (sqd_energy"
+" - iso_ndet_sci_energy)``: positive means SQD is worse. ``ratio_sqd_over_sci`` is defined only "
+"against T0 with a valid nonzero SCI error. SCI and random arms match each spin's subspace "
+"dimension. ``subspace_dim`` is their Cartesian product. ``unique_dets_vs_shots`` counts sampled "
+"pairs and is a different quantity."
+msgstr ""
+"``delta_mHa = 1000 * (sqd_energy - baseline_energy)`` 和 ``delta_vs_sci_mHa = 1000 * (sqd_energy -"
+" iso_ndet_sci_energy)``：正值表示 SQD 更差。``ratio_sqd_over_sci`` 仅在 T0 及有效非零 SCI 误差下定义。SCI "
+"和随机分支匹配每种自旋的子空间维数。``subspace_dim`` 是其笛卡尔积。``unique_dets_vs_shots`` 统计采样对，是另一种量。"
+
+#: ../../source/user-guide/sqd.rst:195
+msgid ""
+"Reference-only outputs have ``None`` and explicit reasons for unexecuted sampling/comparison "
+"fields. ``save_json_results`` from ``q2m3.utils.io`` accepts the complete dataclass and preserves"
+" these fields. It rejects nonfinite JSON values."
+msgstr ""
+"仅参考输出对未执行的采样 / 对照字段记录 ``None`` 和明确原因。``q2m3.utils.io`` 中的 ``save_json_results`` "
+"接受完整数据类，并保留这些字段。它拒绝非有限 JSON 值。"
+
+#: ../../source/user-guide/sqd.rst:201
+msgid "Resource limits"
+msgstr "资源限制"
+
+#: ../../source/user-guide/sqd.rst:203
+msgid ""
+"The calibrated Linux model requires serial execution and balanced closed shells. Its domain "
+"permits:"
+msgstr "校准后的 Linux 模型要求串行执行和平衡闭壳层。适用域允许："
+
+#: ../../source/user-guide/sqd.rst:206
+msgid "2–10 active orbitals."
+msgstr "2–10 个活性轨道。"
+
+#: ../../source/user-guide/sqd.rst:207
+msgid "At most 252 determinants per spin and 63504 determinant pairs."
+msgstr "每个自旋最多 252 个行列式，总计最多 63504 个行列式对。"
+
+#: ../../source/user-guide/sqd.rst:208
+msgid "At most 36 UCJ factors, two batches, two iterations, and 100000 shots."
+msgstr "最多 36 个 UCJ 因子、两个批次、两次迭代和 100000 次采样。"
+
+#: ../../source/user-guide/sqd.rst:210
+msgid ""
+"Other stage-specific input/domain checks still apply. Public diagonalization uses two batches, "
+"two iterations and ``min(300, shots)`` samples per batch. Unknown/out-of-domain bounds raise "
+"``ResourceModelDomainError`` before the allocation. ``allow_large`` cannot bypass the domain, "
+"host or hard cap."
+msgstr ""
+"各阶段的其他输入与适用域检查仍然有效。公开对角化使用两个批次、两次迭代，每批 ``min(300, shots)`` 个样本。未知或域外边界会在分配前抛出 "
+"``ResourceModelDomainError``。``allow_large`` 无法绕过适用域、主机上限或硬上限。"
+
+#: ../../source/user-guide/sqd.rst:215
+msgid ""
+"The allocation policy warns at 2048 MB and normally rejects at 8192 MB. Its absolute ceiling is "
+"12288 MB. The public executor applies a separate 8192 MB component cap. The effective limit is "
+"the smallest component, host, or user cap. A prediction equal to the effective limit rejects "
+"before allocation. ``allow_large`` cannot bypass that limit."
+msgstr ""
+"分配策略在 2048 MB 发出警告，通常在 8192 MB 拒绝。其绝对上限为 12288 MB。公开执行器另设 8192 MB "
+"组件上限。有效限制取组件、主机和用户上限的最小值。预测达到有效限制时，程序在分配前拒绝。``allow_large`` 无法绕过该限制。"
+
+#: ../../source/user-guide/sqd.rst:222
+msgid "All limits use decimal MB. The historical benchmark criterion is ``peak_bytes < 2_000_000_000``."
+msgstr "所有限制使用十进制 MB。历史基准判据为 ``peak_bytes < 2_000_000_000``。"
+
+#: ../../source/user-guide/sqd.rst:225
+msgid ""
+"See :doc:`sqd-validation` for measured results and research status. See :doc:`/api-reference/sqd-"
+"results` for all result fields."
+msgstr "实测结果和研究状态见 :doc:`sqd-validation`。全部结果字段见 :doc:`/api-reference/sqd-results`。"

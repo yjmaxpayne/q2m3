@@ -1,81 +1,80 @@
-# Chinese (Simplified, China) translations for PROJECT.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
+# Simplified Chinese translations for q2m3.
+# Copyright (c) 2026 Ye Jun <yjmaxpayne@hotmail.com>
+# Distributed under the MIT license.
+# Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 16:06+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
+"POT-Creation-Date: 2026-10-25 22:37+0800\n"
+"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language-Team: Simplified Chinese\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: ../../source/tutorials/h2-mc-solvation.md:1
+#: ../../source/tutorials/h2-mc-solvation.rst:2
 msgid "H2 MC Solvation"
 msgstr "H2 MC 溶剂化"
 
-#: ../../source/tutorials/h2-mc-solvation.md:3
+#: ../../source/tutorials/h2-mc-solvation.rst:4
 msgid ""
-"This tutorial introduces the `q2m3.solvation` API with the maintained fixed-mode H2 Monte Carlo "
-"example. It is the recommended MC smoke path."
-msgstr "本教程使用维护中的 fixed 模式 H2 蒙特卡洛示例介绍 `q2m3.solvation` API。这是建议的 MC 冒烟测试路径。"
+"Run fixed-mode H2 Monte Carlo solvation with ``q2m3.solvation``. Install the ``catalyst`` and "
+"``solvation`` extras first."
+msgstr "使用 ``q2m3.solvation`` 运行固定模式 H2 Monte Carlo 溶剂化。先安装 ``catalyst`` 和 ``solvation`` extras。"
 
-#: ../../source/tutorials/h2-mc-solvation.md:6
+#: ../../source/tutorials/h2-mc-solvation.rst:8
 msgid "Run The Script"
 msgstr "运行脚本"
 
-#: ../../source/tutorials/h2-mc-solvation.md:12
+#: ../../source/tutorials/h2-mc-solvation.rst:14
 msgid ""
-"The script builds a `SolvationConfig`, runs `run_solvation()`, and reports whether the Catalyst "
-"IR cache was a hit or miss."
-msgstr "脚本构建 `SolvationConfig`，运行 `run_solvation()`，并报告 Catalyst IR 缓存是否命中。"
+"The script builds a ``SolvationConfig``, runs ``run_solvation()``, and reports whether the "
+"Catalyst IR cache was a hit or miss."
+msgstr "脚本构建 ``SolvationConfig``，运行 ``run_solvation()``，并报告 Catalyst IR 缓存是否命中。"
 
-#: ../../source/tutorials/h2-mc-solvation.md:15
+#: ../../source/tutorials/h2-mc-solvation.rst:18
 msgid "Configuration Pattern"
 msgstr "配置用法"
 
-#: ../../source/tutorials/h2-mc-solvation.md:50
+#: ../../source/tutorials/h2-mc-solvation.rst:54
 msgid "Fixed Mode"
 msgstr "Fixed 模式"
 
-#: ../../source/tutorials/h2-mc-solvation.md:52
+#: ../../source/tutorials/h2-mc-solvation.rst:56
 msgid ""
-"`fixed` mode uses a vacuum QPE Hamiltonian and adds MM energy terms during the MC loop. It is the"
-" fastest public MC path. Use it to test Catalyst, JAX, PySCF, and the IR cache together."
-msgstr "`fixed` 模式使用真空 QPE 哈密顿量，并在 MC 循环中添加 MM 能量项。它是最快的公开 MC 路径，可同时测试 Catalyst、JAX、PySCF 和 IR 缓存。"
+"``fixed`` mode uses a vacuum QPE Hamiltonian. It adds MM energy terms during the MC loop. Use "
+"this example to check Catalyst, JAX, PySCF, and the IR cache together."
+msgstr "``fixed`` 模式使用真空 QPE 哈密顿量。它在 MC 循环中添加 MM 能量项。此示例用于检查 Catalyst、JAX、PySCF 和 IR 缓存。"
 
-#: ../../source/tutorials/h2-mc-solvation.md:56
+#: ../../source/tutorials/h2-mc-solvation.rst:60
 msgid ""
 "The first run can compile Catalyst IR. Later runs can reuse cached IR if the circuit structure is"
 " unchanged."
 msgstr "首次运行可能编译 Catalyst IR。如果电路结构不变，后续运行可复用缓存的 IR。"
 
-#: ../../source/tutorials/h2-mc-solvation.md:59
+#: ../../source/tutorials/h2-mc-solvation.rst:64
 msgid "Output Fields"
 msgstr "输出字段"
 
-#: ../../source/tutorials/h2-mc-solvation.md:61
+#: ../../source/tutorials/h2-mc-solvation.rst:66
 msgid ""
 "The result dictionary includes energy trajectories, acceptance statistics, timing data, circuit "
 "metadata, and optional cache statistics. Diagnostics can add result keys. Code that reads results"
-" should use `.get()` for optional metadata."
-msgstr "结果字典包含能量轨迹、接受统计、计时数据、电路元数据和可选缓存统计。诊断可能增加结果键。读取结果的代码应使用 `.get()` 获取可选元数据。"
+" should use ``.get()`` for optional metadata."
+msgstr "结果字典包含能量轨迹、接受统计、计时数据、电路元数据和可选缓存统计。诊断可能增加结果键。读取结果的代码应使用 ``.get()`` 获取可选元数据。"
 
-#: ../../source/tutorials/h2-mc-solvation.md:66
+#: ../../source/tutorials/h2-mc-solvation.rst:72
 msgid "Memory Notes"
 msgstr "内存说明"
 
-#: ../../source/tutorials/h2-mc-solvation.md:68
+#: ../../source/tutorials/h2-mc-solvation.rst:74
 msgid ""
 "Use H2 fixed mode for the first MC run. H3O+ and dynamic mode increase Hamiltonian term count, "
-"circuit size, and Catalyst compile cost. Treat them as diagnostics until the H2 path is "
-"validated."
-msgstr "首次 MC 运行使用 H2 fixed 模式。H3O+ 和 dynamic 模式会增加哈密顿量项数、电路大小及 Catalyst 编译成本。在 H2 路径验证通过前，将它们视为诊断。"
+"circuit size, and Catalyst compile cost. Treat them as diagnostics until the H2 run passes its "
+"checks."
+msgstr "首次 MC 运行使用 H2 固定模式。H3O+ 和动态模式会增加哈密顿量项数、电路规模和 Catalyst 编译成本。H2 检查通过前，将它们仅用作诊断。"

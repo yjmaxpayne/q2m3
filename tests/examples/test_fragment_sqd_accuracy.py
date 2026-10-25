@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -107,12 +108,20 @@ def test_failure_retains_results_and_accuracy_evidence(tmp_path, monkeypatch):
 
 
 def test_extended_resource_profile_remains_bounded():
+    from q2m3.sqd import resources
     from q2m3.sqd.exceptions import ResourceModelDomainError
-    from q2m3.sqd.resources import load_resource_model
 
-    model = load_resource_model(profile={"n_reps": 36, "shots": 100_000})
+    # This checks the calibration profile, not the installed environment. Pass the
+    # shipped manifest explicitly so the test also runs in the core profile,
+    # where ffsim is intentionally absent.
+    versions = json.loads(
+        Path(resources.__file__).with_name("resource_calibration.json").read_text()
+    )["versions"]
+    model = resources.load_resource_model(
+        versions=versions, profile={"n_reps": 36, "shots": 100_000}
+    )
     assert model.model_id != "serial-active-space-20260917-v1"
     with pytest.raises(ResourceModelDomainError, match="n_reps"):
-        load_resource_model(profile={"n_reps": 37})
+        resources.load_resource_model(versions=versions, profile={"n_reps": 37})
     with pytest.raises(ResourceModelDomainError, match="shots"):
-        load_resource_model(profile={"n_reps": 36, "shots": 100_001})
+        resources.load_resource_model(versions=versions, profile={"n_reps": 36, "shots": 100_001})

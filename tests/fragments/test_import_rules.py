@@ -17,7 +17,17 @@ import pytest
 SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "q2m3"
 FRAGMENTS = "q2m3.fragments"
 FORBIDDEN = ("q2m3.solvation", "q2m3.sampling", "q2m3.profiling")
-OPTIONAL_BACKENDS = frozenset({"psi4", "pyblock2", "block2", "ase"})
+OPTIONAL_BACKENDS = frozenset(
+    {
+        "psi4",
+        "pyblock2",
+        "block2",
+        "ase",
+        "pyscf.dispersion",
+        "pyscf.geomopt.geometric_solver",
+        "geometric",
+    }
+)
 PRIVATE_EXEMPT = frozenset({"_lazy"})
 # Runs inside the Psi4 interpreter, so it may import psi4 at module level.
 TOP_LEVEL_EXEMPT = Path("fragments", "external", "_psi4_driver.py")
@@ -125,9 +135,9 @@ def scan(root: Path) -> list[Violation]:
         if not inside or path.relative_to(root) == TOP_LEVEL_EXEMPT:
             continue
         for node in _top_level_imports(tree.body):
-            bases = dict.fromkeys(base for base, _ in _targets(node, module, is_package))
-            for base in bases:
-                if base.split(".")[0] in OPTIONAL_BACKENDS:
+            for base, name in _targets(node, module, is_package):
+                target = f"{base}.{name}" if name else base
+                if any(_within(target, backend) for backend in OPTIONAL_BACKENDS):
                     violations.append(Violation(path, node.lineno, "optional top-level", base))
     return violations
 
@@ -154,6 +164,15 @@ CASES = {
     "relative-private-name": (FRAGMENT, "from ..sqd.orchestrator import _unwire\n", "private"),
     "absolute-private-name": (FRAGMENT, "from q2m3.sqd.orchestrator import _unwire\n", "private"),
     "top-level-optional": (FRAGMENT, "import psi4\n", "optional top-level"),
+    "top-level-geometric": (FRAGMENT, "import geometric\n", "optional top-level"),
+    "top-level-pyscf-dispersion": (FRAGMENT, "import pyscf.dispersion\n", "optional top-level"),
+    "dispersion-from-pyscf": (FRAGMENT, "from pyscf import dispersion\n", "optional top-level"),
+    "top-level-geometric-adapter": (
+        FRAGMENT,
+        "from pyscf.geomopt.geometric_solver import kernel\n",
+        "optional top-level",
+    ),
+    "required-pyscf-dft": (FRAGMENT, "from pyscf import dft\n", None),
     "optional-in-top-level-try": (
         FRAGMENT,
         "try:\n    import psi4\nexcept ImportError:\n    psi4 = None\n",

@@ -13,6 +13,7 @@ EXTRA_PROBES: Final[dict[str, tuple[str, ...]]] = {
     "sqd": ("ffsim", "qiskit_addon_sqd"),
     "catalyst": ("catalyst", "jax"),
     "dmrg": ("pyblock2", "block2"),
+    "geometry": ("pyscf.dispersion", "geometric"),
     # Not an optional extra: an empty probe tuple is always available.
     "core": (),
 }

@@ -20,23 +20,25 @@ abstract: >-
   quantum chemistry, PennyLane Quantum Phase Estimation circuits, and
   explicit MM point-charge environments. It targets Early Fault-Tolerant
   Quantum Computers (EFTQC) and provides compile-once / run-many
-  solvation experiments, fixed-MO one-electron embedding, and EFTQC
-  resource estimation for active-space Hamiltonians.
+  solvation experiments, fixed-MO one-electron embedding, sample-based
+  quantum diagonalization, fragment interaction-energy workflows with
+  counterpoise and active-space selection, and EFTQC resource estimation
+  for active-space Hamiltonians.
 keywords:
   - quantum computing
   - quantum chemistry
   - QM/MM
   - quantum phase estimation
+  - sample-based quantum diagonalization
+  - fragment interaction energy
+  - counterpoise
   - PySCF
   - PennyLane
   - EFTQC
 license: MIT
-version: 0.1.1
-date-released: "2026-05-11"
+version: 0.3.0
+date-released: "2026-10-26"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.20114945
     description: Concept DOI for all q2m3 versions on Zenodo
-  - type: doi
-    value: 10.5281/zenodo.20114946
-    description: Version-specific DOI for q2m3 v0.1.1

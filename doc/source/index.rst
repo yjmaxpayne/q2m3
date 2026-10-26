@@ -91,9 +91,8 @@ Citation
 
 Cite the Zenodo archive when you use q2m3 in research.
 The concept DOI identifies the project across releases.
-Use a version DOI to identify the exact code behind a result.
-``CITATION.cff`` lists the project citation and the ``v0.1.1`` DOI
-`10.5281/zenodo.20114946 <https://doi.org/10.5281/zenodo.20114946>`_.
+``CITATION.cff`` lists the project citation and the concept DOI.
+The Zenodo record for each release lists its version DOI.
 
 .. code-block:: bibtex
 

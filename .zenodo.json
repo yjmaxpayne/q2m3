@@ -1,6 +1,6 @@
 {
   "title": "q2m3: A Hybrid Quantum-Classical Framework for QM/MM Simulations",
-  "description": "<p>q2m3 is a hybrid quantum-classical QM/MM proof-of-concept framework for coupling PySCF, PennyLane Quantum Phase Estimation (QPE), and explicit MM point-charge environments in a single Python package. It targets Early Fault-Tolerant Quantum Computers (EFTQC) and provides compile-once / run-many solvation experiments, fixed-MO one-electron embedding, and EFTQC resource estimation for active-space Hamiltonians.</p>",
+  "description": "<p>q2m3 is a hybrid quantum-classical QM/MM proof-of-concept framework for coupling PySCF, PennyLane Quantum Phase Estimation (QPE), and explicit MM point-charge environments in a single Python package. It targets Early Fault-Tolerant Quantum Computers (EFTQC) and provides compile-once / run-many solvation experiments, fixed-MO one-electron embedding, sample-based quantum diagonalization (SQD), fragment interaction-energy workflows with counterpoise and active-space selection, and EFTQC resource estimation for active-space Hamiltonians.</p>",
   "license": "MIT",
   "upload_type": "software",
   "access_right": "open",
@@ -16,6 +16,9 @@
     "quantum chemistry",
     "QM/MM",
     "quantum phase estimation",
+    "sample-based quantum diagonalization",
+    "fragment interaction energy",
+    "counterpoise",
     "PySCF",
     "PennyLane",
     "EFTQC",

@@ -1,5 +1,66 @@
 # Changelog
 
+## v0.3.0 (2026-10-26)
+
+### Feat
+
+- **fragments**: add runnable dimer examples and accuracy checks
+- **fragments**: add DFT-D3(BJ) geometry optimization
+- **fragments**: add CIF dimer input and X-H bond normalization
+- **fragments**: add DMRG orbital-entropy diagnostics behind the dmrg extra
+- **fragments**: add the Psi4 adapter with an HF counterpoise dual-track check
+- **fragments**: add the fragment tutorial, recompute check and API pages
+- **fragments**: render the Markdown report of fragment results
+- **fragments**: import references and recompute the error decomposition
+- **fragments**: gate the CCSD(T) reference on its predicted cost
+- **fragments**: assemble the full mode and check the SQD layer of results
+- **fragments**: clean up SQD stage processes on every exit path
+- **fragments**: run the SQD stage in a single-thread child interpreter
+- **sqd**: add public transport module for SQD records
+- **sqd**: add build_ccsd_seed_from_integrals for integral-level seeds
+- **fragments**: estimate QPE and SQD resources from active-space integrals
+- **fragments**: build active-space integrals and integral contexts
+- **fragments**: check active-space correspondence in the workflow
+- **fragments**: add AVAS label resolution, ghost guard and preflight
+- **fragments**: add classical-only run and top-level exports
+- **fragments**: add result records for fragment interaction energies
+- **fragments**: add Molecule input and counterpoise subsystems
+- **fragments**: add fragment package skeleton and import gates
+- **docs**: add bilingual documentation and translation checks
+
+### Fix
+
+- **tests**: assert intended resource rejection in core profile
+- **tests**: decouple resource profile bounds from installed extras
+- **fragments**: defer optional SQD solver imports
+- **interfaces**: implement extract_molecular_orbitals for RHF results
+
+### Build
+
+- **deps**: refresh pillow, certifi, and setuptools for security advisories
+
+### Docs
+
+- align citation metadata with the v0.3.0 release
+- migrate guides to rst and update fragment architecture
+- **tutorials**: explain the fragment workflow in learning order
+- **fragments**: add the fragment workflow to the README and architecture pages
+- **fragments**: add the report-reading tutorial for experimental partners
+
+### CI
+
+- prefer online self-hosted runners with hosted fallback
+
+### Test
+
+- **fragments**: add the external marker for Psi4 environment tests
+- **sqd**: pin receiver call, cycle bound and export of integral seeds
+
+### Chore
+
+- **dev**: pin local uv Python to 3.12
+- **codegraph**: ignore local index artifacts and share project config
+
 ## v0.2.1 (2026-10-19)
 
 ### docs

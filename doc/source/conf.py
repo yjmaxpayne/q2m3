@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import posixpath
 import sys
 from importlib.metadata import PackageNotFoundError
@@ -17,6 +18,10 @@ first_release = "0.1.0"
 
 
 def _resolve_version() -> str:
+    pinned = os.environ.get("Q2M3_DOCS_VERSION", "").strip()
+    if pinned:
+        return pinned
+
     try:
         return metadata_version(project)
     except PackageNotFoundError:

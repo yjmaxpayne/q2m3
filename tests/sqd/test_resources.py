@@ -283,3 +283,100 @@ def test_spin_symmetrization_and_recovery_stay_within_preallocation_bound():
     )
     assert checked and all(a == b for a, b in checked)
     assert np.isfinite(output.energy)
+
+
+def test_guard_rejection_is_typed_and_keeps_existing_message():
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    with pytest.raises(AllocationGuardError) as caught:
+        resources.guard_allocation(
+            4, (2, 2), stage="prepare", model=ConstantModel(10.0), host_available_mb=1.0
+        )
+    assert isinstance(caught.value, ResourceLimitError)
+    assert str(caught.value) == (
+        "predicted=10.000000 MB, budget=1.000000 MB, norb=4, nelec=(2, 2), "
+        "subspace_dims=None, stage=prepare, model=policy-test"
+    )
+
+
+def test_unavailable_model_is_not_a_guard_rejection():
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    with pytest.raises(ResourceModelDomainError) as caught:
+        resources.guard_allocation(
+            4, (2, 2), stage="prepare", model=ConstantModel(float("nan")), host_available_mb=1.0
+        )
+    assert not isinstance(caught.value, AllocationGuardError)
+
+
+# N2 active-space measurements with the fixed-space solver: norb, dims, measured peak
+# RSS and the prior-model value recorded with the measurement. Copied from the local
+# record dev/experiments/ext_sqd_arch_poc/results.jsonl, which is not in Git. Where
+# two solvers ran the same dims, the row keeps the higher measured peak.
+_PRIOR_RECORDS = [
+    (12, (924, 924), 544.9, 1452.3),
+    (12, (462, 462), 387.9, 1223.4),
+    (12, (511, 511), 395.9, 1241.2),
+    (14, (3432, 3432), 3108.0, 6137.1),
+    (14, (1716, 1716), 908.7, 3145.4),
+    (14, (1241, 1241), 649.9, 2650.3),
+]
+
+
+@pytest.mark.parametrize("norb,dims,peak_mb,recorded_mb", _PRIOR_RECORDS)
+def test_allocation_prior_reproduces_recorded_bound_above_measured_peak(
+    norb, dims, peak_mb, recorded_mb
+):
+    nelec = (norb // 2, norb // 2)
+    predicted = resources.AllocationPriorModel().upper_bound_mb(
+        norb, nelec, stage="diagonalize", subspace_dims=dims, retained_mb=0.0, solver_method=None
+    )
+    assert predicted == pytest.approx(recorded_mb, abs=0.1)
+    assert predicted >= peak_mb
+
+
+def test_allocation_prior_reference_uses_full_sectors_and_known_solvers():
+    model = resources.AllocationPriorModel()
+    assert model.model_id == "allocation-prior-norb14-v1"
+    kwargs = dict(retained_mb=5.0, solver_method="exact_casci")
+    reference = model.upper_bound_mb(
+        12, (6, 6), stage="reference", subspace_dims=(10, 10), **kwargs
+    )
+    full = model.upper_bound_mb(12, (6, 6), stage="comparison", subspace_dims=(924, 924), **kwargs)
+    assert reference == pytest.approx(full)
+    assert reference > model.upper_bound_mb(
+        12, (6, 6), stage="comparison", subspace_dims=(10, 10), **kwargs
+    )
+    with pytest.raises(ResourceModelDomainError):
+        model.upper_bound_mb(
+            12,
+            (6, 6),
+            stage="reference",
+            subspace_dims=None,
+            retained_mb=0.0,
+            solver_method="ccsd_t",
+        )
+
+
+@pytest.mark.parametrize("norb", [10, 15])
+def test_allocation_prior_rejects_orbitals_outside_its_domain(norb):
+    with pytest.raises(ResourceModelDomainError):
+        resources.AllocationPriorModel().upper_bound_mb(
+            norb, (5, 5), stage="prepare", subspace_dims=None, retained_mb=0.0, solver_method=None
+        )
+
+
+@pytest.mark.sqd
+def test_model_selection_keeps_calibration_to_ten_and_prior_to_fourteen():
+    calibrated = resources.load_resource_model().model_id
+    assert resources.resource_model_for(10).model_id == calibrated
+    for norb in (11, 14):
+        assert resources.resource_model_for(norb).model_id == "allocation-prior-norb14-v1"
+    with pytest.raises(ResourceModelDomainError, match="orbital limit 14"):
+        resources.resource_model_for(15)
+
+
+@pytest.mark.sqd
+def test_prior_selection_still_checks_the_calibrated_workload_profile():
+    with pytest.raises(ResourceModelDomainError, match="uncalibrated workload"):
+        resources.resource_model_for(12, profile={"max_space": 13})

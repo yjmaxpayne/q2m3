@@ -118,6 +118,22 @@ def test_sqd_estimate_rejects_a_workload_outside_the_calibrated_profile(integral
         sqd_estimate(integrals["A"], lucj=LUCJConfig(shots=200_000))
 
 
+@pytest.mark.sqd
+@pytest.mark.parametrize("norb", [11, 12, 14])
+def test_sqd_estimate_uses_prior_model_from_eleven_to_fourteen_orbitals(norb):
+    from q2m3.sqd.resources import AllocationPriorModel
+
+    nelec = (norb // 2, norb // 2)
+    built = SimpleNamespace(record=SimpleNamespace(ncas=norb), nelec=nelec)
+    estimate = sqd_estimate(built, lucj=LUCJConfig(n_reps=1, shots=50_000))
+    model = AllocationPriorModel()
+    assert estimate.values["model_id"] == "allocation-prior-norb14-v1"
+    assert estimate.values["rss_mb"] == {
+        stage: estimate_rss_mb(norb, nelec, stage=stage, model=model)
+        for stage in ("prepare", "sample")
+    }
+
+
 QPE = ResourceEstimate(QPE_ESTIMATOR, VERSIONS, {"hamiltonian_1norm": 8.8}, "qpe scope")
 SQD = ResourceEstimate(SQD_ESTIMATOR, VERSIONS, {"qubits": 8}, "sqd scope")
 

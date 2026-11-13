@@ -31,6 +31,16 @@ _REFERENCE_ONLY_FIELDS = (
     "shots",
     "backend",
 )
+# A pre-allocation guard may reject the matched comparisons in a completed run.
+# These fields are then absent together, each with a reason that starts with this prefix.
+_COMPARISON_FIELDS = (
+    "iso_ndet_sci_energy",
+    "iso_ndet_random_energy",
+    "delta_vs_sci_mHa",
+    "ratio_sqd_over_sci",
+    "unique_dets_vs_shots",
+)
+_COMPARISON_BUDGET_PREFIX = "comparison_rss_budget:"
 _TIMING_STAGES = (
     "geometry",
     "integrals",
@@ -461,9 +471,7 @@ class SQDResult:
                     raise ValueError(f"timings_s.{name} must be None in reference_only")
             return
         required = tuple(
-            name
-            for name in _REFERENCE_ONLY_FIELDS
-            if name not in ("ratio_sqd_over_sci", "iso_ndet_random_energy")
+            name for name in _REFERENCE_ONLY_FIELDS if name not in _COMPARISON_FIELDS
         ) + ("iso_active_space_ccsd_energy",)
         for stage in (
             "prepare",
@@ -489,14 +497,35 @@ class SQDResult:
         _integer(self.subspace_dim, "subspace_dim")
         if self.subspace_dim != self.subspace_dims[0] * self.subspace_dims[1]:
             raise ValueError("subspace_dim must equal alpha * beta")
-        self._validate_curve()
         _same(self.delta_mHa, 1000 * (self.sqd_energy - self.baseline_energy), "delta_mHa")
+        self._validate_comparison()
+
+    def _validate_comparison(self):
+        rejected = [
+            getattr(self, name) is None
+            and str(self.null_reasons.get(name, "")).startswith(_COMPARISON_BUDGET_PREFIX)
+            for name in _COMPARISON_FIELDS
+        ]
+        if all(rejected):
+            self._validate_sqd_gap()
+            return
+        for name, absent in zip(_COMPARISON_FIELDS, rejected, strict=True):
+            if any(rejected) and not absent:
+                raise ValueError(f"{name} must be None with a {_COMPARISON_BUDGET_PREFIX} reason")
+        for name in ("iso_ndet_sci_energy", "delta_vs_sci_mHa", "unique_dets_vs_shots"):
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} is required for completed results")
+        self._validate_curve()
         _same(
             self.delta_vs_sci_mHa,
             1000 * (self.sqd_energy - self.iso_ndet_sci_energy),
             "delta_vs_sci_mHa",
         )
         self._validate_ratio()
+
+    def _validate_sqd_gap(self):
+        if self.baseline_tier == "T0" and self.sqd_energy - self.baseline_energy < -1e-10:
+            raise ValueError("energy below exact variational bound")
 
     def _validate_curve(self):
         last_shots, last_unique = 0, 0

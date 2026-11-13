@@ -11,6 +11,7 @@ from q2m3._lazy import lazy_getattr as _lazy_getattr
 from q2m3.sqd.ansatz import build_ccsd_seed_from_integrals
 from q2m3.sqd.config import CCSDSeed, IntegralContext, LUCJConfig, ReferenceConfig, SQDConfig
 from q2m3.sqd.exceptions import (
+    AllocationGuardError,
     BaselineUnavailableError,
     CCSDConvergenceError,
     ComparisonUnavailableError,
@@ -35,6 +36,7 @@ __all__ = [
     "SQDResult",
     "T1Residual",
     "T2Diagnostics",
+    "AllocationGuardError",
     "BaselineUnavailableError",
     "CCSDConvergenceError",
     "ComparisonUnavailableError",

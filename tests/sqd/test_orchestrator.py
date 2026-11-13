@@ -404,3 +404,107 @@ def test_float32_reference_hf_uses_float64_physical_arithmetic(h2_data):
     expected = data.e_core + sum(2 * one[i, i] for i in range(o))
     expected += sum(2 * two[i, i, j, j] - two[i, j, j, i] for i in range(o) for j in range(o))
     assert result.hf_energy == pytest.approx(expected, abs=1e-12, rel=0)
+
+
+class _AllocationAttemptedError(Exception):
+    """A test stub was reached after the entry should already have rejected the input."""
+
+
+def _forbid_allocation(monkeypatch):
+    from q2m3.sqd import diagonalize, observables, sampling
+
+    def forbidden(*args, **kwargs):
+        raise _AllocationAttemptedError("allocation path reached")
+
+    # Each module imports guard_allocation by name, so patch every namespace.
+    for module in (mod(), sampling, diagonalize, observables):
+        monkeypatch.setattr(module, "guard_allocation", forbidden)
+    monkeypatch.setattr(mod(), "_run", forbidden)
+
+
+@pytest.mark.parametrize("mode", ["full", "reference_only"])
+def test_integral_entry_rejects_fifteen_orbitals_before_allocation(h2_data, monkeypatch, mode):
+    from q2m3.sqd.exceptions import ResourceModelDomainError
+
+    data, seed_data = h2_data
+    _forbid_allocation(monkeypatch)
+    with pytest.raises(ResourceModelDomainError, match="orbital limit 14"):
+        mod().run_sqd_from_integrals(
+            data.h1,
+            data.h2,
+            data.e_core,
+            norb=15,
+            nelec=data.nelec,
+            context=data.context,
+            seed_data=seed_data if mode == "full" else None,
+            mode=mode,
+        )
+
+
+def test_geometry_entry_rejects_fifteen_orbitals_before_allocation(monkeypatch):
+    from q2m3.sqd.exceptions import ResourceModelDomainError
+
+    _forbid_allocation(monkeypatch)
+    with pytest.raises(ResourceModelDomainError, match="orbital limit 14"):
+        mod().run_sqd(
+            ["H", "H"],
+            np.array([[0, 0, 0], [0, 0, 0.74]]),
+            active_electrons=2,
+            active_orbitals=15,
+            verbose=False,
+        )
+
+
+@pytest.mark.parametrize("entry", ["run", "sqd_supervise", "supervise", "reference"])
+def test_parent_rss_cap_rejections_are_guard_rejections(monkeypatch, entry):
+    from q2m3.sqd import reference
+    from q2m3.sqd.config import ReferenceConfig
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    for module in (mod(), reference):
+        monkeypatch.setattr(module, "_rss_mb", lambda pid: 1e9)
+    calls = {
+        "run": lambda: mod()._run(abs, (), {}, ReferenceConfig()),
+        "sqd_supervise": lambda: mod()._supervise(
+            abs, (), {}, deadline=monotonic() + 60, cap=100.0
+        ),
+        "supervise": lambda: reference._supervise(abs, (), {}, monotonic() + 60, 100.0),
+        "reference": lambda: reference.run_reference(
+            None, None, 0.0, norb=2, nelec=(1, 1), context=None, host_available_mb=100.0
+        ),
+    }
+    with pytest.raises(AllocationGuardError, match="cap"):
+        calls[entry]()
+
+
+def test_full_run_survives_comparison_guard_rejection(h2_data, monkeypatch):
+    from q2m3.sqd import observables
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    original = observables.guard_allocation
+
+    def reject_comparison(*args, **kwargs):
+        if kwargs["stage"] == "comparison":
+            raise AllocationGuardError("predicted=9000.0 MB, budget=8192.0 MB, stage=comparison")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(observables, "guard_allocation", reject_comparison)
+    data, seed_data = h2_data
+    result = low(data, seed_data)
+    assert result.validate() is result
+    assert result.status == "completed"
+    reason = "comparison_rss_budget: predicted=9000.0 MB, budget=8192.0 MB, stage=comparison"
+    for name in (
+        "iso_ndet_sci_energy",
+        "iso_ndet_random_energy",
+        "delta_vs_sci_mHa",
+        "ratio_sqd_over_sci",
+        "unique_dets_vs_shots",
+    ):
+        assert getattr(result, name) is None
+        assert result.null_reasons[name] == reason
+    assert result.delta_mHa == pytest.approx(
+        1000 * (result.sqd_energy - result.baseline_energy), abs=1e-9
+    )
+    assert result.subspace_dim == result.subspace_dims[0] * result.subspace_dims[1]
+    assert result.timings_s["comparison"] is not None

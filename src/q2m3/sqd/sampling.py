@@ -16,7 +16,7 @@ import numpy as np
 
 from q2m3.sqd.config import _integer, validate_active_space
 from q2m3.sqd.exceptions import SamplingIntegrityError
-from q2m3.sqd.resources import guard_allocation, load_resource_model
+from q2m3.sqd.resources import guard_allocation, resource_model_for
 
 if TYPE_CHECKING:
     import ffsim
@@ -99,7 +99,7 @@ class FfsimSampler:
     retained_mb: float = 0.0
 
     def _guard(self, norb: int, nelec: tuple[int, int], stage: str, **profile: int) -> None:
-        model = load_resource_model(profile=profile)
+        model = resource_model_for(norb, profile=profile)
         guard_allocation(
             norb,
             nelec,

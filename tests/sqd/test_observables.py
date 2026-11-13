@@ -184,13 +184,109 @@ def test_reject_energy_frame_and_spin_dimension_forgery(four_orbitals):
         run((data, seed, ref, replace(sqd, subspace_dims=(3, 2)), samples))
 
 
-def test_guard_before_pool_and_timeout(four_orbitals):
-    from q2m3.sqd.exceptions import ReferenceTimeoutError, ResourceLimitError
+COMPARISON_FIELDS = (
+    "iso_ndet_sci_energy",
+    "iso_ndet_random_energy",
+    "delta_vs_sci_mHa",
+    "ratio_sqd_over_sci",
+    "unique_dets_vs_shots",
+)
 
-    with pytest.raises(ResourceLimitError):
-        run(four_orbitals, rss_budget_mb=1)
+
+def assert_null_comparison(out, fixture, reason_part):
+    data, seed, ref, sqd, _ = fixture
+    assert (out.hamiltonian_id, out.frame_id) == (
+        data.context.hamiltonian_id,
+        data.context.frame_id,
+    )
+    assert out.seed == 7
+    assert out.ci_strings["sqd"] == tuple(tuple(map(int, s)) for s in sqd.ci_strings)
+    for name in COMPARISON_FIELDS:
+        assert getattr(out, name) is None
+        assert out.null_reasons[name].startswith("comparison_rss_budget: ")
+        assert reason_part in out.null_reasons[name]
+    assert out.sqd_energy == sqd.energy
+    assert out.iso_active_space_ccsd_energy == seed.ccsd_energy
+    assert out.delta_mHa == pytest.approx(1000 * (sqd.energy - ref.energy), abs=1e-12)
+    assert out.subspace_dims == sqd.subspace_dims == (2, 3)
+    assert out.subspace_dim == 6
+    assert out.allocation_audit == ()
+    assert out.ci_strings["sci"] is None and out.ci_strings["random"] is None
+
+
+def test_guard_before_pool_and_timeout(four_orbitals):
+    from q2m3.sqd.exceptions import ReferenceTimeoutError
+
+    out = run(four_orbitals, rss_budget_mb=1)
+    assert_null_comparison(out, four_orbitals, "stage=ccsd")
     with pytest.raises(ReferenceTimeoutError):
         run(four_orbitals, remaining_wall_s=1e-12)
+
+
+def test_parent_comparison_guard_rejection_returns_null_comparison(four_orbitals, monkeypatch):
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    original = mod().guard_allocation
+
+    def reject_comparison(*args, **kwargs):
+        if kwargs["stage"] == "comparison":
+            raise AllocationGuardError("predicted=9000.0 MB, stage=comparison")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(mod(), "guard_allocation", reject_comparison)
+    assert_null_comparison(run(four_orbitals), four_orbitals, "stage=comparison")
+
+
+def test_worker_guard_rejection_returns_null_comparison(four_orbitals, monkeypatch):
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    def reject(*args, **kwargs):
+        raise AllocationGuardError("worker guard rejects the candidate space")
+
+    monkeypatch.setattr(mod()._ComparisonWorker, "solve", reject)
+    assert_null_comparison(run(four_orbitals), four_orbitals, "worker guard")
+
+
+def test_supervisor_parent_cap_rejection_returns_null_comparison(four_orbitals, monkeypatch):
+    from q2m3.sqd import reference
+
+    # Only the supervisor's parent check sees this RSS; the parent guards use their own import.
+    monkeypatch.setattr(reference, "_rss_mb", lambda pid: 1e9)
+    out = run(four_orbitals)
+    assert_null_comparison(out, four_orbitals, "Reference parent already reaches RSS cap")
+
+
+@pytest.mark.parametrize("tier,gap", [("T1", -0.01), ("T0", -5e-11)])
+def test_budget_rejected_checks_only_exact_baseline_beyond_tolerance(four_orbitals, tier, gap):
+    from time import monotonic
+    from types import SimpleNamespace
+
+    data, seed, _, sqd, _ = four_orbitals
+    reference = SimpleNamespace(tier=tier, energy=sqd.energy - gap)
+    out = mod()._budget_rejected(
+        sqd, seed, reference, data.context, sqd.subspace_dims, 7, monotonic(), "guard"
+    )
+    assert out.delta_mHa == pytest.approx(1000 * gap, abs=1e-12)
+
+
+def test_null_comparison_keeps_variational_check(four_orbitals):
+    data, seed, ref, sqd, samples = four_orbitals
+    assert ref.tier == "T0"
+    below = replace(sqd, energy=ref.energy - 0.01)
+    with pytest.raises(ReferenceNumericalError, match="below exact baseline"):
+        run((data, seed, ref, below, samples), rss_budget_mb=1)
+
+
+def test_measured_rss_overrun_in_comparison_still_raises(four_orbitals, monkeypatch):
+    from q2m3.sqd.exceptions import AllocationGuardError, ResourceLimitError
+
+    def overrun(*args, **kwargs):
+        raise ResourceLimitError("Reference process tree RSS=9000.0 MB >= 8192.0")
+
+    monkeypatch.setattr(mod(), "_supervise", overrun)
+    with pytest.raises(ResourceLimitError, match="process tree") as caught:
+        run(four_orbitals)
+    assert not isinstance(caught.value, AllocationGuardError)
 
 
 def test_sci_expansion_and_random_hf_are_deterministic():

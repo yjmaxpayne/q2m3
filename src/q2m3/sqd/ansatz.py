@@ -54,7 +54,7 @@ class _SeedInventory:
         retained_mb: float,
         solver_method: str | None,
     ) -> float:
-        if stage != "ccsd" or not 2 <= norb <= 10 or not norb <= self.n_mo <= 32:
+        if stage != "ccsd" or not 2 <= norb <= 14 or not norb <= self.n_mo <= 32:
             raise ResourceModelDomainError("Fixed-frame RCCSD inventory domain exceeded")
         return 1024 + retained_mb + 8 * (128 * norb**4 + 64 * norb**2 + self.n_mo**2) / 1e6
 

@@ -30,11 +30,16 @@ from q2m3.sqd.config import (
     validate_molecular_inputs,
 )
 from q2m3.sqd.diagonalize import diagonalize_samples
-from q2m3.sqd.exceptions import ReferenceNumericalError, ReferenceTimeoutError, ResourceLimitError
+from q2m3.sqd.exceptions import (
+    AllocationGuardError,
+    ReferenceNumericalError,
+    ReferenceTimeoutError,
+    ResourceLimitError,
+)
 from q2m3.sqd.integrals import build_integrals
 from q2m3.sqd.observables import run_comparisons
 from q2m3.sqd.reference import _rss_mb, _tree_pids, run_reference
-from q2m3.sqd.resources import guard_allocation, load_resource_model
+from q2m3.sqd.resources import check_orbital_limit, guard_allocation, resource_model_for
 from q2m3.sqd.result import SQDResult
 from q2m3.sqd.sampling import FfsimSampler
 from q2m3.sqd.transport import decode_result, encode_result
@@ -81,7 +86,7 @@ def _supervise(function, args, kwargs, *, deadline, cap, finalize=None):
     if peak >= cap:
         receiver.close()
         sender.close()
-        raise ResourceLimitError("SQD parent already reaches RSS cap")
+        raise AllocationGuardError("SQD parent already reaches RSS cap")
     process.start()
     sender.close()
     descendants = set()
@@ -170,7 +175,7 @@ def _run(function, args, kwargs, reference, initial_elapsed=0.0):
     start = monotonic()
     worker_cap = cap - _rss_mb(os.getpid())
     if worker_cap <= 0:
-        raise ResourceLimitError("SQD parent already reaches RSS cap")
+        raise AllocationGuardError("SQD parent already reaches RSS cap")
     kwargs = kwargs | {
         "cap": worker_cap,
         "deadline": start + reference.wall_budget_s - initial_elapsed,
@@ -247,9 +252,11 @@ def run_sqd(
 
     Raises:
         ValueError: Inputs or execution environment are unsupported.
+        ResourceModelDomainError: The active space has more than 14 orbitals.
         ResourceLimitError: Allocation or observed process RSS reaches a cap.
         ReferenceTimeoutError: The total shared deadline expires.
     """
+    check_orbital_limit(active_orbitals)
     started = monotonic()
     molecule = MoleculeConfig(
         "sqd",
@@ -380,9 +387,11 @@ def run_sqd_from_integrals(
 
     Raises:
         ValueError: The declared integral contract is invalid.
+        ResourceModelDomainError: The active space has more than 14 orbitals.
         ResourceLimitError: Predicted or actual resources exceed the budget.
         ReferenceTimeoutError: The total shared deadline expires.
     """
+    check_orbital_limit(norb)
     reference = (reference or ReferenceConfig()).validate()
     return _run(
         _execute,
@@ -405,7 +414,7 @@ def run_sqd_from_integrals(
 
 
 def _full_budget(norb, nelec, lucj, cap, allow_large):
-    model = load_resource_model(profile={"n_reps": lucj.n_reps, "shots": lucj.shots})
+    model = resource_model_for(norb, profile={"n_reps": lucj.n_reps, "shots": lucj.shots})
     for stage in ("prepare", "sample"):
         guard_allocation(
             norb,

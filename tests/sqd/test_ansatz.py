@@ -490,3 +490,25 @@ def test_integral_seed_builder_is_a_package_export(module):
 
     assert "build_ccsd_seed_from_integrals" in sqd.__all__
     assert sqd.build_ccsd_seed_from_integrals is module.build_ccsd_seed_from_integrals
+
+
+def test_seed_inventory_covers_fourteen_orbitals_and_rejects_fifteen(module):
+    from q2m3.sqd.exceptions import ResourceModelDomainError
+
+    def bound(norb):
+        return module._SeedInventory(norb).upper_bound_mb(
+            norb,
+            (norb // 2, norb // 2),
+            stage="ccsd",
+            subspace_dims=None,
+            retained_mb=0.0,
+            solver_method=None,
+        )
+
+    for norb in (12, 14):
+        assert np.isfinite(bound(norb))
+        assert bound(norb) == pytest.approx(
+            1024 + 8 * (128 * norb**4 + 64 * norb**2 + norb**2) / 1e6
+        )
+    with pytest.raises(ResourceModelDomainError):
+        bound(15)

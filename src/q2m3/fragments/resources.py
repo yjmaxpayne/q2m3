@@ -14,7 +14,7 @@ from q2m3.core.resource_estimation import estimate_qpe_resources_from_integrals
 from q2m3.fragments.integrals import ActiveSpaceIntegrals
 from q2m3.fragments.result import QPE_ESTIMATOR, SQD_ESTIMATOR, ResourceEstimate
 from q2m3.sqd.config import LUCJConfig
-from q2m3.sqd.resources import estimate_rss_mb, load_resource_model
+from q2m3.sqd.resources import estimate_rss_mb, resource_model_for
 
 VERSIONED_PACKAGES = ("q2m3", "pennylane")
 QPE_SCOPE = (
@@ -58,7 +58,7 @@ def sqd_estimate(
     """
     lucj = lucj or LUCJConfig()
     norb, nelec = integrals.record.ncas, integrals.nelec
-    model = load_resource_model(profile={"n_reps": lucj.n_reps, "shots": lucj.shots})
+    model = resource_model_for(norb, profile={"n_reps": lucj.n_reps, "shots": lucj.shots})
     values = {
         "model_id": model.model_id,
         "qubits": 2 * norb,

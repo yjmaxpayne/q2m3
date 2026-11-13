@@ -12,7 +12,7 @@ import numpy as np
 
 from q2m3.sqd.config import _finite, _integer, _real_array, validate_active_space
 from q2m3.sqd.exceptions import ReferenceNumericalError, SamplingIntegrityError
-from q2m3.sqd.resources import addon_subspace_bound, guard_allocation, load_resource_model
+from q2m3.sqd.resources import addon_subspace_bound, guard_allocation, resource_model_for
 from q2m3.sqd.sampling import validate_samples
 
 
@@ -135,7 +135,7 @@ def kernel_fixed_space(
     """
     validate_active_space(norb, nelec)
     dims = _strings(ci_strings, norb, nelec)
-    model = load_resource_model(profile={"max_space": 12})
+    model = resource_model_for(norb, profile={"max_space": 12})
     estimate = guard_allocation(
         norb,
         nelec,
@@ -278,14 +278,15 @@ def _diagonalize_recoverable_samples(
     _integer(samples_per_batch, "samples_per_batch", 1)
     if samples_per_batch > len(samples):
         raise ValueError("samples_per_batch cannot exceed shots")
-    model = load_resource_model(
+    model = resource_model_for(
+        norb,
         profile=dict(
             shots=len(samples),
             num_batches=num_batches,
             max_iterations=max_iterations,
             max_space=12,
             carryover_threshold="0",
-        )
+        ),
     )
     audit = []
 

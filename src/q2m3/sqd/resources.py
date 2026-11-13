@@ -19,13 +19,14 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from q2m3.sqd.config import validate_active_space
-from q2m3.sqd.exceptions import ResourceLimitError, ResourceModelDomainError
+from q2m3.sqd.exceptions import AllocationGuardError, ResourceModelDomainError
 
 Stage = Literal["integrals", "ccsd", "prepare", "sample", "diagonalize", "reference", "comparison"]
 STAGES = ("integrals", "ccsd", "prepare", "sample", "diagonalize", "reference", "comparison")
 WARN_RSS_MB = 2048.0
 REJECT_RSS_MB = 8192.0
 HARD_RSS_MB = 12288.0
+ORBITAL_LIMIT = 14
 
 
 class ResourceModel(Protocol):
@@ -157,7 +158,7 @@ def guard_allocation(
         The checked estimate in decimal MB.
 
     Raises:
-        ResourceLimitError: Estimate reaches any applicable rejection boundary.
+        AllocationGuardError: Estimate reaches any applicable rejection boundary.
         ResourceModelDomainError: No applicable bound exists, even with override.
     """
     if not isinstance(allow_large, bool):
@@ -192,7 +193,7 @@ def guard_allocation(
         f"nelec={nelec}, subspace_dims={subspace_dims}, stage={stage}, model={model.model_id}"
     )
     if predicted >= budget:
-        raise ResourceLimitError(context)
+        raise AllocationGuardError(context)
     if predicted >= WARN_RSS_MB:
         warnings.warn(
             f"RSS reaches 2048 MB warning boundary: {context}", RuntimeWarning, stacklevel=2
@@ -256,6 +257,59 @@ def workspace_features(
     )
 
 
+def _reference_dims(
+    norb: int, nelec: tuple[int, int], solver_method: str | None
+) -> tuple[int, int]:
+    if solver_method not in ("exact_casci", "selected_ci_pyscf"):
+        raise ResourceModelDomainError(f"Uncalibrated solver_method={solver_method}")
+    return addon_subspace_bound(norb, nelec)
+
+
+def check_orbital_limit(norb: int) -> None:
+    """Reject an active space above the supported orbital limit before allocation.
+
+    Args:
+        norb: Active spatial orbitals. Other validators check non-integer values.
+
+    Raises:
+        ResourceModelDomainError: norb is an integer above ORBITAL_LIMIT.
+    """
+    if isinstance(norb, Integral) and norb > ORBITAL_LIMIT:
+        raise ResourceModelDomainError(f"norb={norb} exceeds the orbital limit {ORBITAL_LIMIT}")
+
+
+@dataclass(frozen=True)
+class AllocationPriorModel:
+    """Allocation prior for 11-14 active orbitals, outside the calibrated domain.
+
+    It uses the calibrated workspace features and one coefficient set for all stages.
+    The subspace coefficient is half of the other slopes. One N2 measurement per size
+    checks this prior. It is not a calibration, so executors must still enforce
+    the measured process-tree RSS cap.
+    """
+
+    model_id: str = "allocation-prior-norb14-v1"
+    coefficients: tuple[float, ...] = (1024.0, 1.25, 1.25, 0.625, 1.25)
+
+    def upper_bound_mb(
+        self,
+        norb: int,
+        nelec: tuple[int, int],
+        *,
+        stage: Stage,
+        subspace_dims: tuple[int, int] | None,
+        retained_mb: float,
+        solver_method: str | None,
+    ) -> float:
+        """Evaluate the prior. Reject orbital counts outside 11-14."""
+        if not 11 <= norb <= ORBITAL_LIMIT:
+            raise ResourceModelDomainError(f"model={self.model_id}: norb={norb} is outside 11-14")
+        if stage == "reference":
+            subspace_dims = _reference_dims(norb, nelec, solver_method)
+        features = workspace_features(norb, nelec, subspace_dims)
+        return retained_mb + sum(c * x for c, x in zip(self.coefficients, features, strict=True))
+
+
 @dataclass(frozen=True)
 class CalibratedResourceModel:
     """Immutable coefficients for a version-checked serial workload."""
@@ -285,9 +339,7 @@ class CalibratedResourceModel:
                 f"model={self.model_id}: norb={norb}, nelec={nelec} outside calibration"
             )
         if stage == "reference":
-            if solver_method not in ("exact_casci", "selected_ci_pyscf"):
-                raise ResourceModelDomainError(f"Uncalibrated solver_method={solver_method}")
-            subspace_dims = addon_subspace_bound(norb, nelec)
+            subspace_dims = _reference_dims(norb, nelec, solver_method)
         if subspace_dims and max(subspace_dims) > self.max_sector_dim:
             raise ResourceModelDomainError(f"Uncalibrated subspace_dims={subspace_dims}")
         coefficients = dict(self.coefficients)[stage]
@@ -359,3 +411,23 @@ def load_resource_model(
         return CalibratedResourceModel(data["model_id"], tuple(rows), **data["domain"])
     except (OSError, ValueError, KeyError, TypeError, PackageNotFoundError) as exc:
         raise ResourceModelDomainError(f"Cannot load RSS model: {exc}") from exc
+
+
+def resource_model_for(norb: int, *, profile: Mapping[str, object] | None = None) -> ResourceModel:
+    """Select the RSS model for an active-space size.
+
+    Args:
+        norb: Active spatial orbitals.
+        profile: Workload overrides to check against the calibration profile.
+
+    Returns:
+        The calibrated model for up to 10 orbitals. The allocation prior for 11-14
+        orbitals, after the same environment and workload checks.
+
+    Raises:
+        ResourceModelDomainError: norb is above 14, or the environment or workload
+            is outside the calibration.
+    """
+    check_orbital_limit(norb)
+    calibrated = load_resource_model(profile=profile)
+    return calibrated if norb <= 10 else AllocationPriorModel()

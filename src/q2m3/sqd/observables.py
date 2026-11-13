@@ -27,6 +27,7 @@ from q2m3.sqd.config import (
 )
 from q2m3.sqd.diagonalize import DiagonalizationResult, _strings, kernel_fixed_space
 from q2m3.sqd.exceptions import (
+    AllocationGuardError,
     ComparisonUnavailableError,
     ProvenanceMismatchError,
     ReferenceNumericalError,
@@ -34,7 +35,7 @@ from q2m3.sqd.exceptions import (
     ResourceLimitError,
 )
 from q2m3.sqd.reference import _positive, _rss_mb, _supervise
-from q2m3.sqd.resources import guard_allocation, load_resource_model
+from q2m3.sqd.resources import guard_allocation, resource_model_for
 from q2m3.sqd.result import ReferenceResult
 from q2m3.sqd.sampling import validate_samples
 
@@ -46,18 +47,20 @@ class ComparisonResult:
     Energies include the supplied core constant once, in Hartree. Timings include
     pool construction and physical seed/returned SQD verification. Saturation
     points count sampled pairs, whereas subspace_dim is a Cartesian product.
+    When a pre-allocation guard rejects the comparisons, the comparison fields are
+    None and each has a comparison_rss_budget reason.
     """
 
     sqd_energy: float
     iso_active_space_ccsd_energy: float
-    iso_ndet_sci_energy: float
+    iso_ndet_sci_energy: float | None
     iso_ndet_random_energy: float | None
     delta_mHa: float
-    delta_vs_sci_mHa: float
+    delta_vs_sci_mHa: float | None
     ratio_sqd_over_sci: float | None
     subspace_dims: tuple[int, int]
     subspace_dim: int
-    unique_dets_vs_shots: tuple[tuple[int, int], ...]
+    unique_dets_vs_shots: tuple[tuple[int, int], ...] | None
     hamiltonian_id: str
     frame_id: str
     seed: int
@@ -334,7 +337,7 @@ class _ComparisonWorker:
             host_available_mb=cap,
             rss_budget_mb=cap,
         )
-        model = load_resource_model(profile={"max_space": 12, "shots": len(samples)})
+        model = resource_model_for(norb, profile={"max_space": 12, "shots": len(samples)})
         audit = []
         full_dims = tuple(math.comb(norb, n) for n in nelec)
         # Includes curve/set Python objects, selection CI, rankings and full hdiag,
@@ -505,13 +508,15 @@ def run_comparisons(
 
     Returns:
         Immutable four-arm values, selection trace, seeds and allocation evidence.
+        When a pre-allocation guard rejects the comparisons, the comparison fields
+        are None with a comparison_rss_budget reason, and the SQD fields remain.
 
     Raises:
         ComparisonUnavailableError: Exact per-spin matching is impossible.
         ProvenanceMismatchError: Reference and inputs have different provenance.
         ReferenceNumericalError: A numerical or returned SQD consistency check fails.
         ReferenceTimeoutError: The shared wall deadline is exhausted.
-        ResourceLimitError: A preflight or runtime RSS guard is exceeded.
+        ResourceLimitError: The measured process-tree RSS reaches its cap.
     """
     started = monotonic()
     for name, value in (
@@ -555,6 +560,74 @@ def run_comparisons(
         raise ReferenceNumericalError("Invalid SQD amplitudes")
     _finite(sqd.energy, "sqd.energy")
     _finite(sqd.electronic_energy, "sqd.electronic_energy")
+    try:
+        raw, peak = _supervised_comparisons(
+            h1,
+            h2,
+            e_core,
+            norb=norb,
+            nelec=nelec,
+            context=context,
+            seed_data=seed_data,
+            sqd=sqd,
+            samples=samples,
+            seed=seed,
+            cap=cap,
+            retained_mb=retained_mb,
+            deadline=deadline,
+        )
+    except AllocationGuardError as exc:
+        return _budget_rejected(sqd, seed_data, reference, context, dims, seed, started, exc)
+    scalar = summarize_observables(
+        sqd_energy=sqd.energy,
+        sci_energy=raw["sci_energy"],
+        random_energy=raw["random_energy"],
+        hf_energy=seed_data.hf_energy,
+        baseline_energy=reference.energy,
+        baseline_tier=reference.tier,
+        random_reason=raw["random_reason"],
+    )
+    scalar["diagnostics"].update(
+        sci_selection=raw["trace"],
+        random_seed=seed,
+        sqd_projected_residual_ha=raw["sqd_residual_ha"],
+    )
+    return ComparisonResult(
+        sqd_energy=sqd.energy,
+        iso_active_space_ccsd_energy=seed_data.ccsd_energy,
+        iso_ndet_sci_energy=raw["sci_energy"],
+        iso_ndet_random_energy=raw["random_energy"],
+        subspace_dims=dims,
+        subspace_dim=math.prod(dims),
+        unique_dets_vs_shots=raw["curve"],
+        hamiltonian_id=context.hamiltonian_id,
+        frame_id=context.frame_id,
+        seed=seed,
+        ci_strings=raw["ci_strings"],
+        allocation_audit=raw["audit"],
+        comparison_wall_s=monotonic() - started,
+        peak_rss_mb=peak,
+        **scalar,
+    )
+
+
+def _supervised_comparisons(
+    h1,
+    h2,
+    e_core,
+    *,
+    norb,
+    nelec,
+    context,
+    seed_data,
+    sqd,
+    samples,
+    seed,
+    cap,
+    retained_mb,
+    deadline,
+):
+    """Run the guarded comparison worker. Return its raw values and peak RSS."""
     from q2m3.sqd.ansatz import _SeedInventory
 
     # Fork inherits all parent inputs; both process baselines stay live.
@@ -568,7 +641,7 @@ def run_comparisons(
         host_available_mb=cap,
         rss_budget_mb=cap,
     )
-    model = load_resource_model(profile={"max_space": 12, "shots": len(samples)})
+    model = resource_model_for(norb, profile={"max_space": 12, "shots": len(samples)})
     full_dims = tuple(math.comb(norb, n) for n in nelec)
     pool_mb = (
         512 * len(samples)
@@ -607,34 +680,39 @@ def run_comparisons(
         deadline,
         cap,
     )
-    scalar = summarize_observables(
-        sqd_energy=sqd.energy,
-        sci_energy=raw["sci_energy"],
-        random_energy=raw["random_energy"],
-        hf_energy=seed_data.hf_energy,
-        baseline_energy=reference.energy,
-        baseline_tier=reference.tier,
-        random_reason=raw["random_reason"],
-    )
-    scalar["diagnostics"].update(
-        sci_selection=raw["trace"],
-        random_seed=seed,
-        sqd_projected_residual_ha=raw["sqd_residual_ha"],
+    return raw, peak
+
+
+def _budget_rejected(sqd, seed_data, reference, context, dims, seed, started, error):
+    """Keep the SQD-side values when a pre-allocation guard rejects the comparisons."""
+    gap = sqd.energy - reference.energy
+    if reference.tier == "T0" and gap < -1e-10:
+        raise ReferenceNumericalError("Variational comparison below exact baseline")
+    absent = (
+        "iso_ndet_sci_energy",
+        "iso_ndet_random_energy",
+        "delta_vs_sci_mHa",
+        "ratio_sqd_over_sci",
+        "unique_dets_vs_shots",
     )
     return ComparisonResult(
         sqd_energy=sqd.energy,
         iso_active_space_ccsd_energy=seed_data.ccsd_energy,
-        iso_ndet_sci_energy=raw["sci_energy"],
-        iso_ndet_random_energy=raw["random_energy"],
+        delta_mHa=1000 * gap,
         subspace_dims=dims,
         subspace_dim=math.prod(dims),
-        unique_dets_vs_shots=raw["curve"],
         hamiltonian_id=context.hamiltonian_id,
         frame_id=context.frame_id,
         seed=seed,
-        ci_strings=raw["ci_strings"],
-        allocation_audit=raw["audit"],
+        ci_strings={
+            "sqd": tuple(tuple(map(int, s)) for s in sqd.ci_strings),
+            "sci": None,
+            "random": None,
+        },
+        diagnostics={},
+        null_reasons=dict.fromkeys(absent, f"comparison_rss_budget: {error}"),
+        allocation_audit=(),
         comparison_wall_s=monotonic() - started,
-        peak_rss_mb=peak,
-        **scalar,
+        peak_rss_mb=getattr(error, "peak_rss_mb", None) or _rss_mb(os.getpid()),
+        **dict.fromkeys(absent),
     )

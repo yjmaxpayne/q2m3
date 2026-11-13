@@ -248,7 +248,7 @@ def build_reference_candidates(
     import os
 
     from q2m3.sqd.exceptions import ResourceModelDomainError
-    from q2m3.sqd.resources import estimate_rss_mb, load_resource_model
+    from q2m3.sqd.resources import estimate_rss_mb, resource_model_for
 
     validate_active_space(norb, nelec)
     config.validate()
@@ -263,7 +263,7 @@ def build_reference_candidates(
             model = (
                 _TriplesInventory()
                 if tier == "T2"
-                else load_resource_model(profile={"max_space": 12})
+                else resource_model_for(norb, profile={"max_space": 12})
             )
             if tier == "T1" and config.sci_cutoffs != (1e-4, 1e-5):
                 raise ResourceModelDomainError("Selected-CI cutoffs outside calibrated profile")
@@ -376,7 +376,7 @@ class _PySCFReferenceSolver:
         from pyscf import fci, lib
 
         from q2m3.sqd.exceptions import ReferenceNumericalError, ReferenceTimeoutError
-        from q2m3.sqd.resources import guard_allocation, load_resource_model
+        from q2m3.sqd.resources import guard_allocation, resource_model_for
         from q2m3.sqd.result import T1Residual
 
         if lib.num_threads() != 1:
@@ -386,7 +386,7 @@ class _PySCFReferenceSolver:
         model = (
             _TriplesInventory()
             if self.method == "ccsd_t"
-            else load_resource_model(profile={"max_space": 12})
+            else resource_model_for(norb, profile={"max_space": 12})
         )
 
         def guard():
@@ -545,6 +545,7 @@ def _supervise(solver, args, kwargs, deadline, rss_cap):
     from time import monotonic, sleep
 
     from q2m3.sqd.exceptions import (
+        AllocationGuardError,
         ReferenceNumericalError,
         ReferenceTimeoutError,
         ResourceLimitError,
@@ -555,7 +556,7 @@ def _supervise(solver, args, kwargs, deadline, rss_cap):
     process = ctx.Process(target=_worker, args=(sender, solver, args, kwargs))
     start, peak = monotonic(), _rss_mb(os.getpid())
     if peak >= rss_cap:
-        raise ResourceLimitError("Reference parent already reaches RSS cap")
+        raise AllocationGuardError("Reference parent already reaches RSS cap")
     process.start()
     sender.close()
     try:
@@ -649,6 +650,7 @@ def run_reference(
 
     from q2m3.sqd.config import validate_integral_inputs
     from q2m3.sqd.exceptions import (
+        AllocationGuardError,
         ReferenceNumericalError,
         ReferenceTimeoutError,
         ReferenceUnavailableError,
@@ -678,7 +680,7 @@ def run_reference(
     cap = min(caps)
     _positive(retained_mb, "retained_mb", zero=True)
     if _rss_mb(os.getpid()) + retained_mb >= cap:
-        raise ResourceLimitError("Reference retained parent memory exceeds cap")
+        raise AllocationGuardError("Reference retained parent memory exceeds cap")
     validate_integral_inputs(
         h1,
         h2,
@@ -758,12 +760,12 @@ def run_reference(
         if getattr(solver, "method", None) != plan.method:
             raise ValueError("Registered solver identity differs from selected method")
         if plan.tier != "T1+":
-            from q2m3.sqd.resources import guard_allocation, load_resource_model
+            from q2m3.sqd.resources import guard_allocation, resource_model_for
 
             model = (
                 _TriplesInventory()
                 if plan.tier == "T2"
-                else load_resource_model(profile={"max_space": 12})
+                else resource_model_for(norb, profile={"max_space": 12})
             )
             guard_allocation(
                 norb,

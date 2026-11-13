@@ -5,6 +5,10 @@ class ResourceLimitError(RuntimeError):
     """A run exceeds its allowed resource budget."""
 
 
+class AllocationGuardError(ResourceLimitError):
+    """A guard rejects an operation before allocation. Use it only for that case."""
+
+
 class ResourceModelDomainError(ResourceLimitError):
     """No calibrated resource bound applies to the requested operation."""
 

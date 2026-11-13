@@ -408,3 +408,64 @@ def test_supplied_integrals_and_seed_do_not_fabricate_local_timings(factory):
         data["null_reasons"][f"timings_s.{stage}"] = "supplied_integrals_and_seed"
     data["provenance"]["seed_source"] = "supplied_seed"
     assert SQDResult(**data).validate().iso_active_space_ccsd_energy == -1.13
+
+
+COMPARISON_FIELDS = (
+    "iso_ndet_sci_energy",
+    "iso_ndet_random_energy",
+    "delta_vs_sci_mHa",
+    "ratio_sqd_over_sci",
+    "unique_dets_vs_shots",
+)
+BUDGET_REASON = "comparison_rss_budget: predicted=9000.0 MB, budget=8192.0 MB"
+
+
+def budget_rejected_data():
+    data = result_data()
+    for name in COMPARISON_FIELDS:
+        data[name] = None
+        data["null_reasons"][name] = BUDGET_REASON
+    return data
+
+
+def test_completed_result_accepts_comparison_budget_rejection():
+    result = SQDResult(**budget_rejected_data()).validate()
+    assert result.status == "completed"
+    assert result.delta_mHa == 20.0
+    assert all(getattr(result, name) is None for name in COMPARISON_FIELDS)
+
+
+@pytest.mark.parametrize("name", COMPARISON_FIELDS)
+def test_comparison_budget_fields_require_budget_reason(name):
+    data = budget_rejected_data()
+    data["null_reasons"][name] = "not_applicable"
+    with pytest.raises(ValueError, match=name):
+        SQDResult(**data).validate()
+    del data["null_reasons"][name]
+    with pytest.raises(ValueError, match=name):
+        SQDResult(**data).validate()
+
+
+@pytest.mark.parametrize(
+    "name", ["iso_ndet_sci_energy", "delta_vs_sci_mHa", "unique_dets_vs_shots"]
+)
+def test_partial_comparison_absence_is_value_error(name):
+    data = result_data()
+    data[name] = None
+    data["null_reasons"][name] = "x"
+    with pytest.raises(ValueError, match=name):
+        SQDResult(**data).validate()
+
+
+def test_budget_reason_requires_absent_value():
+    data = budget_rejected_data()
+    data["iso_ndet_sci_energy"] = -1.11
+    with pytest.raises(ValueError, match="iso_ndet_sci_energy"):
+        SQDResult(**data).validate()
+
+
+def test_null_result_keeps_exact_baseline_variational_bound():
+    data = budget_rejected_data()
+    data.update(sqd_energy=-1.15, delta_mHa=-10.0)
+    with pytest.raises(ValueError, match="variational"):
+        SQDResult(**data).validate()

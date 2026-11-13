@@ -8,6 +8,7 @@ import pytest
 from q2m3.molecule import MoleculeConfig
 from q2m3.sqd.config import (
     CCSDSeed,
+    ExtSQDSettings,
     IntegralContext,
     LUCJConfig,
     ReferenceConfig,
@@ -381,3 +382,64 @@ def test_pure_type_import_and_use_with_optional_backend_imports_blocked():
         [sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=60
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {},
+        {"order": 1},
+        {"order": 3},
+        {"threshold": 0.0},
+        {"seed_sources": ("quantum", "hf", "cisd", "random")},
+    ],
+)
+def test_ext_settings_accepts_the_documented_domain(values):
+    settings = ExtSQDSettings(**values)
+    assert settings.validate() is settings
+    default = ExtSQDSettings()
+    assert (default.order, default.threshold, default.seed_sources) == (2, 1e-3, ("quantum",))
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("order", 0),
+        ("order", 4),
+        # bool is an int subclass; True would silently mean order 1.
+        ("order", True),
+        ("order", 2.0),
+        ("order", "2"),
+        ("threshold", -1.0),
+        ("threshold", float("nan")),
+        ("threshold", float("inf")),
+        ("threshold", None),
+        ("threshold", "1e-3"),
+        # A list is mutable and a string iterates over its characters.
+        ("seed_sources", ["quantum"]),
+        ("seed_sources", "quantum"),
+        ("seed_sources", ()),
+        ("seed_sources", ("quantum", "quantum")),
+        ("seed_sources", ("qpe",)),
+    ],
+)
+def test_ext_settings_rejects_out_of_domain_values(field, value):
+    with pytest.raises(ValueError, match=field):
+        ExtSQDSettings(**{field: value}).validate()
+
+
+def test_ext_settings_are_frozen():
+    with pytest.raises(FrozenInstanceError):
+        ExtSQDSettings().order = 3
+
+
+@pytest.mark.parametrize("value", [None, 1, 30, 512])
+def test_lucj_samples_per_batch_accepts_none_or_a_count_up_to_shots(value):
+    assert LUCJConfig(shots=512, samples_per_batch=value).validate().samples_per_batch == value
+
+
+@pytest.mark.parametrize("value", [0, True, 2.5, 513])
+def test_lucj_samples_per_batch_rejects_values_outside_one_to_shots(value):
+    # The config rejects the value itself, before any sampling starts.
+    with pytest.raises(ValueError, match="samples_per_batch"):
+        LUCJConfig(shots=512, samples_per_batch=value).validate()

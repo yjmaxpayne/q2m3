@@ -178,7 +178,7 @@ def test_helper_geometry_low_and_complete_public_json(chains, mode, tmp_path):
     save_json_results(high, path)
     payload = json.loads(path.read_text())
     assert set(payload) == {f.name for f in fields(SQDResult)}
-    assert len(payload) == 40
+    assert len(payload) == 42
     source = payload["provenance"]["context"]["source"]
     assert source["mm_charges"] == CHARGES.tolist()
     assert source["mm_coords_angstrom"] == MM_COORDS.tolist()

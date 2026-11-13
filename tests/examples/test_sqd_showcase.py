@@ -33,7 +33,7 @@ def _validate_saved_run(directory: Path, *, require_t0: bool = False) -> list[di
             if csv_row[key] != ("" if value is None else str(value)):
                 raise ValueError(f"CSV mismatch: {key}")
         data = json.loads((directory / row["result_file"]).read_text())
-        if len(data) != 40 or data["schema_version"] != "sqd.result.v1":
+        if len(data) != 42 or data["schema_version"] != "sqd.result.v1":
             raise ValueError("Incomplete public result")
         for key in (
             "baseline_tier",
@@ -309,7 +309,7 @@ def test_real_h2_tutorial_matches_independent_casci(tmp_path):
     result = json.loads((directory / "result.json").read_text())
     mol = gto.M(atom="H 0 0 0; H 0 0 0.74", basis="sto-3g", verbose=0)
     exact = float(mcscf.CASCI(scf.RHF(mol).run(), 2, 2).kernel()[0])
-    assert len(result) == 40
+    assert len(result) == 42
     assert result["baseline_tier"] == "T0"
     assert result["subspace_dim"] == result["full_ci_dim"] == 4
     assert result["sqd_energy"] == pytest.approx(exact, abs=1e-8)

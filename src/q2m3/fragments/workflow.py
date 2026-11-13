@@ -35,7 +35,7 @@ from q2m3.fragments.result import (
     references_by_category,
 )
 from q2m3.fragments.sqd_stage import SQDJob, SQDStageOutcome, SubprocessSQDRunner
-from q2m3.sqd.config import LUCJConfig, ReferenceConfig
+from q2m3.sqd.config import ExtSQDSettings, LUCJConfig, ReferenceConfig
 from q2m3.sqd.result import SQDResult
 
 MODES = ("full", "classical_only")
@@ -78,6 +78,7 @@ def run(
     lucj: Any = None,
     reference: Any = None,
     ccsd_t_budget: Any = None,
+    ext_sqd: ExtSQDSettings | None = None,
 ) -> FragmentInteractionResult | SubsystemResult:
     """Compute counterpoise-corrected interaction energies of ``molecule``.
 
@@ -94,11 +95,17 @@ def run(
     fragment id and ``basis`` of this run, and ``ExternalReference`` records. They form
     the active-space, basis and model error terms of a dimer result.
 
+    ``ext_sqd`` is one ``ExtSQDSettings`` object or None. Full mode passes the same
+    object to the SQD job of every subsystem.
+
     Raises:
         TypeError: ``avas_labels`` is not a sequence of strings, ``avas_threshold`` is
-            not a real number, or ``references`` is a single string or path.
+            not a real number, ``references`` is a single string or path, or ``ext_sqd``
+            is neither None nor an ``ExtSQDSettings`` object (for example a mapping per
+            subsystem).
         ValueError: ``mode`` is not ``"full"`` or ``"classical_only"``, an AVAS label is
-            malformed or matches no AO, or ``references`` is given for a single molecule.
+            malformed or matches no AO, ``references`` is given for a single molecule,
+            or ``ext_sqd`` has an invalid setting.
         ImportError: ``mode="full"`` and the optional ``sqd`` backend is missing.
         ReferenceImportError: A reference file violates the import format, or two
             references share a category.
@@ -108,6 +115,10 @@ def run(
             dimer active space.
     """
     labels, threshold = _checked_avas(avas_labels, avas_threshold)
+    if ext_sqd is not None:
+        if not isinstance(ext_sqd, ExtSQDSettings):
+            raise TypeError(f"ext_sqd must be ExtSQDSettings or None, got {type(ext_sqd)}")
+        ext_sqd.validate()
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
     if mode == "full" and not extra_available("sqd"):
@@ -136,7 +147,7 @@ def run(
             for name, sub in subsystems.items()
         }
         lucj = lucj or LUCJConfig()
-        outcome = _run_sqd_stage(integrals, lucj, reference or ReferenceConfig(), seed)
+        outcome = _run_sqd_stage(integrals, lucj, reference or ReferenceConfig(), seed, ext_sqd)
         results = {
             name: _full_result(results[name], integrals[name], sqd, basis, lucj, ccsd_t)
             for name, sqd in zip(integrals, outcome.results, strict=True)
@@ -300,9 +311,12 @@ def _run_sqd_stage(
     lucj: LUCJConfig,
     reference: ReferenceConfig,
     seed: int,
+    ext_sqd: ExtSQDSettings | None,
 ) -> SQDStageOutcome:
     jobs = [
-        SQDJob(i.h1, i.h2, i.e_core, i.record.ncas, i.nelec, i.context, lucj, reference, seed)
+        SQDJob(
+            i.h1, i.h2, i.e_core, i.record.ncas, i.nelec, i.context, lucj, reference, seed, ext_sqd
+        )
         for i in integrals.values()
     ]
     return _make_runner().run(jobs)

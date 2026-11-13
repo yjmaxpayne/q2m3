@@ -20,6 +20,8 @@ REFERENCE_ONLY_FIELDS = (
     "n_reps",
     "shots",
     "backend",
+    "samples_per_batch",
+    "ext_sqd",
 )
 
 
@@ -82,8 +84,11 @@ def result_data():
             "baseline_t1_residual": "not_t1",
             "t1_diagnostic": "not_t2",
             "t2_diagnostics": "not_t2",
+            "ext_sqd": "ext_sqd_disabled",
         },
         warnings=(),
+        samples_per_batch=5,
+        ext_sqd=None,
     )
 
 
@@ -99,12 +104,55 @@ def reference_only_data():
     return data
 
 
-def test_result_has_exactly_forty_fields_and_returns_self():
+def test_result_has_exactly_forty_two_fields_and_returns_self():
     result = SQDResult(**result_data())
-    assert len(fields(result)) == 40
+    assert len(fields(result)) == 42
     assert result.validate() is result
     with pytest.raises(FrozenInstanceError):
         result.seed = 1
+
+
+def test_ext_sqd_absence_reason_is_bound_to_status():
+    completed = SQDResult(**result_data()).validate()
+    assert completed.ext_sqd is None
+    assert completed.null_reasons["ext_sqd"] == "ext_sqd_disabled"
+    reference_only = SQDResult(**reference_only_data()).validate()
+    assert reference_only.null_reasons["ext_sqd"] == "reference_only"
+
+    data = result_data()
+    data["null_reasons"]["ext_sqd"] = "not_applicable"
+    with pytest.raises(ValueError, match="ext_sqd"):
+        SQDResult(**data).validate()
+    data = reference_only_data()
+    data["null_reasons"]["ext_sqd"] = "ext_sqd_disabled"
+    with pytest.raises(ValueError, match="ext_sqd"):
+        SQDResult(**data).validate()
+    # A present record with an absence reason contradicts itself.
+    data = result_data()
+    data["ext_sqd"] = object()
+    with pytest.raises(ValueError, match="ext_sqd"):
+        SQDResult(**data).validate()
+
+
+@pytest.mark.parametrize(
+    ("name", "value"), [("samples_per_batch", 5), ("ext_sqd", object())], ids=["batch", "ext"]
+)
+def test_reference_only_result_rejects_sampling_and_extension_values(name, value):
+    data = reference_only_data()
+    data[name] = value
+    del data["null_reasons"][name]
+    with pytest.raises(ValueError, match=name):
+        SQDResult(**data).validate()
+
+
+@pytest.mark.parametrize("value", [None, 0, 11])
+def test_completed_result_requires_a_valid_samples_per_batch(value):
+    data = result_data()
+    assert data["shots"] == 10
+    data["samples_per_batch"] = value
+    data["null_reasons"]["samples_per_batch"] = "not_applicable"
+    with pytest.raises(ValueError, match="samples_per_batch"):
+        SQDResult(**data).validate()
 
 
 def test_result_deep_snapshot_survives_input_mutation():
@@ -378,6 +426,8 @@ def test_sqd_result_strict_json_roundtrip_preserves_fields_and_absence(tmp_path,
         "timings_s",
         "null_reasons",
         "warnings",
+        "samples_per_batch",
+        "ext_sqd",
     }
     assert {field.name for field in fields(result)} == expected == set(loaded)
     assert loaded["diagnostics"]["nested_record"]["reason"] == "paired_cutoff_not_run"

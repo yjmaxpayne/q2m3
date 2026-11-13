@@ -76,11 +76,11 @@ class FlipsAfter:
         return self.n < 0
 
 
-def test_sqd_result_round_trip_keeps_all_forty_fields():
+def test_sqd_result_round_trip_keeps_all_forty_two_fields():
     result = SQDResult(**result_data())
     decoded = decode_result(encode_result(result))
     assert type(decoded) is SQDResult
-    assert len(fields(decoded)) == 40
+    assert len(fields(decoded)) == 42
     assert_same(decoded, result)
 
 

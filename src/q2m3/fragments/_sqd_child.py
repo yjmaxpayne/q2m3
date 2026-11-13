@@ -82,7 +82,9 @@ def solve(job: dict[str, Any]) -> SQDResult:
     Raises:
         ResourceLimitError: No memory is left for the job after the current RSS.
     """
-    context, lucj, reference = (decode_result(job[key]) for key in ("context", "lucj", "reference"))
+    context, lucj, reference, ext_sqd = (
+        decode_result(job[key]) for key in ("context", "lucj", "reference", "ext_sqd")
+    )
     available = host_available_mb(reference.rss_budget_mb)
     if available <= 0:
         raise ResourceLimitError(f"No memory left for the SQD job: host_available_mb={available}")
@@ -101,6 +103,7 @@ def solve(job: dict[str, Any]) -> SQDResult:
         reference=reference,
         seed=job["seed"],
         mode="full",
+        ext_sqd=ext_sqd,
     )
 
 

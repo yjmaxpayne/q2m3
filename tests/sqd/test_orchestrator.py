@@ -44,6 +44,8 @@ def test_geometry_reference_only_roundtrip(tmp_path):
     assert result.sqd_energy is None
     assert result.backend is None
     assert result.null_reasons["shots"] == "reference_only"
+    assert result.null_reasons["samples_per_batch"] == "reference_only"
+    assert result.null_reasons["ext_sqd"] == "reference_only"
     assert result.diagnostics["resources"]["peak_rss_mb"] > 0
     path = tmp_path / "reference.json"
     save_json_results(result, path)
@@ -112,7 +114,50 @@ def test_full_high_low_same_frame_seed(h2_data, tmp_path):
     assert result.diagnostics["diagonalization_allocations"]
     path = tmp_path / "full.json"
     save_json_results(result, path)
-    assert len(json.loads(path.read_text())) == 40
+    assert len(json.loads(path.read_text())) == 42
+
+
+# SQD energy of the H2 fixture with LUCJConfig(n_reps=2, shots=512) and seed 31, before
+# samples_per_batch could be requested. The recovery batch size was then min(300, shots).
+H2_SQD_ENERGY_DEFAULT_BATCH = -1.1269862504414256
+
+
+# Diagonalization runs in a supervised worker process, so a spy in this process cannot
+# see the library call. The recorded value is the one the library received
+# (test_recovery_records_the_batch_size_the_library_received).
+def test_default_samples_per_batch_keeps_head_energy_and_records_actual_value(h2_data):
+    from q2m3.sqd.config import LUCJConfig
+
+    result = low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31)
+    assert_same_energy(result.sqd_energy, H2_SQD_ENERGY_DEFAULT_BATCH)
+    assert result.samples_per_batch == 300 and type(result.samples_per_batch) is int
+    assert result.provenance["requested_lucj"]["samples_per_batch"] is None
+    assert result.ext_sqd is None
+    assert result.null_reasons["ext_sqd"] == "ext_sqd_disabled"
+
+
+def test_requested_samples_per_batch_reaches_the_recovery_library(h2_data):
+    from q2m3.sqd.config import LUCJConfig
+
+    result = low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512, samples_per_batch=30), seed=31)
+    assert result.samples_per_batch == 30 and type(result.samples_per_batch) is int
+
+
+def test_integral_entry_validates_ext_sqd_without_running_it(h2_data, monkeypatch):
+    from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
+
+    def no_run(*args, **kwargs):
+        raise AssertionError("an invalid ext_sqd must be rejected before execution")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(mod(), "_run", no_run)
+        for value in ({"AB": ExtSQDSettings()}, LUCJConfig(), ExtSQDSettings(order=0)):
+            with pytest.raises(ValueError, match="ext_sqd|order"):
+                low(*h2_data, ext_sqd=value)
+    # A valid request is accepted. The extension stage does not run yet.
+    result = low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31, ext_sqd=ExtSQDSettings())
+    assert result.ext_sqd is None
+    assert result.null_reasons["ext_sqd"] == "ext_sqd_disabled"
 
 
 @pytest.mark.parametrize("tier", ["T1", "T2"])

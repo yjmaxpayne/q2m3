@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import uuid
-from dataclasses import fields
+from dataclasses import fields, replace
 from pathlib import Path
 
 import pytest
@@ -170,6 +170,26 @@ def test_child_refuses_a_job_without_memory_headroom(monkeypatch, h2_jobs):
         _sqd_child.solve(_job_payload(h2_jobs[0]))
 
 
+def test_child_forwards_ext_sqd_to_the_integral_entry(monkeypatch, h2_jobs):
+    import q2m3.sqd
+    from q2m3.sqd.config import ExtSQDSettings
+
+    calls = []
+
+    def record(*args, **kwargs):
+        calls.append(kwargs)
+        return "result"
+
+    monkeypatch.setattr(_sqd_child, "_rss_mb", lambda: 1.0)
+    monkeypatch.setattr(q2m3.sqd, "build_ccsd_seed_from_integrals", lambda *a, **k: "seed")
+    monkeypatch.setattr(q2m3.sqd, "run_sqd_from_integrals", record)
+    settings = ExtSQDSettings(order=3, threshold=0.0)
+    for job, expected in ((h2_jobs[0], None), (replace(h2_jobs[0], ext_sqd=settings), settings)):
+        assert _sqd_child.solve(_job_payload(job)) == "result"
+        received = calls[-1]["ext_sqd"]
+        assert received == expected and type(received) is type(expected)
+
+
 @pytest.mark.sqd
 def test_real_child_completes_three_small_jobs(child_path):
     # Non-default settings show that each job's own settings reach the solver.
@@ -201,7 +221,7 @@ def test_child_result_matches_an_in_process_run(child_path, tmp_path):
 
     child_fields, child_energies = _comparable(child, tmp_path / "child.json")
     parent_fields, parent_energies = _comparable(parent, tmp_path / "parent.json")
-    assert len(child_fields) + len(child_energies) == len(fields(SQDResult)) == 40
+    assert len(child_fields) + len(child_energies) == len(fields(SQDResult)) == 42
     assert child_fields == parent_fields
     assert child_energies.keys() == parent_energies.keys()
     for name, value in child_energies.items():

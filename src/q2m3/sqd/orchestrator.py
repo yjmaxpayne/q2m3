@@ -21,6 +21,7 @@ from q2m3.molecule import MoleculeConfig
 from q2m3.sqd.ansatz import build_ccsd_seed, build_lucj_from_integrals
 from q2m3.sqd.config import (
     CCSDSeed,
+    ExtSQDSettings,
     IntegralContext,
     LUCJConfig,
     ReferenceConfig,
@@ -365,6 +366,7 @@ def run_sqd_from_integrals(
     seed: int = 0,
     allow_large: bool = False,
     mode: RunMode = "full",
+    ext_sqd: ExtSQDSettings | None = None,
 ) -> SQDResult:
     """Run the same workflow from real chemist integrals and authenticated provenance.
 
@@ -381,17 +383,23 @@ def run_sqd_from_integrals(
         seed: Nonnegative run seed.
         allow_large: Forward supported overrides within existing component caps.
         mode: Full SQD or explicit reference-only calculation.
+        ext_sqd: Configuration-space extension settings. They are validated. The
+            extension stage does not run yet, so ``ext_sqd`` of the result is None.
 
     Returns:
         Validated immutable result, using exactly one copy of e_core in energies.
 
     Raises:
-        ValueError: The declared integral contract is invalid.
+        ValueError: The declared integral contract or ``ext_sqd`` is invalid.
         ResourceModelDomainError: The active space has more than 14 orbitals.
         ResourceLimitError: Predicted or actual resources exceed the budget.
         ReferenceTimeoutError: The total shared deadline expires.
     """
     check_orbital_limit(norb)
+    if ext_sqd is not None:
+        if not isinstance(ext_sqd, ExtSQDSettings):
+            raise ValueError(f"ext_sqd must be ExtSQDSettings or None, got {type(ext_sqd)}")
+        ext_sqd.validate()
     reference = (reference or ReferenceConfig()).validate()
     return _run(
         _execute,
@@ -510,6 +518,7 @@ def _execute(
             host_available_mb=cap,
             rss_budget_mb=cap,
             allow_large=allow_large,
+            samples_per_batch=lucj.samples_per_batch,
             seed=seed,
         )
         timings["diagonalize"] = monotonic() - start
@@ -649,6 +658,7 @@ def _assemble(
             status="completed",
             n_reps=lucj.n_reps,
             shots=lucj.shots,
+            samples_per_batch=diagonalized.samples_per_batch,
             backend="ffsim",
             diagnostics=dict(comparison.diagnostics)
             | {
@@ -684,9 +694,13 @@ def _assemble(
         "n_reps",
         "shots",
         "backend",
+        "samples_per_batch",
+        "ext_sqd",
     ):
         if mode == "reference_only":
             reasons[name] = "reference_only"
+    if mode == "full":
+        reasons["ext_sqd"] = "ext_sqd_disabled"
     if comparison is not None:
         reasons.update(comparison.null_reasons)
     if ref.uncertainty_reason:

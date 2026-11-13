@@ -1,7 +1,7 @@
 SQD result fields
 =================
 
-The following 40 names match the ``sqd.result.v1`` contract. JSON preserves
+The following 42 names match the ``sqd.result.v1`` contract. JSON preserves
 these names and uses ``null`` for Python ``None``. Every absent top-level value
 requires a ``null_reasons`` entry. Required metadata is not omitted. Nested
 objects retain their own units and reasons. A consumer must keep the method,
@@ -139,3 +139,11 @@ tier, downgrade reason and warnings beside the reference energy.
    * - ``warnings``
      - metadata
      - Required warning collection. Every non-T0 baseline has a visible warning
+   * - ``samples_per_batch``
+     - count
+     - Sample count of each recovery batch that the run used. Without a request in
+       ``LUCJConfig`` it is ``min(300, shots)``. Absent in reference-only mode
+   * - ``ext_sqd``
+     - record
+     - Configuration-space extension record. Absent with ``ext_sqd_disabled`` when the
+       extension did not run, and with ``reference_only`` in reference-only mode

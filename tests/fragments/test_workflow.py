@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+from types import SimpleNamespace
 
 import pyscf
 import pytest
@@ -23,6 +24,7 @@ from q2m3.fragments.result import (
     FragmentInteractionResult,
     SubsystemResult,
 )
+from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
 from q2m3.utils.io import save_json_results
 from tests.fragments.conftest import AVAS_SETTINGS, WATER_DIMER
 
@@ -357,3 +359,65 @@ def test_avas_arguments_are_type_checked(monkeypatch, water_dimer, labels, thres
             avas_threshold=threshold,
             mode="classical_only",
         )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [{"AB": ExtSQDSettings()}, [ExtSQDSettings()], LUCJConfig()],
+    ids=["per-subsystem-mapping", "list", "other-config"],
+)
+def test_run_rejects_ext_sqd_that_is_not_one_settings_object(monkeypatch, water_dimer, value):
+    calls: list = []
+
+    def make_runner():
+        calls.append(("make_runner",))
+        return RecordingRunner(calls)
+
+    monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
+    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
+    monkeypatch.setattr(workflow, "_make_runner", make_runner)
+    with pytest.raises(TypeError, match="ext_sqd"):
+        workflow.run(
+            _dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD, ext_sqd=value
+        )
+    assert calls == []
+
+
+def test_run_rejects_invalid_ext_sqd_settings_before_any_scf(monkeypatch, water_dimer):
+    monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
+    monkeypatch.setattr(workflow, "counterpoise", _no_scf)
+    with pytest.raises(ValueError, match="order"):
+        workflow.run(
+            _dimer(water_dimer),
+            avas_labels=LABELS,
+            avas_threshold=THRESHOLD,
+            ext_sqd=ExtSQDSettings(order=0),
+        )
+
+
+class _StopAtSQDStage(Exception):
+    pass
+
+
+def test_run_passes_one_ext_sqd_object_to_every_sqd_job(monkeypatch, water_dimer):
+    jobs: list = []
+
+    class CapturingRunner:
+        def run(self, received):
+            jobs.extend(received)
+            raise _StopAtSQDStage
+
+    space = SimpleNamespace(
+        h1=None, h2=None, e_core=0.0, record=SimpleNamespace(ncas=2), nelec=(1, 1), context=None
+    )
+    monkeypatch.setattr(workflow, "extra_available", lambda extra: True)
+    monkeypatch.setattr(workflow, "run_ccsd_t_stage", lambda *args: None)
+    monkeypatch.setattr(workflow, "build_integrals", lambda *args, **kwargs: space)
+    monkeypatch.setattr(workflow, "_make_runner", CapturingRunner)
+    settings = ExtSQDSettings(order=3, threshold=0.0)
+    with pytest.raises(_StopAtSQDStage):
+        workflow.run(
+            _dimer(water_dimer), avas_labels=LABELS, avas_threshold=THRESHOLD, ext_sqd=settings
+        )
+    assert len(jobs) == 3
+    assert all(job.ext_sqd is settings for job in jobs)

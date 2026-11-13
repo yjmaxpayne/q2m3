@@ -103,7 +103,7 @@ def run_validation(output_dir: Path, *, shots: int = 4096, seed: int = 7) -> dic
         public_path = output_dir / f"{mode}.json"
         save_json_results(result, public_path)
         payload = json.loads(public_path.read_text())
-        # Preserve all 40 fields, including null reasons, attempts, warnings and versions.
+        # Preserve all 42 fields, including null reasons, attempts, warnings and versions.
         save_json_results({"sqd": payload}, output_dir / f"{mode}-downstream.json")
         report["runs"][mode] = {
             "sqd_energy_ha": payload["sqd_energy"],

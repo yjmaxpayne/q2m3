@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 import numpy as np
 
 from q2m3.fragments.errors import FragmentWorkflowError
-from q2m3.sqd.config import IntegralContext, LUCJConfig, ReferenceConfig
+from q2m3.sqd.config import ExtSQDSettings, IntegralContext, LUCJConfig, ReferenceConfig
 from q2m3.sqd.exceptions import ReferenceTimeoutError
 from q2m3.sqd.transport import decode_result, encode_result
 
@@ -69,6 +69,7 @@ class SQDJob:
     lucj: LUCJConfig = dataclasses.field(default_factory=LUCJConfig)
     reference: ReferenceConfig = dataclasses.field(default_factory=ReferenceConfig)
     seed: int = 0
+    ext_sqd: ExtSQDSettings | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -269,7 +270,7 @@ def _job_payload(job: SQDJob) -> dict[str, Any]:
     """Job file content: plain values, and records in the SQD transport encoding."""
     payload = {name: getattr(job, name) for name in ("h1", "h2", "e_core", "norb", "nelec")}
     payload["seed"] = job.seed
-    for name in ("context", "lucj", "reference"):
+    for name in ("context", "lucj", "reference", "ext_sqd"):
         payload[name] = encode_result(getattr(job, name))
     return payload
 

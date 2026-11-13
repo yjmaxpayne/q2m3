@@ -36,6 +36,7 @@ class DiagonalizationResult:
     amplitudes: np.ndarray
     subspace_dims: tuple[int, int]
     allocation_audit: tuple[AllocationAudit, ...]
+    samples_per_batch: int | None = None
 
 
 def _integrals(h1, h2, e_core, norb, nelec):
@@ -74,7 +75,7 @@ def _strings(strings, norb, nelec):
     return tuple(len(s) for s in strings)
 
 
-def _result(energy, constant, strings, amplitudes, audit):
+def _result(energy, constant, strings, amplitudes, audit, samples_per_batch=None):
     dims = tuple(len(s) for s in strings)
     if (
         not np.isfinite(energy)
@@ -95,6 +96,7 @@ def _result(energy, constant, strings, amplitudes, audit):
         frozen(amplitudes),
         dims,
         tuple(audit),
+        samples_per_batch,
     )
 
 
@@ -379,5 +381,10 @@ def _diagonalize_recoverable_samples(
     )
     state = result.sci_state
     return _result(
-        result.energy, e_core, (state.ci_strs_a, state.ci_strs_b), state.amplitudes, audit
+        result.energy,
+        e_core,
+        (state.ci_strs_a, state.ci_strs_b),
+        state.amplitudes,
+        audit,
+        samples_per_batch,
     )

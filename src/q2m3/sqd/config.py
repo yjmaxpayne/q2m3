@@ -76,13 +76,61 @@ def validate_active_space(norb: int, nelec: tuple[int, int]) -> None:
         raise ValueError("SQD requires a closed-shell active space within orbital capacity")
 
 
+EXT_SEED_SOURCES = ("quantum", "hf", "cisd", "random")
+
+
+@dataclass(frozen=True)
+class ExtSQDSettings:
+    """Settings of the configuration-space extension after SQD.
+
+    Attributes:
+        order: Maximum excitation order of the extension, 1, 2 or 3.
+        threshold: Nonnegative finite amplitude threshold that selects the seed strings.
+        seed_sources: Unique nonempty tuple of seed sources, each one of
+            ``"quantum"``, ``"hf"``, ``"cisd"`` and ``"random"``.
+    """
+
+    order: int = 2
+    threshold: float = 1e-3
+    seed_sources: tuple[str, ...] = ("quantum",)
+
+    def validate(self) -> ExtSQDSettings:
+        """Validate the settings, returning this instance.
+
+        Raises:
+            ValueError: A setting has the wrong type or is outside its domain.
+        """
+        _integer(self.order, "order", 1)
+        if self.order > 3:
+            raise ValueError("order must be 1, 2 or 3")
+        _finite(self.threshold, "threshold")
+        if self.threshold < 0:
+            raise ValueError("threshold must be a finite real number >= 0")
+        sources = self.seed_sources
+        if (
+            not isinstance(sources, tuple)
+            or not sources
+            or len(set(sources)) != len(sources)
+            or any(source not in EXT_SEED_SOURCES for source in sources)
+        ):
+            raise ValueError(
+                f"seed_sources must be a nonempty tuple of unique values from {EXT_SEED_SOURCES}"
+            )
+        return self
+
+
 @dataclass(frozen=True)
 class LUCJConfig:
-    """Spin-balanced ansatz and sampling configuration."""
+    """Spin-balanced ansatz and sampling configuration.
+
+    ``samples_per_batch`` sets the sample count of each recovery batch. None uses
+    ``min(300, shots)``.
+    """
 
     n_reps: int = 2
     shots: int = 100_000
     interaction_pairs: tuple[tuple[tuple[int, int], ...] | None, ...] | None = None
+    samples_per_batch: int | None = None
 
     def __post_init__(self) -> None:
         if self.interaction_pairs is not None:
@@ -99,6 +147,10 @@ class LUCJConfig:
         """Validate counts and connectivity structure, returning this instance."""
         _integer(self.n_reps, "n_reps", 1)
         _integer(self.shots, "shots", 1)
+        if self.samples_per_batch is not None:
+            _integer(self.samples_per_batch, "samples_per_batch", 1)
+            if self.samples_per_batch > self.shots:
+                raise ValueError("samples_per_batch cannot exceed shots")
         if self.interaction_pairs is not None:
             if len(self.interaction_pairs) != 2:
                 raise ValueError("interaction_pairs requires two spin-balanced channels")

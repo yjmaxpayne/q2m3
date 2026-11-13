@@ -103,6 +103,38 @@ def test_public_samples_preserve_asymmetric_basis_and_constant():
     assert result.allocation_audit[-1].subspace_dims == (3, 4)
 
 
+@pytest.mark.parametrize(("requested", "expected"), [(None, 12), (5, 5)])
+def test_recovery_records_the_batch_size_the_library_received(monkeypatch, requested, expected):
+    from qiskit_addon_sqd import fermion
+
+    from q2m3.sqd.diagonalize import diagonalize_samples
+
+    seen = []
+    original = fermion.diagonalize_fermionic_hamiltonian
+
+    def spy(*args, **kwargs):
+        seen.append(args[3])
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(fermion, "diagonalize_fermionic_hamiltonian", spy)
+    one, two, constant, strings = fixture_space()
+    samples = samples_for(strings)
+    assert len(samples) == 12  # None resolves to min(300, 12) = 12.
+    result = diagonalize_samples(
+        one,
+        two,
+        constant,
+        samples,
+        norb=4,
+        nelec=(2, 2),
+        max_iterations=1,
+        samples_per_batch=requested,
+        **BUDGET,
+    )
+    assert seen == [expected]
+    assert result.samples_per_batch == expected and type(result.samples_per_batch) is int
+
+
 def test_recovery_consumes_invalid_raw_strings_and_conserves_particles(monkeypatch):
     from qiskit_addon_sqd import fermion
 

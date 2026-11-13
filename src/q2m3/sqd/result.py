@@ -6,9 +6,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from math import comb, isclose, isfinite
 from numbers import Integral, Real
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from q2m3.sqd.config import _freeze_snapshot
+
+if TYPE_CHECKING:
+    from q2m3.sqd.extend import ExtSQDRecord
 
 Tier = Literal["T0", "T1", "T1+", "T2"]
 _METHODS = {
@@ -30,6 +33,8 @@ _REFERENCE_ONLY_FIELDS = (
     "n_reps",
     "shots",
     "backend",
+    "samples_per_batch",
+    "ext_sqd",
 )
 # A pre-allocation guard may reject the matched comparisons in a completed run.
 # These fields are then absent together, each with a reason that starts with this prefix.
@@ -343,6 +348,8 @@ class SQDResult:
     timings_s: Mapping[str, float | None]
     null_reasons: Mapping[str, str]
     warnings: tuple[str, ...]
+    samples_per_batch: int | None
+    ext_sqd: ExtSQDRecord | None
 
     def __post_init__(self):
         for name in ("versions", "diagnostics", "provenance", "timings_s", "null_reasons"):
@@ -405,6 +412,7 @@ class SQDResult:
             raise ValueError("t1_diagnostic is only public for T2")
         self._validate_metadata()
         self._validate_mode()
+        self._validate_ext_sqd()
         return self
 
     def _validate_metadata(self):
@@ -470,8 +478,11 @@ class SQDResult:
                 if self.timings_s[name] is not None:
                     raise ValueError(f"timings_s.{name} must be None in reference_only")
             return
+        # A completed run without the extension keeps ext_sqd absent (_validate_ext_sqd).
         required = tuple(
-            name for name in _REFERENCE_ONLY_FIELDS if name not in _COMPARISON_FIELDS
+            name
+            for name in _REFERENCE_ONLY_FIELDS
+            if name not in _COMPARISON_FIELDS and name != "ext_sqd"
         ) + ("iso_active_space_ccsd_energy",)
         for stage in (
             "prepare",
@@ -487,6 +498,9 @@ class SQDResult:
                 raise ValueError(f"{name} is required for completed results")
         _integer(self.n_reps, "n_reps")
         _integer(self.shots, "shots")
+        _integer(self.samples_per_batch, "samples_per_batch", 1)
+        if self.samples_per_batch > self.shots:
+            raise ValueError("samples_per_batch cannot exceed shots")
         _reason(self.backend, "backend")
         if len(self.subspace_dims) != 2:
             raise ValueError("subspace_dims must contain alpha and beta dimensions")
@@ -561,3 +575,13 @@ class SQDResult:
             _same(self.ratio_sqd_over_sci, max(0.0, sqd_gap) / sci_gap, "ratio_sqd_over_sci")
         elif self.ratio_sqd_over_sci is not None:
             raise ValueError("ratio_sqd_over_sci undefined at small SCI denominator")
+
+    def _validate_ext_sqd(self):
+        reason = self.null_reasons.get("ext_sqd")
+        if self.ext_sqd is not None:
+            if reason is not None:
+                raise ValueError("ext_sqd is present, so null_reasons must not contain ext_sqd")
+            return
+        expected = "reference_only" if self.status == "reference_only" else "ext_sqd_disabled"
+        if reason != expected:
+            raise ValueError(f"absent ext_sqd requires the reason {expected}, got {reason!r}")

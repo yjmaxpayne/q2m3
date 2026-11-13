@@ -180,7 +180,7 @@ untrustworthy. Zero T0 uncertainty excludes basis/model/experimental errors.
 
 Use ``baseline_energy``, ``baseline_method``, ``baseline_tier``,
 ``baseline_uncertainty_mHa``, ``baseline_downgrade_reason``, ``warnings`` and
-``null_reasons``. Output schema ``sqd.result.v1`` has 40 fields and writes only
+``null_reasons``. Output schema ``sqd.result.v1`` has 42 fields and writes only
 canonical ``baseline_*`` keys. An old ``shci_energy`` number alone cannot tell
 whether it came from CASCI or SHCI. Readers must require explicit method,
 tier, units and uncertainty semantics. They must reject conflicting aliases.

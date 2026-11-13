@@ -271,5 +271,5 @@ For an intentional baseline without sampling, pass ``mode="reference_only"``.
 The result records absent sampling fields and their reasons. A failed full run
 never silently becomes reference-only or substitutes HF for SQD.
 
-See :doc:`/api-reference/sqd-results` for all 40 result fields.
+See :doc:`/api-reference/sqd-results` for all 42 result fields.
 See :doc:`/user-guide/sqd-validation` for measured results and research status.

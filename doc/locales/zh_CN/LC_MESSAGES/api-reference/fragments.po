@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-15 21:48+0800\n"
+"PO-Revision-Date: 2026-11-15 13:49+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -65,37 +65,48 @@ msgstr ""
 "``references`` 含参考文件与 ``ExternalReference`` 记录。参考文件由 ``import_references`` 按本次运行的片段标识与 ``basis`` "
 "读取。它们构成二聚体结果的活性空间误差、基组误差与模型误差。"
 
+#: of q2m3.fragments.workflow.run:16
+msgid ""
+"``ext_sqd`` is one ``ExtSQDSettings`` object or None. Full mode passes the same object to the SQD"
+" job of every subsystem."
+msgstr "``ext_sqd`` 是一个 ``ExtSQDSettings`` 对象或 None。完整模式把同一个对象传给每个子体系的 SQD 任务。"
+
 #: ../../source/api-reference/fragments.rst
 msgid "Raises"
 msgstr "异常"
 
-#: of q2m3.fragments.workflow.run:16
+#: of q2m3.fragments.workflow.run:19
 msgid ""
-"``avas_labels`` is not a sequence of strings, ``avas_threshold`` is     not a real number, or "
-"``references`` is a single string or path."
-msgstr "``avas_labels`` 不是字符串序列，``avas_threshold`` 不是实数，或 ``references`` 是单个字符串或路径。"
+"``avas_labels`` is not a sequence of strings, ``avas_threshold`` is     not a real number, "
+"``references`` is a single string or path, or ``ext_sqd``     is neither None nor an "
+"``ExtSQDSettings`` object (for example a mapping per     subsystem)."
+msgstr ""
+"``avas_labels`` 不是字符串序列，``avas_threshold`` 不是实数，``references`` 是单个字符串或路径，或 ``ext_sqd`` 既不是 None "
+"也不是 ``ExtSQDSettings`` 对象（例如按子体系给出的映射）。"
 
-#: of q2m3.fragments.workflow.run:17
+#: of q2m3.fragments.workflow.run:20
 msgid ""
 "``mode`` is not ``\"full\"`` or ``\"classical_only\"``, an AVAS label is     malformed or matches"
-" no AO, or ``references`` is given for a single molecule."
-msgstr "``mode`` 不是 ``\"full\"`` 或 ``\"classical_only\"``，某个 AVAS 标签格式错误或不匹配任何 AO，或对单分子传入了 ``references``。"
+" no AO, ``references`` is given for a single molecule,     or ``ext_sqd`` has an invalid setting."
+msgstr ""
+"``mode`` 不是 ``\"full\"`` 或 ``\"classical_only\"``，某个 AVAS 标签格式错误或不匹配任何 AO，对单分子传入了 "
+"``references``，或 ``ext_sqd`` 含无效设置。"
 
-#: of q2m3.fragments.workflow.run:18
+#: of q2m3.fragments.workflow.run:21
 msgid "``mode=\"full\"`` and the optional ``sqd`` backend is missing."
 msgstr "``mode=\"full\"`` 且缺少可选的 ``sqd`` 后端。"
 
-#: of q2m3.fragments.workflow.run:19
+#: of q2m3.fragments.workflow.run:22
 msgid "A reference file violates the import format, or two     references share a category."
 msgstr "参考文件不符合导入格式，或两条参考属于同一类别。"
 
-#: of q2m3.fragments.workflow.run:20
+#: of q2m3.fragments.workflow.run:23
 msgid ""
 "The RHF or the CCSD of a subsystem does not converge, or     label resolution, the ghost guard or"
 " the preflight rejects an active space."
 msgstr "某个子体系的 RHF 或 CCSD 不收敛，或标签解析、鬼原子守卫或预检拒绝了某个活性空间。"
 
-#: of q2m3.fragments.workflow.run:21
+#: of q2m3.fragments.workflow.run:24
 msgid "The monomer active spaces do not correspond to the     dimer active space."
 msgstr "单体活性空间与二聚体活性空间不对应。"
 

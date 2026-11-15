@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-15 21:48+0800\n"
+"PO-Revision-Date: 2026-11-15 13:49+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -23,12 +23,12 @@ msgstr "SQD 结果字段"
 
 #: ../../source/api-reference/sqd-results.rst:4
 msgid ""
-"The following 40 names match the ``sqd.result.v1`` contract. JSON preserves these names and uses "
+"The following 42 names match the ``sqd.result.v1`` contract. JSON preserves these names and uses "
 "``null`` for Python ``None``. Every absent top-level value requires a ``null_reasons`` entry. "
 "Required metadata is not omitted. Nested objects retain their own units and reasons. A consumer "
 "must keep the method, tier, downgrade reason and warnings beside the reference energy."
 msgstr ""
-"以下 40 个名称与 ``sqd.result.v1`` 契约一致。JSON 保留这些名称，并用 ``null`` 表示 Python ``None``。每个缺失的顶层值都要求对应的 "
+"以下 42 个名称与 ``sqd.result.v1`` 契约一致。JSON 保留这些名称，并用 ``null`` 表示 Python ``None``。每个缺失的顶层值都要求对应的 "
 "``null_reasons`` 条目。必需元数据不得省略。嵌套对象保留自身单位和原因。使用方必须将方法、层级、降级原因和警告与参考能量一起保留。"
 
 #: ../../source/api-reference/sqd-results.rst:13
@@ -285,6 +285,7 @@ msgstr "``n_reps``"
 
 #: ../../source/api-reference/sqd-results.rst:93 ../../source/api-reference/sqd-results.rst:96
 #: ../../source/api-reference/sqd-results.rst:102 ../../source/api-reference/sqd-results.rst:108
+#: ../../source/api-reference/sqd-results.rst:143
 msgid "count"
 msgstr "计数"
 
@@ -430,3 +431,27 @@ msgstr "``warnings``"
 #: ../../source/api-reference/sqd-results.rst:141
 msgid "Required warning collection. Every non-T0 baseline has a visible warning"
 msgstr "必需，警告集合。每个非 T0 基准均有可见警告"
+
+#: ../../source/api-reference/sqd-results.rst:142
+msgid "``samples_per_batch``"
+msgstr "``samples_per_batch``"
+
+#: ../../source/api-reference/sqd-results.rst:144
+msgid ""
+"Sample count of each recovery batch that the run used. Without a request in ``LUCJConfig`` it is "
+"``min(300, shots)``. Absent in reference-only mode"
+msgstr "本次运行所用每个恢复批次的样本数。``LUCJConfig`` 未指定时为 ``min(300, shots)``。仅参考模式下缺失"
+
+#: ../../source/api-reference/sqd-results.rst:146
+msgid "``ext_sqd``"
+msgstr "``ext_sqd``"
+
+#: ../../source/api-reference/sqd-results.rst:147
+msgid "record"
+msgstr "记录"
+
+#: ../../source/api-reference/sqd-results.rst:148
+msgid ""
+"Configuration-space extension record. Absent with ``ext_sqd_disabled`` when the extension did not"
+" run, and with ``reference_only`` in reference-only mode"
+msgstr "组态空间扩展记录。扩展未运行时缺失，原因为 ``ext_sqd_disabled``；仅参考模式下缺失，原因为 ``reference_only``"

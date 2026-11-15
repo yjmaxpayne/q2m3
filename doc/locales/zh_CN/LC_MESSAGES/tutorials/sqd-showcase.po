@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-15 21:48+0800\n"
+"PO-Revision-Date: 2026-11-15 13:49+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -480,6 +480,6 @@ msgstr "需要有意仅计算基准而不采样时，传入 ``mode=\"reference_o
 
 #: ../../source/tutorials/sqd-showcase.rst:274
 msgid ""
-"See :doc:`/api-reference/sqd-results` for all 40 result fields. See :doc:`/user-guide/sqd-"
+"See :doc:`/api-reference/sqd-results` for all 42 result fields. See :doc:`/user-guide/sqd-"
 "validation` for measured results and research status."
-msgstr "全部 40 个结果字段见 :doc:`/api-reference/sqd-results`。实测结果和研究状态见 :doc:`/user-guide/sqd-validation`。"
+msgstr "全部 42 个结果字段见 :doc:`/api-reference/sqd-results`。实测结果和研究状态见 :doc:`/user-guide/sqd-validation`。"

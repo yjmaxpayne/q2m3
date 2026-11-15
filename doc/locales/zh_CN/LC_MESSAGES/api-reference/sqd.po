@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-15 21:48+0800\n"
+"PO-Revision-Date: 2026-11-15 13:49+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -122,11 +122,15 @@ msgstr "异常"
 msgid "Inputs or execution environment are unsupported."
 msgstr "不支持输入或执行环境。"
 
-#: of q2m3.sqd.orchestrator.run_sqd:23
+#: of q2m3.sqd.orchestrator.run_sqd:23 q2m3.sqd.orchestrator.run_sqd_from_integrals:21
+msgid "The active space has more than 14 orbitals."
+msgstr "活性空间的轨道数多于 14 个。"
+
+#: of q2m3.sqd.orchestrator.run_sqd:24
 msgid "Allocation or observed process RSS reaches a cap."
 msgstr "内存分配量或观测到的进程 RSS 达到上限。"
 
-#: of q2m3.sqd.orchestrator.run_sqd:24 q2m3.sqd.orchestrator.run_sqd_from_integrals:20
+#: of q2m3.sqd.orchestrator.run_sqd:25 q2m3.sqd.orchestrator.run_sqd_from_integrals:23
 msgid "The total shared deadline expires."
 msgstr "共享的总执行时限到期。"
 
@@ -182,15 +186,21 @@ msgstr "在现有组件上限内传递受支持的覆盖设置。"
 msgid "Full SQD or explicit reference-only calculation."
 msgstr "完整 SQD 计算或显式指定的仅参考计算。"
 
-#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:16
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:15
+msgid ""
+"Configuration-space extension settings. When set in full mode, the extension stage runs on the "
+"SQD seed space after the comparisons."
+msgstr "组态空间扩展设置。在完整模式下设置时，扩展阶段在各项比较完成后基于 SQD 种子空间运行。"
+
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:18
 msgid "Validated immutable result, using exactly one copy of e_core in energies."
 msgstr "已验证的不可变结果，能量中恰好计入一次 e_core。"
 
-#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:18
-msgid "The declared integral contract is invalid."
-msgstr "所声明的积分契约无效。"
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:20
+msgid "The declared integral contract or ``ext_sqd`` is invalid."
+msgstr "所声明的积分契约或 ``ext_sqd`` 无效。"
 
-#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:19
+#: of q2m3.sqd.orchestrator.run_sqd_from_integrals:22
 msgid "Predicted or actual resources exceed the budget."
 msgstr "预测或实际资源用量超出预算。"
 
@@ -201,6 +211,10 @@ msgstr "配置契约"
 #: of q2m3.sqd.config.LUCJConfig:1
 msgid "Spin-balanced ansatz and sampling configuration."
 msgstr "自旋平衡的拟设与采样配置。"
+
+#: of q2m3.sqd.config.LUCJConfig:3
+msgid "``samples_per_batch`` sets the sample count of each recovery batch. None uses ``min(300, shots)``."
+msgstr "``samples_per_batch`` 设定每个恢复批次的样本数。None 表示使用 ``min(300, shots)``。"
 
 #: of q2m3.sqd.config.LUCJConfig.validate:1
 msgid "Validate counts and connectivity structure, returning this instance."
@@ -698,6 +712,10 @@ msgstr "可选数值后端共用的带类型 SQD 失败。"
 #: of q2m3.sqd.exceptions.ResourceLimitError:1
 msgid "A run exceeds its allowed resource budget."
 msgstr "运行超出允许的资源预算。"
+
+#: of q2m3.sqd.exceptions.AllocationGuardError:1
+msgid "A guard rejects an operation before allocation. Use it only for that case."
+msgstr "保护检查在分配内存前拒绝某项操作。此异常只用于这种情况。"
 
 #: of q2m3.sqd.exceptions.ResourceModelDomainError:1
 msgid "No calibrated resource bound applies to the requested operation."

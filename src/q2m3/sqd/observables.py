@@ -242,7 +242,29 @@ def _random_strings(norb, nelec, dims, seed):
     return tuple(result)
 
 
-def _select_sci(h1, h2, norb, nelec, dims):
+def _run_selected_ci(
+    h1: np.ndarray, h2: np.ndarray, norb: int, nelec: tuple[int, int]
+) -> tuple[float, Any, tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
+    """Run one PySCF selected-CI solve and build the per-spin fallback diagonals.
+
+    Args:
+        h1: One-electron active-space integrals.
+        h2: Two-electron active-space integrals.
+        norb: Number of active orbitals.
+        nelec: Alpha and beta electron counts.
+
+    Returns:
+        A tuple ``(energy, ci, pools, diagonals)``. ``energy`` is the selected-CI
+        electronic energy. ``ci`` is the converged selected-CI vector; its ``_strs``
+        attribute holds the alpha and beta string tables. ``pools[spin]`` holds all
+        legal strings of that spin sector. ``diagonals[spin]`` holds the diagonal
+        determinant energies of the ``pools[spin]`` strings, with the other spin
+        fixed at its HF string.
+
+    Raises:
+        ReferenceNumericalError: The solve did not converge, or the energy or the
+            CI vector is not finite.
+    """
     from pyscf import fci
 
     h1, h2 = (np.ascontiguousarray(a, dtype=np.float64) for a in (h1, h2))
@@ -255,36 +277,96 @@ def _select_sci(h1, h2, norb, nelec, dims):
     # Ranking fallback: diagonal determinant energies against the other-spin HF.
     # The complete diagonal is bounded before entering this routine, not an FCI solve.
     diagonal = fci.direct_spin1.make_hdiag(h1, h2, norb, nelec).reshape(tuple(map(len, pools)))
+    hf_index = tuple(
+        int(np.flatnonzero(pool == (1 << n) - 1)[0]) for pool, n in zip(pools, nelec, strict=True)
+    )
+    diagonals = (diagonal[:, hf_index[1]], diagonal[hf_index[0], :])
+    return energy, ci, pools, diagonals
+
+
+def _take_spin_strings(
+    ci: Any, spin: int, pool: np.ndarray, diag: np.ndarray, electrons: int, size: int
+) -> tuple[np.ndarray, tuple[int, ...], tuple[tuple[int, float], ...]]:
+    """Choose ``size`` strings of one spin from a selected-CI solution.
+
+    The HF string is always chosen. The other strings are taken by descending
+    marginal weight, with ties broken by ascending integer string. When the
+    selected-CI pool is too small, strings from the full sector are added by
+    ascending diagonal energy, with ties broken by ascending integer string.
+
+    Args:
+        ci: Converged selected-CI vector with ``_strs`` string tables.
+        spin: Spin index, 0 for alpha and 1 for beta.
+        pool: All legal strings of this spin sector.
+        diag: Diagonal energies of the ``pool`` strings, other spin at HF.
+        electrons: Electron count of this spin.
+        size: Number of strings to choose.
+
+    Returns:
+        A tuple ``(strings, additions, ranked)``. ``strings`` holds the chosen
+        strings in ascending order as ``int64``. ``additions`` holds the strings
+        added from the diagonal fallback, in the order of addition. ``ranked``
+        holds the ``(string, weight)`` pairs of the selected-CI pool in rank order.
+
+    Raises:
+        ComparisonUnavailableError: ``size`` is outside the legal sector, or the
+            fallback cannot reach ``size``.
+        ReferenceNumericalError: The marginal weights are not finite.
+    """
+    hf = (1 << electrons) - 1
+    if not 1 <= size <= len(pool):
+        raise ComparisonUnavailableError("SCI target exceeds legal spin sector")
+    weights = np.sum(np.abs(np.asarray(ci, dtype=np.float64)) ** 2, axis=1 - spin)
+    if not np.all(np.isfinite(weights)):
+        raise ReferenceNumericalError("Nonfinite SCI marginal weights")
+    ranked = sorted(
+        zip(map(int, ci._strs[spin]), map(float, weights), strict=False),
+        key=lambda p: (-p[1], p[0]),
+    )
+    chosen = [hf] + [s for s, w in ranked if s != hf][: size - 1]
+    fallback = sorted(
+        zip(map(int, pool), map(float, diag), strict=False), key=lambda p: (p[1], p[0])
+    )
+    additions = []
+    for string, _ in fallback:
+        if len(chosen) == size:
+            break
+        if string not in chosen:
+            chosen.append(string)
+            additions.append(string)
+    if len(chosen) != size:
+        raise ComparisonUnavailableError("SCI expansion failed to reach spin target")
+    return np.asarray(sorted(chosen), dtype=np.int64), tuple(additions), tuple(ranked)
+
+
+def _select_sci(h1, h2, norb, nelec, dims):
+    """Select same-dimension SCI strings per spin and record the selection trace.
+
+    Args:
+        h1: One-electron active-space integrals.
+        h2: Two-electron active-space integrals.
+        norb: Number of active orbitals.
+        nelec: Alpha and beta electron counts.
+        dims: Target number of strings for alpha and beta.
+
+    Returns:
+        A tuple ``(selected, trace)``. ``selected`` holds the chosen alpha and beta
+        strings. ``trace`` records the method, cutoff, pool dimensions, pool
+        electronic energy, rankings, fallback additions and fallback heuristic.
+
+    Raises:
+        ReferenceNumericalError: The selected-CI solve or its weights are not usable.
+        ComparisonUnavailableError: A target dimension cannot be reached.
+    """
+    energy, ci, pools, diagonals = _run_selected_ci(h1, h2, norb, nelec)
     selected, expanded, rankings = [], [], []
     for spin, (electrons, size, pool) in enumerate(zip(nelec, dims, pools, strict=True)):
-        hf = (1 << electrons) - 1
-        if not 1 <= size <= len(pool):
-            raise ComparisonUnavailableError("SCI target exceeds legal spin sector")
-        weights = np.sum(np.abs(np.asarray(ci, dtype=np.float64)) ** 2, axis=1 - spin)
-        if not np.all(np.isfinite(weights)):
-            raise ReferenceNumericalError("Nonfinite SCI marginal weights")
-        ranked = sorted(
-            zip(map(int, ci._strs[spin]), map(float, weights), strict=False),
-            key=lambda p: (-p[1], p[0]),
+        strings, additions, ranked = _take_spin_strings(
+            ci, spin, pool, diagonals[spin], electrons, size
         )
-        chosen = [hf] + [s for s, w in ranked if s != hf][: size - 1]
-        hf_other = int(np.flatnonzero(pools[1 - spin] == (1 << nelec[1 - spin]) - 1)[0])
-        diag = diagonal[:, hf_other] if spin == 0 else diagonal[hf_other, :]
-        fallback = sorted(
-            zip(map(int, pool), map(float, diag), strict=False), key=lambda p: (p[1], p[0])
-        )
-        additions = []
-        for string, _ in fallback:
-            if len(chosen) == size:
-                break
-            if string not in chosen:
-                chosen.append(string)
-                additions.append(string)
-        if len(chosen) != size:
-            raise ComparisonUnavailableError("SCI expansion failed to reach spin target")
-        selected.append(np.asarray(sorted(chosen), dtype=np.int64))
-        expanded.append(tuple(additions))
-        rankings.append(tuple(ranked))
+        selected.append(strings)
+        expanded.append(additions)
+        rankings.append(ranked)
     return tuple(selected), dict(
         method="pyscf_selected_ci_marginal_weight",
         cutoff=1e-4,

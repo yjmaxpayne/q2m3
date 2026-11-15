@@ -140,7 +140,7 @@ def ext_record_parts():
         subspace_dims=(0, 0),
         coverage=0.0,
         sci_baseline_energy=None,
-        sci_baseline_reason="sci_baseline_not_implemented",
+        sci_baseline_reason="sci_baseline_arm_null",
         predicted_rss_mb=None,
         null_reason="ext_rss_budget: stage=ext predicted_rss_mb=180.0",
     )

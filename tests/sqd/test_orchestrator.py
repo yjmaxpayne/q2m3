@@ -164,10 +164,17 @@ def test_integral_entry_validates_ext_sqd_without_running_it(h2_data, monkeypatc
 EXT_PRIOR_STAGES = ("prepare", "sample", "diagonalize", "reference", "comparison")
 
 
-def run_with_ext(h2_data):
+def run_with_ext(h2_data, **settings):
     from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
 
-    return low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31, ext_sqd=ExtSQDSettings())
+    ext = ExtSQDSettings(**settings)
+    return low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31, ext_sqd=ext)
+
+
+def seed_fingerprint(seed_space):
+    """JSON form of a ``((alpha, beta), weights)`` seed space, comparable across processes."""
+    (alpha, beta), weights = seed_space
+    return [np.asarray(part).tolist() for part in (alpha, beta, weights)]
 
 
 def record_ext_calls(monkeypatch, path, *, expire_deadline=False):
@@ -183,6 +190,10 @@ def record_ext_calls(monkeypatch, path, *, expire_deadline=False):
     def recorder(*args, **kwargs):
         call = {"seed_source": kwargs.get("seed_source"), "deadline": kwargs.get("deadline")}
         call["called_at"] = monotonic()
+        seeds = kwargs["seed_space"] if "seed_space" in kwargs else args[3]
+        call["seeds"] = seed_fingerprint(seeds)
+        ranking = kwargs.get("sci_ranking")
+        call["ranking_id"] = None if ranking is None else id(ranking)
         with path.open("a") as handle:
             handle.write(json.dumps(call) + "\n")
         if expire_deadline:
@@ -197,12 +208,15 @@ def recorded_calls(path):
 
 
 def test_ext_sqd_switch_adds_only_a_quantum_arm_and_keeps_the_sqd_result(h2_data):
+    from q2m3.sqd.config import ExtSQDSettings
+
     result = run_with_ext(h2_data)
     assert result.status == "completed"
     # The extension is a separate record; it must not replace the SQD energy.
     assert_same_energy(result.sqd_energy, H2_SQD_ENERGY_DEFAULT_BATCH)
     assert result.ext_sqd is not None
-    assert tuple(arm.seed_source for arm in result.ext_sqd.arms) == ("quantum",)
+    sources = tuple(arm.seed_source for arm in result.ext_sqd.arms)
+    assert sources == ExtSQDSettings().seed_sources
     (arm,) = result.ext_sqd.arms
     assert arm.null_reason is None
     # A fixed-subspace eigenvalue cannot be lower than the exact baseline.
@@ -798,3 +812,281 @@ def test_ext_stage_forwards_the_run_settings_seeds_and_resource_limits(
     assert call["allow_large"] is False
     (arm,) = result.ext_sqd.arms
     assert arm.null_reason is None
+
+
+# ---- seed-source arms (B4 group 1)
+
+# Not alphabetical, so an implementation that sorts the sources cannot pass.
+FOUR_SOURCES = ("quantum", "random", "hf", "cisd")
+
+
+def spy_extend(monkeypatch, path, name, describe):
+    """Wrap extend.<name> so each worker call appends describe(args, kwargs, out) to path."""
+    from q2m3.sqd import extend
+
+    real = getattr(extend, name)
+
+    def spy(*args, **kwargs):
+        out = real(*args, **kwargs)
+        with path.open("a") as handle:
+            handle.write(json.dumps(describe(args, kwargs, out)) + "\n")
+        return out
+
+    monkeypatch.setattr(extend, name, spy)
+
+
+def test_ext_sqd_runs_one_arm_per_seed_source_in_settings_order(h2_data):
+    """The arm order is the comparison key of the benchmark, and adding arms must not move
+    the quantum arm."""
+    assert FOUR_SOURCES != tuple(sorted(FOUR_SOURCES))
+    result = run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    assert tuple(arm.seed_source for arm in result.ext_sqd.arms) == FOUR_SOURCES
+    (single,) = run_with_ext(h2_data).ext_sqd.arms
+    assert_same_energy(result.ext_sqd.arms[0].energy, single.energy)
+
+
+def test_ext_sqd_builds_non_quantum_seeds_with_build_seed_space_outside_run_ext_sqd(
+    h2_data, monkeypatch, tmp_path
+):
+    """Each non-quantum arm must solve on the seeds dispatched for its own source."""
+    built, calls = tmp_path / "built.jsonl", tmp_path / "ext_calls.jsonl"
+    spy_extend(
+        monkeypatch,
+        built,
+        "build_seed_space",
+        lambda args, kwargs, out: {
+            "source": kwargs.get("source", args[0] if args else None),
+            "seeds": seed_fingerprint(out[0]),
+        },
+    )
+    record_ext_calls(monkeypatch, calls)
+    run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    built_calls, ext_calls = recorded_calls(built), recorded_calls(calls)
+    # Lists, not dicts: a repeated dispatch for one source must not merge away.
+    assert sorted(call["source"] for call in built_calls) == ["cisd", "hf", "random"]
+    assert sorted(call["seed_source"] for call in ext_calls) == sorted(FOUR_SOURCES)
+    dispatched = {call["source"]: call["seeds"] for call in built_calls}
+    # Precondition: equal seeds would let a swapped dispatch pass the comparison below.
+    assert len({json.dumps(seeds) for seeds in dispatched.values()}) == 3
+    received = {call["seed_source"]: call["seeds"] for call in ext_calls}
+    for source, seeds in dispatched.items():
+        assert received[source] == seeds, source
+
+
+def test_ext_sqd_computes_sci_ranking_once_and_passes_it_to_every_arm(
+    h2_data, monkeypatch, tmp_path
+):
+    """One shared ranking keeps the SCI baseline equal across arms and avoids repeated cost."""
+    ranked, calls = tmp_path / "ranked.jsonl", tmp_path / "ext_calls.jsonl"
+    spy_extend(monkeypatch, ranked, "sci_ranking", lambda args, kwargs, out: {})
+    record_ext_calls(monkeypatch, calls)
+    run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    assert len(recorded_calls(ranked)) == 1
+    # Every arm must reach run_ext_sqd, or the shared-ranking check below is vacuous.
+    assert len(recorded_calls(calls)) == 4
+    ranking_ids = {call["ranking_id"] for call in recorded_calls(calls)}
+    assert len(ranking_ids) == 1 and None not in ranking_ids
+
+
+def test_ext_sqd_null_non_quantum_arm_keeps_its_source_and_dispatched_seed_counts(
+    h2_data, monkeypatch
+):
+    """A failed arm must stay attributable to its source and its dispatched seed size."""
+    from q2m3.sqd import extend
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    real = extend.run_ext_sqd
+
+    def reject_hf(*args, **kwargs):
+        if kwargs.get("seed_source") == "hf":
+            raise AllocationGuardError("STUB guard")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(extend, "run_ext_sqd", reject_hf)
+    result = run_with_ext(h2_data, seed_sources=("quantum", "hf"))
+    quantum, hf = result.ext_sqd.arms
+    assert quantum.seed_counts == (2, 3)
+    assert hf.seed_source == "hf"
+    assert hf.seed_counts == (1, 1)
+    assert hf.sci_baseline_reason == "sci_baseline_arm_null"
+
+
+def test_ext_sqd_passes_the_deadline_to_every_arm(h2_data, monkeypatch, tmp_path):
+    """An arm without the run deadline could exceed the wall budget of the whole run."""
+    calls = tmp_path / "ext_calls.jsonl"
+    record_ext_calls(monkeypatch, calls)
+    run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    recorded = recorded_calls(calls)
+    assert len(recorded) == len(FOUR_SOURCES)
+    deadlines = {call["deadline"] for call in recorded}
+    assert len(deadlines) == 1 and None not in deadlines
+
+
+# ---- failure paths and energies (B4 group 2)
+
+
+def fail_dispatch(monkeypatch, path, error, *, source):
+    """Make extend.build_seed_space log each call to path and raise error for one source."""
+    from q2m3.sqd import extend
+
+    real = extend.build_seed_space
+
+    def stub(*args, **kwargs):
+        name = kwargs.get("source", args[0] if args else None)
+        with path.open("a") as handle:
+            handle.write(json.dumps({"source": name}) + "\n")
+        if name != source:
+            return real(*args, **kwargs)
+        raise error
+
+    monkeypatch.setattr(extend, "build_seed_space", stub)
+
+
+def test_ext_sqd_maps_a_rejected_sci_ranking_to_the_unavailable_reason(
+    h2_data, monkeypatch, tmp_path
+):
+    """A guard that rejects the SCI ranking must cost only the baseline, not the run or an arm."""
+    from q2m3.sqd import extend
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    called = tmp_path / "ranking.txt"
+
+    def reject(*args, **kwargs):
+        called.write_text("called\n")
+        raise AllocationGuardError("STUB ranking guard")
+
+    monkeypatch.setattr(extend, "sci_ranking", reject)
+    result = run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    assert called.exists()
+    assert result.status == "completed"
+    reasons = {arm.seed_source: arm.sci_baseline_reason for arm in result.ext_sqd.arms}
+    assert reasons == dict.fromkeys(FOUR_SOURCES, "sci_ranking_unavailable")
+    assert [arm.null_reason for arm in result.ext_sqd.arms] == [None] * len(FOUR_SOURCES)
+
+
+def test_ext_sqd_null_arm_wall_time_excludes_dispatch_and_earlier_arms(
+    h2_data, monkeypatch, tmp_path
+):
+    """A null arm's wall time must not absorb a slow dispatch or the arms that ran before it."""
+    from q2m3.sqd import extend
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    built = tmp_path / "built.jsonl"
+    real_build, real_run = extend.build_seed_space, extend.run_ext_sqd
+
+    def slow_dispatch(*args, **kwargs):
+        name = kwargs.get("source", args[0] if args else None)
+        with built.open("a") as handle:
+            handle.write(json.dumps({"source": name}) + "\n")
+        sleep(0.6)
+        return real_build(*args, **kwargs)
+
+    def reject_hf(*args, **kwargs):
+        if kwargs.get("seed_source") == "hf":
+            raise AllocationGuardError("STUB slow guard")
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(extend, "build_seed_space", slow_dispatch)
+    monkeypatch.setattr(extend, "run_ext_sqd", reject_hf)
+    result = run_with_ext(h2_data, seed_sources=("quantum", "hf"))
+    assert [call["source"] for call in recorded_calls(built)] == ["hf"]
+    quantum, hf = result.ext_sqd.arms
+    assert (quantum.seed_source, hf.seed_source) == ("quantum", "hf")
+    assert hf.null_reason.startswith("ext_rss_budget:")
+    assert tuple(hf.seed_counts) != (0, 0)
+    assert hf.wall_s < 0.5
+
+
+def test_ext_sqd_maps_a_dispatch_guard_error_to_a_null_arm_and_keeps_other_arms(
+    h2_data, monkeypatch, tmp_path
+):
+    """A guard error in one source's dispatch must null that arm only, with the ruled values."""
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    guard = AllocationGuardError("STUB guard")
+    fail_dispatch(monkeypatch, tmp_path / "built.jsonl", guard, source="cisd")
+    result = run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    arms = {arm.seed_source: arm for arm in result.ext_sqd.arms}
+    cisd = arms.pop("cisd")
+    assert cisd.null_reason.startswith("ext_rss_budget:") and "STUB guard" in cisd.null_reason
+    assert (cisd.energy, cisd.wall_s, tuple(cisd.seed_counts)) == (None, 0.0, (0, 0))
+    assert cisd.sci_baseline_reason == "sci_baseline_arm_null"
+    others = {source: arm.null_reason for source, arm in arms.items()}
+    assert others == dict.fromkeys(("quantum", "random", "hf"))
+
+
+def test_ext_sqd_propagates_unexpected_dispatch_errors(h2_data, monkeypatch, tmp_path):
+    """An error that is not a resource or numerical failure must fail the run, not hide as null."""
+    built = tmp_path / "built.jsonl"
+    error = RuntimeError("STUB unexpected")
+    fail_dispatch(monkeypatch, built, error, source="hf")
+    with pytest.raises(RuntimeError, match="STUB unexpected") as excinfo:
+        run_with_ext(h2_data, seed_sources=("quantum", "hf"))
+    # The worker pipe pickles the error, so identity is lost; same type and args means
+    # it was raised as is, not wrapped (match alone also accepts a wrapping message).
+    assert type(excinfo.value) is type(error) and excinfo.value.args == error.args
+    assert [call["source"] for call in recorded_calls(built)] == ["hf"]
+
+
+def test_ext_sqd_non_quantum_arms_record_seed_space_energy(h2_data, monkeypatch, tmp_path):
+    """O-S5.3: each non-quantum arm must report the seed-space energy its dispatch computed."""
+    built = tmp_path / "built.jsonl"
+    spy_extend(
+        monkeypatch,
+        built,
+        "build_seed_space",
+        lambda args, kwargs, out: {
+            "source": kwargs.get("source", args[0] if args else None),
+            "energy": out[1],
+        },
+    )
+    result = run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    dispatched = {call["source"]: call["energy"] for call in recorded_calls(built)}
+    assert set(dispatched) == {"random", "hf", "cisd"}
+    energies = {arm.seed_source: arm.seed_space_energy for arm in result.ext_sqd.arms}
+    assert energies.pop("quantum") is None
+    assert energies == dispatched and None not in energies.values()
+    assert energies["hf"] == pytest.approx(-1.1116863739840661, abs=1e-12)
+
+
+@pytest.mark.parametrize("allow_large", [True, False])
+def test_ext_sqd_forwards_allow_large_to_the_seed_dispatch(
+    h2_data, monkeypatch, tmp_path, allow_large
+):
+    """The seed dispatch must apply the user's allow_large, else control arms can go null
+    at sizes where the quantum arm runs."""
+    import inspect
+
+    from q2m3.sqd import extend
+    from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
+
+    signature = inspect.signature(extend.build_seed_space)
+
+    def describe(args, kwargs, out):
+        bound = signature.bind(*args, **kwargs)
+        bound.apply_defaults()
+        return {"source": bound.arguments["source"], **bound.arguments["resources"]}
+
+    built = tmp_path / "built.jsonl"
+    spy_extend(monkeypatch, built, "build_seed_space", describe)
+    ext = ExtSQDSettings(seed_sources=FOUR_SOURCES)
+    lucj = LUCJConfig(n_reps=2, shots=512)
+    low(*h2_data, lucj=lucj, seed=31, ext_sqd=ext, allow_large=allow_large)
+    forwarded = {call["source"]: call.get("allow_large") for call in recorded_calls(built)}
+    assert forwarded == {"random": allow_large, "hf": allow_large, "cisd": allow_large}
+
+
+def test_ext_sqd_maps_a_dispatch_numerical_error_to_a_null_arm(h2_data, monkeypatch, tmp_path):
+    """A numerical failure in one source's dispatch must null that arm only, not fail the run."""
+    from q2m3.sqd.exceptions import ReferenceNumericalError
+
+    error = ReferenceNumericalError("STUB numerical")
+    fail_dispatch(monkeypatch, tmp_path / "built.jsonl", error, source="cisd")
+    result = run_with_ext(h2_data, seed_sources=FOUR_SOURCES)
+    arms = {arm.seed_source: arm for arm in result.ext_sqd.arms}
+    cisd = arms.pop("cisd")
+    assert cisd.null_reason.startswith("ext_numerical:") and "STUB numerical" in cisd.null_reason
+    assert (cisd.energy, cisd.wall_s, tuple(cisd.seed_counts)) == (None, 0.0, (0, 0))
+    assert cisd.sci_baseline_reason == "sci_baseline_arm_null"
+    others = {source: arm.null_reason for source, arm in arms.items()}
+    assert others == dict.fromkeys(("quantum", "random", "hf"))

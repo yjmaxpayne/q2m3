@@ -13,7 +13,7 @@ from dataclasses import fields, replace
 from importlib.metadata import version
 from pathlib import Path
 from time import monotonic, sleep
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 
@@ -580,6 +580,7 @@ def _execute(
             allow_large=allow_large,
             audit=audit,
             deadline=deadline,
+            seed=seed,
         )
     return _assemble(
         norb,
@@ -623,14 +624,16 @@ def _ext_stage(
     allow_large,
     audit,
     deadline,
+    seed,
 ):
-    """Run the quantum extended-SQD arm on the SQD seed space.
+    """Run one extended-SQD arm per seed source, in the order of ``settings.seed_sources``.
 
-    A guard rejection or a numerical failure of the arm gives a null arm, and the run
-    continues. Other exceptions propagate.
+    One SCI ranking is computed and shared by all arms. When its guard rejects it, every
+    arm receives None. A guard rejection or a numerical failure of an arm gives a null
+    arm, and the other arms continue. Other exceptions propagate.
 
     Note:
-        Residual risk. The arm runs in the worker, which ``_supervise`` monitors against
+        Residual risk. The arms run in the worker, which ``_supervise`` monitors against
         the deadline and the RSS of the process tree. If the real time is more than 2
         times the estimate, or the worker RSS exceeds the cap, the whole run fails and
         the SQD and T0 results obtained so far are lost. ``t_arm`` comes from only 1
@@ -641,44 +644,114 @@ def _ext_stage(
     """
     if settings is None:
         return None
-    start = monotonic()
+    retained = _retained_mb(samples, diagonalized)
     try:
-        arm = extend.run_ext_sqd(
+        ranking = extend.sci_ranking(
             h1,
             h2,
             e_core,
-            (diagonalized.ci_strings, diagonalized.amplitudes),
-            settings,
-            seed_source="quantum",
             norb=norb,
             nelec=nelec,
             host_available_mb=cap,
             rss_budget_mb=cap,
-            retained_mb=_retained_mb(samples, diagonalized),
-            allow_large=allow_large,
+            retained_mb=retained,
             audit=audit,
-            deadline=deadline,
         )
-    except AllocationGuardError as exc:
-        arm = _null_ext_arm(diagonalized.ci_strings, f"ext_rss_budget: {exc}", start)
-    except ReferenceNumericalError as exc:
-        arm = _null_ext_arm(diagonalized.ci_strings, f"ext_numerical: {exc}", start)
-    return extend.ExtSQDRecord(settings, _EXT_CODE_PATH_ID, (arm,))
+    except AllocationGuardError:
+        ranking = None
+    solve = {
+        "norb": norb,
+        "nelec": nelec,
+        "host_available_mb": cap,
+        "rss_budget_mb": cap,
+        "retained_mb": retained,
+        "allow_large": allow_large,
+        "audit": audit,
+        "deadline": deadline,
+        "sci_ranking": ranking,
+    }
+    quantum = (diagonalized.ci_strings, diagonalized.amplitudes)
+    arms = tuple(
+        _ext_arm(h1, h2, e_core, settings, source, quantum=quantum, seed=seed, solve=solve)
+        for source in settings.seed_sources
+    )
+    return extend.ExtSQDRecord(settings, _EXT_CODE_PATH_ID, arms)
 
 
-def _null_ext_arm(ci_strings, reason, start):
-    """Return the null quantum arm for an ext solve that raised.
+def _ext_arm(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    settings: ExtSQDSettings,
+    source: str,
+    *,
+    quantum: tuple[tuple[np.ndarray, np.ndarray], np.ndarray],
+    seed: int,
+    solve: dict[str, Any],
+) -> extend.ExtSQDArm:
+    """Dispatch the seed space of ``source`` and run its ext arm.
+
+    The quantum arm uses the SQD seed space. Other sources build their seed space with
+    ``extend.build_seed_space`` at the SQD seed counts. ``wall_s`` starts after dispatch.
+    """
+    extra = {}
+    seed_space = quantum
+    if source != "quantum":
+        try:
+            seed_space, energy, zero_weight = extend.build_seed_space(
+                source,
+                h1,
+                h2,
+                e_core,
+                norb=solve["norb"],
+                nelec=solve["nelec"],
+                dims=_seed_counts(quantum[0]),
+                seed=seed,
+                audit=solve["audit"],
+                resources={
+                    key: solve[key]
+                    for key in ("host_available_mb", "rss_budget_mb", "retained_mb", "allow_large")
+                },
+            )
+        except (AllocationGuardError, ReferenceNumericalError) as exc:
+            return _null_ext_arm(source, (0, 0), _null_reason(exc), None)
+        extra = {"seed_space_energy": energy, "zero_weight_strings": zero_weight}
+    start = monotonic()
+    try:
+        return extend.run_ext_sqd(
+            h1, h2, e_core, seed_space, settings, seed_source=source, **solve, **extra
+        )
+    except (AllocationGuardError, ReferenceNumericalError) as exc:
+        return _null_ext_arm(source, _seed_counts(seed_space[0]), _null_reason(exc), start)
+
+
+def _seed_counts(ci_strings: tuple[np.ndarray, np.ndarray]) -> tuple[int, int]:
+    """Return the (alpha, beta) string counts of a seed space."""
+    return (len(ci_strings[0]), len(ci_strings[1]))
+
+
+def _null_reason(exc: AllocationGuardError | ReferenceNumericalError) -> str:
+    """Return the null reason of an ext failure: guard rejection or numerical failure."""
+    prefix = "ext_rss_budget" if isinstance(exc, AllocationGuardError) else "ext_numerical"
+    return f"{prefix}: {exc}"
+
+
+def _null_ext_arm(
+    seed_source: str, seed_counts: tuple[int, int], reason: str, start: float | None
+) -> extend.ExtSQDArm:
+    """Return the null arm for an ext seed dispatch or solve that raised.
 
     The exception carries the dimensions and the predicted RSS only as message text,
     which is kept in ``reason``. The other fields are placeholders, not measurements:
     ``truncated_counts``, ``extended_counts`` and ``subspace_dims`` are (0, 0),
     ``coverage`` is 0.0, ``only_hf`` is False and ``predicted_rss_mb`` is None, so
-    that strict JSON (``allow_nan=False``) can write the arm.
+    that strict JSON (``allow_nan=False``) can write the arm. ``start`` is None when
+    the seed dispatch raised; ``wall_s`` is then 0.0.
     """
     return extend.ExtSQDArm(
-        seed_source="quantum",
+        seed_source=seed_source,
         energy=None,
-        seed_counts=(len(ci_strings[0]), len(ci_strings[1])),
+        seed_counts=seed_counts,
         truncated_counts=(0, 0),
         extended_counts=(0, 0),
         subspace_dims=(0, 0),
@@ -687,8 +760,8 @@ def _null_ext_arm(ci_strings, reason, start):
         seed_space_energy=None,
         zero_weight_strings=None,
         sci_baseline_energy=None,
-        sci_baseline_reason="sci_baseline_not_implemented",
-        wall_s=monotonic() - start,
+        sci_baseline_reason="sci_baseline_arm_null",
+        wall_s=0.0 if start is None else monotonic() - start,
         predicted_rss_mb=None,
         process_peak_rss_mb=extend._peak_rss_mb(),
         null_reason=reason,

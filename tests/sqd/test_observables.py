@@ -386,3 +386,137 @@ def test_nonfinite_derived_values_and_sample_domain(four_orbitals):
     too_many = np.tile(samples[0], (100001, 1))
     with pytest.raises(ResourceModelDomainError):
         run((data, seed, ref, sqd, too_many))
+
+
+def _coupled_tied_input():
+    # Dyadic values keep every integral sum exact in binary floating point.
+    norb = 6
+    h1 = np.diag([-2.0, -1.0, -1.0, -1.0, 0.5, 0.5])
+    h1[0, 3] = h1[3, 0] = 0.125
+    h2 = np.zeros((norb,) * 4)
+    for p in range(norb):
+        h2[p, p, p, p] = 0.5
+    for q in range(1, norb):
+        h2[0, 0, q, q] = h2[q, q, 0, 0] = 0.25
+    for idx in ((0, 3, 0, 3), (3, 0, 0, 3), (0, 3, 3, 0), (3, 0, 3, 0)):
+        h2[idx] = 0.0625
+    # Orbitals 1 and 2: (0q|55) makes the SCI selection bound nonzero, but no
+    # determinant with nonzero amplitude occupies orbital 5, so the strings
+    # 2 and 4 enter the SCI pool with exactly zero weight (exact tie).
+    for q in (1, 2):
+        for idx in ((0, q, 5, 5), (q, 0, 5, 5), (5, 5, 0, q), (5, 5, q, 0)):
+            h2[idx] = 0.25
+    return h1, h2, norb, (1, 1), (3, 5)
+
+
+def test_select_sci_characterization_input_has_coupling_and_ties():
+    """Pin the input premises: without h2 coupling and exact ties across both
+    cut points, identical HEAD output cannot discriminate tie-breaking changes."""
+    h1, h2, norb, nelec, dims = _coupled_tied_input()
+    strings, trace = mod()._select_sci(h1, h2, norb, nelec, dims)
+    # Orbital-mixing (0q|55) coupling, not only the diagonal (pp|pp) terms.
+    assert h2[0, 1, 5, 5] != 0.0 and h2[0, 2, 5, 5] != 0.0
+    # Alpha truncation: strings 2 and 4 tie at exactly 0.0 and compete for 1 slot.
+    weights = dict(trace["rankings"][0])
+    assert weights[2] == weights[4] == 0.0
+    assert sum(w > 0.0 for s, w in weights.items() if s != 1) == dims[0] - 2
+    assert (2 in strings[0]) != (4 in strings[0])
+    # Beta expansion: strings 16 and 32 have exactly equal diagonal energies.
+    assert h1[0, 0] + h1[4, 4] + h2[0, 0, 4, 4] == h1[0, 0] + h1[5, 5] + h2[0, 0, 5, 5]
+    assert trace["expanded_strings"][0] == ()
+    assert trace["expanded_strings"][1]
+    assert (16 in strings[1]) != (32 in strings[1])
+
+
+def test_select_sci_strings_match_head_on_coupled_tied_input():
+    """Pin the selected strings. On an exact tie, the lower bit-string integer
+    is kept: string 2 over 4 at alpha truncation, 16 over 32 at beta expansion."""
+    strings, _ = mod()._select_sci(*_coupled_tied_input())
+    for got, want in zip(strings, ([1, 2, 8], [1, 2, 4, 8, 16]), strict=True):
+        assert got.dtype == np.int64
+        assert np.array_equal(got, want)
+
+
+def test_select_sci_trace_matches_head_on_coupled_tied_input():
+    """Pin the trace from HEAD exactly, without tolerance, so the split cannot
+    reorder tied rankings or change the SCI pool energy."""
+    _, trace = mod()._select_sci(*_coupled_tied_input())
+    assert trace["rankings"] == (
+        ((1, 0.9796054189854604), (8, 0.0203945810145397), (2, 0.0), (4, 0.0)),
+        ((1, 0.9796054189854605), (8, 0.020394581014539653), (2, 0.0), (4, 0.0)),
+    )
+    assert trace["expanded_strings"] == ((), (16,))
+    assert trace["pool_electronic_energy"] == -3.537112155077698
+
+
+def _pruned_pool_input():
+    # Dyadic integer draws times 2**-8, 8-fold symmetrized; /8 keeps values dyadic.
+    # The rng call order (off first, then h2) fixes the integrals; do not reorder.
+    rng = np.random.default_rng(3)
+    norb = 6
+    h1 = np.diag([-2.0, -1.5, -1.0, 0.5, 1.0, 1.5])
+    off = rng.integers(-4, 5, size=(norb, norb)) * 2.0**-8
+    h1 = h1 + (off + off.T) / 2
+    h2 = rng.integers(-4, 5, size=(norb,) * 4) * 2.0**-8
+    h2 = h2 + h2.transpose(1, 0, 2, 3)
+    h2 = h2 + h2.transpose(0, 1, 3, 2)
+    h2 = (h2 + h2.transpose(2, 3, 0, 1)) / 8
+    for p in range(norb):
+        h2[p, p, p, p] += 0.5
+    return h1, h2, norb, (3, 3), (6, 6)
+
+
+def test_select_sci_trace_matches_head_on_pruned_pool_input():
+    """On the K1 input the SCI pool is the full space, so `cutoff` and `tol` have no
+    effect there; this input has a pool smaller than the full space and pins both."""
+    strings, trace = mod()._select_sci(*_pruned_pool_input())
+    # Premise: C(6, 3) = 20 strings per spin; a smaller pool means cutoff prunes.
+    assert all(d < 20 for d in trace["pool_dims"])
+    for got in strings:
+        assert np.array_equal(got, [7, 11, 13, 14, 21, 38])
+    assert trace["pool_dims"] == (18, 18)
+    assert trace["rankings"] == (
+        (
+            (7, 0.9992007543277182),
+            (11, 0.00046585716274922775),
+            (13, 0.00014971500697290264),
+            (14, 6.514542999003772e-05),
+            (38, 4.4185171164327853e-05),
+            (21, 4.368504971191569e-05),
+            (37, 6.384201928269321e-06),
+            (22, 5.7664584615078155e-06),
+            (19, 5.493472591325182e-06),
+            (35, 5.265819859827898e-06),
+            (25, 3.5032753861757706e-06),
+            (28, 1.5578189004694645e-06),
+            (49, 9.304198793177327e-07),
+            (26, 8.583511202886355e-07),
+            (42, 8.26155735812623e-07),
+            (52, 5.1661262457089113e-08),
+            (50, 1.730268824636675e-08),
+            (44, 2.913879905722822e-09),
+        ),
+        (
+            (7, 0.9992007543277179),
+            (11, 0.00046585716274922883),
+            (13, 0.00014971500697290264),
+            (14, 6.514542999003757e-05),
+            (38, 4.4185171164327826e-05),
+            (21, 4.3685049711915756e-05),
+            (37, 6.384201928269326e-06),
+            (22, 5.7664584615078206e-06),
+            (19, 5.493472591325183e-06),
+            (35, 5.265819859827895e-06),
+            (25, 3.503275386175767e-06),
+            (28, 1.557818900469466e-06),
+            (49, 9.304198793177322e-07),
+            (26, 8.583511202886348e-07),
+            (42, 8.261557358126234e-07),
+            (52, 5.166126245708911e-08),
+            (50, 1.7302688246366748e-08),
+            (44, 2.9138799057228282e-09),
+        ),
+    )
+    assert trace["expanded_strings"] == ((), ())
+    assert isinstance(trace["pool_electronic_energy"], float)
+    assert trace["pool_electronic_energy"] == -7.392812805283875

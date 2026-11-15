@@ -437,7 +437,7 @@ def test_importing_sqd_package_does_not_load_extend_module():
             {"sci_baseline_energy": None}, "sci_baseline", id="baseline_missing_without_reason"
         ),
         pytest.param(
-            {"sci_baseline_reason": "sci_baseline_not_implemented"},
+            {"sci_baseline_reason": "sci_baseline_arm_null"},
             "sci_baseline",
             id="baseline_with_reason",
         ),
@@ -875,3 +875,707 @@ def test_run_ext_sqd_does_not_call_diagonalize_samples(h6_chain, monkeypatch):
     arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
 
     assert arm.energy is not None
+
+
+# ---- seed sources
+
+CISD_POOL = legal(4, 2)  # [3, 5, 6, 9, 10, 12]; HF = 3
+RANDOM_ARGS = (8, (4, 3), (5, 4))  # norb, nelec, dims: asymmetric on purpose
+RANDOM_SEEDS = (0, 1, 2)
+
+
+def cisd_select(weights: dict, diagonal: dict, size):
+    """Run cisd_seed_strings on CISD_POOL with per-string weights and diagonals."""
+    return extend.cisd_seed_strings(
+        np.asarray(CISD_POOL, dtype=np.int64),
+        np.asarray([weights[s] for s in CISD_POOL], dtype=float),
+        np.asarray([diagonal[s] for s in CISD_POOL], dtype=float),
+        nelec_spin=2,
+        size=size,
+    )
+
+
+def test_hf_seed_strings_hold_only_the_per_spin_hf_string():
+    """Kills B2a-1: an unbalanced nelec shows a beta seed built from the alpha HF string."""
+    alpha, beta = extend.hf_seed_strings(5, (3, 1))
+
+    assert_strings(alpha, [0b111])
+    assert_strings(beta, [0b1])
+
+
+def test_random_seed_strings_are_legal_ascending_and_contain_hf():
+    """Kills B2a-2: the random arm seed must be a legal ascending set of size dims with HF."""
+    norb, nelec, dims = RANDOM_ARGS
+    strings = extend.random_seed_strings(norb, nelec, dims, 0)
+
+    for spin in range(2):
+        actual = strings[spin]
+        assert_strings(actual, sorted(actual.tolist()))
+        assert len(actual) == dims[spin]
+        assert set(actual.tolist()) <= set(legal(norb, nelec[spin]))
+        assert (1 << nelec[spin]) - 1 in actual.tolist()
+
+
+def test_random_seed_strings_repeat_for_one_seed_and_differ_across_seeds():
+    """Kills B2a-3 and B2a-4: the random null arm must be reproducible yet depend on seed."""
+    norb, nelec, dims = RANDOM_ARGS
+    draws = set()
+    for seed in RANDOM_SEEDS:
+        first = extend.random_seed_strings(norb, nelec, dims, seed)
+        second = extend.random_seed_strings(norb, nelec, dims, seed)
+        for spin in range(2):
+            np.testing.assert_array_equal(first[spin], second[spin])
+        draws.add(tuple(tuple(s.tolist()) for s in first))
+
+    assert len(draws) == len(RANDOM_SEEDS)
+
+
+def test_random_seed_strings_match_the_sqd_random_baseline_draw():
+    """Kills B2a-5: 03f fixes the random seed source to the SQD random baseline draw."""
+    random_strings = sys.modules["q2m3.sqd.observables"]._random_strings
+    for seed in RANDOM_SEEDS:
+        actual = extend.random_seed_strings(*RANDOM_ARGS, seed)
+        expected = random_strings(*RANDOM_ARGS, seed)
+        for spin in range(2):
+            assert_strings(actual[spin], np.sort(expected[spin]))
+
+
+def test_cisd_seed_strings_group_weights_by_single_link_relative_tolerance():
+    """Kills B2a-6 to B2a-10: near-equal weights form one single-link group that sorts by
+    diagonal (D11), so exact, pairwise, anchored and diagonal-only keys all pick wrong."""
+    step = 2.0**-21
+    weights = {3: 1.0, 5: 0.5, 9: 0.5 - step, 6: 0.5 - 2 * step, 10: 0.5 - 3 * step, 12: 0.0}
+    diagonal = {3: -1.0, 5: 3.0, 6: 4.0, 9: 2.0, 10: 1.0, 12: 0.5}
+    strings, _ = cisd_select(weights, diagonal, size=3)
+
+    assert_strings(strings, [3, 9, 10])  # ranked order is [3, 10, 9], so output must be sorted
+
+
+def test_cisd_seed_strings_tolerance_is_relative_to_the_largest_weight():
+    """Kills B2a-11: with max(w) = 2^-10 a gap of 2^-25 splits groups; an absolute 1e-6
+    tolerance would merge them and let the lower diagonal win."""
+    top = 2.0**-10
+    weights = {3: 2.0**-11, 5: top, 6: top - 2.0**-25, 9: 0.0, 10: 0.0, 12: 0.0}
+    diagonal = {3: 0.0, 5: 2.0, 6: 1.0, 9: 3.0, 10: 4.0, 12: 5.0}
+    strings, _ = cisd_select(weights, diagonal, size=2)
+
+    assert_strings(strings, [3, 5])
+
+
+def test_cisd_seed_strings_break_equal_weight_and_diagonal_by_integer():
+    """Kills B2a-12: the last key is the ascending integer, which makes the seed deterministic."""
+    weights = {3: 0.5, 5: 0.125, 6: 0.125, 9: 0.25, 10: 0.25, 12: 0.25}
+    strings, _ = cisd_select(weights, dict.fromkeys(CISD_POOL, 1.0), size=3)
+
+    assert_strings(strings, [3, 9, 10])
+
+
+def test_cisd_seed_strings_always_keep_hf():
+    """Kills B2a-13 and B2a-14: HF stays in the seed and the seed size stays equal to size."""
+    weights = {3: 0.0625, 5: 0.5, 6: 0.25, 9: 0.125, 10: 0.09375, 12: 0.03125}
+    strings, _ = cisd_select(weights, dict.fromkeys(CISD_POOL, 1.0), size=2)
+
+    assert_strings(strings, [3, 5])
+
+
+def test_cisd_seed_strings_fill_zero_weight_strings_by_diagonal_and_count_them():
+    """Kills B2a-15 and B2a-16: zero-weight fill follows the diagonal, and the arm field
+    zero_weight_strings counts only the selected zero-weight strings."""
+    weights = {3: 0.5, 5: 0.25, 6: 0.0, 9: 0.0, 10: 0.0, 12: 0.0}
+    diagonal = {3: 0.0, 5: 0.0, 6: 4.0, 9: 1.0, 10: 2.0, 12: 3.0}
+    strings, zero_count = cisd_select(weights, diagonal, size=5)
+
+    assert_strings(strings, [3, 5, 9, 10, 12])
+    assert type(zero_count) is int
+    assert zero_count == 3
+
+
+def test_cisd_seed_strings_count_only_exact_zero_weights():
+    """zero_weight_strings is an arm field, so a tiny positive weight must not count as zero."""
+    weights = {3: 0.5, 5: 2.0**-40, 6: 0.0, 9: 0.0, 10: 0.0, 12: 0.0}
+    diagonal = {3: 0.0, 5: 0.5, 6: 4.0, 9: 1.0, 10: 2.0, 12: 3.0}
+    strings, zero_count = cisd_select(weights, diagonal, size=3)
+
+    assert_strings(strings, [3, 5, 9])
+    assert zero_count == 1
+
+
+def test_cisd_seed_strings_return_whole_pool_when_size_exceeds_it():
+    """A size above the pool returns every string, so callers must not assume len == size."""
+    weights = {3: 0.5, 5: 0.25, 6: 0.125, 9: 0.0, 10: 0.0, 12: 0.0}
+    strings, zero_count = cisd_select(weights, dict.fromkeys(CISD_POOL, 1.0), size=8)
+
+    assert_strings(strings, CISD_POOL)
+    assert zero_count == 3
+
+
+def test_cisd_seed_strings_reject_misaligned_weights():
+    """Kills B2a-17: a silent zip truncation would rank strings against the wrong weights."""
+    pool = np.asarray(CISD_POOL, dtype=np.int64)
+    with pytest.raises(ValueError, match="must align with the CI strings"):
+        extend.cisd_seed_strings(
+            pool, np.full(len(pool) - 1, 0.25), np.zeros(len(pool)), nelec_spin=2, size=2
+        )
+
+
+@pytest.mark.parametrize("size", [0, -1])
+def test_cisd_seed_strings_reject_size_below_one(size):
+    """Kills S7a2 S2: ``[: size - 1]`` wraps around below 1 and silently returns extra strings."""
+    weights = dict(zip(CISD_POOL, (0.9, 0.5, 0.4, 0.3, 0.2, 0.1), strict=True))
+    with pytest.raises(ValueError, match="size must be at least 1"):
+        cisd_select(weights, dict.fromkeys(CISD_POOL, 0.0), size)
+
+
+# ---- cisd seeds (B2b group 1)
+
+
+@pytest.fixture(scope="module")
+def n2_sym():
+    """N2 at 1.10 Angstrom, STO-3G RHF with point-group symmetry: norb 10, nelec (7, 7)."""
+    from pyscf import ao2mo, gto, scf
+
+    atoms = [("N", (0.0, 0.0, 0.0)), ("N", (0.0, 0.0, 1.10))]
+    mol = gto.M(atom=atoms, basis="sto-3g", unit="Angstrom", symmetry=True, verbose=0)
+    mf = scf.RHF(mol).run(conv_tol=1e-12)
+    assert mf.converged, "SCF did not converge"
+    coeff = mf.mo_coeff
+    h1 = coeff.T @ mf.get_hcore() @ coeff
+    h2 = ao2mo.restore(1, ao2mo.kernel(mol, coeff), 10)
+    return h1, h2, mol.energy_nuc()
+
+
+def _cisd_marginals(h1, h2, e_core, *, norb, nelec):
+    """Per spin: (string pool, CISD marginal weights, diagonal energies on the HF row/column)."""
+    from pyscf.fci import cistring, direct_spin1
+
+    _, vec = extend.cisd_state(h1, h2, e_core, norb=norb, nelec=nelec)
+    hdiag = direct_spin1.make_hdiag(h1, h2, norb, nelec).reshape(vec.shape)
+    pools = [cistring.make_strings(range(norb), n) for n in nelec]
+    weights = ((vec**2).sum(axis=1), (vec**2).sum(axis=0))
+    return list(zip(pools, weights, (hdiag[:, 0], hdiag[0, :]), strict=True))
+
+
+def _cisd_expected(marginals, nelec, dims):
+    """Per spin: the (strings, zero_count) that cisd_seed_strings selects from the marginals."""
+    return [
+        extend.cisd_seed_strings(pool, w, e, nelec_spin=n, size=d)
+        for (pool, w, e), n, d in zip(marginals, nelec, dims, strict=True)
+    ]
+
+
+def _seed(source, system, *, norb, nelec, dims):
+    h1, h2, e_core = system
+    return extend.build_seed_space(
+        source,
+        h1,
+        h2,
+        e_core,
+        norb=norb,
+        nelec=nelec,
+        dims=dims,
+        seed=0,
+        audit=[],
+        resources=dict(RESOURCES),
+    )
+
+
+def test_cisd_state_matches_independent_sd_diagonalization(h6_chain):
+    """O-T6/K9: the CISD seed must be the exact ground state of the singles-and-doubles space."""
+    from pyscf.fci import cistring, direct_spin1
+
+    h1, h2, e_core = h6_chain
+    norb, nelec = 6, (3, 3)
+    pool = cistring.make_strings(range(norb), 3)
+    h2e = direct_spin1.absorb_h1e(h1, h2, norb, nelec, 0.5)
+    columns = [
+        direct_spin1.contract_2e(h2e, unit.reshape(len(pool), -1), norb, nelec).ravel()
+        for unit in np.eye(len(pool) ** 2)
+    ]
+    ham = np.column_stack(columns)
+    order = np.array([bin(int(s) ^ int(pool[0])).count("1") // 2 for s in pool])
+    sd = (order[:, None] + order[None, :]).ravel() <= 2
+    e_sd = np.linalg.eigvalsh(ham[np.ix_(sd, sd)])[0] + e_core
+    e_hf = ham[0, 0] + e_core
+    assert abs(e_sd - e_hf) > 1e-6
+
+    e_cisd, _ = extend.cisd_state(h1, h2, e_core, norb=norb, nelec=nelec)
+
+    assert abs(e_cisd - e_sd) <= 1e-10
+    assert abs(e_cisd - e_hf) > 1e-6
+
+
+def test_build_seed_space_cisd_respects_unequal_spin_dims(h6_chain):
+    """K7: alpha and beta seed sizes are independent, so dims must not be swapped or shared."""
+    norb, nelec, dims = 6, (3, 3), (5, 3)
+    marginals = _cisd_marginals(*h6_chain, norb=norb, nelec=nelec)
+    expected = _cisd_expected(marginals, nelec, dims)
+    # h6 is closed shell, so alpha and beta marginals match: only the per-spin length
+    # detects swapped or shared dims.
+
+    ((alpha, beta), _), _, _ = _seed("cisd", h6_chain, norb=norb, nelec=nelec, dims=dims)
+
+    for got, (want, _), size in zip((alpha, beta), expected, dims, strict=True):
+        assert len(got) == size and 7 in got.tolist()
+        np.testing.assert_array_equal(got, want)
+
+
+def test_build_seed_space_cisd_pads_zero_weight_strings_by_ranking(n2_sym):
+    """K8: when d exceeds the CISD support, zero-weight strings fill the seed in ranking order."""
+    norb, nelec, dims = 10, (7, 7), (82, 82)
+    marginals = _cisd_marginals(*n2_sym, norb=norb, nelec=nelec)
+    nonzero = [pool[w != 0.0] for pool, w, _ in marginals]
+    assert all(len(nz) < d for nz, d in zip(nonzero, dims, strict=True))
+    expected = _cisd_expected(marginals, nelec, dims)
+
+    ((alpha, beta), _), _, zero_strings = _seed("cisd", n2_sym, norb=norb, nelec=nelec, dims=dims)
+
+    for got, (want, _), nz in zip((alpha, beta), expected, nonzero, strict=True):
+        np.testing.assert_array_equal(got, want)
+        assert set(nz.tolist()) <= set(got.tolist())
+    zero = [
+        want[w[np.searchsorted(pool, want)] == 0.0]
+        for (want, _), (pool, w, _) in zip(expected, marginals, strict=True)
+    ]
+    assert zero_strings.dtype == np.int64
+    np.testing.assert_array_equal(zero_strings, np.concatenate(zero))
+    assert len(zero_strings) == sum(count for _, count in expected)
+
+
+def test_build_seed_space_cisd_orders_n2_zero_weight_tie_by_diagonal(n2_sym):
+    """K6 (relaxed, M B2b-0 (a)): the tie group that holds exact zeros is cut by diagonal
+    energy, not by integer order or by raw weight order."""
+    norb, nelec, d = 10, (7, 7), 22
+    marginals = _cisd_marginals(*n2_sym, norb=norb, nelec=nelec)
+    pool, w, diag = marginals[0]
+    ranked = np.sort(w)[::-1]
+    assert ranked[-1] == 0.0 and np.all(-np.diff(ranked[d - 1 :]) <= 1e-6 * ranked[0])
+    i, j = np.searchsorted(pool, [367, 223])
+    assert abs(w[i] - w[j]) <= 1e-6 * ranked[0] and abs(diag[i] - diag[j]) <= 1e-9
+    expected = _cisd_expected(marginals, nelec, (d, d))
+    want = set(expected[0][0].tolist())
+    flat, _ = extend.cisd_seed_strings(pool, w, np.zeros_like(diag), nelec_spin=7, size=d)
+    assert want != set(flat.tolist())
+    assert want != set(pool[np.argsort(-w, kind="stable")[:d]].tolist())
+
+    ((alpha, beta), _), _, _ = _seed("cisd", n2_sym, norb=norb, nelec=nelec, dims=(d, d))
+
+    np.testing.assert_array_equal(alpha, expected[0][0])
+    np.testing.assert_array_equal(beta, expected[1][0])
+
+
+# ---- seed space and guards (B2b group 2)
+
+H6 = {"norb": 6, "nelec": (3, 3)}
+H6_HF_STRING = 0b000111
+
+
+def _product_hamiltonian(system, alpha, beta, *, norb, nelec):
+    """Electronic Hamiltonian (no e_core) on the alpha x beta product, alpha-major order."""
+    from pyscf.fci import cistring, direct_spin1
+
+    h1, h2, _ = system
+    pairs = np.array(
+        list(
+            product(
+                cistring.strs2addr(norb, nelec[0], np.asarray(alpha)),
+                cistring.strs2addr(norb, nelec[1], np.asarray(beta)),
+            )
+        )
+    )
+    full = (comb(norb, nelec[0]), comb(norb, nelec[1]))
+    h2e = direct_spin1.absorb_h1e(h1, h2, norb, nelec, 0.5)
+    columns = []
+    for a, b in pairs:
+        unit = np.zeros(full)
+        unit[a, b] = 1.0
+        columns.append(
+            direct_spin1.contract_2e(h2e, unit, norb, nelec).reshape(full)[tuple(pairs.T)]
+        )
+    return np.array(columns).T
+
+
+def _h6_hf_energy(system) -> float:
+    return _product_hamiltonian(system, [H6_HF_STRING], [H6_HF_STRING], **H6)[0, 0] + system[2]
+
+
+def _seed_h6(source, system, *, dims, audit, **caps):
+    resources = RESOURCES | caps
+    return extend.build_seed_space(
+        source, *system, **H6, dims=dims, seed=0, audit=audit, resources=resources
+    )
+
+
+def test_build_seed_space_hf_is_single_hf_determinant(h6_chain):
+    """The hf arm is the null control for seed quality, so it must hold only the HF determinant."""
+    ((alpha, beta), amplitudes), energy, zero_weight = _seed("hf", h6_chain, **H6, dims=(1, 1))
+
+    np.testing.assert_array_equal(alpha, [H6_HF_STRING])
+    np.testing.assert_array_equal(beta, [H6_HF_STRING])
+    np.testing.assert_allclose(np.abs(np.ravel(amplitudes)), [1.0])
+    assert abs(energy - _h6_hf_energy(h6_chain)) <= 1e-10
+    assert zero_weight is None
+
+
+def test_build_seed_space_hf_ignores_dims(h6_chain):
+    """The hf arm must ignore dims by ruling, and dims=(1, 1) cannot tell hf from random."""
+    ((alpha, beta), amplitudes), energy, zero_weight = _seed("hf", h6_chain, **H6, dims=(5, 3))
+
+    np.testing.assert_array_equal(alpha, [H6_HF_STRING])
+    np.testing.assert_array_equal(beta, [H6_HF_STRING])
+    np.testing.assert_allclose(np.abs(np.ravel(amplitudes)), [1.0])
+    assert abs(energy - _h6_hf_energy(h6_chain)) <= 1e-10
+    assert zero_weight is None
+
+
+@pytest.mark.parametrize("source", ["random", "cisd"])
+def test_build_seed_space_energy_and_amplitudes_diagonalize_product_space(h6_chain, source):
+    """seed_space_energy is the D-P1 reference, so it must be the exact product-space minimum."""
+    ((alpha, beta), amplitudes), energy, _ = _seed(source, h6_chain, **H6, dims=(5, 3))
+    assert (len(alpha), len(beta)) == (5, 3)
+    ham = _product_hamiltonian(h6_chain, alpha, beta, **H6)
+    exact = np.linalg.eigvalsh(ham)[0] + h6_chain[2]
+    assert abs(exact - _h6_hf_energy(h6_chain)) > 1e-6
+
+    assert abs(energy - exact) <= 1e-10
+    vector = np.ravel(amplitudes)
+    assert abs(vector @ ham @ vector / (vector @ vector) + h6_chain[2] - energy) <= 1e-10
+
+
+def test_build_seed_space_guards_cisd_full_sector_before_cisd(h6_chain, monkeypatch):
+    """CISD allocates the full sector, so the guard must price that sector before CISD runs."""
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    audit: list[dict] = []
+    _seed_h6("cisd", h6_chain, dims=(5, 3), audit=audit)
+    phases = [(entry["phase"], tuple(entry["subspace_dims"])) for entry in audit]
+    assert phases == [("seed_cisd", (20, 20)), ("seed_space", (5, 3))]
+
+    def stub(*args, **kwargs):
+        raise AssertionError("cisd_state ran before the seed_cisd guard rejected")
+
+    monkeypatch.setattr(extend, "cisd_state", stub)
+    with pytest.raises(AllocationGuardError):
+        _seed_h6("cisd", h6_chain, dims=(5, 3), audit=[], rss_budget_mb=1.0)
+
+
+@pytest.mark.parametrize(("source", "dims"), [("hf", (1, 1)), ("random", (5, 3))])
+def test_build_seed_space_hf_and_random_skip_seed_cisd_guard(h6_chain, source, dims):
+    """Only CISD allocates the full sector; a seed_cisd guard on hf or random would reject valid runs."""
+    audit: list[dict] = []
+    _seed_h6(source, h6_chain, dims=dims, audit=audit)
+
+    assert [entry["phase"] for entry in audit] == ["seed_space"]
+
+
+def test_build_seed_space_rejects_unknown_source(h6_chain):
+    """quantum seeds come from sampling, so the dispatcher must refuse them and typos, not fall back."""
+    for source in ("quantum", "bogus"):
+        with pytest.raises(ValueError, match="seed source must be"):
+            _seed(source, h6_chain, **H6, dims=(5, 3))
+
+
+# ---- sci baseline (B3 group 1)
+
+E3_SCI_PREFIX = [7, 11, 13, 14, 19, 21, 22, 25, 28, 35, 37, 38, 42, 49]  # S3.3b-0 probe (2)
+
+
+def _ranking(h6, *, audit=None, **overrides):
+    h1, h2, e_core = h6
+    kwargs = {"norb": 6, "nelec": (3, 3), "audit": [] if audit is None else audit, **RESOURCES}
+    return extend.sci_ranking(h1, h2, e_core, **(kwargs | overrides))
+
+
+def test_sci_ranking_guards_full_sector(h6_chain):
+    """Ranking diagonalizes the full sector, so its guard must see the full sector, not arm dims."""
+    full = (comb(6, 3), comb(6, 3))
+    assert full != (len(_e3_extended()),) * 2
+    audit: list[dict] = []
+    _ranking(h6_chain, audit=audit)
+    assert len(audit) == 1
+    assert audit[0]["phase"] == "sci_ranking"
+    assert tuple(audit[0]["subspace_dims"]) == full
+
+
+def test_sci_ranking_guard_rejection_raises_allocation_guard_error(h6_chain):
+    """An over-budget ranking must stop before the full-sector allocation (D8), not run anyway."""
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    audit: list[dict] = []
+    with pytest.raises(AllocationGuardError):
+        _ranking(h6_chain, audit=audit, rss_budget_mb=1149.0)
+    assert audit[-1]["phase"] == "sci_ranking"
+    assert audit[-1]["predicted_rss_mb"] > 1149.0
+
+
+def test_run_ext_sqd_sci_baseline_uses_ranked_prefix_not_arm_strings(h6_chain, monkeypatch):
+    """The baseline must spend the arm dims on SCI-ranked strings, else D-P1 compares the arm to itself."""
+    from pyscf.fci import cistring
+
+    from q2m3.sqd import observables
+    from q2m3.sqd.diagonalize import kernel_fixed_space
+    from q2m3.sqd.observables import _select_sci
+
+    h1, h2, e_core = h6_chain
+    ranking = _ranking(h6_chain)
+    calls: list[str] = []
+    for module in (extend, observables):
+
+        def counted(*args, _module=module, _run=module._run_selected_ci, **kwargs):
+            calls.append(_module.__name__)
+            return _run(*args, **kwargs)
+
+        monkeypatch.setattr(module, "_run_selected_ci", counted)
+    arm = _e3_run(extend.run_ext_sqd, h6_chain, sci_ranking=ranking)
+    # A full-sector SCI rerun inside run_ext_sqd would skip the ranking guard (D8).
+    assert calls == []
+    oracle, _ = _select_sci(h1, h2, 6, (3, 3), tuple(arm.extended_counts))
+    lexical = set(cistring.make_strings(range(6), 3)[:14].tolist())
+    for spin in oracle:
+        assert set(spin.tolist()) == set(E3_SCI_PREFIX)
+        assert set(spin.tolist()) not in (set(_e3_extended()), lexical)
+    e_oracle = kernel_fixed_space(
+        h1, h2, e_core, tuple(oracle), norb=6, nelec=(3, 3), **RESOURCES
+    ).energy
+    assert e_oracle == pytest.approx(-3.2338790886971536, abs=1e-10)
+    assert arm.energy == pytest.approx(-3.2329912656142668, abs=1e-10)
+    assert abs(arm.sci_baseline_energy - e_oracle) <= 1e-10
+    assert abs(arm.sci_baseline_energy - arm.energy) > 1e-6
+    assert arm.sci_baseline_reason is None
+    arm.validate()
+
+
+def test_run_ext_sqd_sci_baseline_matches_extended_dims_per_spin(h6_chain):
+    """The baseline gets the extended dims, not the truncated dims, so both sides have equal space."""
+    audit: list[dict] = []
+    arm = _e3_run(extend.run_ext_sqd, h6_chain, audit=audit, sci_ranking=_ranking(h6_chain))
+    assert (tuple(arm.extended_counts), tuple(arm.truncated_counts)) == ((14, 14), (2, 1))
+    baseline = [record for record in audit if record["phase"] == "sci_baseline"]
+    assert len(baseline) == 1
+    assert tuple(baseline[0]["subspace_dims"]) == tuple(arm.extended_counts)
+    assert not [record for record in audit if record["phase"] == "sci_ranking"]
+
+
+# ---- sci baseline (B3 group 2)
+
+
+def _resident_mb(h6) -> tuple[float, float]:
+    """(ranking MB, extended + amplitudes MB) for E3, per the D12 formula in M B3-0."""
+    from q2m3.sqd.observables import _run_selected_ci
+
+    h1, h2, _ = h6
+    _, ci, pools, diags = _run_selected_ci(h1, h2, 6, (3, 3))
+    ranking = ci.nbytes + sum(array.nbytes for array in (*pools, *diags))
+    n = len(_e3_extended())
+    solved = 2 * np.zeros(n, np.int64).nbytes + np.zeros((n, n)).nbytes
+    assert ranking > 0 and solved > 0
+    return ranking / 1e6, solved / 1e6
+
+
+def test_run_ext_sqd_baseline_guard_rejection_keeps_arm_energy(h6_chain):
+    """A baseline over budget must not erase the extended energy that is already solved (B3-9)."""
+    from q2m3.sqd.resources import estimate_rss_mb
+
+    n = len(_e3_extended())
+    ranking_mb, solved_mb = _resident_mb(h6_chain)
+    ext_retained = RESOURCES["retained_mb"] + ranking_mb
+    predicted = [
+        estimate_rss_mb(
+            6, (3, 3), stage="diagonalize", subspace_dims=(n, n), retained_mb=r, model=_ext_model()
+        )
+        for r in (ext_retained, ext_retained + solved_mb)
+    ]
+    budget = sum(predicted) / 2
+    audit: list[dict] = []
+    arm = _e3_run(
+        extend.run_ext_sqd,
+        h6_chain,
+        audit=audit,
+        rss_budget_mb=budget,
+        sci_ranking=_ranking(h6_chain),
+    )
+    assert [record["phase"] for record in audit] == ["ext_quantum", "sci_baseline"]
+    assert audit[0]["predicted_rss_mb"] <= budget < audit[1]["predicted_rss_mb"]
+    assert arm.energy == pytest.approx(-3.2329912656142668, abs=1e-10)
+    assert arm.null_reason is None
+    assert arm.sci_baseline_energy is None
+    assert arm.sci_baseline_reason.startswith("sci_baseline_rss_budget: ")
+    arm.validate()
+
+
+def test_run_ext_sqd_baseline_numerical_error_keeps_arm_energy(h6_chain, monkeypatch):
+    """A baseline solve that fails numerically must not erase the solved extended energy."""
+    from q2m3.sqd.exceptions import ReferenceNumericalError
+
+    original = extend.kernel_fixed_space
+    calls = []
+
+    def solver(*args, **kwargs):
+        calls.append(len(calls))
+        if len(calls) == 2:
+            raise ReferenceNumericalError("STUB baseline numerical")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(extend, "kernel_fixed_space", solver)
+    audit: list[dict] = []
+    arm = _e3_run(extend.run_ext_sqd, h6_chain, audit=audit, sci_ranking=_ranking(h6_chain))
+    assert len(calls) == 2
+    assert [record["phase"] for record in audit] == ["ext_quantum", "sci_baseline"]
+    assert arm.energy == pytest.approx(-3.2329912656142668, abs=1e-10)
+    assert arm.null_reason is None
+    assert arm.sci_baseline_energy is None
+    assert arm.sci_baseline_reason.startswith("sci_baseline_numerical: ")
+    assert "STUB baseline numerical" in arm.sci_baseline_reason
+    arm.validate()
+
+
+def test_cisd_state_rejects_unconverged_cisd(h6_chain, monkeypatch):
+    """An unconverged CISD vector must not seed the arm silently."""
+    from pyscf.ci import cisd
+
+    from q2m3.sqd.exceptions import ReferenceNumericalError
+
+    original = cisd.CISD.kernel
+
+    def unconverged(self, *args, **kwargs):
+        result = original(self, *args, **kwargs)
+        self.converged = False
+        return result
+
+    monkeypatch.setattr(cisd.CISD, "kernel", unconverged)
+    h1, h2, e_core = h6_chain
+    with pytest.raises(ReferenceNumericalError, match="not converge.*conv_tol"):
+        extend.cisd_state(h1, h2, e_core, norb=6, nelec=(3, 3))
+
+
+def test_run_ext_sqd_guards_count_resident_ranking_and_solution(h6_chain):
+    """Guards must count the ranking and the extended solution that stay resident, else D12 under-predicts RSS."""
+    ranking_mb, solved_mb = _resident_mb(h6_chain)
+    audit: list[dict] = []
+    _e3_run(extend.run_ext_sqd, h6_chain, audit=audit, sci_ranking=_ranking(h6_chain))
+    # A list keeps a repeated phase visible; a dict would keep only its last record.
+    assert [record["phase"] for record in audit] == ["ext_quantum", "sci_baseline"]
+    retained = {record["phase"]: record["retained_mb"] for record in audit}
+    ext_retained = RESOURCES["retained_mb"] + ranking_mb
+    assert retained["ext_quantum"] == pytest.approx(ext_retained, rel=1e-12)
+    assert retained["sci_baseline"] == pytest.approx(ext_retained + solved_mb, rel=1e-12)
+
+
+def test_run_ext_sqd_wall_budget_arm_records_baseline_reason(h6_chain):
+    """A null arm has no extended space, so the baseline must record why it did not run."""
+    import time
+
+    audit: list[dict] = []
+    arm = _e3_run(
+        extend.run_ext_sqd,
+        h6_chain,
+        audit=audit,
+        deadline=time.monotonic(),
+        sci_ranking=_ranking(h6_chain),
+    )
+    assert arm.null_reason == "ext_wall_budget"
+    assert arm.sci_baseline_energy is None
+    assert arm.sci_baseline_reason == "sci_baseline_arm_null"
+    assert not [record for record in audit if record["phase"] == "sci_baseline"]
+
+
+def test_run_ext_sqd_without_ranking_records_baseline_reason(h6_chain):
+    """Without a ranking the baseline cannot run, so the arm must say so and keep its energy."""
+    audit: list[dict] = []
+    arm = _e3_run(extend.run_ext_sqd, h6_chain, audit=audit)
+    assert arm.sci_baseline_reason == "sci_ranking_unavailable"
+    assert not [r for r in audit if r["phase"] in ("sci_ranking", "sci_baseline")]
+    assert arm.energy == pytest.approx(-3.2329912656142668, abs=1e-10)
+    assert arm.sci_baseline_energy is None
+    assert arm.null_reason is None
+    arm.validate()
+
+
+def test_sci_ranking_energy_includes_e_core(h6_chain):
+    """The ranking energy is public, |e_core| > 1 Ha here, and no other test reads it, so e_core loss went unseen."""
+    from pyscf import fci
+
+    h1, h2, e_core = h6_chain
+    assert abs(e_core) > 1.0
+    energy = _ranking(h6_chain)[0]
+    e_fci, _ = fci.direct_spin1.kernel(h1, h2, 6, (3, 3), ecore=e_core, tol=1e-13)
+    assert e_fci - 1e-8 <= energy <= e_fci + 0.1
+
+
+def test_run_ext_sqd_ext_guard_rejection_audit_counts_resident_ranking(h6_chain):
+    """The SCI ranking stays resident during the ext stage, so the ext guard must add it to RSS.
+
+    A guard that leaves the ranking out under-predicts RSS and can admit an OOM. The guard
+    writes its prediction to the audit only on a rejection, and no other test rejects there.
+    """
+    ranking_mb, _ = _resident_mb(h6_chain)
+    assert ranking_mb > 0
+    records = []
+    for ranking in (_ranking(h6_chain), None):
+        audit: list[dict] = []
+        with pytest.raises(extend.AllocationGuardError):
+            _e3_run(
+                extend.run_ext_sqd,
+                h6_chain,
+                audit=audit,
+                # Half of 1149.6328 MB, the smaller ext_quantum prediction (no ranking,
+                # S5b.3-c1). ext_quantum is the first guard, so both runs reject there.
+                rss_budget_mb=574.8164,
+                sci_ranking=ranking,
+            )
+        (record,) = [record for record in audit if record["phase"] == "ext_quantum"]
+        records.append(record)
+    with_ranking, without_ranking = records
+    assert without_ranking["retained_mb"] == pytest.approx(RESOURCES["retained_mb"], rel=1e-12)
+    assert with_ranking["retained_mb"] == pytest.approx(
+        RESOURCES["retained_mb"] + ranking_mb, rel=1e-12
+    )
+    assert with_ranking["predicted_rss_mb"] == pytest.approx(
+        without_ranking["predicted_rss_mb"] + ranking_mb, rel=1e-12
+    )
+
+
+# ---- arm comparison (B4 group 2, P1)
+
+
+def test_ext_config_comparison_accepts_records_with_equal_settings_and_code_path():
+    """O-S5.1: the arms of one point share settings and code path, so they must compare clean."""
+    records = []
+    for shift in range(4):
+        arms = ext_record_parts()
+        arms[0]["energy"] -= 0.01 * shift  # arm data differ; settings and code path do not
+        records.append(ext_record(arms=arms))
+    assert len({record.arms[0].energy for record in records}) == 4
+    assert extend.assert_same_ext_config(records) is None
+
+
+def test_ext_config_comparison_reports_a_differing_threshold_by_field_name():
+    """K2: a tau that differs between arms must fail the comparison and name only that field."""
+    from dataclasses import fields, replace
+
+    base = ext_record()
+    other = replace(base, settings=replace(base.settings, threshold=base.settings.threshold * 10))
+    names = [field.name for field in fields(base.settings)]
+    differing = [n for n in names if getattr(base.settings, n) != getattr(other.settings, n)]
+    assert differing == ["threshold"] and other.code_path_id == base.code_path_id
+    with pytest.raises(ValueError, match="threshold") as excinfo:
+        extend.assert_same_ext_config([base, other])
+    unrelated = [n for n in names if n != "threshold"] + ["code_path_id"]
+    assert [n for n in unrelated if n in str(excinfo.value)] == []
+
+
+def test_ext_config_comparison_reports_a_differing_code_path_id():
+    """Arms from different code paths must not compare equal even when the settings match."""
+    from dataclasses import replace
+
+    base = ext_record()
+    other = replace(base, code_path_id="ext-sqd-other")
+    assert other.settings == base.settings
+    with pytest.raises(ValueError, match="code_path_id"):
+        extend.assert_same_ext_config([base, other])
+
+
+def test_ext_config_comparison_rejects_a_non_record_with_value_error():
+    """I-013: a wrong input type must raise ValueError, not TypeError or AttributeError."""
+    inputs = [ext_record(), ext_arm_data()]
+    with pytest.raises(ValueError, match="expected ExtSQDRecord elements, got dict"):
+        extend.assert_same_ext_config(inputs)

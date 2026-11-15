@@ -11,14 +11,21 @@ from __future__ import annotations
 import math
 import time
 import warnings
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import dataclass, fields
+from typing import Any
 
 import numpy as np
 
 from q2m3.sqd.config import ExtSQDSettings
 from q2m3.sqd.diagonalize import kernel_fixed_space
-from q2m3.sqd.exceptions import AllocationGuardError
-from q2m3.sqd.observables import _sector
+from q2m3.sqd.exceptions import AllocationGuardError, ReferenceNumericalError
+from q2m3.sqd.observables import (
+    _random_strings,
+    _run_selected_ci,
+    _sector,
+    _take_spin_strings,
+)
 from q2m3.sqd.resources import (
     HARD_RSS_MB,
     REJECT_RSS_MB,
@@ -34,6 +41,9 @@ _WALL_REFERENCE_S = 306.0
 _WALL_REFERENCE_DIM = 11_778_624
 # An arm's null_reason starts with one of these (03e:12).
 _NULL_REASON_PREFIXES = ("ext_wall_budget", "ext_rss_budget:", "ext_numerical:")
+# Single-link grouping: two neighbouring CISD weights share one group when their gap
+# is at most this fraction of max(w).
+_CISD_GROUP_RTOL = 1e-6
 
 
 @dataclass(frozen=True)
@@ -176,6 +186,39 @@ class ExtSQDRecord:
         for arm in self.arms:
             arm.validate()
         return self
+
+
+def assert_same_ext_config(records: Iterable[ExtSQDRecord]) -> None:
+    """Check that the records share each settings field and the code path.
+
+    All arms of one point must use the same settings and the same code path. When they
+    differ, the check fails and names the differing fields.
+    No production caller uses it yet. The benchmark records will use it later.
+
+    Args:
+        records: Extended-SQD records to compare.
+
+    Raises:
+        ValueError: If an element is not an ``ExtSQDRecord``, or if a field of
+            ``settings`` or ``code_path_id`` differs between records. The message
+            names only the differing fields.
+    """
+    items = list(records)
+    for record in items:
+        if not isinstance(record, ExtSQDRecord):
+            raise ValueError(f"expected ExtSQDRecord elements, got {type(record).__name__}")
+    if not items:
+        return
+    first, rest = items[0], items[1:]
+    differing = [
+        f.name
+        for f in fields(first.settings)
+        if any(getattr(r.settings, f.name) != getattr(first.settings, f.name) for r in rest)
+    ]
+    if any(r.code_path_id != first.code_path_id for r in rest):
+        differing.append("code_path_id")
+    if differing:
+        raise ValueError(f"records differ in: {', '.join(differing)}")
 
 
 def _hf(electrons: int) -> int:
@@ -321,6 +364,259 @@ def extend_seed_space(
     return union, union.copy()
 
 
+def hf_seed_strings(norb: int, nelec: tuple[int, int]) -> tuple[np.ndarray, np.ndarray]:
+    """Return the HF seed: one HF string per spin.
+
+    Args:
+        norb: Number of active orbitals.
+        nelec: Alpha and beta electron counts.
+
+    Returns:
+        Alpha and beta int64 arrays, each with the HF string of that spin only.
+
+    Raises:
+        ValueError: If an electron count is larger than ``norb``.
+    """
+    alpha, beta = (_seed_array([_hf(n)], norb, n) for n in nelec)
+    return alpha, beta
+
+
+def random_seed_strings(
+    norb: int, nelec: tuple[int, int], dims: tuple[int, int], seed: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the random seed: the SQD random baseline draw for the same seed.
+
+    Args:
+        norb: Number of active orbitals.
+        nelec: Alpha and beta electron counts.
+        dims: Number of strings per spin, HF included.
+        seed: Seed of the random generator.
+
+    Returns:
+        Alpha and beta ascending int64 arrays that contain the HF string.
+
+    Raises:
+        ComparisonUnavailableError: If an entry of ``dims`` is less than 1 or larger
+            than the legal sector of that spin.
+    """
+    # _random_strings already sorts; the sort here only keeps the contract explicit.
+    alpha, beta = (
+        np.sort(np.asarray(s, dtype=np.int64)) for s in _random_strings(norb, nelec, dims, seed)
+    )
+    return alpha, beta
+
+
+def cisd_seed_strings(
+    strings: np.ndarray,
+    weights: np.ndarray,
+    diagonal: np.ndarray,
+    *,
+    nelec_spin: int,
+    size: int,
+) -> tuple[np.ndarray, int]:
+    """Return the CISD seed of one spin: HF plus the size - 1 top-ranked other strings.
+
+    Ranking: sort the non-HF strings by descending weight, then join neighbours
+    whose weight gap is at most ``_CISD_GROUP_RTOL * max(weights)`` into one group
+    (single link). Groups keep the descending weight order. In a group, the lower
+    diagonal energy comes first, then the lower integer.
+
+    When fewer than ``size - 1`` non-HF strings are available, the seed holds all of
+    them, so it has fewer than ``size`` strings. The HF string is added even when
+    ``strings`` does not contain it. In production the CISD pool always contains HF.
+
+    Args:
+        strings: Candidate CI strings of one spin.
+        weights: CISD weight of each string, aligned with ``strings``.
+        diagonal: Diagonal energy of each string, aligned with ``strings``.
+        nelec_spin: Electron count of the spin.
+        size: Seed size, HF included.
+
+    Returns:
+        The ascending int64 seed strings, and the number of selected strings with a
+        weight of exactly 0.0.
+
+    Raises:
+        ValueError: If the strings are invalid, if ``weights`` or ``diagonal`` does
+            not align with ``strings``, or if ``size`` is less than 1.
+    """
+    if size < 1:
+        raise ValueError(f"CISD seed size must be at least 1, got {size}")
+    strings = _string_array(strings, nelec_spin)
+    weights = np.asarray(weights, dtype=float)
+    diagonal = np.asarray(diagonal, dtype=float)
+    if weights.shape != strings.shape or diagonal.shape != strings.shape:
+        raise ValueError("CISD weights and diagonals must align with the CI strings")
+    hf = _hf(nelec_spin)
+    others = strings != hf
+    by_weight = np.argsort(-weights[others], kind="stable")
+    ranked, w, d = (a[others][by_weight] for a in (strings, weights, diagonal))
+    tol = _CISD_GROUP_RTOL * float(weights.max())
+    group = np.cumsum(np.diff(w, prepend=w[:1]) < -tol)
+    chosen = ranked[np.lexsort((ranked, d, group))][: size - 1]
+    seed = np.union1d(chosen, [hf]).astype(np.int64)
+    zero_count = int(np.count_nonzero(weights[np.isin(strings, seed)] == 0.0))
+    return seed, zero_count
+
+
+def cisd_state(
+    h1: np.ndarray, h2: np.ndarray, e_core: float, *, norb: int, nelec: tuple[int, int]
+) -> tuple[float, np.ndarray]:
+    """Return the CISD ground state of an active-space Hamiltonian in its own MO basis.
+
+    The RHF reference uses identity MO coefficients, so the CI vector stays in the
+    basis of ``h1`` and ``h2``. No SCF runs, so degenerate orbitals do not rotate.
+
+    Args:
+        h1: One-electron integrals, shape (norb, norb).
+        h2: Two-electron integrals in chemist notation, shape (norb,) * 4.
+        e_core: Core energy added to the total energy.
+        norb: Number of active orbitals.
+        nelec: Alpha and beta electron counts. They must be equal.
+
+    Returns:
+        The total CISD energy (``e_core`` included), and the FCI-shaped CI vector of
+        shape (alpha string count, beta string count).
+
+    Raises:
+        ValueError: If the alpha and beta electron counts are not equal.
+        ReferenceNumericalError: If CISD does not converge to ``conv_tol``.
+    """
+    from pyscf import ao2mo, ci, gto, scf
+
+    if nelec[0] != nelec[1]:
+        raise ValueError("CISD seeds need a closed-shell reference (equal alpha and beta)")
+    mol = gto.M(verbose=0)
+    mol.nelectron = sum(nelec)
+    mol.incore_anyway = True
+    mf = scf.RHF(mol)
+    mf.get_hcore = lambda *_: np.asarray(h1, dtype=np.float64)
+    mf.get_ovlp = lambda *_: np.eye(norb)
+    mf.energy_nuc = lambda *_: float(e_core)
+    mf._eri = ao2mo.restore(8, np.asarray(h2, dtype=np.float64), norb)
+    mf.mo_coeff = np.eye(norb)
+    mf.mo_occ = np.where(np.arange(norb) < nelec[0], 2.0, 0.0)
+    dm = mf.make_rdm1()
+    mf.mo_energy = np.diag(mf.get_fock(dm=dm))
+    mf.e_tot = mf.energy_tot(dm=dm)
+    solver = ci.CISD(mf)
+    solver.conv_tol = 1e-12
+    solver.kernel()
+    if not solver.converged:
+        raise ReferenceNumericalError(
+            f"CISD did not converge to conv_tol={solver.conv_tol:g}; the CI vector is not valid"
+        )
+    return float(solver.e_tot), ci.cisd.to_fcivec(solver.ci, norb, nelec)
+
+
+def _guard_seed(
+    norb: int,
+    nelec: tuple[int, int],
+    dims: tuple[int, int],
+    phase: str,
+    audit: list[dict],
+    resources: dict,
+) -> None:
+    """Price a ``dims`` product space with the ext guard and record ``phase`` in ``audit``."""
+    predicted = estimate_rss_mb(
+        norb,
+        nelec,
+        stage="diagonalize",
+        subspace_dims=dims,
+        retained_mb=resources["retained_mb"],
+        model=resource_model_for(norb, profile={"max_space": 12}),
+    )
+    _guard_ext(norb, nelec, dims, predicted, phase, audit, resources)
+
+
+def _cisd_seed(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    *,
+    norb: int,
+    nelec: tuple[int, int],
+    dims: tuple[int, int],
+    audit: list[dict],
+    resources: dict,
+) -> tuple[tuple[np.ndarray, np.ndarray], np.ndarray]:
+    """Return the CISD seed strings per spin and the selected zero-weight strings."""
+    from pyscf.fci import cistring, direct_spin1
+
+    full = (math.comb(norb, nelec[0]), math.comb(norb, nelec[1]))
+    _guard_seed(norb, nelec, full, "seed_cisd", audit, resources)
+    _, vector = cisd_state(h1, h2, e_core, norb=norb, nelec=nelec)
+    hdiag = direct_spin1.make_hdiag(h1, h2, norb, nelec).reshape(vector.shape)
+    marginals = ((vector**2).sum(axis=1), (vector**2).sum(axis=0))
+    diagonals = (hdiag[:, 0], hdiag[0, :])
+    seeds, zero_weight = [], []
+    for n, w, diag, size in zip(nelec, marginals, diagonals, dims, strict=True):
+        pool = cistring.make_strings(range(norb), n)
+        chosen, _ = cisd_seed_strings(pool, w, diag, nelec_spin=n, size=size)
+        seeds.append(chosen)
+        zero_weight.append(chosen[w[np.searchsorted(pool, chosen)] == 0.0])
+    return (seeds[0], seeds[1]), np.concatenate(zero_weight).astype(np.int64)
+
+
+def build_seed_space(
+    source: str,
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    *,
+    norb: int,
+    nelec: tuple[int, int],
+    dims: tuple[int, int],
+    seed: int,
+    audit: list[dict],
+    resources: dict,
+) -> tuple[tuple[tuple[np.ndarray, np.ndarray], np.ndarray], float, np.ndarray | None]:
+    """Build a seed and diagonalize the Hamiltonian in its alpha x beta product space.
+
+    The ``hf`` seed is always the single HF determinant; it ignores ``dims``. The
+    ``random`` seed is the SQD random draw for ``seed``. The ``cisd`` seed ranks
+    strings by CISD marginal weight; the guard prices the full sector before CISD runs.
+
+    Args:
+        source: Seed source: ``"hf"``, ``"random"`` or ``"cisd"``.
+        h1: One-electron integrals, shape (norb, norb).
+        h2: Two-electron integrals in chemist notation.
+        e_core: Core energy in Hartree.
+        norb: Number of active orbitals.
+        nelec: Electron counts (alpha, beta).
+        dims: Seed sizes (alpha, beta), HF string included.
+        seed: Random seed for the ``random`` source.
+        audit: List that receives one ext-guard record per guarded phase.
+        resources: Guard and solver resources: ``host_available_mb`` and optional
+            ``rss_budget_mb``, ``retained_mb``, ``allow_large``.
+
+    Returns:
+        ``((alpha, beta), amplitudes)`` with alpha-major amplitudes, the ground-state
+        energy including ``e_core``, and the selected zero-weight strings (alpha then
+        beta, int64) for ``cisd`` or ``None`` for the other sources.
+
+    Raises:
+        ValueError: If ``source`` is not ``"hf"``, ``"random"`` or ``"cisd"``.
+        AllocationGuardError: If the ext guard rejects a phase.
+    """
+    resources = {"rss_budget_mb": 8192.0, "retained_mb": 0.0, "allow_large": False} | resources
+    zero_weight = None
+    if source == "hf":
+        strings = hf_seed_strings(norb, nelec)
+    elif source == "random":
+        strings = random_seed_strings(norb, nelec, dims, seed)
+    elif source == "cisd":
+        strings, zero_weight = _cisd_seed(
+            h1, h2, e_core, norb=norb, nelec=nelec, dims=dims, audit=audit, resources=resources
+        )
+    else:
+        raise ValueError(f"seed source must be 'hf', 'random' or 'cisd', got {source!r}")
+    space = (len(strings[0]), len(strings[1]))
+    _guard_seed(norb, nelec, space, "seed_space", audit, resources)
+    solved = kernel_fixed_space(h1, h2, e_core, strings, norb=norb, nelec=nelec, **resources)
+    return (solved.ci_strings, solved.amplitudes), float(solved.energy), zero_weight
+
+
 def _peak_rss_mb() -> float:
     """Return the process peak RSS so far (``VmHWM``) in decimal MB."""
     with open("/proc/self/status", encoding="ascii") as status:
@@ -395,6 +691,106 @@ def _guard_ext(
     return guarded
 
 
+def sci_ranking(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    *,
+    norb: int,
+    nelec: tuple[int, int],
+    host_available_mb: float,
+    rss_budget_mb: float,
+    retained_mb: float,
+    audit: list[dict],
+) -> tuple[float, Any, tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
+    """Guard and run the one selected-CI solve that ranks strings for the SCI baseline.
+
+    The solve diagonalizes the full sector, so the guard prices the full sector
+    ``(C(norb, n_alpha), C(norb, n_beta))`` and records ``phase="sci_ranking"`` in ``audit``.
+
+    Args:
+        h1: Active-space one-electron integrals.
+        h2: Active-space two-electron integrals.
+        e_core: Core energy that is added to the selected-CI energy.
+        norb: Number of active orbitals.
+        nelec: Active electrons as ``(n_alpha, n_beta)``.
+        host_available_mb: Available host memory in decimal MB.
+        rss_budget_mb: RSS budget of the guard in decimal MB.
+        retained_mb: Memory that the caller holds during the solve, in decimal MB.
+        audit: List that receives one ext guard record.
+
+    Returns:
+        ``(energy, ci, pools, diags)``: the total selected-CI energy, the CI vector,
+        and the per-spin string pools and diagonals.
+
+    Raises:
+        AllocationGuardError: The guard rejects the full sector. The solve does not run.
+    """
+    dims = (math.comb(norb, nelec[0]), math.comb(norb, nelec[1]))
+    resources = {
+        "host_available_mb": host_available_mb,
+        "rss_budget_mb": rss_budget_mb,
+        "retained_mb": retained_mb,
+        "allow_large": False,
+    }
+    _guard_seed(norb, nelec, dims, "sci_ranking", audit, resources)
+    energy, ci, pools, diags = _run_selected_ci(h1, h2, norb, nelec)
+    return float(energy) + e_core, ci, pools, diags
+
+
+def _nbytes_mb(*arrays: np.ndarray) -> float:
+    """Return the resident size of ``arrays`` in decimal MB, for a guard's ``retained_mb``."""
+    return sum(array.nbytes for array in arrays) / 1e6
+
+
+def _sci_baseline(
+    h1: np.ndarray,
+    h2: np.ndarray,
+    e_core: float,
+    sci_ranking: (
+        tuple[float, Any, tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]] | None
+    ),
+    dims: tuple[int, int],
+    *,
+    norb: int,
+    nelec: tuple[int, int],
+    audit: list[dict],
+    **resources: Any,
+) -> tuple[float | None, str | None]:
+    """Solve the space of the top-ranked SCI strings with the per-spin dims of the arm.
+
+    Returns:
+        ``(energy, None)`` when the baseline runs. ``(None, reason)`` when no ranking
+        is available, the guard rejects the baseline space, or the baseline solve fails
+        numerically. A rejection appends one ``phase="sci_baseline"`` audit record and
+        does not raise.
+    """
+    if sci_ranking is None:
+        return None, "sci_ranking_unavailable"
+    _, ci, pools, diags = sci_ranking
+    space = tuple(
+        np.sort(_take_spin_strings(ci, spin, pools[spin], diags[spin], nelec[spin], dims[spin])[0])
+        for spin in (0, 1)
+    )
+    predicted = estimate_rss_mb(
+        norb,
+        nelec,
+        stage="diagonalize",
+        subspace_dims=dims,
+        retained_mb=resources["retained_mb"],
+        model=resource_model_for(norb, profile={"max_space": 12}),
+    )
+    try:
+        _guard_ext(norb, nelec, dims, predicted, "sci_baseline", audit, resources)
+    except AllocationGuardError as exc:
+        return None, f"sci_baseline_rss_budget: {exc}"
+    try:
+        solved = kernel_fixed_space(h1, h2, e_core, space, norb=norb, nelec=nelec, **resources)
+    except ReferenceNumericalError as exc:
+        return None, f"sci_baseline_numerical: {exc}"
+    return float(solved.energy), None
+
+
 def run_ext_sqd(
     h1: np.ndarray,
     h2: np.ndarray,
@@ -411,13 +807,23 @@ def run_ext_sqd(
     allow_large: bool,
     audit: list[dict],
     deadline: float | None,
+    sci_ranking: (
+        tuple[float, Any, tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]] | None
+    ) = None,
+    seed_space_energy: float | None = None,
+    zero_weight_strings: np.ndarray | None = None,
 ) -> ExtSQDArm:
     """Truncate the seeds, excite them, guard and solve one fixed-space problem.
 
     The order is truncation, excitation, wall-time precheck, resource guard,
-    ``kernel_fixed_space``. No configuration recovery occurs. The solver repeats the
-    guard as a second check with the same resource arguments. The guard appends one
-    ``stage="ext"`` record to ``audit`` when it passes and when it rejects.
+    ``kernel_fixed_space``, SCI baseline. No configuration recovery occurs. The solver
+    repeats the guard as a second check with the same resource arguments. The guard
+    appends one ``stage="ext"`` record to ``audit`` when it passes and when it rejects.
+
+    Retained memory accumulates. Before the guard, ``retained_mb`` gets the MB of
+    the ``sci_ranking`` arrays (CI vector, pools, diagonals) when ``sci_ranking`` is
+    given. Before the SCI baseline, it also gets the MB of the extended strings and
+    the extended-space amplitudes.
 
     Args:
         h1: Active-space one-electron integrals.
@@ -434,12 +840,18 @@ def run_ext_sqd(
         allow_large: Lift the reject cap of the resource guard.
         audit: Allocation audit list of the run.
         deadline: ``time.monotonic()`` deadline of the run, or None.
+        sci_ranking: The ``sci_ranking`` result for the same Hamiltonian, or None.
+        seed_space_energy: Energy in the seed space, written to the arm unchanged.
+            None for the quantum arm.
+        zero_weight_strings: Int64 strings with zero seed weight, written to the arm
+            unchanged, or None.
 
     Returns:
         The arm with the total energy, string counts and the guard prediction. When
         less than twice the predicted arm time remains before ``deadline``, the arm
         has no energy, ``null_reason="ext_wall_budget"``, and neither the guard nor
-        the solver runs.
+        the solver runs. A solved arm also has the SCI baseline energy in the same
+        per-spin dims, or the reason why the baseline did not run.
 
     Raises:
         ValueError: Seed strings, amplitudes or populations that the string
@@ -447,7 +859,8 @@ def run_ext_sqd(
         AllocationGuardError: The resource guard rejects the extended space. The
             message starts with ``stage=ext``.
         ResourceLimitError: No resource bound applies to the extended space.
-        ReferenceNumericalError: The fixed-space solve fails numerically.
+        ReferenceNumericalError: The extended-space solve fails numerically. A
+            numerical failure of the SCI baseline solve does not raise.
     """
     start = time.monotonic()
     ci_strings, amplitudes = seed_space
@@ -462,20 +875,28 @@ def run_ext_sqd(
         "retained_mb": retained_mb,
         "allow_large": allow_large,
     }
+    if sci_ranking is not None:
+        _, ci, pools, diags = sci_ranking
+        resources["retained_mb"] += _nbytes_mb(ci, *pools, *diags)
     predicted = estimate_rss_mb(
         norb,
         nelec,
         stage="diagonalize",
         subspace_dims=dims,
-        retained_mb=retained_mb,
+        retained_mb=resources["retained_mb"],
         model=resource_model_for(norb, profile={"max_space": 12}),
     )
     energy, null_reason = None, "ext_wall_budget"
+    baseline, baseline_reason = None, "sci_baseline_arm_null"
     if not _over_wall_budget(deadline, seed_source, dims):
         phase = f"ext_{seed_source}"
         predicted = _guard_ext(norb, nelec, dims, predicted, phase, audit, resources)
         solved = kernel_fixed_space(h1, h2, e_core, extended, norb=norb, nelec=nelec, **resources)
         energy, null_reason = float(solved.energy), None
+        resources["retained_mb"] += _nbytes_mb(*extended, solved.amplitudes)
+        baseline, baseline_reason = _sci_baseline(
+            h1, h2, e_core, sci_ranking, dims, norb=norb, nelec=nelec, audit=audit, **resources
+        )
     return ExtSQDArm(
         seed_source=seed_source,
         energy=energy,
@@ -485,10 +906,10 @@ def run_ext_sqd(
         subspace_dims=dims,
         coverage=dims[0] / math.comb(norb, nelec[0]),
         only_hf=truncation.only_hf,
-        seed_space_energy=None,
-        zero_weight_strings=None,
-        sci_baseline_energy=None,
-        sci_baseline_reason="sci_baseline_not_implemented",
+        seed_space_energy=seed_space_energy,
+        zero_weight_strings=zero_weight_strings,
+        sci_baseline_energy=baseline,
+        sci_baseline_reason=baseline_reason,
         wall_s=time.monotonic() - start,
         predicted_rss_mb=predicted,
         process_peak_rss_mb=_peak_rss_mb(),

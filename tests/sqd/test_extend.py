@@ -24,6 +24,7 @@ import pytest
 from q2m3.sqd import extend
 from q2m3.sqd.extend import Truncation, excite_strings, extend_seed_space, truncate_strings
 from tests.sqd.test_imports import boundary_violations
+from tests.sqd.test_result import ext_arm_data, ext_record, ext_record_parts
 
 SRC = Path(__file__).resolve().parents[2] / "src"
 TAU = 1e-3
@@ -356,8 +357,34 @@ def test_truncation_rejects_amplitudes_with_mismatched_shape():
 # ---------------------------------------------------------------- import boundary
 
 
+_ALLOWED_SQD_IMPORTS = {
+    "q2m3.sqd.diagonalize",
+    "q2m3.sqd.resources",
+    "q2m3.sqd.observables",
+    "q2m3.sqd.exceptions",
+    "q2m3.sqd.config",
+}
+
+
+def _internal_imports(source: str) -> set[str]:
+    """Return the q2m3 modules that ``source`` imports, resolved inside ``q2m3.sqd``."""
+    names = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            names.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            base = resolve_name("." * node.level + (node.module or ""), "q2m3.sqd")
+            if (SRC / base.replace(".", "/")).is_dir():
+                # ``from package import name`` loads the submodule ``package.name``.
+                names.update(f"{base}.{alias.name}" for alias in node.names)
+            else:
+                names.add(base)
+    return {name for name in names if name.split(".")[0] == "q2m3"}
+
+
 def test_extend_module_imports_only_allowed_sqd_modules():
-    """extend.py may use only the diagonalize, resources and observables SQD modules.
+    """extend.py may use only the diagonalize, resources, observables, exceptions and
+    config SQD modules.
 
     The forbidden-name scan also sees relative imports and literal module paths
     passed to ``importlib.import_module`` or ``__import__``.
@@ -365,14 +392,22 @@ def test_extend_module_imports_only_allowed_sqd_modules():
     source = Path(extend.__file__).read_text()
     forbidden = ("pennylane", "catalyst", "q2m3.fragments")
     assert not boundary_violations(source, "q2m3.sqd", forbidden)
-    names = set()
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Import):
-            names.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            names.add(resolve_name("." * node.level + (node.module or ""), "q2m3.sqd"))
-    internal = {name for name in names if name.split(".")[0] == "q2m3"}
-    assert internal <= {"q2m3.sqd.diagonalize", "q2m3.sqd.resources", "q2m3.sqd.observables"}
+    assert _internal_imports(source) <= _ALLOWED_SQD_IMPORTS
+
+
+def test_import_scan_records_full_module_for_from_package_import():
+    """``from q2m3.sqd import exceptions`` imports the exceptions module.
+
+    Recording only the package name would make the allow-list reject a permitted
+    module, and would hide which submodule a ``from package import`` loads.
+    """
+    assert _internal_imports("from q2m3.sqd import exceptions\n") == {"q2m3.sqd.exceptions"}
+
+
+def test_import_scan_records_full_name_for_aliased_module_import():
+    """``import q2m3.sqd.exceptions as e`` is recorded by module path, not by alias."""
+    imported = _internal_imports("import q2m3.sqd.exceptions as e\n")
+    assert imported == {"q2m3.sqd.exceptions"}
 
 
 def test_importing_sqd_package_does_not_load_extend_module():
@@ -387,3 +422,456 @@ def test_importing_sqd_package_does_not_load_extend_module():
     )
     assert process.returncode == 0, process.stderr
     assert process.stdout.strip() == "False"
+
+
+@pytest.mark.parametrize(
+    ("changes", "field"),
+    [
+        pytest.param({"energy": None}, "null_reason", id="energy_missing_without_reason"),
+        pytest.param(
+            {"null_reason": "ext_numerical: eigensolver failed"},
+            "null_reason",
+            id="energy_with_null_reason",
+        ),
+        pytest.param(
+            {"sci_baseline_energy": None}, "sci_baseline", id="baseline_missing_without_reason"
+        ),
+        pytest.param(
+            {"sci_baseline_reason": "sci_baseline_not_implemented"},
+            "sci_baseline",
+            id="baseline_with_reason",
+        ),
+        pytest.param(
+            {"energy": None, "null_reason": "bogus: x"},
+            "must start with one of",
+            id="null_reason_bad_prefix",
+        ),
+        pytest.param(
+            {"energy": None, "null_reason": "ext_rss_budget"},
+            "must start with one of",
+            id="null_reason_prefix_without_colon",
+        ),
+    ],
+)
+def test_ext_arm_validate_rejects_broken_null_pairing(changes, field):
+    """Kills RA1-RA5b (in id order): each null value pairs with its reason in both directions,
+    and an arm's null reason starts with one of the known ext prefixes."""
+    from q2m3.sqd.extend import ExtSQDArm
+
+    data = ext_arm_data() | changes
+    with pytest.raises(ValueError, match=field):
+        ExtSQDArm(**data).validate()
+
+
+@pytest.mark.parametrize(
+    ("edit", "field"),
+    [
+        pytest.param(lambda arms: arms[::-1], "seed_source", id="arms_reordered"),
+        pytest.param(lambda arms: arms[:2], "seed_source", id="arm_missing"),
+        pytest.param(lambda arms: [*arms, ext_arm_data("random")], "seed_source", id="extra_arm"),
+        pytest.param(
+            lambda arms: [arms[0] | {"energy": None}, *arms[1:]],
+            "null_reason",
+            id="inner_arm_invalid",
+        ),
+    ],
+)
+def test_ext_record_validate_rejects_arms_that_break_its_contract(edit, field):
+    """Kills RR1-RR4 (in id order): arms follow the settings order exactly and each is checked."""
+    arms = edit(ext_record_parts())
+    with pytest.raises(ValueError, match=field):
+        ext_record(arms).validate()
+
+
+def test_ext_record_with_three_arms_passes_validate():
+    """Kills P1: a valid three-arm record with a null middle arm passes both validators."""
+    record = ext_record()
+    assert record.validate() is record
+    assert all(arm.validate() is arm for arm in record.arms)
+
+
+# ---------------------------------------------------------------- run_ext_sqd
+# Matrix B2 (S3.2b1, owner S4.2a). run_ext_sqd is called in process, so the recorders
+# see its calls. Each test imports run_ext_sqd itself: `import q2m3.sqd` must not load
+# the extend module, and a missing name must fail only these tests.
+
+RESOURCES = {"host_available_mb": 1e6, "rss_budget_mb": 9000.0, "retained_mb": 123.0}
+E3_ALPHA = (7, 11, 13, 56)
+E3_BETA = (7, 14, 19)
+# Row maxima [0.9, 0.05, 1e-4, 2e-4]; column maxima [0.9, 5e-4, 5e-4]. At TAU the
+# spins keep different sets: alpha {7, 11}, beta {7}.
+E3_AMPLITUDES = np.array(
+    [[0.9, 5e-4, 5e-4], [0.05, 1e-5, 1e-5], [1e-4, 1e-5, 1e-5], [2e-4, 1e-5, 1e-5]]
+)
+
+
+@pytest.fixture(scope="module")
+def h6_chain():
+    """Linear H6, 1.0 Angstrom spacing, STO-3G RHF: norb 6, nelec (3, 3), |e_core| > 1 Ha."""
+    from pyscf import ao2mo, gto, scf
+
+    atoms = [("H", (0.0, 0.0, float(i))) for i in range(6)]
+    mol = gto.M(atom=atoms, basis="sto-3g", unit="Angstrom", verbose=0)
+    mf = scf.RHF(mol).run(conv_tol=1e-12)
+    assert mf.converged, "SCF did not converge"
+    coeff = mf.mo_coeff
+    h1 = coeff.T @ mf.get_hcore() @ coeff
+    h2 = ao2mo.restore(1, ao2mo.kernel(mol, coeff), 6)
+    return h1, h2, mol.energy_nuc()
+
+
+def _record(monkeypatch, name: str, real) -> list[dict]:
+    """Replace ``extend.<name>`` with a pass-through that records bound arguments and result."""
+    import inspect
+
+    signature = inspect.signature(real)
+    calls: list[dict] = []
+
+    def recorder(*args, **kwargs):
+        call = {"arguments": signature.bind(*args, **kwargs).arguments}
+        calls.append(call)
+        call["result"] = real(*args, **kwargs)
+        return call["result"]
+
+    # raising=False keeps the Red failure on the run_ext_sqd import. A missed patch point
+    # still fails: every test that uses a recorder reads or counts its calls.
+    monkeypatch.setattr(extend, name, recorder, raising=False)
+    return calls
+
+
+@pytest.fixture
+def solver_calls(monkeypatch):
+    from q2m3.sqd.diagonalize import kernel_fixed_space
+
+    return _record(monkeypatch, "kernel_fixed_space", kernel_fixed_space)
+
+
+@pytest.fixture
+def guard_calls(monkeypatch):
+    from q2m3.sqd.resources import guard_allocation
+
+    return _record(monkeypatch, "guard_allocation", guard_allocation)
+
+
+def _ext_inputs(alpha, beta, amplitudes, *, threshold: float, order: int):
+    from q2m3.sqd.config import ExtSQDSettings
+
+    seed_space = ((strings(*alpha), strings(*beta)), np.asarray(amplitudes, dtype=float))
+    return seed_space, ExtSQDSettings(order=order, threshold=threshold).validate()
+
+
+def _call_ext(run_ext_sqd, h6, seed_space, settings, **overrides):
+    h1, h2, e_core = h6
+    kwargs = {"seed_source": "quantum", "norb": 6, "nelec": (3, 3), **RESOURCES}
+    kwargs |= {"allow_large": False, "audit": [], "deadline": None} | overrides
+    return run_ext_sqd(h1, h2, e_core, seed_space, settings, **kwargs)
+
+
+def _e3_extended() -> list[int]:
+    """Brute force: keep row or column max |c| >= TAU plus HF, then add order-1 neighbours."""
+    rows, cols = np.abs(E3_AMPLITUDES).max(axis=1), np.abs(E3_AMPLITUDES).max(axis=0)
+    kept = {s for s, m in zip(E3_ALPHA, rows, strict=True) if m >= TAU}
+    kept |= {s for s, m in zip(E3_BETA, cols, strict=True) if m >= TAU} | {0b000111}
+    return reference(kept, 6, 3, 1)
+
+
+def test_run_ext_sqd_keeps_isolated_seeds_and_does_not_raise_energy(h6_chain, solver_calls):
+    """Kills XG15: seeds 7 and 56 are 3 excitations apart, so an order-1 extension that
+    starts from HF only, or that drops order 0, loses 56 (or 7 and 56). The energy must
+    also respect the variational bound E_ext <= E_SQD (03e:37, O-S1.2)."""
+    from q2m3.sqd.diagonalize import kernel_fixed_space
+    from q2m3.sqd.extend import run_ext_sqd
+
+    seed_space, settings = _ext_inputs(
+        (7, 56), (7, 56), [[0.9, 0.1], [0.1, 0.05]], threshold=0.0, order=1
+    )
+    arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
+
+    assert len(solver_calls) == 1
+    for spin in solver_calls[0]["arguments"]["ci_strings"]:
+        assert {7, 56} <= set(spin.tolist())
+    h1, h2, e_core = h6_chain
+    seeds = strings(7, 56)
+    e_sqd = kernel_fixed_space(
+        h1, h2, e_core, (seeds, seeds), norb=6, nelec=(3, 3), **RESOURCES
+    ).energy
+    assert arm.energy <= e_sqd + 1e-10
+
+
+def test_run_ext_sqd_full_seed_space_matches_pyscf_fci_with_core_energy(h6_chain):
+    """Kills XF1 and XF2: with all 20 strings as seeds the solved space is the full CI
+    space, so the arm energy is the PySCF FCI total energy, e_core included (03e:38)."""
+    from pyscf import fci
+
+    from q2m3.sqd.extend import run_ext_sqd
+
+    h1, h2, e_core = h6_chain
+    assert abs(e_core) > 1.0  # premise: losing e_core moves the energy far beyond 1e-8
+    every = legal(6, 3)
+    seed_space, settings = _ext_inputs(
+        every, every, np.full((20, 20), 0.05), threshold=0.0, order=1
+    )
+    arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
+
+    exact, _ = fci.direct_spin1.kernel(h1, h2, 6, (3, 3), ecore=e_core, tol=1e-13)
+    assert abs(arm.energy - exact) <= 1e-8
+
+
+def test_run_ext_sqd_solves_exactly_the_truncated_and_extended_strings(h6_chain, solver_calls):
+    """Kills XF3 (threshold not passed: 56 and its neighbours appear), XF4 (order not
+    passed: distance-2 strings appear), XF13 (resource arguments not passed to the solver)
+    and XG14 (configuration recovery instead of one fixed-space solve; O-S1.7). XF5
+    (alpha/beta swap) is not killed here; S5.2a killed it in
+    test_run_ext_sqd_arm_reports_counts_coverage_and_guard_prediction."""
+    from q2m3.sqd.extend import run_ext_sqd
+
+    seed_space, settings = _ext_inputs(E3_ALPHA, E3_BETA, E3_AMPLITUDES, threshold=TAU, order=1)
+    _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
+
+    assert len(solver_calls) == 1
+    arguments = solver_calls[0]["arguments"]
+    for spin in arguments["ci_strings"]:
+        assert_strings(spin, _e3_extended())
+    h1, h2, e_core = h6_chain
+    np.testing.assert_array_equal(arguments["h1"], h1)
+    np.testing.assert_array_equal(arguments["h2"], h2)
+    assert arguments["e_core"] == e_core
+    assert (arguments["norb"], arguments["nelec"]) == (6, (3, 3))
+    assert {key: arguments[key] for key in RESOURCES} == RESOURCES
+    assert arguments["allow_large"] is False
+
+
+def test_run_ext_sqd_arm_reports_counts_coverage_and_guard_prediction(h6_chain, guard_calls):
+    """Kills XF6 (counts in beta-alpha order), XF7 (truncated counts copied from the seeds),
+    XF8 (extended counts copied from the truncation), XF9 (coverage over 2**norb) and
+    XF10 (predicted RSS not taken from the guard). Also kills XF5 (alpha/beta swap; S5.2a).
+    The deadline one hour ahead is the positive control of the time precheck."""
+    import time
+
+    from q2m3.sqd.extend import run_ext_sqd
+
+    seed_space, settings = _ext_inputs(E3_ALPHA, E3_BETA, E3_AMPLITUDES, threshold=TAU, order=1)
+    arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings, deadline=time.monotonic() + 3600)
+
+    extended = len(_e3_extended())
+    assert len(guard_calls) == 1
+    assert arm.seed_source == "quantum"
+    assert arm.energy is not None
+    assert arm.seed_counts == (4, 3)
+    assert arm.truncated_counts == (2, 1)
+    assert arm.extended_counts == (extended, extended)
+    assert arm.subspace_dims == (extended, extended)
+    assert arm.coverage == extended / comb(6, 3)
+    assert arm.only_hf is False
+    assert arm.seed_space_energy is None
+    assert arm.zero_weight_strings is None
+    assert arm.predicted_rss_mb == guard_calls[0]["result"]
+    assert arm.null_reason is None
+    assert arm.wall_s >= 0
+    assert arm.process_peak_rss_mb > 0
+    assert arm.validate() is arm
+
+
+EXT_AUDIT_KEYS = {
+    "stage",
+    "phase",
+    "subspace_dims",
+    "retained_mb",
+    "predicted_rss_mb",
+    "budget_mb",
+    "model_id",
+}
+
+
+def _ext_model():
+    from q2m3.sqd.resources import resource_model_for
+
+    return resource_model_for(6, profile={"max_space": 12})
+
+
+def _e3_run(run_ext_sqd, h6, **overrides):
+    seed_space, settings = _ext_inputs(E3_ALPHA, E3_BETA, E3_AMPLITUDES, threshold=TAU, order=1)
+    return _call_ext(run_ext_sqd, h6, seed_space, settings, **overrides)
+
+
+@pytest.mark.parametrize(
+    "caps",
+    [
+        pytest.param({"rss_budget_mb": 1.0}, id="rss_cap"),
+        pytest.param({"host_available_mb": 1.0}, id="host_cap"),
+    ],
+)
+def test_run_ext_sqd_guard_rejects_before_solver(h6_chain, solver_calls, caps):
+    """Kills XG4 (no own guard, or a guard after the solve), XG5 (rejection turned into a
+    null arm), XG6 (base ResourceLimitError raised), XG7 (guard error re-raised without
+    the stage=ext prefix), XG8 (audit only on pass), XG10 (audit stage "diagonalize") and,
+    in [host_cap], XG11 (budget_mb copied from rss_budget_mb=9000). O-S4.1; Q-i: the
+    audited prediction is estimate_rss_mb with the guard arguments."""
+    from q2m3.sqd.exceptions import AllocationGuardError, ResourceLimitError
+    from q2m3.sqd.extend import run_ext_sqd
+    from q2m3.sqd.resources import estimate_rss_mb
+
+    audit: list[dict] = []
+    with pytest.raises(AllocationGuardError) as caught:
+        _e3_run(run_ext_sqd, h6_chain, audit=audit, **caps)
+
+    extended = len(_e3_extended())
+    dims = (extended, extended)
+    predicted = estimate_rss_mb(
+        6, (3, 3), stage="diagonalize", subspace_dims=dims, retained_mb=123.0, model=_ext_model()
+    )
+    assert isinstance(caught.value, ResourceLimitError)
+    assert solver_calls == []
+    message = str(caught.value)
+    assert message.startswith("stage=ext")
+    assert str(dims) in message
+    assert "predicted=" in message
+    assert "budget=1.000000" in message
+    assert len(audit) == 1
+    record = audit[0]
+    assert set(record) == EXT_AUDIT_KEYS
+    assert record["stage"] == "ext"
+    assert record["budget_mb"] == 1.0
+    assert record["predicted_rss_mb"] == predicted
+    assert record["predicted_rss_mb"] > record["budget_mb"]
+    # XG16 (S7d, G3b F2): the audit keeps the extended dims, the caller's retained_mb
+    # (RESOURCES) and the diagonalize model, not values from another source.
+    assert tuple(record["subspace_dims"]) == dims
+    assert record["retained_mb"] == 123.0
+    assert record["model_id"] == _ext_model().model_id
+
+
+def test_run_ext_sqd_guard_uses_diagonalize_model_on_extended_dims(h6_chain, guard_calls):
+    """Kills XF11 (retained_mb dropped), XF12 (truncated instead of extended dims) and
+    XG13 in its stage="comparison" form. The form without the max_space profile is
+    equivalent here: both rows give the same model_id (S3.2b2 check). O-S4.1."""
+    from q2m3.sqd.extend import run_ext_sqd
+
+    _e3_run(run_ext_sqd, h6_chain)
+
+    extended = len(_e3_extended())
+    assert len(guard_calls) == 1
+    arguments = guard_calls[0]["arguments"]
+    assert (arguments["norb"], arguments["nelec"]) == (6, (3, 3))
+    assert arguments["stage"] == "diagonalize"
+    assert tuple(arguments["subspace_dims"]) == (extended, extended)
+    assert arguments["model"].model_id == _ext_model().model_id
+    assert arguments.get("retained_mb", 0.0) == 123.0
+    assert arguments["host_available_mb"] == 1e6
+    assert arguments.get("rss_budget_mb") == 9000.0
+    assert arguments.get("allow_large", False) is False
+
+
+def test_run_ext_sqd_appends_one_ext_audit_record_when_guard_passes(h6_chain):
+    """Kills XG9 (audit only on rejection, or the solver allocation_audit appended too),
+    XG10 (stage "diagonalize"), XG11 (budget_mb copied from rss_budget_mb=9000) and XG12
+    (REJECT_RSS_MB missing from the caps: the minimum is then 9000, not 8192). Q12-3:
+    only the audit list is read; no result metadata key is checked."""
+    from q2m3.sqd.extend import run_ext_sqd
+
+    earlier = {"stage": "diagonalize", "phase": "0:0"}
+    audit = [earlier]
+    arm = _e3_run(run_ext_sqd, h6_chain, audit=audit)
+
+    assert audit[0] is earlier
+    added = audit[1:]
+    assert [record["stage"] for record in added] == ["ext"]
+    assert set(added[0]) == EXT_AUDIT_KEYS
+    assert added[0]["budget_mb"] == 8192.0
+    assert added[0]["predicted_rss_mb"] == arm.predicted_rss_mb
+
+
+def test_run_ext_sqd_skips_solver_when_deadline_has_passed(h6_chain, solver_calls, guard_calls):
+    """Kills XG2 (no precheck: the solver runs) and XG3 (guard before the precheck: the
+    guard runs and the audit grows). O-T5c run layer; Q-h: a failed precheck returns a
+    null arm and does not raise."""
+    import time
+
+    from q2m3.sqd.extend import run_ext_sqd
+
+    audit: list[dict] = []
+    arm = _e3_run(run_ext_sqd, h6_chain, audit=audit, deadline=time.monotonic() - 1)
+
+    assert arm.energy is None
+    assert arm.null_reason.startswith("ext_wall_budget")
+    assert arm.validate() is arm
+    assert solver_calls == []
+    assert guard_calls == []
+    assert audit == []
+
+
+@pytest.mark.filterwarnings("ignore:Truncation at threshold:RuntimeWarning")
+def test_run_ext_sqd_time_precheck_uses_extended_dimension(monkeypatch, guard_calls):
+    """Kills XG1 (precheck before the extension, so D is unknown and the 1 s floor
+    applies). Q12-4 large-D fixture, recomputed in S3.2b2: HF seed, norb 12, order 3
+    gives 662 strings per spin, D = 438,244. For a quantum arm (k = 2) the threshold is
+    2 * 2 * 306 s * D / 11,778,624 = 45.54 s; with the floor it is 4 s. A deadline 20 s
+    ahead must give a null arm. A wrong implementation reaches the solver stub."""
+    import time
+
+    from q2m3.sqd.extend import run_ext_sqd
+
+    class SolverReached(AssertionError):
+        pass
+
+    def solver(*args, **kwargs):
+        raise SolverReached("the precheck let a 45.5 s arm start with 20 s left")
+
+    monkeypatch.setattr(extend, "kernel_fixed_space", solver, raising=False)
+    noise = np.random.default_rng(12).normal(size=(12, 12))
+    hamiltonian = ((noise + noise.T) / 2, np.zeros((12,) * 4), 0.0)
+    hf = 0b111111
+    seed_space, settings = _ext_inputs((hf,), (hf,), [[1.0]], threshold=0.0, order=3)
+    audit: list[dict] = []
+    arm = _call_ext(
+        run_ext_sqd,
+        hamiltonian,
+        seed_space,
+        settings,
+        norb=12,
+        nelec=(6, 6),
+        audit=audit,
+        deadline=time.monotonic() + 20,
+    )
+
+    assert arm.subspace_dims == (662, 662)  # the extension ran before the precheck
+    assert arm.energy is None
+    assert arm.null_reason.startswith("ext_wall_budget")
+    assert arm.validate() is arm
+    assert guard_calls == []
+    assert audit == []
+
+
+def test_run_ext_sqd_reports_only_hf_from_truncation(h6_chain):
+    """Kills XF14 (only_hf hard-coded False). Every non-HF amplitude is below TAU on both
+    spins, so the arm must report the truncation result only_hf=True; E4 covers False."""
+    from q2m3.sqd.extend import run_ext_sqd
+
+    seed_space, settings = _ext_inputs(
+        (7, 11), (7, 14), [[0.9, 1e-4], [1e-4, 1e-5]], threshold=TAU, order=1
+    )
+    with pytest.warns(RuntimeWarning, match="only the HF"):
+        arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
+
+    assert arm.only_hf is True
+    assert (arm.seed_counts, arm.truncated_counts) == ((2, 2), (1, 1))
+
+
+def test_run_ext_sqd_does_not_call_diagonalize_samples(h6_chain, monkeypatch):
+    """Kills XG14b: ext-SQD solves one fixed space and does no configuration recovery
+    (O-S1.7), so a call to diagonalize_samples is an error. Only calls through the module
+    attributes are observed."""
+    from q2m3.sqd.extend import run_ext_sqd
+
+    class RecoveryCalled(Exception):
+        pass
+
+    def forbidden(*args, **kwargs):
+        raise RecoveryCalled("run_ext_sqd called diagonalize_samples")
+
+    monkeypatch.setattr("q2m3.sqd.diagonalize.diagonalize_samples", forbidden)
+    monkeypatch.setattr("q2m3.sqd.extend.diagonalize_samples", forbidden, raising=False)
+    seed_space, settings = _ext_inputs(E3_ALPHA, E3_BETA, E3_AMPLITUDES, threshold=TAU, order=1)
+    arm = _call_ext(run_ext_sqd, h6_chain, seed_space, settings)
+
+    assert arm.energy is not None

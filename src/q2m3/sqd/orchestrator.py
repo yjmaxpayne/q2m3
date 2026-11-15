@@ -18,6 +18,7 @@ from typing import Literal
 import numpy as np
 
 from q2m3.molecule import MoleculeConfig
+from q2m3.sqd import extend
 from q2m3.sqd.ansatz import build_ccsd_seed, build_lucj_from_integrals
 from q2m3.sqd.config import (
     CCSDSeed,
@@ -46,6 +47,7 @@ from q2m3.sqd.sampling import FfsimSampler
 from q2m3.sqd.transport import decode_result, encode_result
 
 _transport_state = threading.local()
+_EXT_CODE_PATH_ID = "q2m3.sqd.extend.run_ext_sqd"
 
 
 _wire = encode_result
@@ -383,8 +385,8 @@ def run_sqd_from_integrals(
         seed: Nonnegative run seed.
         allow_large: Forward supported overrides within existing component caps.
         mode: Full SQD or explicit reference-only calculation.
-        ext_sqd: Configuration-space extension settings. They are validated. The
-            extension stage does not run yet, so ``ext_sqd`` of the result is None.
+        ext_sqd: Configuration-space extension settings. When set in full mode, the
+            extension stage runs on the SQD seed space after the comparisons.
 
     Returns:
         Validated immutable result, using exactly one copy of e_core in energies.
@@ -416,6 +418,7 @@ def run_sqd_from_integrals(
             mode=mode,
             timings={},
             provenance={"entry": "integrals"},
+            ext_sqd=ext_sqd,
         ),
         reference,
     )
@@ -460,6 +463,7 @@ def _execute(
     deadline,
     timings,
     provenance,
+    ext_sqd=None,
 ):
     validate_integral_inputs(
         h1,
@@ -484,6 +488,8 @@ def _execute(
     )
     comparison = None
     diagonalized = None
+    ext_record = None
+    audit = []
     if mode == "full":
         _full_budget(norb, nelec, lucj, cap, allow_large)
         start = monotonic()
@@ -525,11 +531,7 @@ def _execute(
     start = monotonic()
     retained_reference_mb = 0.0
     if diagonalized is not None:
-        retained_reference_mb = (
-            samples.nbytes
-            + diagonalized.amplitudes.nbytes
-            + sum(strings.nbytes for strings in diagonalized.ci_strings)
-        ) / 1e6
+        retained_reference_mb = _retained_mb(samples, diagonalized)
     ref = run_reference(
         h1,
         h2,
@@ -565,6 +567,20 @@ def _execute(
             remaining_wall_s=_remaining(deadline),
         )
         timings["comparison"] = monotonic() - start
+        ext_record = _ext_stage(
+            h1,
+            h2,
+            e_core,
+            ext_sqd,
+            samples=samples,
+            diagonalized=diagonalized,
+            norb=norb,
+            nelec=nelec,
+            cap=cap,
+            allow_large=allow_large,
+            audit=audit,
+            deadline=deadline,
+        )
     return _assemble(
         norb,
         nelec,
@@ -580,6 +596,102 @@ def _execute(
         provenance,
         comparison,
         diagonalized,
+        ext_record,
+    )
+
+
+def _retained_mb(samples, diagonalized):
+    """Return the MB of SQD samples, amplitudes and CI strings that stay live."""
+    return (
+        samples.nbytes
+        + diagonalized.amplitudes.nbytes
+        + sum(strings.nbytes for strings in diagonalized.ci_strings)
+    ) / 1e6
+
+
+def _ext_stage(
+    h1,
+    h2,
+    e_core,
+    settings,
+    *,
+    samples,
+    diagonalized,
+    norb,
+    nelec,
+    cap,
+    allow_large,
+    audit,
+    deadline,
+):
+    """Run the quantum extended-SQD arm on the SQD seed space.
+
+    A guard rejection or a numerical failure of the arm gives a null arm, and the run
+    continues. Other exceptions propagate.
+
+    Note:
+        Residual risk. The arm runs in the worker, which ``_supervise`` monitors against
+        the deadline and the RSS of the process tree. If the real time is more than 2
+        times the estimate, or the worker RSS exceeds the cap, the whole run fails and
+        the SQD and T0 results obtained so far are lost. ``t_arm`` comes from only 1
+        N2 point with 14 orbitals and excludes the time of CISD and SCI selection.
+
+    Returns:
+        The extension record, or None when ``settings`` is None.
+    """
+    if settings is None:
+        return None
+    start = monotonic()
+    try:
+        arm = extend.run_ext_sqd(
+            h1,
+            h2,
+            e_core,
+            (diagonalized.ci_strings, diagonalized.amplitudes),
+            settings,
+            seed_source="quantum",
+            norb=norb,
+            nelec=nelec,
+            host_available_mb=cap,
+            rss_budget_mb=cap,
+            retained_mb=_retained_mb(samples, diagonalized),
+            allow_large=allow_large,
+            audit=audit,
+            deadline=deadline,
+        )
+    except AllocationGuardError as exc:
+        arm = _null_ext_arm(diagonalized.ci_strings, f"ext_rss_budget: {exc}", start)
+    except ReferenceNumericalError as exc:
+        arm = _null_ext_arm(diagonalized.ci_strings, f"ext_numerical: {exc}", start)
+    return extend.ExtSQDRecord(settings, _EXT_CODE_PATH_ID, (arm,))
+
+
+def _null_ext_arm(ci_strings, reason, start):
+    """Return the null quantum arm for an ext solve that raised.
+
+    The exception carries the dimensions and the predicted RSS only as message text,
+    which is kept in ``reason``. The other fields are placeholders, not measurements:
+    ``truncated_counts``, ``extended_counts`` and ``subspace_dims`` are (0, 0),
+    ``coverage`` is 0.0, ``only_hf`` is False and ``predicted_rss_mb`` is None, so
+    that strict JSON (``allow_nan=False``) can write the arm.
+    """
+    return extend.ExtSQDArm(
+        seed_source="quantum",
+        energy=None,
+        seed_counts=(len(ci_strings[0]), len(ci_strings[1])),
+        truncated_counts=(0, 0),
+        extended_counts=(0, 0),
+        subspace_dims=(0, 0),
+        coverage=0.0,
+        only_hf=False,
+        seed_space_energy=None,
+        zero_weight_strings=None,
+        sci_baseline_energy=None,
+        sci_baseline_reason="sci_baseline_not_implemented",
+        wall_s=monotonic() - start,
+        predicted_rss_mb=None,
+        process_peak_rss_mb=extend._peak_rss_mb(),
+        null_reason=reason,
     )
 
 
@@ -598,8 +710,10 @@ def _assemble(
     provenance,
     comparison=None,
     diagonalized=None,
+    ext_sqd=None,
 ):
     values = {f.name: None for f in fields(SQDResult)}
+    values["ext_sqd"] = ext_sqd
     values.update(
         schema_version="sqd.result.v1",
         status="reference_only",
@@ -699,7 +813,7 @@ def _assemble(
     ):
         if mode == "reference_only":
             reasons[name] = "reference_only"
-    if mode == "full":
+    if mode == "full" and ext_sqd is None:
         reasons["ext_sqd"] = "ext_sqd_disabled"
     if comparison is not None:
         reasons.update(comparison.null_reasons)

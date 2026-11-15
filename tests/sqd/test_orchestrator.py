@@ -154,10 +154,103 @@ def test_integral_entry_validates_ext_sqd_without_running_it(h2_data, monkeypatc
         for value in ({"AB": ExtSQDSettings()}, LUCJConfig(), ExtSQDSettings(order=0)):
             with pytest.raises(ValueError, match="ext_sqd|order"):
                 low(*h2_data, ext_sqd=value)
-    # A valid request is accepted. The extension stage does not run yet.
+    # A valid request passes validation and runs the ext stage.
     result = low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31, ext_sqd=ExtSQDSettings())
-    assert result.ext_sqd is None
-    assert result.null_reasons["ext_sqd"] == "ext_sqd_disabled"
+    assert result.ext_sqd is not None
+    assert result.ext_sqd.settings == ExtSQDSettings()
+    assert "ext_sqd" not in result.null_reasons
+
+
+EXT_PRIOR_STAGES = ("prepare", "sample", "diagonalize", "reference", "comparison")
+
+
+def run_with_ext(h2_data):
+    from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
+
+    return low(*h2_data, lucj=LUCJConfig(n_reps=2, shots=512), seed=31, ext_sqd=ExtSQDSettings())
+
+
+def record_ext_calls(monkeypatch, path, *, expire_deadline=False):
+    """Replace extend.run_ext_sqd with a recorder that writes one JSON line per call.
+
+    The orchestrator runs _execute in a forked worker. A patch made before the fork is
+    active in the worker, but a list filled in the worker does not return to this process.
+    """
+    from q2m3.sqd import extend
+
+    real = extend.run_ext_sqd
+
+    def recorder(*args, **kwargs):
+        call = {"seed_source": kwargs.get("seed_source"), "deadline": kwargs.get("deadline")}
+        call["called_at"] = monotonic()
+        with path.open("a") as handle:
+            handle.write(json.dumps(call) + "\n")
+        if expire_deadline:
+            kwargs["deadline"] = monotonic() - 1.0
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(extend, "run_ext_sqd", recorder)
+
+
+def recorded_calls(path):
+    return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+
+
+def test_ext_sqd_switch_adds_only_a_quantum_arm_and_keeps_the_sqd_result(h2_data):
+    result = run_with_ext(h2_data)
+    assert result.status == "completed"
+    # The extension is a separate record; it must not replace the SQD energy.
+    assert_same_energy(result.sqd_energy, H2_SQD_ENERGY_DEFAULT_BATCH)
+    assert result.ext_sqd is not None
+    assert tuple(arm.seed_source for arm in result.ext_sqd.arms) == ("quantum",)
+    (arm,) = result.ext_sqd.arms
+    assert arm.null_reason is None
+    # A fixed-subspace eigenvalue cannot be lower than the exact baseline.
+    assert arm.energy >= result.baseline_energy - 1e-8
+
+
+def test_ext_wall_budget_null_arm_reaches_the_result(h2_data, monkeypatch, tmp_path):
+    from q2m3.sqd import extend
+
+    def solver_reached(*args, **kwargs):
+        raise AssertionError("the ext solver ran after the time precheck failed")
+
+    calls = tmp_path / "ext_calls.jsonl"
+    record_ext_calls(monkeypatch, calls, expire_deadline=True)
+    monkeypatch.setattr(extend, "kernel_fixed_space", solver_reached)
+    result = run_with_ext(h2_data)
+    assert [call["seed_source"] for call in recorded_calls(calls)] == ["quantum"]
+    assert result.status == "completed"
+    assert_same_energy(result.sqd_energy, H2_SQD_ENERGY_DEFAULT_BATCH)
+    assert result.ext_sqd is not None
+    (arm,) = result.ext_sqd.arms
+    assert arm.null_reason == "ext_wall_budget"
+    assert arm.energy is None
+    assert "ext_sqd" not in result.null_reasons
+
+
+def test_ext_stage_receives_the_run_deadline(h2_data, monkeypatch, tmp_path):
+    from q2m3.sqd.config import ReferenceConfig
+
+    calls = tmp_path / "ext_calls.jsonl"
+    record_ext_calls(monkeypatch, calls)
+    t_before = monotonic()
+    result = run_with_ext(h2_data)
+    assert len(recorded_calls(calls)) == 1
+    (call,) = recorded_calls(calls)
+    # The precheck needs the absolute deadline of this run. None disables it, a deadline
+    # recomputed at the ext stage ignores the time already spent, and a remaining time
+    # in seconds is earlier than the call.
+    assert call["deadline"] is not None
+    assert call["called_at"] < call["deadline"]
+    spent = sum(result.timings_s[name] for name in EXT_PRIOR_STAGES)
+    run_start = call["deadline"] - ReferenceConfig().wall_budget_s
+    assert run_start <= call["called_at"] - spent
+    # A remaining-seconds deadline gives run_start near -spent; that check alone passes
+    # only on a host with a monotonic clock above the wall budget (G2b T2).
+    assert t_before <= run_start
+    (arm,) = result.ext_sqd.arms
+    assert arm.null_reason is None
 
 
 @pytest.mark.parametrize("tier", ["T1", "T2"])
@@ -553,3 +646,155 @@ def test_full_run_survives_comparison_guard_rejection(h2_data, monkeypatch):
     )
     assert result.subspace_dim == result.subspace_dims[0] * result.subspace_dims[1]
     assert result.timings_s["comparison"] is not None
+
+
+GUARD_MESSAGE = "stage=ext, subspace_dims=(6, 6): predicted 9000 MB exceeds 1 MB"
+NUMERICAL_MESSAGE = "Fixed-space Davidson solver did not converge"
+
+
+def raise_from_ext_stage(monkeypatch, error):
+    from q2m3.sqd import extend
+
+    def failing(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(extend, "run_ext_sqd", failing)
+
+
+def assert_single_null_arm(result, reason):
+    # A failed arm is recorded on the arm; the SQD result of the run is kept.
+    assert result.status == "completed"
+    assert_same_energy(result.sqd_energy, H2_SQD_ENERGY_DEFAULT_BATCH)
+    assert result.ext_sqd is not None
+    (arm,) = result.ext_sqd.arms
+    assert arm.seed_source == "quantum"
+    assert arm.energy is None
+    assert arm.null_reason == reason
+    assert arm.validate() is arm
+    assert "ext_sqd" not in result.null_reasons
+
+
+def test_ext_guard_rejection_becomes_an_ext_rss_budget_null_arm(h2_data, monkeypatch):
+    from q2m3.sqd.exceptions import AllocationGuardError
+
+    raise_from_ext_stage(monkeypatch, AllocationGuardError(GUARD_MESSAGE))
+    assert_single_null_arm(run_with_ext(h2_data), f"ext_rss_budget: {GUARD_MESSAGE}")
+
+
+def test_ext_numerical_error_becomes_an_ext_numerical_null_arm(h2_data, monkeypatch):
+    from q2m3.sqd.exceptions import ReferenceNumericalError
+
+    raise_from_ext_stage(monkeypatch, ReferenceNumericalError(NUMERICAL_MESSAGE))
+    assert_single_null_arm(run_with_ext(h2_data), f"ext_numerical: {NUMERICAL_MESSAGE}")
+
+
+def test_ext_exception_null_arm_writes_predicted_rss_as_json_null(h2_data, monkeypatch, tmp_path):
+    # save_json_results uses allow_nan=False; a NaN sentinel would make the whole result unsavable.
+    from q2m3.sqd.exceptions import AllocationGuardError
+    from q2m3.utils.io import save_json_results
+
+    raise_from_ext_stage(monkeypatch, AllocationGuardError(GUARD_MESSAGE))
+    result = run_with_ext(h2_data)
+    path = tmp_path / "ext_null_arm.json"
+    save_json_results(result, path)
+    (arm,) = json.loads(path.read_text())["ext_sqd"]["arms"]
+    assert arm["null_reason"] == f"ext_rss_budget: {GUARD_MESSAGE}"
+    assert arm["predicted_rss_mb"] is None
+
+
+def test_ext_unexpected_error_still_fails_the_run(h2_data, monkeypatch):
+    # ReferenceNumericalError is a RuntimeError, so catching RuntimeError would hide bugs.
+    raise_from_ext_stage(monkeypatch, RuntimeError("injected ext failure"))
+    with pytest.raises(RuntimeError, match="injected ext failure"):
+        run_with_ext(h2_data)
+
+
+def test_reference_only_mode_does_not_run_the_ext_stage(h2_data, monkeypatch, tmp_path):
+    from q2m3.sqd.config import ExtSQDSettings
+
+    calls = tmp_path / "ext_calls.jsonl"
+    record_ext_calls(monkeypatch, calls)
+    result = low(*h2_data, mode="reference_only", ext_sqd=ExtSQDSettings())
+    assert recorded_calls(calls) == []
+    assert result.status == "reference_only"
+    assert result.ext_sqd is None
+    assert result.null_reasons["ext_sqd"] == "reference_only"
+
+
+def test_ext_stage_forwards_the_run_settings_seeds_and_resource_limits(
+    h2_data, monkeypatch, tmp_path
+):
+    from dataclasses import asdict
+
+    from q2m3.sqd import extend
+    from q2m3.sqd.config import ExtSQDSettings, LUCJConfig
+
+    orchestrator = mod()
+    calls = tmp_path / "ext_calls.jsonl"
+    real_ext, real_retained, real_supervise = (
+        extend.run_ext_sqd,
+        orchestrator._retained_mb,
+        orchestrator._supervise,
+    )
+
+    def write(row):
+        with calls.open("a") as handle:
+            handle.write(json.dumps(row) + "\n")
+
+    def ext_recorder(h1, h2, e_core, seed_space, settings, **kwargs):
+        (alpha, beta), amplitudes = seed_space
+        names = ("seed_source", "host_available_mb", "rss_budget_mb", "retained_mb")
+        row = {name: kwargs[name] for name in names + ("allow_large",)}
+        write(row | {"kind": "ext", "settings": asdict(settings)})
+        strings = [alpha.tolist(), beta.tolist()]
+        write({"kind": "ext_seed", "strings": strings, "amplitudes": amplitudes.tolist()})
+        return real_ext(h1, h2, e_core, seed_space, settings, **kwargs)
+
+    def retained_recorder(samples, diagonalized):
+        value = real_retained(samples, diagonalized)
+        strings = [s.tolist() for s in diagonalized.ci_strings]
+        amplitudes = diagonalized.amplitudes.tolist()
+        write({"kind": "retained", "value": value, "strings": strings, "amplitudes": amplitudes})
+        return value
+
+    worker_caps = []
+
+    def supervise_recorder(function, args, kwargs, **options):
+        # Runs in this process; kwargs["cap"] is the RSS limit handed to the worker.
+        worker_caps.append(kwargs["cap"])
+        return real_supervise(function, args, kwargs, **options)
+
+    monkeypatch.setattr(extend, "run_ext_sqd", ext_recorder)
+    monkeypatch.setattr(orchestrator, "_retained_mb", retained_recorder)
+    monkeypatch.setattr(orchestrator, "_supervise", supervise_recorder)
+    requested = ExtSQDSettings(order=3, threshold=0.0)
+    result = low(
+        *h2_data,
+        lucj=LUCJConfig(n_reps=2, shots=512),
+        seed=31,
+        ext_sqd=requested,
+        allow_large=False,
+    )
+
+    def rows(kind):
+        return [row for row in recorded_calls(calls) if row["kind"] == kind]
+
+    # _retained_mb also sizes the reference stage, so the last row belongs to ext.
+    (call,), (seed,), retained = rows("ext"), rows("ext_seed"), rows("retained")[-1]
+    assert len(worker_caps) == 1
+    # A default ExtSQDSettings would change the excitation and truncation of the arm.
+    assert call["settings"] == json.loads(json.dumps(asdict(requested)))
+    assert call["seed_source"] == "quantum"
+    # The seeds are the SQD subspace of this run, not the HF string alone.
+    assert seed["strings"] == retained["strings"]
+    assert len(seed["strings"][0]) * len(seed["strings"][1]) > 1
+    # XO26 (S7d, G2b T1): the amplitudes select the seed strings in run_ext_sqd; with
+    # threshold=0.0 any non-negative replacement keeps all strings, so compare them here.
+    assert seed["amplitudes"] == retained["amplitudes"]
+    # A larger limit or a zero retained size would let the ext guard pass an
+    # allocation that the worker RSS limit of this run cannot hold.
+    assert call["host_available_mb"] == call["rss_budget_mb"] == worker_caps[0]
+    assert call["retained_mb"] == retained["value"] > 0
+    assert call["allow_large"] is False
+    (arm,) = result.ext_sqd.arms
+    assert arm.null_reason is None

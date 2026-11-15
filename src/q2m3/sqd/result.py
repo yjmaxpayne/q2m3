@@ -581,6 +581,7 @@ class SQDResult:
         if self.ext_sqd is not None:
             if reason is not None:
                 raise ValueError("ext_sqd is present, so null_reasons must not contain ext_sqd")
+            self.ext_sqd.validate()
             return
         expected = "reference_only" if self.status == "reference_only" else "ext_sqd_disabled"
         if reason != expected:

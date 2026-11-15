@@ -104,6 +104,86 @@ def reference_only_data():
     return data
 
 
+def ext_arm_data(seed_source="quantum"):
+    """One valid ext-SQD arm (norb 6, n 2) built only from picklable values."""
+    return dict(
+        seed_source=seed_source,
+        energy=-1.131,
+        seed_counts=(3, 2),
+        truncated_counts=(2, 2),
+        extended_counts=(9, 9),
+        subspace_dims=(9, 9),
+        coverage=9 / 15,
+        only_hf=False,
+        seed_space_energy=None,
+        zero_weight_strings=None,
+        sci_baseline_energy=-1.135,
+        sci_baseline_reason=None,
+        wall_s=0.25,
+        predicted_rss_mb=180.0,
+        process_peak_rss_mb=410.0,
+        null_reason=None,
+    )
+
+
+def ext_record_parts():
+    """Three arms: quantum, a null hf arm in the middle, and a cisd arm with an array.
+
+    The hf arm has the exception-mapped form of ``_null_ext_arm``: (0, 0) placeholders,
+    ``coverage`` 0.0 and ``predicted_rss_mb`` None.
+    """
+    hf = ext_arm_data("hf")
+    hf.update(
+        energy=None,
+        truncated_counts=(0, 0),
+        extended_counts=(0, 0),
+        subspace_dims=(0, 0),
+        coverage=0.0,
+        sci_baseline_energy=None,
+        sci_baseline_reason="sci_baseline_not_implemented",
+        predicted_rss_mb=None,
+        null_reason="ext_rss_budget: stage=ext predicted_rss_mb=180.0",
+    )
+    cisd = ext_arm_data("cisd")
+    cisd.update(
+        seed_counts=(4, 3),
+        seed_space_energy=-1.12,
+        zero_weight_strings=np.array([0b000101, 0b100001], dtype=np.int64),
+    )
+    return [ext_arm_data("quantum"), hf, cisd]
+
+
+def ext_record(arms=None, sources=("quantum", "hf", "cisd")):
+    """Build an ``ExtSQDRecord`` from arm dicts; imports stay local so collection works."""
+    from q2m3.sqd.config import ExtSQDSettings
+    from q2m3.sqd.extend import ExtSQDArm, ExtSQDRecord
+
+    arms = ext_record_parts() if arms is None else arms
+    return ExtSQDRecord(
+        settings=ExtSQDSettings(seed_sources=sources),
+        code_path_id="ext-sqd-test",
+        arms=tuple(ExtSQDArm(**arm) for arm in arms),
+    )
+
+
+def test_result_validate_runs_the_ext_sqd_record_validate(monkeypatch):
+    """Kills RS1: ``SQDResult.validate()`` must delegate to ``ExtSQDRecord.validate()``."""
+    from q2m3.sqd.extend import ExtSQDRecord
+
+    data = result_data()
+    del data["null_reasons"]["ext_sqd"]
+    data["ext_sqd"] = ext_record()
+    result = SQDResult(**data)
+    assert result.validate() is result
+
+    def reject(self):
+        raise ValueError("sentinel")
+
+    monkeypatch.setattr(ExtSQDRecord, "validate", reject)
+    with pytest.raises(ValueError, match="sentinel"):
+        result.validate()
+
+
 def test_result_has_exactly_forty_two_fields_and_returns_self():
     result = SQDResult(**result_data())
     assert len(fields(result)) == 42

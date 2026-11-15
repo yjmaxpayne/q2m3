@@ -239,6 +239,27 @@ def test_child_pools_are_single_threaded_when_the_caller_uses_eight(caller, h2_j
     assert outcome.thread_records == (expected,) * 3
 
 
+@pytest.mark.sqd
+@pytest.mark.slow
+def test_child_runs_the_ext_stage_when_the_switch_is_on(child_path, h2_jobs):
+    from q2m3.sqd.config import ExtSQDSettings
+    from q2m3.sqd.extend import ExtSQDRecord
+
+    # Non-default settings show that the requested settings reach the ext stage.
+    settings = ExtSQDSettings(order=3, threshold=0.0)
+    (result,) = SubprocessSQDRunner().run([replace(h2_jobs[0], ext_sqd=settings)]).results
+
+    assert result.status == "completed"
+    assert type(result.ext_sqd) is ExtSQDRecord
+    assert result.ext_sqd.settings == settings
+    assert "ext_sqd" not in result.null_reasons
+    assert tuple(arm.seed_source for arm in result.ext_sqd.arms) == ("quantum",)
+    (arm,) = result.ext_sqd.arms
+    assert arm.null_reason is None
+    # The extended space contains the SQD space, so its energy cannot be higher.
+    assert arm.energy <= result.sqd_energy + 1e-10
+
+
 def _comparable(result: SQDResult, path: Path) -> tuple[dict, dict]:
     """JSON fields with per-run measurements blanked, and the energies split off."""
     save_json_results(result, path)

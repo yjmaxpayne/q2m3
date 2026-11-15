@@ -14,7 +14,7 @@ from q2m3.sqd.config import IntegralContext, LUCJConfig, ReferenceConfig, SQDCon
 from q2m3.sqd.exceptions import ReferenceTimeoutError
 from q2m3.sqd.result import SQDResult
 from q2m3.sqd.transport import decode_result, encode_result
-from tests.sqd.test_result import result_data
+from tests.sqd.test_result import ext_record, ext_record_parts, result_data
 
 
 def molecule():
@@ -81,6 +81,26 @@ def test_sqd_result_round_trip_keeps_all_forty_two_fields():
     decoded = decode_result(encode_result(result))
     assert type(decoded) is SQDResult
     assert len(fields(decoded)) == 42
+    assert_same(decoded, result)
+
+
+def test_result_with_null_and_array_ext_arms_round_trips():
+    """Kills RT1 (``field(init=False)`` breaks decoding) and RT2 (arrays leave as list/tuple)."""
+    data = result_data()
+    del data["null_reasons"]["ext_sqd"]
+    parts = ext_record_parts()[1:]
+    # The hf arm takes the exception-mapped form of _null_ext_arm (G3c M4).
+    parts[0].update(
+        truncated_counts=(0, 0),
+        extended_counts=(0, 0),
+        subspace_dims=(0, 0),
+        coverage=0.0,
+        predicted_rss_mb=None,
+    )
+    data["ext_sqd"] = ext_record(parts, sources=("hf", "cisd"))
+    result = SQDResult(**data)
+    decoded = decode_result(encode_result(result))
+    assert type(decoded.ext_sqd.arms[1].zero_weight_strings) is np.ndarray
     assert_same(decoded, result)
 
 

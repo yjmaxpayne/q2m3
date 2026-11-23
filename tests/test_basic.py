@@ -8,9 +8,45 @@ Basic tests for Quantum-QM/MM framework.
 import numpy as np
 import pytest
 
+from q2m3.constants import TIP3P_HOH_ANGLE, TIP3P_OH_BOND_LENGTH
 from q2m3.core import QMMMSystem, QPEEngine
 from q2m3.core.qmmm_system import Atom
 from q2m3.interfaces import UnifiedDensityMatrix
+
+# Translations (Angstrom) of the H3O+ fixture: the origin-centered one and one
+# whose QM center is off the origin, so center-dependent mistakes show up.
+H3O_SHIFTS = [(0.0, 0.0, 0.0), (1.3, -0.7, 2.1)]
+
+
+def _h3o_plus_atoms(shift: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> list[Atom]:
+    """Return H3O+ atoms translated by ``shift`` (Angstrom)."""
+    coords = np.array(
+        [[0.0, 0.0, 0.0], [0.96, 0.0, 0.0], [-0.48, 0.83, 0.0], [-0.48, -0.83, 0.0]]
+    ) + np.asarray(shift)
+    return [Atom(symbol, xyz) for symbol, xyz in zip(["O", "H", "H", "H"], coords, strict=True)]
+
+
+def _waters(system: QMMMSystem) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """Split ``system.mm_atoms`` into (O, H1, H2) position triples."""
+    atoms = system.mm_atoms
+    assert len(atoms) == 3 * system.num_waters
+    waters = []
+    for k in range(0, len(atoms), 3):
+        trio = atoms[k : k + 3]
+        assert tuple(atom.symbol for atom in trio) == ("O", "H", "H")
+        waters.append(tuple(atom.position for atom in trio))
+    return waters
+
+
+def _unit(v: np.ndarray) -> np.ndarray:
+    """Return ``v`` normalized (NaN for a zero vector, which fails comparisons)."""
+    return v / np.linalg.norm(v)
+
+
+def _hoh_angle_deg(o: np.ndarray, h1: np.ndarray, h2: np.ndarray) -> float:
+    """Return the H-O-H angle in degrees."""
+    cos_angle = np.dot(_unit(h1 - o), _unit(h2 - o))
+    return float(np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0))))
 
 
 class TestQMMMSystem:
@@ -45,6 +81,55 @@ class TestQMMMSystem:
         assert "atom" in mol_dict
         assert mol_dict["basis"] == "sto-3g"
         assert "O 0.000000" in mol_dict["atom"]
+
+    def test_qmmm_system_water_geometry_is_tip3p(self, monkeypatch):
+        """Every water has the TIP3P O-H length and H-O-H angle from q2m3.constants."""
+        system = QMMMSystem(qm_atoms=_h3o_plus_atoms(), num_waters=8)
+        for o, h1, h2 in _waters(system):
+            angle = _hoh_angle_deg(o, h1, h2)
+            for h in (h1, h2):
+                assert abs(np.linalg.norm(h - o) - 0.9572) <= 0.01
+            assert abs(angle - 104.52) <= 0.5
+            # Tight tolerances catch rounded constants (0.96 Angstrom, 104.5 deg).
+            for h in (h1, h2):
+                assert abs(np.linalg.norm(h - o) - TIP3P_OH_BOND_LENGTH) <= 1e-9
+            assert abs(angle - TIP3P_HOH_ANGLE) <= 1e-9
+
+        # The module-level bond length must reach every water.
+        monkeypatch.setattr("q2m3.core.qmmm_system.TIP3P_OH_BOND_LENGTH", 1.2)
+        stretched = QMMMSystem(qm_atoms=_h3o_plus_atoms(), num_waters=8)
+        for o, h1, h2 in _waters(stretched):
+            for h in (h1, h2):
+                assert abs(np.linalg.norm(h - o) - 1.2) <= 1e-9
+
+    def test_qmmm_system_oxygen_positions_unchanged(self):
+        """Water oxygens stay on the 3.0 Angstrom spherical shell around the QM center."""
+        n_waters = 8
+        for shift in H3O_SHIFTS:
+            qm_atoms = _h3o_plus_atoms(shift)
+            center = np.mean([atom.position for atom in qm_atoms], axis=0)
+            system = QMMMSystem(qm_atoms=qm_atoms, num_waters=n_waters)
+            for i, (o, _, _) in enumerate(_waters(system)):
+                theta = np.pi * (i + 0.5) / n_waters
+                phi = 2 * np.pi * i / n_waters
+                expected = center + 3.0 * np.array(
+                    [np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)]
+                )
+                np.testing.assert_allclose(o, expected, rtol=0, atol=1e-12)
+
+    def test_qmmm_system_water_hydrogens_point_outward(self):
+        """Hydrogens point away from the QM center; H-H lies along cross(r_hat, z_hat)."""
+        z_hat = np.array([0.0, 0.0, 1.0])
+        for shift in H3O_SHIFTS:
+            qm_atoms = _h3o_plus_atoms(shift)
+            center = np.mean([atom.position for atom in qm_atoms], axis=0)
+            system = QMMMSystem(qm_atoms=qm_atoms, num_waters=8)
+            for o, h1, h2 in _waters(system):
+                for h in (h1, h2):
+                    assert np.linalg.norm(h - center) > np.linalg.norm(o - center)
+                r_hat = _unit(o - center)
+                assert np.dot(_unit((h1 + h2) / 2 - o), r_hat) >= 1 - 1e-9
+                assert abs(np.dot(_unit(h1 - h2), _unit(np.cross(r_hat, z_hat)))) >= 1 - 1e-9
 
 
 class TestQPEEngine:

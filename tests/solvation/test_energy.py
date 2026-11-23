@@ -130,6 +130,40 @@ class TestStepResult:
         with pytest.raises(AttributeError):
             result.e_qpe = -2.0
 
+    def test_step_result_defaults_keep_qpe_semantics(self):
+        """Fields added after qpe_time default to QPE semantics with no vdW term."""
+        result = StepResult(
+            e_qpe=-1.15, e_mm_sol_sol=0.002, e_hf_ref=-1.117, callback_time=0.05, qpe_time=0.3
+        )
+        assert result.quantum_method == "qpe"
+        assert result.e_qmmm_vdw == 0.0
+        assert result.sqd_result is None
+
+    def test_acceptance_energy_adds_vdw_term(self):
+        """Acceptance energy picks the quantum term by branch and adds MM and vdW terms."""
+        result = StepResult(
+            e_qpe=-1.0,
+            e_mm_sol_sol=0.1,
+            e_hf_ref=-0.9,
+            callback_time=0.0,
+            qpe_time=0.0,
+            e_qmmm_vdw=0.02,
+        )
+        assert result.acceptance_energy(False) == pytest.approx(-0.88, abs=1e-15)
+        assert result.acceptance_energy(True) == pytest.approx(-0.78, abs=1e-15)
+
+        # Addition order must be (quantum + e_mm) + vdw: q + (mm + vdw) gives -1.047 here.
+        e_qpe, e_mm, vdw = -1.0, -0.05, 0.003
+        ordered = StepResult(
+            e_qpe=e_qpe,
+            e_mm_sol_sol=e_mm,
+            e_hf_ref=-0.9,
+            callback_time=0.0,
+            qpe_time=0.0,
+            e_qmmm_vdw=vdw,
+        )
+        assert ordered.acceptance_energy(False) == (e_qpe + e_mm) + vdw
+
 
 # ============================================================================
 # precompute_vacuum_cache Tests

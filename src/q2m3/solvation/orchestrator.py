@@ -242,10 +242,7 @@ def run_solvation(config: SolvationConfig, show_plots: bool = True) -> dict[str,
     init_result = step_callback(solvent_states_np, qm_coords_flat)
     precompute_time = time.perf_counter() - precompute_start
 
-    if mode == "hf_corrected":
-        initial_energy = init_result.e_hf_ref + init_result.e_mm_sol_sol
-    else:
-        initial_energy = init_result.e_qpe + init_result.e_mm_sol_sol
+    initial_energy = init_result.acceptance_energy(config.acceptance_uses_hf_reference)
 
     if config.verbose:
         console.print(f"  Initial energy computation: {precompute_time:.2f}s")

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-11-24 01:15+0800\n"
-"PO-Revision-Date: 2026-11-23 17:15+0000\n"
+"POT-Creation-Date: 2026-11-24 02:23+0800\n"
+"PO-Revision-Date: 2026-11-23 18:23+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -42,9 +42,9 @@ msgstr "溶剂化模拟的分子体系配置。"
 #: ../../source/api-reference/solvation.rst of q2m3.solvation.analysis.DeltaCorrPolResult
 #: q2m3.solvation.analysis.EnergyPhaseResult q2m3.solvation.analysis.EquilibrationResult
 #: q2m3.solvation.analysis.ModeComparisonResult q2m3.solvation.analysis.QPEHFConsistencyResult
-#: q2m3.solvation.energy.StepResult q2m3.solvation.ir_cache.cache_path_for_config
-#: q2m3.solvation.ir_cache.compute_cache_key q2m3.solvation.ir_cache.is_cache_available
-#: q2m3.solvation.mc_loop.MCResult q2m3.solvation.orchestrator.replay_quantum_trajectory
+#: q2m3.solvation.ir_cache.cache_path_for_config q2m3.solvation.ir_cache.compute_cache_key
+#: q2m3.solvation.ir_cache.is_cache_available q2m3.solvation.mc_loop.MCResult
+#: q2m3.solvation.orchestrator.replay_quantum_trajectory
 #: q2m3.solvation.solvent.SolventModel.get_lj_params
 #: q2m3.solvation.solvent.SolventMolecule.from_state_vector
 #: q2m3.solvation.solvent.molecules_to_state_array q2m3.solvation.solvent.state_array_to_molecules
@@ -336,9 +336,13 @@ msgstr "忽略缓存的 IR 并强制重新编译"
 msgid "Compute expected QPE evaluation count based on mode."
 msgstr "根据模式计算预期的 QPE 评估次数。"
 
-#: of q2m3.solvation.config.SolvationConfig.kt:1
+#: of q2m3.solvation.config.SolvationConfig.kt:1 q2m3.solvation.mc_loop.MCLoopSettings:21
 msgid "Thermal energy kT in Hartree."
 msgstr "热能 kT，单位为 Hartree。"
+
+#: of q2m3.solvation.config.SolvationConfig.acceptance_uses_hf_reference:1
+msgid "Whether MC acceptance uses the HF reference energy instead of the QPE energy."
+msgstr "MC 接受判据是否用 HF 参考能量代替 QPE 能量。"
 
 #: of q2m3.solvation.config.SolvationConfig.validate:3
 msgid "Returns self to support chaining: config.validate()"
@@ -643,6 +647,18 @@ msgstr "所有步回调均为纯 Python 函数（未使用 @qjit）；它们在�
 msgid "Result from one MC step's energy computation."
 msgstr "一次 MC 步的能量计算结果。"
 
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:1
+msgid "Return the energy that the Metropolis acceptance test uses."
+msgstr "返回 Metropolis 接受判据所用的能量。"
+
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:3
+msgid "If True, use e_hf_ref as the quantum term. If False, use e_qpe."
+msgstr "为 True 时，量子项取 e_hf_ref。为 False 时，量子项取 e_qpe。"
+
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:5
+msgid "The quantum term plus e_mm_sol_sol plus e_qmmm_vdw, added from left to right."
+msgstr "量子项加 e_mm_sol_sol，再加 e_qmmm_vdw，按从左到右的顺序相加。"
+
 #: of q2m3.solvation.energy.precompute_vacuum_cache:1
 msgid "Run vacuum SCF once and cache results for MC loop."
 msgstr "运行一次真空 SCF，并缓存结果供 MC 循环使用。"
@@ -787,16 +803,40 @@ msgid ""
 msgstr "实现纯 Python 的 Metropolis MC 循环（ADR-003：不使用 @qjit），将能量评估交给预编译的步回调。"
 
 #: of q2m3.solvation.mc_loop:6
-msgid "Three Hamiltonian modes determine acceptance energy:"
-msgstr "三种哈密顿量模式决定接受判据所用的能量："
+msgid "StepResult.acceptance_energy(uses_hf_reference) gives the acceptance energy:"
+msgstr "StepResult.acceptance_energy(uses_hf_reference) 给出接受判据所用的能量："
 
 #: of q2m3.solvation.mc_loop:7
-msgid "hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)"
-msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol)（快速，近似）"
+msgid "hf_corrected: E_HF_ref + E_MM(sol-sol) + E_QM-MM(vdW)  (fast, approximate)"
+msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol) + E_QM-MM(vdW)（快速，近似）"
 
 #: of q2m3.solvation.mc_loop:8
-msgid "fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)"
-msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol)（完整量子计算）"
+msgid "fixed / dynamic: E_QPE + E_MM(sol-sol) + E_QM-MM(vdW)   (full quantum)"
+msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol) + E_QM-MM(vdW)（完整量子计算）"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:1
+msgid "Settings that the MC loop reads from its configuration object."
+msgstr "MC 循环从配置对象读取的设置。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:5
+msgid "Number of solvent molecules."
+msgstr "溶剂分子数。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:9
+msgid "Number of MC steps."
+msgstr "MC 步数。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:13
+msgid "Max displacement per axis in Angstrom."
+msgstr "每个轴向的最大平移量，单位为埃。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:17
+msgid "Max rotation per axis in radians."
+msgstr "每个轴向的最大旋转角，单位为弧度。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:25
+msgid "Use the HF reference energy as the quantum term of the acceptance energy."
+msgstr "用 HF 参考能量作为接受能量的量子项。"
 
 #: of q2m3.solvation.mc_loop.MCResult:1
 msgid "Complete MC simulation result."
@@ -811,8 +851,8 @@ msgid "Returns a closure that runs the MC simulation with Metropolis acceptance.
 msgstr "返回使用 Metropolis 接受准则运行 MC 模拟的闭包。"
 
 #: of q2m3.solvation.mc_loop.create_mc_loop:5
-msgid "Solvation simulation configuration."
-msgstr "溶剂化模拟配置。"
+msgid "MC loop settings. The factory reads all attributes at creation time."
+msgstr "MC 循环设置。工厂函数在创建时读取全部属性。"
 
 #: of q2m3.solvation.mc_loop.create_mc_loop:6
 msgid "Energy evaluator for each MC trial. Signature: (solvent_states, qm_coords) -> StepResult"
@@ -821,6 +861,14 @@ msgstr "每次 MC 尝试的能量评估函数。签名：(solvent_states, qm_coo
 #: of q2m3.solvation.mc_loop.create_mc_loop:9
 msgid "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
 msgstr "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
+
+#: ../../source/api-reference/solvation.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:11
+msgid "If settings does not have one of the MCLoopSettings attributes."
+msgstr "settings 缺少 MCLoopSettings 的任一属性时。"
 
 #: ../../source/api-reference/solvation.rst:40
 msgid "Phase Extraction"
@@ -910,10 +958,6 @@ msgstr "如果为 True，则返回包含 mean、std、sem 和 n_shots 的字典�
 #: of q2m3.solvation.phase_extraction.extract_energy_from_shots:13
 msgid "Mean energy (float) or statistics dict."
 msgstr "平均能量（float）或统计字典。"
-
-#: ../../source/api-reference/solvation.rst
-msgid "Raises"
-msgstr "异常"
 
 #: of q2m3.solvation.phase_extraction.extract_energy_from_shots:15
 msgid "If samples is empty."
@@ -1191,7 +1235,9 @@ msgid ""
 " from a non-finite coordinate) counts as a violation. Molecules whose atom symbols are not "
 "``(\"O\", \"H\", \"H\")`` are flagged as ``\"non_water_model\"`` and are left out of the bond and"
 " angle deviations."
-msgstr "仅当实测值在容差范围内时，规则才通过。因此 NaN 值（例如来自非有限坐标）计为违规。原子符号不是 ``(\"O\", \"H\", \"H\")`` 的分子标记为 ``\"non_water_model\"``，不计入键长与键角偏差。"
+msgstr ""
+"仅当实测值在容差范围内时，规则才通过。因此 NaN 值（例如来自非有限坐标）计为违规。原子符号不是 ``(\"O\", \"H\", \"H\")`` 的分子标记为 "
+"``\"non_water_model\"``，不计入键长与键角偏差。"
 
 #: of q2m3.solvation.solvent.check_mm_geometry:8 q2m3.solvation.solvent.qm_mm_lj_energy:8
 msgid "MM solvent molecules."
@@ -1251,7 +1297,9 @@ msgstr "QM-MM Lennard-Jones 能量，单位为 Hartree。参与计算的原子�
 msgid ""
 "If ``validate_qm_mm_lj_elements`` rejects ``qm_symbols``, if     the shape of ``qm_coords`` does "
 "not match ``qm_symbols``, or if a QM     or MM coordinate is not finite."
-msgstr "``validate_qm_mm_lj_elements`` 拒绝 ``qm_symbols`` 时、``qm_coords`` 的形状与 ``qm_symbols`` 不匹配时，或 QM 或 MM 坐标含非有限值时。"
+msgstr ""
+"``validate_qm_mm_lj_elements`` 拒绝 ``qm_symbols`` 时、``qm_coords`` 的形状与 ``qm_symbols`` 不匹配时，或 QM 或 "
+"MM 坐标含非有限值时。"
 
 #: of q2m3.solvation.solvent.initialize_solvent_ring:1
 msgid "Initialize solvent molecules in a ring arrangement."
@@ -1743,3 +1791,15 @@ msgstr "图像保存路径"
 #: of q2m3.solvation.plotting.plot_acceptance_rate:8
 msgid "Whether to display"
 msgstr "是否显示"
+
+#~ msgid "Three Hamiltonian modes determine acceptance energy:"
+#~ msgstr "三种哈密顿量模式决定接受判据所用的能量："
+
+#~ msgid "hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)"
+#~ msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol)（快速，近似）"
+
+#~ msgid "fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)"
+#~ msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol)（完整量子计算）"
+
+#~ msgid "Solvation simulation configuration."
+#~ msgstr "溶剂化模拟配置。"

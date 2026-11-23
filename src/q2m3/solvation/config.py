@@ -144,6 +144,11 @@ class SolvationConfig:
         """Thermal energy kT in Hartree."""
         return BOLTZMANN_CONSTANT * self.temperature
 
+    @property
+    def acceptance_uses_hf_reference(self) -> bool:
+        """Whether MC acceptance uses the HF reference energy instead of the QPE energy."""
+        return self.hamiltonian_mode == "hf_corrected"
+
     def validate(self) -> "SolvationConfig":
         """
         Validate configuration consistency.

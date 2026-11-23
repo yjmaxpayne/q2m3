@@ -7,20 +7,52 @@ Monte Carlo loop for QPE-driven solvation simulations.
 Implements a pure-Python Metropolis MC loop (ADR-003: no @qjit) that
 delegates energy evaluation to pre-compiled step callbacks.
 
-Three Hamiltonian modes determine acceptance energy:
-    - hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)
-    - fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)
+StepResult.acceptance_energy(uses_hf_reference) gives the acceptance energy:
+    - hf_corrected: E_HF_ref + E_MM(sol-sol) + E_QM-MM(vdW)  (fast, approximate)
+    - fixed / dynamic: E_QPE + E_MM(sol-sol) + E_QM-MM(vdW)   (full quantum)
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Protocol
 
 import numpy as np
 
-from .config import SolvationConfig
 from .energy import StepResult
+
+
+class MCLoopSettings(Protocol):
+    """Settings that the MC loop reads from its configuration object.
+
+    Attributes:
+        n_waters: Number of solvent molecules.
+        n_mc_steps: Number of MC steps.
+        translation_step: Max displacement per axis in Angstrom.
+        rotation_step: Max rotation per axis in radians.
+        kt: Thermal energy kT in Hartree.
+        acceptance_uses_hf_reference: Use the HF reference energy as the quantum term
+            of the acceptance energy.
+    """
+
+    @property
+    def n_waters(self) -> int: ...
+
+    @property
+    def n_mc_steps(self) -> int: ...
+
+    @property
+    def translation_step(self) -> float: ...
+
+    @property
+    def rotation_step(self) -> float: ...
+
+    @property
+    def kt(self) -> float: ...
+
+    @property
+    def acceptance_uses_hf_reference(self) -> bool: ...
 
 
 @dataclass
@@ -43,6 +75,10 @@ class MCResult:
     trajectory_solvent_states: np.ndarray  # Current solvent configuration after each MC step
     n_quantum_evaluations: int  # Actual QPE call count
     n_accepted: int
+    accepted: np.ndarray = field(  # Per-step Metropolis decision, shape (n_mc_steps,)
+        default_factory=lambda: np.zeros(0, dtype=bool)
+    )
+    step_results: tuple[StepResult, ...] = ()  # Trial StepResult of every step
 
 
 def _propose_move(
@@ -69,7 +105,7 @@ def _propose_move(
 
 
 def create_mc_loop(
-    config: SolvationConfig,
+    settings: MCLoopSettings,
     step_callback: Callable[[np.ndarray, np.ndarray], StepResult],
 ) -> Callable[..., MCResult]:
     """
@@ -78,19 +114,22 @@ def create_mc_loop(
     Returns a closure that runs the MC simulation with Metropolis acceptance.
 
     Args:
-        config: Solvation simulation configuration.
+        settings: MC loop settings. The factory reads all attributes at creation time.
         step_callback: Energy evaluator for each MC trial.
             Signature: (solvent_states, qm_coords) -> StepResult
 
     Returns:
         mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult
+
+    Raises:
+        AttributeError: If settings does not have one of the MCLoopSettings attributes.
     """
-    n_waters = config.n_waters
-    n_mc_steps = config.n_mc_steps
-    translation_step = config.translation_step
-    rotation_step = config.rotation_step
-    kt = config.kt
-    is_hf_corrected = config.hamiltonian_mode == "hf_corrected"
+    n_waters = settings.n_waters
+    n_mc_steps = settings.n_mc_steps
+    translation_step = settings.translation_step
+    rotation_step = settings.rotation_step
+    kt = settings.kt
+    uses_hf_reference = settings.acceptance_uses_hf_reference
 
     def mc_loop(
         initial_solvents: np.ndarray,
@@ -119,6 +158,8 @@ def create_mc_loop(
         callback_times = np.zeros(n_mc_steps)
         quantum_times = np.zeros(n_mc_steps)
         trajectory_solvent_states = np.zeros((n_mc_steps, n_waters, 6), dtype=solvents.dtype)
+        accepted = np.zeros(n_mc_steps, dtype=bool)
+        step_results: list[StepResult] = []
 
         # Best tracking
         best_energy = current_energy
@@ -143,10 +184,7 @@ def create_mc_loop(
             result = step_callback(new_solvents, qm_coords)
 
             # 4. Acceptance energy depends on mode
-            if is_hf_corrected:
-                new_energy = result.e_hf_ref + result.e_mm_sol_sol
-            else:
-                new_energy = result.e_qpe + result.e_mm_sol_sol
+            new_energy = result.acceptance_energy(uses_hf_reference)
 
             # 5. Metropolis criterion
             delta_e = new_energy - current_energy
@@ -154,6 +192,7 @@ def create_mc_loop(
                 solvents = new_solvents
                 current_energy = new_energy
                 n_accepted += 1
+                accepted[step] = True
 
             # 6. Best QPE tracking (only when QPE actually ran)
             if not np.isnan(result.e_qpe) and result.e_qpe < best_qpe_energy:
@@ -171,6 +210,7 @@ def create_mc_loop(
             callback_times[step] = result.callback_time
             quantum_times[step] = result.qpe_time
             trajectory_solvent_states[step] = solvents
+            step_results.append(result)
             energy_sum += current_energy
 
         n_quantum_evaluations = int(np.sum(~np.isnan(quantum_energies)))
@@ -192,6 +232,8 @@ def create_mc_loop(
             trajectory_solvent_states=trajectory_solvent_states,
             n_quantum_evaluations=n_quantum_evaluations,
             n_accepted=n_accepted,
+            accepted=accepted,
+            step_results=tuple(step_results),
         )
 
     return mc_loop

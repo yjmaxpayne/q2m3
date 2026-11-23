@@ -174,6 +174,13 @@ class TestSolvationConfig:
         with pytest.raises(AttributeError):
             cfg.n_waters = 20
 
+    def test_acceptance_uses_hf_reference_follows_mode(self, h2_mol):
+        """Only hf_corrected mode accepts MC moves on the HF reference energy."""
+        expected = {"hf_corrected": True, "fixed": False, "dynamic": False}
+        for mode, uses_hf in expected.items():
+            cfg = SolvationConfig(molecule=h2_mol, hamiltonian_mode=mode)
+            assert cfg.acceptance_uses_hf_reference is uses_hf, mode
+
     def test_hamiltonian_mode_hf_corrected(self, h2_mol):
         cfg = SolvationConfig(molecule=h2_mol, hamiltonian_mode="hf_corrected")
         assert cfg.hamiltonian_mode == "hf_corrected"

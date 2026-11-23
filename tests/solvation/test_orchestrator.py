@@ -372,6 +372,45 @@ class TestEndToEndDynamic:
 
 
 @pytest.mark.solvation
+@pytest.mark.parametrize(
+    ("mode", "factory_name", "quantum"),
+    [
+        ("fixed", "create_step_callback", -1.0),
+        ("hf_corrected", "create_hf_corrected_step_callback", -1.1),
+    ],
+    ids=["fixed", "hf_corrected"],
+)
+def test_initial_energy_uses_acceptance_energy(
+    monkeypatch, h2_molecule_config, fast_qpe_runtime, mode, factory_name, quantum
+):
+    """Initial energy uses the mode's quantum term plus MM and vdW terms, in that order."""
+    from q2m3.solvation import orchestrator, run_solvation
+    from q2m3.solvation.energy import StepResult
+
+    # e_qpe != e_hf_ref and a nonzero vdW term; q + (mm + vdw) differs here by 2.2e-16.
+    step = StepResult(
+        e_qpe=-1.0,
+        e_mm_sol_sol=-0.05,
+        e_hf_ref=-1.1,
+        callback_time=0.0,
+        qpe_time=0.0,
+        e_qmmm_vdw=0.003,
+    )
+    monkeypatch.setattr(orchestrator, factory_name, lambda *_a, **_k: lambda *_s: step)
+    config = SolvationConfig(
+        molecule=h2_molecule_config,
+        qpe_config=QPEConfig(n_estimation_wires=2, n_trotter_steps=1, qpe_interval=2),
+        hamiltonian_mode=mode,
+        n_waters=1,
+        n_mc_steps=2,
+        verbose=False,
+    )
+    result = run_solvation(config, show_plots=False)
+
+    assert result["initial_energy"] == (quantum + -0.05) + 0.003
+
+
+@pytest.mark.solvation
 class TestReplayQuantumTrajectory:
     """End-to-end tests for fixed-configuration quantum replay."""
 

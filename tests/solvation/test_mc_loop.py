@@ -4,6 +4,7 @@
 """Tests for MC loop module."""
 
 import math
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -468,3 +469,188 @@ class TestFixedDynamicMode:
         mc_loop = create_mc_loop(base_config, callback)
         result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=-1.15)
         assert not np.any(np.isnan(result.quantum_energies))
+
+
+# ============================================================================
+# MCLoopSettings protocol and per-step record tests
+# ============================================================================
+
+_SETTINGS_ATTRIBUTES = (
+    "n_waters",
+    "n_mc_steps",
+    "translation_step",
+    "rotation_step",
+    "kt",
+    "acceptance_uses_hf_reference",
+)
+
+
+def _protocol_settings(**overrides) -> SimpleNamespace:
+    """Build a duck-typed settings object with all six MCLoopSettings attributes."""
+    values = {
+        "n_waters": 3,
+        "n_mc_steps": 20,
+        "translation_step": 0.3,
+        "rotation_step": 0.2618,
+        "kt": 9.5e-4,
+        "acceptance_uses_hf_reference": False,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def _constant_callback(e_qpe=-1.1, e_mm=-0.05, e_vdw=0.0):
+    """Create a callback whose acceptance energy does not depend on the configuration."""
+
+    def callback(solvents, coords):
+        return StepResult(
+            e_qpe=e_qpe,
+            e_mm_sol_sol=e_mm,
+            e_hf_ref=e_qpe,
+            callback_time=0.001,
+            qpe_time=0.002,
+            e_qmmm_vdw=e_vdw,
+        )
+
+    return callback
+
+
+def _changed_steps(initial_solvents: np.ndarray, trajectory: np.ndarray) -> np.ndarray:
+    """Return a bool mask: True where the solvent state differs from the previous step."""
+    previous = np.concatenate([initial_solvents[None], trajectory[:-1]])
+    return np.any(trajectory != previous, axis=(1, 2))
+
+
+class TestMCLoopSettingsContract:
+    """The MC loop depends only on MCLoopSettings and StepResult."""
+
+    @pytest.mark.parametrize(
+        ("config_fixture", "callback_factory", "initial_energy", "expected"),
+        [
+            pytest.param(
+                "base_config",
+                _make_fixed_callback,
+                0.0,
+                (-1.1490000000000005, -1.1490000000000002, -1.1490000000000002, 1),
+                id="fixed",
+            ),
+            pytest.param(
+                "hf_corrected_config",
+                _make_hf_corrected_callback,
+                -1.15,
+                (-1.1648500000000002, -1.1600000000000001, -1.1695000000000002, 17),
+                id="hf_corrected",
+            ),
+        ],
+    )
+    def test_qpe_trajectory_bitwise_unchanged(
+        self,
+        request,
+        config_fixture,
+        callback_factory,
+        initial_energy,
+        expected,
+        initial_solvents,
+        qm_coords,
+    ):
+        """QPE acceptance energies reproduce the recorded seed-42 trajectory bit for bit.
+
+        The expected values are repr literals recorded on the pre-refactor loop. Each
+        parameter set has both accepted and rejected steps, so swapping the acceptance
+        branch changes n_accepted or avg_energy.
+        """
+        config = request.getfixturevalue(config_fixture)
+        mc_loop = create_mc_loop(config, callback_factory())
+        result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=initial_energy)
+        observed = (result.avg_energy, result.final_energy, result.best_energy, result.n_accepted)
+        assert observed == expected
+
+    @pytest.mark.parametrize("missing", _SETTINGS_ATTRIBUTES)
+    def test_create_mc_loop_rejects_settings_missing_attribute(self, missing):
+        """create_mc_loop reads every settings attribute at creation time, without defaults."""
+        settings = _protocol_settings()
+        delattr(settings, missing)
+        with pytest.raises(AttributeError, match=missing):
+            create_mc_loop(settings, _constant_callback())
+
+    def test_create_mc_loop_accepts_protocol_settings(self, initial_solvents, qm_coords):
+        """Any object with the six attributes drives the loop, and step sizes go to the right axes.
+
+        Constant energy accepts every step, so every step moves one molecule. Distinct
+        translation and rotation bounds catch a swap of the two step sizes or a fallback
+        to the SolvationConfig defaults.
+        """
+        settings = _protocol_settings(translation_step=1e-3, rotation_step=2e-3)
+        mc_loop = create_mc_loop(settings, _constant_callback())
+        result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=-1.15)
+
+        assert result.trajectory_solvent_states.shape == (20, 3, 6)
+        assert result.n_accepted == 20
+        previous = np.concatenate([initial_solvents[None], result.trajectory_solvent_states[:-1]])
+        step = np.abs(result.trajectory_solvent_states - previous)
+        assert np.all(step[..., :3] <= 1e-3)
+        assert np.all(step[..., 3:] <= 2e-3)
+
+    def test_vdw_term_enters_acceptance(self, base_config, initial_solvents, qm_coords):
+        """The Metropolis test uses e_qpe + e_mm_sol_sol + e_qmmm_vdw, counting vdw once."""
+        e_qpe, e_mm = -1.1, -0.05
+        cases = [
+            (1.0, e_qpe + e_mm, 0.0),  # vdw raises every trial by 1 Ha at 300 K
+            (0.0, e_qpe + e_mm, 1.0),  # no vdw: delta is zero
+            (1.0, (e_qpe + e_mm) + 1.0, 1.0),  # initial energy includes vdw: delta is zero
+        ]
+        for e_vdw, initial_energy, expected_rate in cases:
+            mc_loop = create_mc_loop(base_config, _constant_callback(e_qpe, e_mm, e_vdw))
+            result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=initial_energy)
+            assert result.acceptance_rate == expected_rate, (e_vdw, initial_energy)
+
+        # The loop must add the terms in acceptance_energy order: (quantum + e_mm) + vdw.
+        # With these values quantum + (e_mm + vdw) differs by one ULP.
+        e_qpe, e_hf, e_mm, e_vdw = -1.0, -1.1, -0.05, 0.003
+
+        def callback(solvents, coords):
+            return StepResult(
+                e_qpe=e_qpe,
+                e_mm_sol_sol=e_mm,
+                e_hf_ref=e_hf,
+                callback_time=0.001,
+                qpe_time=0.002,
+                e_qmmm_vdw=e_vdw,
+            )
+
+        for uses_hf_reference, quantum in ((False, e_qpe), (True, e_hf)):
+            settings = _protocol_settings(
+                n_mc_steps=5, kt=1.0, acceptance_uses_hf_reference=uses_hf_reference
+            )
+            result = create_mc_loop(settings, callback)(
+                initial_solvents, qm_coords, seed=42, initial_energy=0.0
+            )
+            assert result.final_energy == (quantum + e_mm) + e_vdw, uses_hf_reference
+
+    def test_accepted_mask_matches_trajectory(
+        self, hf_corrected_config, initial_solvents, qm_coords
+    ):
+        """accepted[i] is True exactly when step i changed the solvent state."""
+        mc_loop = create_mc_loop(hf_corrected_config, _make_hf_corrected_callback())
+        result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=-1.15)
+
+        changed = _changed_steps(initial_solvents, result.trajectory_solvent_states)
+        # Precondition: the mask mixes accepts and rejects, and a one-step shift changes it.
+        assert changed.any() and not changed.all()
+        assert not np.array_equal(changed, np.roll(changed, 1))
+
+        assert result.accepted.dtype == np.bool_
+        assert result.accepted.sum() == result.n_accepted
+        np.testing.assert_array_equal(result.accepted, changed)
+
+    def test_step_results_record_every_trial(self, base_config, initial_solvents, qm_coords):
+        """step_results holds the trial StepResult of every step, accepted or rejected."""
+        mc_loop = create_mc_loop(base_config, _make_fixed_callback())
+        result = mc_loop(initial_solvents, qm_coords, seed=42, initial_energy=0.0)
+
+        # Precondition: rejected steps exist, so recording only accepted trials is visible.
+        assert result.n_accepted < base_config.n_mc_steps
+
+        assert len(result.step_results) == base_config.n_mc_steps
+        for i, step_result in enumerate(result.step_results):
+            assert step_result.e_qpe == result.quantum_energies[i]

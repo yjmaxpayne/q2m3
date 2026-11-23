@@ -3,12 +3,22 @@
 
 """Tests for q2m3.solvation.solvent — solvent models and MM energy."""
 
+import os
+import platform
+import subprocess
+import sys
 import warnings
 
 import numpy as np
 import pytest
 
-from q2m3.constants import KCAL_TO_HARTREE, TIP3P_EPSILON_OO, TIP3P_HOH_ANGLE, TIP3P_SIGMA_OO
+from q2m3.constants import (
+    COULOMB_CONSTANT,
+    KCAL_TO_HARTREE,
+    TIP3P_EPSILON_OO,
+    TIP3P_HOH_ANGLE,
+    TIP3P_SIGMA_OO,
+)
 from q2m3.solvation.solvent import (
     SPC_E_WATER,
     TIP3P_WATER,
@@ -304,12 +314,46 @@ class TestInitializeSolventRing:
 # =============================================================================
 
 
+def _baseline_compute_mm_energy(molecules):
+    """compute_mm_energy as it was before the LJ pair kernel was extracted (inline LJ).
+
+    The hard-core overlap check is left out. The test configurations do not reach it.
+    """
+    e_lj_kcal = 0.0
+    e_coulomb_kcal = 0.0
+    for i, mol_i in enumerate(molecules):
+        coords_i, charges_i = mol_i.get_atom_coords(), mol_i.get_charges()
+        for mol_j in molecules[i + 1 :]:
+            coords_j, charges_j = mol_j.get_atom_coords(), mol_j.get_charges()
+            for ai in range(mol_i.model.n_atoms):
+                sigma_i, eps_i = mol_i.model.get_lj_params(ai)
+                if eps_i == 0:
+                    continue
+                for aj in range(mol_j.model.n_atoms):
+                    sigma_j, eps_j = mol_j.model.get_lj_params(aj)
+                    if eps_j == 0:
+                        continue
+                    r = np.linalg.norm(coords_j[aj] - coords_i[ai])
+                    sigma = (sigma_i + sigma_j) / 2
+                    epsilon = np.sqrt(eps_i * eps_j)
+                    sigma_r = sigma / r
+                    sigma_r_6 = sigma_r**6
+                    e_lj_kcal += 4.0 * epsilon * (sigma_r_6**2 - sigma_r_6)
+            for ai in range(mol_i.model.n_atoms):
+                for aj in range(mol_j.model.n_atoms):
+                    r = np.linalg.norm(coords_j[aj] - coords_i[ai])
+                    e_coulomb_kcal += COULOMB_CONSTANT * charges_i[ai] * charges_j[aj] / r
+    return (e_lj_kcal + e_coulomb_kcal) * KCAL_TO_HARTREE
+
+
 def test_compute_mm_energy_bitwise_unchanged():
     """Sharing the LJ pair kernel must not change a single bit of the MM energy.
 
-    The expected values are the ``repr`` of ``compute_mm_energy`` recorded on the
-    baseline source, before the pair kernel was extracted. The second
-    configuration has a close intermolecular contact (1.04 A) with repulsive energy.
+    The oracle is the pre-extraction source, run in the same process. Both paths
+    then use the same OpenBLAS kernel, so the bitwise check does not depend on the
+    CPU. The literals are the values recorded on an AVX-512 kernel. Other kernels
+    move them by a few ULP, so they only anchor the scale. The second configuration
+    has a close intermolecular contact (1.04 A) with repulsive energy.
     """
     spread = [
         [0.0, 0.0, 0.0, 0.1, 0.2, 0.3],
@@ -326,7 +370,32 @@ def test_compute_mm_energy_bitwise_unchanged():
         (close_pair, 0.05843977168933852),
     ):
         mols = [SolventMolecule.from_state_vector(TIP3P_WATER, np.array(s)) for s in states]
-        assert compute_mm_energy(mols) == expected
+        energy = compute_mm_energy(mols)
+        assert energy == _baseline_compute_mm_energy(mols)
+        assert energy == pytest.approx(expected, rel=1e-12, abs=0)
+
+
+@pytest.mark.skipif(
+    platform.machine().lower() not in ("x86_64", "amd64"),
+    reason="OPENBLAS_CORETYPE=Prescott names an x86-64 OpenBLAS kernel",
+)
+def test_compute_mm_energy_bitwise_check_is_blas_kernel_independent():
+    """The bitwise check must pass on every OpenBLAS kernel, not only on the recording CPU.
+
+    compute_mm_energy calls OpenBLAS through np.linalg.norm (ddot) and the rotation
+    matmul (dgemm). CI runners dispatch different kernels, and the kernels round
+    differently. The Prescott kernel changes the energy bits of both configurations
+    against the AVX-512 kernel, so this run fails for an oracle that depends on the CPU.
+    """
+    node = f"{__file__}::test_compute_mm_energy_bitwise_unchanged"
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", node, "-q", "-o", "addopts=", "-p", "no:cacheprovider"],
+        env={**os.environ, "OPENBLAS_CORETYPE": "Prescott"},
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert proc.returncode == 0 and "1 passed" in proc.stdout, proc.stdout[-3000:]
 
 
 # =============================================================================

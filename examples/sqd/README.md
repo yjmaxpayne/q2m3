@@ -44,7 +44,8 @@ export NUMEXPR_NUM_THREADS=1 JAX_PLATFORMS=cpu
    `run_sqd_from_integrals` needs no tensor transpose. `e_core` is added once. A
    second geometry run checks adapter agreement within 1e-8 Ha. Both entries share
    a solver, so this check is not an independent oracle.
-5. Continue to [fixed-environment glycine](../qmmm/README.md).
+5. **MM embedding benchmark**: run `uv run --no-sync python -m examples.sqd.mm_tip3p_benchmark --output <new-dir>`. Six registered TIP3P water fixtures run in the `diagonal` and `full_oneelectron` embedding modes and write `report.json` and `summary.md`.
+6. Continue to [fixed-environment glycine](../qmmm/README.md).
 
 ## Read the result
 

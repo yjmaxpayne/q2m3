@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from q2m3.constants import HARTREE_TO_KCAL_MOL
+from q2m3.constants import BANNED_TERMS, HARTREE_TO_KCAL_MOL
 from q2m3.fragments.result import (
     COUNTERPOISE_SUBSYSTEMS,
     ENERGY_LAYERS,
@@ -18,7 +18,6 @@ from q2m3.fragments.result import (
 )
 
 FIXED_STATEMENT = "q2m3 不对 Ks 做统计结论。"
-BANNED_TERMS = ("量子优势", "quantum advantage")
 
 TITLE = "# 片段相互作用能报告"
 LAYER_NAMES = {"hf": "HF", "mp2": "MP2", "casci": "CASCI", "sqd": "SQD", "ccsd_t": "CCSD(T)"}

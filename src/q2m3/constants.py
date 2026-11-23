@@ -34,3 +34,10 @@ TIP3P_EPSILON_OO = 0.152  # kcal/mol (Lennard-Jones epsilon)
 # =============================================================================
 CHEMICAL_ACCURACY_HA = 0.0016  # ~1 kcal/mol
 RELAXED_ACCURACY_HA = 0.016  # ~10 kcal/mol
+
+# =============================================================================
+# Honest Reporting
+# =============================================================================
+# Terms that reports must not contain. Report renderers reject any text that
+# contains one of them (case-insensitive).
+BANNED_TERMS: tuple[str, ...] = ("量子优势", "quantum advantage")

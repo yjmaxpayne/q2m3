@@ -115,6 +115,12 @@ def test_banned_terms_hold_the_two_required_phrases():
     assert {"量子优势", "quantum advantage"} <= set(BANNED_TERMS)
 
 
+def test_banned_terms_have_single_source():
+    from q2m3 import constants
+
+    assert report.BANNED_TERMS is constants.BANNED_TERMS
+
+
 def test_ks_table_is_shown_next_to_the_results_without_statistics():
     text = render_report([report_result()], ks_table=KS_TABLE)
 

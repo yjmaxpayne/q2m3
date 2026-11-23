@@ -171,3 +171,30 @@ def test_top_level_public_export():
     from q2m3 import build_fixed_mo_embedding_integrals as top_level_helper
 
     assert top_level_helper is build_fixed_mo_embedding_integrals
+
+
+def test_helper_solves_only_the_vacuum_scf(monkeypatch):
+    """Only the vacuum RHF is solved; the MM-wrapped object supplies hcore and E_nuc.
+
+    ``SCF.kernel`` is an alias that dispatches to ``self.scf``, so recording ``SCF.scf``
+    sees ``run()``, ``kernel()`` and direct ``scf()`` calls alike.
+    """
+    from pyscf.scf import hf
+
+    solved_classes: list[str] = []
+    original_scf = hf.SCF.scf
+
+    def recording_scf(self, *args, **kwargs):
+        solved_classes.append(type(self).__name__)
+        return original_scf(self, *args, **kwargs)
+
+    monkeypatch.setattr(hf.SCF, "scf", recording_scf)
+
+    build_fixed_mo_embedding_integrals(
+        ["O", "H", "H"],
+        np.array([[0.0, 0.0, 0.1173], [0.0, 0.7572, -0.4692], [0.0, -0.7572, -0.4692]]),
+        mm_charges=np.array([-0.834, 0.417, 0.417]),
+        mm_coords=np.array([[3.0, 0.0, 0.0], [3.5, 0.8, 0.0], [3.5, -0.8, 0.0]]),
+    )
+
+    assert solved_classes == ["RHF"]

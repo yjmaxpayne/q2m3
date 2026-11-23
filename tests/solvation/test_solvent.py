@@ -8,9 +8,12 @@ import warnings
 import numpy as np
 import pytest
 
+from q2m3.constants import KCAL_TO_HARTREE, TIP3P_EPSILON_OO, TIP3P_HOH_ANGLE, TIP3P_SIGMA_OO
 from q2m3.solvation.solvent import (
     SPC_E_WATER,
     TIP3P_WATER,
+    SolventAtom,
+    SolventModel,
     SolventMolecule,
     compute_mm_energy,
     get_mm_embedding_data,
@@ -294,3 +297,342 @@ class TestInitializeSolventRing:
         )
         for mol in mols:
             assert mol.position[2] == center[2]
+
+
+# =============================================================================
+# Shared LJ Pair Kernel: compute_mm_energy Characterization
+# =============================================================================
+
+
+def test_compute_mm_energy_bitwise_unchanged():
+    """Sharing the LJ pair kernel must not change a single bit of the MM energy.
+
+    The expected values are the ``repr`` of ``compute_mm_energy`` recorded on the
+    baseline source, before the pair kernel was extracted. The second
+    configuration has a close intermolecular contact (1.04 A) with repulsive energy.
+    """
+    spread = [
+        [0.0, 0.0, 0.0, 0.1, 0.2, 0.3],
+        [3.1, 0.4, -0.2, -0.5, 1.1, 0.7],
+        [-1.2, 2.9, 0.8, 2.0, -0.4, 1.3],
+    ]
+    close_pair = [
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [2.3, 0.1, 0.0, 0.0, 0.0, 3.0],
+        [0.5, -3.4, 1.0, 1.0, 0.5, -2.0],
+    ]
+    for states, expected in (
+        (spread, -0.001614170586215291),
+        (close_pair, 0.05843977168933852),
+    ):
+        mols = [SolventMolecule.from_state_vector(TIP3P_WATER, np.array(s)) for s in states]
+        assert compute_mm_energy(mols) == expected
+
+
+# =============================================================================
+# MM Geometry Gate (check_mm_geometry)
+# =============================================================================
+
+H3O_PLUS_COORDS = np.array(
+    [
+        [0.0000, 0.0000, 0.1173],
+        [0.0000, 0.9572, -0.4692],
+        [0.8286, -0.4786, -0.4692],
+        [-0.8286, -0.4786, -0.4692],
+    ]
+)
+# Water oxygen 4 A from the H3O+ centroid; the hydrogens point away from the solute.
+_FAR_EAST = H3O_PLUS_COORDS.mean(axis=0) + np.array([4.0, 0.0, 0.0])
+_FAR_WEST = H3O_PLUS_COORDS.mean(axis=0) + np.array([-4.0, 0.0, 0.0])
+_YAW_PI = np.array([0.0, 0.0, np.pi])
+# Water whose hydrogen is 0.87 A from an H3O+ hydrogen (oxygen 1.2 A away).
+_CLOSE_POSITION = H3O_PLUS_COORDS[1] + np.array([0.0, 1.2, 0.0])
+_CLOSE_EULER = np.array([0.3, 0.2, 0.1])
+
+
+def _triatomic_model(
+    symbols: tuple[str, str, str], bond_A: float, angle_deg: float, name: str = "custom"
+) -> SolventModel:
+    """Build a symmetric triatomic model with the given bond length and angle."""
+    half = np.radians(angle_deg / 2)
+    x, y = bond_A * np.cos(half), bond_A * np.sin(half)
+    return SolventModel(
+        name=name,
+        atoms=(
+            SolventAtom(symbols[0], (0.0, 0.0, 0.0), -0.834, lj_sigma=3.15061, lj_epsilon=0.152),
+            SolventAtom(symbols[1], (x, y, 0.0), 0.417),
+            SolventAtom(symbols[2], (x, -y, 0.0), 0.417),
+        ),
+    )
+
+
+def _check(molecules, qm_coords=H3O_PLUS_COORDS, **kwargs):
+    from q2m3.solvation.solvent import check_mm_geometry
+
+    return check_mm_geometry(molecules, qm_coords, **kwargs)
+
+
+def _qm_mm_distances(qm_coords: np.ndarray, mm_coords: np.ndarray) -> np.ndarray:
+    """Distance matrix of shape (n_qm, n_mm), computed independently of the gate."""
+    return np.linalg.norm(qm_coords[:, None, :] - mm_coords[None, :, :], axis=-1)
+
+
+def test_mm_geometry_accepts_tip3p_water():
+    """A TIP3P water 4 A from H3O+ satisfies all three rules."""
+    report = _check([SolventMolecule(TIP3P_WATER, _FAR_EAST)])
+    assert report.passed is True
+    assert report.violations == ()
+
+
+def test_mm_geometry_rejects_stretched_oh_only():
+    """A stretched or a compressed O-H bond violates only the bond rule."""
+    stretched = _triatomic_model(("O", "H", "H"), 0.98, 104.52)
+    report = _check([SolventMolecule(stretched, _FAR_EAST)])
+    assert report.violations == ("oh_bond",)
+    assert report.passed is False
+    # The bond tolerance comes from the keyword argument.
+    assert _check([SolventMolecule(stretched, _FAR_EAST)], oh_tol_A=0.05).violations == ()
+
+    # Only the second O-H bond is stretched.
+    half = np.radians(TIP3P_HOH_ANGLE / 2)
+    uneven = SolventModel(
+        name="uneven",
+        atoms=(
+            SolventAtom("O", (0.0, 0.0, 0.0), -0.834, lj_sigma=3.15061, lj_epsilon=0.152),
+            SolventAtom("H", (0.9572 * np.cos(half), 0.9572 * np.sin(half), 0.0), 0.417),
+            SolventAtom("H", (0.98 * np.cos(half), -0.98 * np.sin(half), 0.0), 0.417),
+        ),
+    )
+    assert _check([SolventMolecule(uneven, _FAR_EAST)]).violations == ("oh_bond",)
+
+    # A compressed bond counts too (absolute deviation), also in a later molecule.
+    compressed = _triatomic_model(("O", "H", "H"), 0.94, 104.52)
+    report = _check(
+        [SolventMolecule(TIP3P_WATER, _FAR_EAST), SolventMolecule(compressed, _FAR_WEST, _YAW_PI)]
+    )
+    assert report.violations == ("oh_bond",)
+
+
+def test_mm_geometry_rejects_linear_water_only():
+    """A linear or a too-narrow H-O-H angle violates only the angle rule."""
+    linear = _triatomic_model(("O", "H", "H"), 0.9572, 180.0)
+    report = _check([SolventMolecule(linear, _FAR_EAST)])
+    assert report.violations == ("hoh_angle",)
+    assert report.passed is False
+    # The angle tolerance comes from the keyword argument.
+    assert _check([SolventMolecule(linear, _FAR_EAST)], hoh_tol_deg=80.0).violations == ()
+
+    # This rotation makes the computed cosine round to -1.0000000000000002;
+    # the reported deviation must stay finite (180 - 104.52 degrees).
+    rotated = SolventMolecule(linear, _FAR_EAST, np.array([-3.0, -2.5, -1.5]))
+    report = _check([rotated])
+    assert report.violations == ("hoh_angle",)
+    assert np.isfinite(report.hoh_max_dev_deg)
+    assert report.hoh_max_dev_deg == pytest.approx(180.0 - TIP3P_HOH_ANGLE, abs=1e-9)
+
+    # A narrower angle counts too (absolute deviation), also in a later molecule.
+    narrow = _triatomic_model(("O", "H", "H"), 0.9572, 90.0)
+    report = _check(
+        [SolventMolecule(TIP3P_WATER, _FAR_EAST), SolventMolecule(narrow, _FAR_WEST, _YAW_PI)]
+    )
+    assert report.violations == ("hoh_angle",)
+
+
+def test_mm_geometry_rejects_close_water_only():
+    """The QM-MM distance rule uses all atom pairs, a strict bound and the keyword threshold."""
+    close = SolventMolecule(TIP3P_WATER, _CLOSE_POSITION, _CLOSE_EULER)
+    oracle = _qm_mm_distances(H3O_PLUS_COORDS, close.get_atom_coords()).min()
+    report = _check([close])
+    assert report.violations == ("qm_mm_distance",)
+    assert report.min_qm_mm_A == pytest.approx(oracle, abs=1e-12)
+    # The close water is the second molecule.
+    far = SolventMolecule(TIP3P_WATER, _FAR_EAST)
+    assert _check([far, close]).violations == ("qm_mm_distance",)
+
+    # Threshold equal to the measured distance: "greater than" is strict.
+    accepted = [SolventMolecule(TIP3P_WATER, _FAR_EAST)]
+    measured = _check(accepted).min_qm_mm_A
+    assert _check(accepted, min_qm_mm_A=measured).violations == ("qm_mm_distance",)
+
+    # The water hydrogen is the nearest MM atom; the water oxygen alone is far enough.
+    h_nearest = SolventMolecule(
+        TIP3P_WATER, H3O_PLUS_COORDS[0] + np.array([2.6, 0.0, 0.0]), _YAW_PI
+    )
+    pairs = _qm_mm_distances(H3O_PLUS_COORDS, h_nearest.get_atom_coords())
+    assert pairs[:, 0].min() > 1.5 > pairs.min()
+    report = _check([h_nearest])
+    assert report.violations == ("qm_mm_distance",)
+    assert report.min_qm_mm_A == pytest.approx(pairs.min(), abs=1e-12)
+
+
+def test_mm_geometry_rejects_nonfinite_coordinates():
+    """A NaN coordinate fails the gate instead of passing silently or raising."""
+    qm_coords = H3O_PLUS_COORDS.copy()
+    qm_coords[-1, 2] = np.nan
+    report = _check([SolventMolecule(TIP3P_WATER, _FAR_EAST)], qm_coords)
+    assert report.passed is False
+
+
+def test_mm_geometry_registered_fixtures_pass():
+    """All six registered fixtures pass the gate and their states rebuild their coordinates."""
+    from examples.sqd._inputs import load_mm_tip3p_fixtures
+
+    fixtures = load_mm_tip3p_fixtures()
+    assert sorted(f["name"] for f in fixtures) == sorted(
+        [
+            "h2o_1tip3p_4e4o",
+            "h2o_3tip3p_4e4o",
+            "h2o_3tip3p_8e6o",
+            "h3o_plus_3tip3p_4e4o",
+            "h3o_plus_8tip3p_4e4o",
+            "ac2_h3o_plus_3tip3p",
+        ]
+    )
+    for fixture in fixtures:
+        states = np.asarray(fixture["water_states"], dtype=float)
+        molecules = [SolventMolecule.from_state_vector(TIP3P_WATER, s) for s in states]
+        rebuilt = np.vstack([m.get_atom_coords() for m in molecules])
+        assert np.max(np.abs(rebuilt - np.asarray(fixture["water_coords"]))) <= 1e-12
+        report = _check(molecules, np.asarray(fixture["qm_coords"], dtype=float))
+        assert report.passed is True, fixture["name"]
+        assert report.min_qm_mm_A > 1.5, fixture["name"]
+
+
+def test_mm_check_flags_non_water_model():
+    """A molecule that is not O-H-H is flagged and left out of the bond and angle deviations."""
+    methylene = _triatomic_model(("C", "H", "H"), 1.09, 120.0, name="CH2")
+    other = SolventMolecule(methylene, _FAR_WEST, _YAW_PI)
+    report = _check([other, SolventMolecule(TIP3P_WATER, _FAR_EAST)])
+    assert report.violations == ("non_water_model",)
+    assert report.passed is False
+    assert report.oh_max_dev_A <= 1e-12
+    assert report.hoh_max_dev_deg <= 1e-9
+
+    only_other = _check([other])
+    assert np.isnan(only_other.oh_max_dev_A)
+    assert np.isnan(only_other.hoh_max_dev_deg)
+    assert only_other.violations == ("non_water_model", "oh_bond", "hoh_angle")
+    assert only_other.passed is False
+
+
+def test_mm_check_orders_multiple_violations():
+    """Violations keep the fixed rule order, not alphabetical order."""
+    stretched = _triatomic_model(("O", "H", "H"), 0.98, 104.52)
+    report = _check([SolventMolecule(stretched, _CLOSE_POSITION, _CLOSE_EULER)])
+    assert report.violations == ("oh_bond", "qm_mm_distance")
+
+    stretched_linear = _triatomic_model(("O", "H", "H"), 0.98, 180.0)
+    report = _check([SolventMolecule(stretched_linear, _CLOSE_POSITION, _CLOSE_EULER)])
+    assert report.violations == ("oh_bond", "hoh_angle", "qm_mm_distance")
+
+
+# =============================================================================
+# QM-MM Lennard-Jones Repulsion (qm_mm_lj_energy)
+# =============================================================================
+
+
+def _lj_energy(qm_symbols, qm_coords, molecules):
+    from q2m3.solvation.solvent import qm_mm_lj_energy
+
+    return qm_mm_lj_energy(qm_symbols, qm_coords, molecules)
+
+
+def test_qm_mm_lj_is_zero_at_sigma():
+    """A QM oxygen at distance sigma from a TIP3P oxygen has zero LJ energy."""
+    from q2m3.solvation.solvent import QM_MM_LJ_PARAMETERS
+
+    assert QM_MM_LJ_PARAMETERS["O"] == (TIP3P_SIGMA_OO, TIP3P_EPSILON_OO)
+    assert QM_MM_LJ_PARAMETERS["H"] == (0.0, 0.0)
+    water = SolventMolecule(TIP3P_WATER, np.array([TIP3P_SIGMA_OO, 0.0, 0.0]))
+    assert abs(_lj_energy(["O"], np.zeros((1, 3)), [water])) <= 1e-15
+
+
+def test_qm_mm_lj_minimum_equals_minus_epsilon():
+    """At 2^(1/6) sigma the energy is -epsilon, converted once to Hartree."""
+    water = SolventMolecule(TIP3P_WATER, np.array([2 ** (1 / 6) * TIP3P_SIGMA_OO, 0.0, 0.0]))
+    energy = _lj_energy(["O"], np.zeros((1, 3)), [water])
+    assert energy == pytest.approx(-TIP3P_EPSILON_OO * KCAL_TO_HARTREE, abs=1e-15)
+
+
+def test_qm_mm_lj_ignores_zero_epsilon_sites():
+    """Hydrogens on either side carry no LJ term, even when they overlap."""
+    symbols = ["H", "O", "H", "H"]
+    qm_coords = H3O_PLUS_COORDS[[1, 0, 2, 3]].copy()
+    water = SolventMolecule(TIP3P_WATER, H3O_PLUS_COORDS[0] + np.array([3.0, 0.0, 0.0]))
+    reference = _lj_energy(symbols, qm_coords, [water])
+    assert reference != 0.0
+
+    moved_qm = qm_coords.copy()
+    moved_qm[0] += np.array([0.0, 0.5, 0.3])
+    assert _lj_energy(symbols, moved_qm, [water]) == reference
+
+    rotated = SolventMolecule(TIP3P_WATER, water.position, np.array([0.4, -0.7, 1.1]))
+    assert _lj_energy(symbols, qm_coords, [rotated]) == reference
+
+    # QM hydrogen on top of a water hydrogen (r = 0 for an epsilon-zero pair).
+    overlap = qm_coords.copy()
+    overlap[0] = water.get_atom_coords()[1]
+    energy = _lj_energy(symbols, overlap, [water])
+    assert np.isfinite(energy)
+    assert energy == reference
+
+    # QM hydrogen on top of the water oxygen; the QM oxygen stays 3 A away.
+    h_on_o = qm_coords.copy()
+    h_on_o[0] = water.get_atom_coords()[0]
+    energy = _lj_energy(symbols, h_on_o, [water])
+    assert np.isfinite(energy)
+    assert energy == reference
+
+    # QM oxygen on top of a water hydrogen.
+    o_on_h = qm_coords.copy()
+    o_on_h[1] = water.get_atom_coords()[1]
+    assert np.isfinite(_lj_energy(symbols, o_on_h, [water]))
+
+
+def test_qm_mm_lj_rejects_unknown_element():
+    """An element outside the parameter table raises and names the element."""
+    from q2m3.solvation.solvent import validate_qm_mm_lj_elements
+
+    water = SolventMolecule(TIP3P_WATER, _FAR_EAST)
+    with pytest.raises(ValueError, match="'C'"):
+        _lj_energy(["O", "H", "C"], H3O_PLUS_COORDS[:3], [water])
+    with pytest.raises(ValueError, match="'C'"):
+        validate_qm_mm_lj_elements(["O", "H", "C"])
+
+
+def test_qm_mm_lj_rejects_solute_without_lj_sites():
+    """A solute without any epsilon > 0 atom (H2) raises."""
+    from q2m3.solvation.solvent import validate_qm_mm_lj_elements
+
+    water = SolventMolecule(TIP3P_WATER, _FAR_EAST)
+    h2 = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
+    with pytest.raises(ValueError):
+        _lj_energy(["H", "H"], h2, [water])
+    with pytest.raises(ValueError):
+        validate_qm_mm_lj_elements(["H", "H"])
+
+
+def test_qm_mm_lj_rejects_nonfinite_coordinates():
+    """An infinite QM or MM coordinate raises instead of returning a number."""
+    qm_coords = H3O_PLUS_COORDS.copy()
+    qm_coords[2, 1] = np.inf
+    with pytest.raises(ValueError):
+        _lj_energy(["O", "H", "H", "H"], qm_coords, [SolventMolecule(TIP3P_WATER, _FAR_EAST)])
+
+    # Finite QM coordinates; the second water sits at an infinite position.
+    waters = [
+        SolventMolecule(TIP3P_WATER, _FAR_EAST),
+        SolventMolecule(TIP3P_WATER, np.array([np.inf, 0.0, 0.0])),
+    ]
+    with pytest.raises(ValueError, match="finite"):
+        _lj_energy(["O", "H", "H", "H"], H3O_PLUS_COORDS, waters)
+
+
+def test_qm_mm_lj_rejects_mismatched_coordinate_shape():
+    """QM coordinates must have one row of three values per QM symbol."""
+    water = SolventMolecule(TIP3P_WATER, _FAR_EAST)
+    symbols = ["O", "H", "H", "H"]
+    # One row missing, and the right number of rows with only two columns.
+    for qm_coords in (H3O_PLUS_COORDS[:3], H3O_PLUS_COORDS[:, :2]):
+        with pytest.raises(ValueError, match=r"shape \(4, 3\)"):
+            _lj_energy(symbols, qm_coords, [water])

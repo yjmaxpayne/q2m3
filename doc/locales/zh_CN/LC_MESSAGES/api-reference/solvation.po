@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-11-24 04:36+0800\n"
-"PO-Revision-Date: 2026-11-23 20:37+0000\n"
+"POT-Creation-Date: 2026-11-24 05:30+0800\n"
+"PO-Revision-Date: 2026-11-23 21:30+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -1090,12 +1090,15 @@ msgstr "签名与 ``q2m3.sqd.run_sqd`` 相同的可调用对象。设为 None �
 #: of q2m3.solvation.sqd_mc.create_sqd_step_callback:7
 msgid ""
 "Callback ``(solvent_states, qm_coords) -> StepResult``. ``qm_coords`` can be flat or of shape "
-"(n_qm, 3), in Angstrom. Exceptions from the solver propagate unchanged."
+"(n_qm, 3), in Angstrom. Exceptions from the solver propagate unchanged. The kept SQD result has "
+"its ``unique_dets_vs_shots`` curve reduced to at most 256 log-spaced points, including the first "
+"and last points. All other fields are unchanged."
 msgstr ""
 "回调 ``(solvent_states, qm_coords) -> StepResult``。``qm_coords`` 可以是一维数组，也可以是形状为 (n_qm, 3) "
-"的数组，单位为埃。求解器抛出的异常原样向上传播。"
+"的数组，单位为埃。求解器抛出的异常原样向上传播。保留的 SQD 结果中，``unique_dets_vs_shots`` "
+"曲线按对数间隔降采样到最多 256 点，保留首点与末点。其他字段不变。"
 
-#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:11 q2m3.solvation.sqd_mc.run_sqd_solvation:15
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:13 q2m3.solvation.sqd_mc.run_sqd_solvation:15
 msgid "If ``solver`` is None and the ``sqd`` extra is not installed."
 msgstr "``solver`` 为 None 且未安装 ``sqd`` extra 时。"
 
@@ -2083,3 +2086,12 @@ msgstr "是否显示"
 
 #~ msgid "Solvation simulation configuration."
 #~ msgstr "溶剂化模拟配置。"
+
+#~ msgid ""
+#~ "Callback ``(solvent_states, qm_coords) -> StepResult``. "
+#~ "``qm_coords`` can be flat or of shape (n_qm, "
+#~ "3), in Angstrom. Exceptions from the solver "
+#~ "propagate unchanged."
+#~ msgstr ""
+#~ "回调 ``(solvent_states, qm_coords) -> StepResult``。``qm_coords`` "
+#~ "可以是一维数组，也可以是形状为 (n_qm, 3) 的数组，单位为埃。求解器抛出的异常原样向上传播。"

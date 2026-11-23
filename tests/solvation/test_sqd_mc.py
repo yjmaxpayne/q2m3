@@ -9,7 +9,9 @@ independent NumPy geometry. No test calls a private helper of the module under t
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
+import json
 import platform
 import re
 import sys
@@ -316,6 +318,50 @@ def test_run_sqd_solvation_records_every_step(sqd_mc):
     np.testing.assert_allclose(result.min_qm_mm_A, expected, rtol=1e-12)
 
 
+@dataclasses.dataclass(frozen=True)
+class _CurveResult:
+    """Frozen stand-in for an SQD result that carries a saturation curve."""
+
+    status: str
+    sqd_energy: float
+    hf_energy: float
+    subspace_dim: int
+    full_ci_dim: int
+    delta_mHa: float
+    baseline_tier: str
+    baseline_method: str
+    baseline_energy: float
+    unique_dets_vs_shots: tuple[tuple[int, int], ...]
+
+
+def test_run_sqd_solvation_downsamples_unique_dets_curve(sqd_mc):
+    # Each kept result would otherwise hold a 100,000-point curve per Monte Carlo step.
+    curve = tuple((10 * (i + 1), i + 1) for i in range(100_000))
+    raw = [
+        _CurveResult(**vars(_fake_result(sqd_energy=e)), unique_dets_vs_shots=curve)
+        for e in (-1.0, -2.0, 10.0, -3.0)
+    ]
+    config = _config(sqd_mc, n_waters=2, n_mc_steps=3)
+
+    result = sqd_mc.run_sqd_solvation(config, solver=FakeSolver(raw))
+
+    kept = [result.initial_step.sqd_result, *result.sqd_results]
+    assert len(kept) == len(raw)
+    original_points = set(curve)
+    for got, want in zip(kept, raw, strict=True):
+        points = got.unique_dets_vs_shots
+        assert len(points) <= 256
+        assert points[0] == curve[0]
+        assert points[-1] == curve[-1]
+        # Log spacing keeps the dense start of the curve.
+        assert tuple(points[:10]) == curve[:10]
+        assert all(tuple(p) in original_points for p in points)
+        assert all(a[0] < b[0] for a, b in zip(points, points[1:], strict=False))
+        for f in dataclasses.fields(want):
+            if f.name != "unique_dets_vs_shots":
+                assert getattr(got, f.name) == getattr(want, f.name), f.name
+
+
 def test_run_sqd_solvation_reports_full_subspace_domain(sqd_mc):
     config = _config(sqd_mc, n_mc_steps=3)
     kt = BOLTZMANN_CONSTANT * config.temperature
@@ -408,3 +454,302 @@ def test_honesty_sqd_mc_summary_rejects_banned_term(sqd_mc):
         target.baseline_method = f"shci {word} ref"
         assert target.baseline_method in render(result)
     target.baseline_method = original
+
+
+# =============================================================================
+# 500-step H3O+ acceptance run and its criteria
+# =============================================================================
+
+AC4_STEPS = 500
+# One vacuum RHF per run_sqd call: the initial state plus 500 trials. Fixed on purpose,
+# so that a short run cannot lower its own expectation.
+AC4_RHF_CALLS = 501
+AC4_RSS_LIMIT_MB = 12288.0
+AC4_MIN_QM_MM_A = 1.0
+AC4_ACCEPTANCE = (0.20, 0.60)
+FULL_DOMAIN = "full_subspace_exact_diagonalization"
+H3O_STO3G_COORDS_A = [
+    [0.0000, 0.0000, 0.1173],
+    [0.0000, 0.9572, -0.4692],
+    [0.8286, -0.4786, -0.4692],
+    [-0.8286, -0.4786, -0.4692],
+]
+
+
+def ac4_process_tree_peak_mb(metrics: dict) -> float:
+    """Largest polled per-step peak or the worker ru_maxrss bound, in MB (NaN propagates)."""
+    values = np.asarray([*metrics["peak_rss_mb"], metrics["ru_maxrss_kb"] / 1024], dtype=float)
+    return float(np.max(values))
+
+
+def ac4_violations(metrics: dict) -> list[str]:
+    """Return the names of the failed acceptance criteria, in a fixed order.
+
+    Every check is written as its pass condition, so a NaN fails it.
+    """
+    m = metrics
+    low, high = AC4_ACCEPTANCE
+    distances = [m["initial_min_qm_mm_A"], *m["min_qm_mm_A"]]
+    scf = m["scf_records"]
+    passed = {
+        "steps": m["n_steps"] == AC4_STEPS,
+        "status": all(s == "completed" for s in m["statuses"]),
+        "zero_compile": m["qjit_during_mc"] == 0 and m["qjit_after_control"] > 0,
+        "acceptance_rate": low <= m["acceptance_rate"] <= high,
+        "memory": ac4_process_tree_peak_mb(m) <= AC4_RSS_LIMIT_MB,
+        "collapse_guard": all(d > AC4_MIN_QM_MM_A for d in distances),
+        "full_subspace": m["domain"] == FULL_DOMAIN and all(d == f for d, f in m["subspace"]),
+        "scf": "QMMMRHF" not in scf and scf.count("RHF") == AC4_RHF_CALLS,
+    }
+    return [name for name, ok in passed.items() if not ok]
+
+
+def _ac4_reference_metrics() -> dict:
+    """Passing metrics with the LJ reference run's nearest distance (1.34 A) and acceptance."""
+    n = AC4_STEPS
+    min_qm_mm = [1.6] * n
+    min_qm_mm[250] = 1.34
+    # 7000 MB per step and 6000 MB ru_maxrss: the maximum passes, the sum does not.
+    rss = [1000.0] * (n + 1)
+    rss[250] = 7000.0
+    return {
+        "n_steps": n,
+        "statuses": ["completed"] * (n + 1),
+        "subspace": [[36, 36] for _ in range(n + 1)],
+        "domain": FULL_DOMAIN,
+        "acceptance_rate": 0.392,
+        "initial_min_qm_mm_A": 1.63,
+        "min_qm_mm_A": min_qm_mm,
+        "qjit_during_mc": 0,
+        "qjit_after_control": 2,
+        "peak_rss_mb": rss,
+        "ru_maxrss_kb": 6144000,
+        "scf_records": ["RHF"] * AC4_RHF_CALLS,
+    }
+
+
+def _set(key, value, index=None):
+    def edit(m):
+        if index is None:
+            m[key] = value
+        else:
+            m[key][index] = value
+
+    return edit
+
+
+def _resize_steps(n):
+    """Set n_steps to n and resize the per-step lists to match; scf_records stays 501."""
+
+    def edit(m):
+        m["n_steps"] = n
+        for key, length in (("statuses", n + 1), ("subspace", n + 1), ("peak_rss_mb", n + 1)):
+            m[key] = (m[key] + m[key][-1:])[:length]
+        m["min_qm_mm_A"] = (m["min_qm_mm_A"] + [1.6])[:n]
+
+    return edit
+
+
+def _edits(*edits):
+    def edit(m):
+        for e in edits:
+            e(m)
+
+    return edit
+
+
+AC4_CARD_CASES = [
+    ("acceptance_low", _set("acceptance_rate", 0.15), "acceptance_rate"),
+    ("collapse_interior", _set("min_qm_mm_A", 0.11, 250), "collapse_guard"),
+    ("qjit_during_mc", _set("qjit_during_mc", 1), "zero_compile"),
+    ("control_zero", _set("qjit_after_control", 0), "zero_compile"),
+    ("subspace_step7", _set("subspace", [9, 36], 7), "full_subspace"),
+    ("status_step3", _set("statuses", "reference_only", 3), "status"),
+    ("rss_step", _set("peak_rss_mb", 13000.0, 250), "memory"),
+    ("steps_499", _resize_steps(499), "steps"),
+    ("scf_qmmmrhf", _set("scf_records", ["RHF"] * AC4_RHF_CALLS + ["QMMMRHF"]), "scf"),
+]
+
+AC4_EDGE_CASES = [
+    ("acceptance_high", _set("acceptance_rate", 0.65), "acceptance_rate"),
+    ("collapse_boundary", _set("min_qm_mm_A", 1.0, 250), "collapse_guard"),
+    ("collapse_initial", _set("initial_min_qm_mm_A", 0.9), "collapse_guard"),
+    ("rss_ru_maxrss", _set("ru_maxrss_kb", 13312000), "memory"),
+    # Python max skips a NaN that is not the first item; the peak must not.
+    ("rss_nan", _set("peak_rss_mb", float("nan"), 250), "memory"),
+    ("status_initial", _set("statuses", "reference_only", 0), "status"),
+    ("domain_partial", _set("domain", "partial_subspace"), "full_subspace"),
+    ("steps_501", _resize_steps(501), "steps"),
+    ("scf_substring", _set("scf_records", ["RHF"] * 500 + ["QMMMRHF"]), "scf"),
+    ("scf_extra_rhf", _set("scf_records", ["RHF"] * 502), "scf"),
+    (
+        "zero_compile_both",
+        _edits(_set("qjit_during_mc", 1), _set("qjit_after_control", 0)),
+        "zero_compile",
+    ),
+]
+
+
+def _violations_after(edit) -> list[str]:
+    metrics = _ac4_reference_metrics()
+    edit(metrics)
+    return ac4_violations(metrics)
+
+
+@pytest.mark.parametrize(
+    ("edit", "criterion"),
+    [pytest.param(e, c, id=i) for i, e, c in AC4_CARD_CASES],
+)
+def test_ac4_criteria_reject_single_violation(edit, criterion):
+    assert _violations_after(edit) == [criterion]
+
+
+def test_ac4_criteria_accept_lj_reference_metrics():
+    assert ac4_violations(_ac4_reference_metrics()) == []
+
+
+@pytest.mark.parametrize(
+    ("edit", "criterion"),
+    [pytest.param(e, c, id=i) for i, e, c in AC4_EDGE_CASES],
+)
+def test_ac4_criteria_reject_edge_violation(edit, criterion):
+    assert _violations_after(edit) == [criterion]
+
+
+def test_ac4_criteria_accept_boundary_metrics():
+    # 12582912 KB is 12288.0 MB in 1024 units but 12582.9 in 1000 units.
+    for edit in (
+        _set("acceptance_rate", 0.20),
+        _set("acceptance_rate", 0.60),
+        _set("ru_maxrss_kb", 12582912),
+    ):
+        assert _violations_after(edit) == []
+
+
+def test_ac4_criteria_report_every_violation():
+    edit = _edits(_set("acceptance_rate", 0.15), _set("peak_rss_mb", 13000.0, 250))
+    assert _violations_after(edit) == ["acceptance_rate", "memory"]
+
+
+def _append_line(path, text: str) -> None:
+    # Append mode: run_sqd forks, and each child writes its own short line.
+    with open(path, "a") as fh:
+        fh.write(text + "\n")
+
+
+def _lines(path) -> list[str]:
+    return [line for line in path.read_text().splitlines() if line]
+
+
+@pytest.mark.slow
+@pytest.mark.sqd
+def test_ac4_h3o_plus_sqd_mc_500_steps(sqd_mc, tmp_path, monkeypatch):
+    import resource
+
+    orchestrator = pytest.importorskip("q2m3.sqd.orchestrator")
+    import catalyst.jit as catalyst_jit
+    import pennylane as qml
+    from pyscf.scf import hf
+
+    scf_log = tmp_path / "scf_calls.txt"
+    qjit_log = tmp_path / "qjit_calls.txt"
+    scf_log.write_text("")
+    qjit_log.write_text("")
+
+    # SCF.kernel is an alias that calls self.scf; spying on both would count every SCF twice.
+    original_scf = hf.SCF.scf
+
+    def scf_spy(self, *args, **kwargs):
+        _append_line(scf_log, type(self).__name__)
+        return original_scf(self, *args, **kwargs)
+
+    monkeypatch.setattr(hf.SCF, "scf", scf_spy)
+
+    def qjit_spy(name, original):
+        def spy(self, *args, **kwargs):
+            _append_line(qjit_log, name)
+            return original(self, *args, **kwargs)
+
+        return spy
+
+    for name in ("jit_compile", "aot_compile", "compile"):
+        monkeypatch.setattr(
+            catalyst_jit.QJIT, name, qjit_spy(name, getattr(catalyst_jit.QJIT, name))
+        )
+
+    solver_calls: list[np.ndarray] = []
+
+    def counting_run_sqd(symbols, coordinates, **kwargs):
+        solver_calls.append(np.array(kwargs["mm_coords"], dtype=float, copy=True))
+        return orchestrator.run_sqd(symbols, coordinates, **kwargs)
+
+    molecule = MoleculeConfig(
+        name="H3O+",
+        symbols=["O", "H", "H", "H"],
+        coords=H3O_STO3G_COORDS_A,
+        charge=1,
+        active_electrons=4,
+        active_orbitals=4,
+        basis="sto-3g",
+    )
+    config = sqd_mc.SQDSolvationConfig(
+        molecule=molecule,
+        n_waters=8,
+        n_mc_steps=AC4_STEPS,
+        temperature=300.0,
+        random_seed=42,
+        initial_water_distance=3.5,
+        embedding_mode="full_oneelectron",
+        sqd_seed=0,
+    )
+    metrics_path = tmp_path / "ac4_metrics.json"
+    try:
+        result = sqd_mc.run_sqd_solvation(config, solver=counting_run_sqd)
+    except Exception as exc:
+        step = len(solver_calls) - 1
+        report = {"aborted": type(exc).__name__, "abort_step": step, "message": str(exc)[:2000]}
+        metrics_path.write_text(json.dumps(report, indent=1))
+        print(f"AC-4 metrics: {metrics_path}")
+        pytest.fail(f"AC-4 run aborted at step {step} (0 = initial): {type(exc).__name__}: {exc}")
+
+    qjit_during_mc = len(_lines(qjit_log))
+    # Read before the positive control so that its compilation does not raise the bound.
+    ru_maxrss_kb = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+
+    @qml.qjit
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def control(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    control(0.3)
+
+    all_results = (result.initial_step.sqd_result, *result.sqd_results)
+    qm = np.asarray(H3O_STO3G_COORDS_A, dtype=float)
+    metrics = {
+        "n_steps": len(result.sqd_results),
+        "statuses": [str(r.status) for r in all_results],
+        "subspace": [[int(r.subspace_dim), int(r.full_ci_dim)] for r in all_results],
+        "domain": str(result.provenance["domain"]),
+        "acceptance_rate": float(result.mc.acceptance_rate),
+        "initial_min_qm_mm_A": _min_distance(qm, solver_calls[0]),
+        "min_qm_mm_A": [float(d) for d in result.min_qm_mm_A],
+        "qjit_during_mc": qjit_during_mc,
+        "qjit_after_control": len(_lines(qjit_log)),
+        "peak_rss_mb": [float(r.diagnostics["resources"]["peak_rss_mb"]) for r in all_results],
+        "ru_maxrss_kb": ru_maxrss_kb,
+        "scf_records": _lines(scf_log),
+    }
+    violations = ac4_violations(metrics)
+    report = {
+        **metrics,
+        "violations": violations,
+        "process_tree_peak_mb": ac4_process_tree_peak_mb(metrics),
+        "rss_bound_kind": (
+            "max of per-call polled peak_rss_mb (driver and simultaneous children, 10 ms) "
+            "and worker ru_maxrss before the control; not a continuously monitored peak"
+        ),
+    }
+    metrics_path.write_text(json.dumps(report, indent=1))
+    print(f"AC-4 metrics: {metrics_path}")
+    assert violations == []

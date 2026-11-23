@@ -16,7 +16,7 @@ import os
 import platform
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
@@ -54,6 +54,7 @@ LJ_MODEL = "QM-MM Lennard-Jones, Lorentz-Berthelot rules, QM_MM_LJ_PARAMETERS + 
 FULL_SUBSPACE_DOMAIN = "full_subspace_exact_diagonalization"
 PARTIAL_SUBSPACE_DOMAIN = "partial_subspace"
 _EMBEDDING_MODES = ("diagonal", "full_oneelectron")
+_CURVE_POINTS = 256
 
 
 class SubspaceDomainError(ValueError):
@@ -190,7 +191,9 @@ def create_sqd_step_callback(
     Returns:
         Callback ``(solvent_states, qm_coords) -> StepResult``. ``qm_coords`` can be
         flat or of shape (n_qm, 3), in Angstrom. Exceptions from the solver
-        propagate unchanged.
+        propagate unchanged. The kept SQD result has its ``unique_dets_vs_shots``
+        curve reduced to at most 256 log-spaced points, including the first and
+        last points. All other fields are unchanged.
 
     Raises:
         ImportError: If ``solver`` is None and the ``sqd`` extra is not installed.
@@ -255,10 +258,19 @@ def create_sqd_step_callback(
             qpe_time=solver_time,
             quantum_method="sqd",
             e_qmmm_vdw=e_qmmm_vdw,
-            sqd_result=result,
+            sqd_result=_with_short_curve(result),
         )
 
     return step
+
+
+def _with_short_curve(result: Any) -> Any:
+    # A full curve holds one point per shot (about 9 MB); a run keeps one result per step.
+    curve = getattr(result, "unique_dets_vs_shots", None)
+    if curve is None or len(curve) <= _CURVE_POINTS:
+        return result
+    picks = np.unique(np.rint(np.geomspace(1, len(curve), _CURVE_POINTS)).astype(int) - 1)
+    return replace(result, unique_dets_vs_shots=tuple(curve[i] for i in picks))
 
 
 def _min_qm_mm_distance(qm_coords: np.ndarray, molecules: list[SolventMolecule]) -> float:

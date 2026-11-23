@@ -11,7 +11,7 @@ generate numerical outputs locally. The repository does not track these outputs.
 | Capability | Start here | Progression |
 |---|---|---|
 | [QPE](qpe/README.md) | H₂ validation | H₂ and H₃O⁺ resolution benchmarks |
-| [SQD](sqd/README.md) | H₂ ground state | Glycine CAS(6,6) → (8,8) → (10,10), five seeds, integral adapter |
+| [SQD](sqd/README.md) | H₂ ground state | Glycine CAS(6,6) → (8,8) → (10,10), five seeds, integral adapter, TIP3P explicit-MM benchmark, H₃O⁺ SQD Monte Carlo |
 | [QM/MM](qmmm/README.md) | Fixed-MO embedding | Water and glycine SQD, existing QPE–MC workflows |
 | [Fragments](fragments/README.md) | Water-dimer HF/MP2 | Full water calculation → crystal preparation → crystal energies → aggregate report |
 | [Resources](resources/README.md) | H₂ resource estimate | Multimolecule survey |

@@ -140,8 +140,8 @@ constant. ``e_core`` already includes the MM nuclear contribution: do not add
 it again at the low-level entry. The low-level ``h2`` is chemist ordered and
 is not transposed again. In an embedded fixed frame, ``hf_energy`` is the
 reference determinant expectation, not a relaxed embedded SCF minimum.
-Tests cover static MM and the H₂O adapter. SQD MC integration,
-correlated RDM feedback and polarizable MM are outside this delivery.
+Tests cover static MM and the H₂O adapter. Correlated RDM feedback and
+polarizable MM are outside this delivery.
 
 Reference ladder and result consumers
 -------------------------------------
@@ -224,3 +224,77 @@ The historical benchmark criterion is ``peak_bytes < 2_000_000_000``.
 
 See :doc:`sqd-validation` for measured results and research status.
 See :doc:`/api-reference/sqd-results` for all result fields.
+
+Explicit TIP3P water: static benchmark and Monte Carlo
+------------------------------------------------------
+
+This section uses SQD with explicit TIP3P water point charges. A static
+benchmark compares the two embedding modes on fixed water configurations.
+A Monte Carlo driver moves the waters and calls SQD at every step.
+
+Static embedding benchmark
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``examples/sqd/mm_tip3p_fixtures.json`` holds six registered TIP3P water fixtures.
+Before each fixture runs, a geometry gate checks the TIP3P water model:
+
+- Each O–H bond length is within 0.01 Å of the TIP3P value.
+- Each H–O–H angle is within 0.5° of the TIP3P value.
+- The minimum QM–MM distance is greater than 1.5 Å.
+
+A fixture that fails the gate stops the run with ``ValueError``.
+Each fixture runs in the ``"diagonal"`` and ``"full_oneelectron"`` embedding modes.
+Run the benchmark from the checkout root:
+
+.. code-block:: bash
+
+   export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+   uv run --no-sync python -m examples.sqd.mm_tip3p_benchmark --output <new-dir>
+
+The run writes ``report.json`` and ``summary.md`` to the new directory.
+
+The full-vs-diagonal energy shift reaches 1 mHa or more only for near-contact
+configurations. A separate set of typical solvation-shell configurations gave
+median shifts of 0.31–0.37 mHa.
+
+SQD Monte Carlo solvation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``q2m3.solvation.run_sqd_solvation`` runs Metropolis Monte Carlo with TIP3P waters.
+Every step calls SQD for the QM region with the current MM point charges.
+``SQDSolvationConfig`` holds the settings. The defaults are 8 waters, 500 steps,
+300 K and ``embedding_mode="full_oneelectron"``. The ``sqd`` extra provides the
+solver. See :doc:`/api-reference/solvation` for signatures.
+
+The acceptance energy is ``E_sqd + E_mm(sol-sol) + E_LJ(QM-MM)``:
+
+- ``E_sqd`` is the SQD energy of the QM region in the MM point-charge field.
+- ``E_mm(sol-sol)`` is the MM energy between the waters.
+- ``E_LJ(QM-MM)`` is a QM–MM Lennard-Jones term with Lorentz–Berthelot rules.
+
+The QM–MM Lennard-Jones term reuses the TIP3P water parameters. A QM oxygen
+atom gets the TIP3P oxygen parameters. QM hydrogen atoms have no
+Lennard-Jones site. These parameters are not fitted to the solute. Structural
+results therefore describe this model only. A solute without a Lennard-Jones
+site, such as H₂, fails ``SQDSolvationConfig.validate()``.
+
+By default, every step must sample the full CI space of the active space.
+In this domain SQD is equivalent to exact diagonalization. A step with a
+smaller subspace raises ``SubspaceDomainError``. Set
+``allow_partial_subspace=True`` to accept such steps. The result field
+``provenance["domain"]`` records ``full_subspace_exact_diagonalization`` or
+``partial_subspace``.
+
+SQD Monte Carlo runs only on Linux x86_64. ``SQDSolvationConfig.validate()``
+rejects the run unless ``OMP_NUM_THREADS``, ``MKL_NUM_THREADS`` and
+``OPENBLAS_NUM_THREADS`` are all 1. Set them before Python starts. The H₃O⁺
+example uses a (4e, 4o) STO-3G active space with 8 waters at 300 K:
+
+.. code-block:: bash
+
+   export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+   uv run --no-sync python -m examples.sqd.h3o_sqd_mc --output <new-dir>
+
+The default 500 steps take about 20 minutes on a single core. The peak memory
+of the process tree was about 1.2 GB. Use ``--steps`` and ``--seed`` to change
+the run. The run writes ``summary.md`` and ``result.json``.

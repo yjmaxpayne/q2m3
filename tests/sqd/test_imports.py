@@ -260,13 +260,22 @@ def boundary_violations(source: str, package: str, forbidden: tuple[str, ...]) -
     return violations
 
 
+# The lazy package exports load sqd_mc, so core and interfaces ban them too.
+SQD_MC_NAMES = (
+    "q2m3.solvation.sqd_mc",
+    "q2m3.solvation.run_sqd_solvation",
+    "q2m3.solvation.SQDSolvationConfig",
+)
+DEPENDENCY_BOUNDARY = {
+    "sqd": ("pennylane", "catalyst", "q2m3.solvation"),
+    "core": ("q2m3.sqd", *SQD_MC_NAMES),
+    "interfaces": ("q2m3.sqd", *SQD_MC_NAMES),
+}
+
+
 def test_static_sqd_dependency_boundary():
     root = Path(__file__).resolve().parents[2] / "src/q2m3"
-    for folder, forbidden in (
-        ("sqd", ("pennylane", "catalyst")),
-        ("core", ("q2m3.sqd",)),
-        ("interfaces", ("q2m3.sqd",)),
-    ):
+    for folder, forbidden in DEPENDENCY_BOUNDARY.items():
         for path in (root / folder).rglob("*.py"):
             package = ".".join(path.parent.relative_to(root.parent).parts)
             assert not boundary_violations(path.read_text(), package, forbidden), path
@@ -285,6 +294,54 @@ def test_static_sqd_dependency_boundary():
 )
 def test_static_boundary_rejects_reverse_import_forms(code):
     assert boundary_violations(code, "q2m3.core", ("q2m3.sqd",))
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        pytest.param("import q2m3.solvation", id="import-package"),
+        pytest.param("from q2m3 import solvation", id="from-root-import"),
+        pytest.param("from .. import solvation", id="relative-parent"),
+        pytest.param("importlib.import_module('q2m3.solvation.sqd_mc')", id="import-module-call"),
+    ],
+)
+def test_static_boundary_rejects_sqd_to_solvation_forms(code):
+    # Only the q2m3.solvation entry of the shared table can reject these forms.
+    assert boundary_violations(code, "q2m3.sqd", DEPENDENCY_BOUNDARY["sqd"])
+
+
+@pytest.mark.parametrize("folder", ["core", "interfaces"])
+def test_static_boundary_rejects_sqd_mc_import(folder):
+    code = "from q2m3.solvation import sqd_mc"
+    assert boundary_violations(code, f"q2m3.{folder}", DEPENDENCY_BOUNDARY[folder])
+
+
+@pytest.mark.parametrize("folder", ["core", "interfaces"])
+def test_static_boundary_rejects_lazy_sqd_mc_name(folder):
+    # The lazy package export loads sqd_mc without naming the submodule.
+    code = "from q2m3.solvation import run_sqd_solvation"
+    assert boundary_violations(code, f"q2m3.{folder}", DEPENDENCY_BOUNDARY[folder])
+
+
+WITHOUT_CATALYST_OR_JAX = r"""
+import sys
+
+# A None entry makes import raise ImportError and find_spec return None.
+for name in ('catalyst', 'jax', 'jaxlib'):
+    sys.modules[name] = None
+import q2m3.solvation.sqd_mc
+"""
+
+
+def test_sqd_mc_imports_without_catalyst_or_jax():
+    process = subprocess.run(
+        [sys.executable, "-c", WITHOUT_CATALYST_OR_JAX],
+        env=dict(os.environ),
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
+    assert process.returncode == 0, process.stdout + process.stderr
 
 
 def run_boundary_probe(source: Path, mode: str, output: Path) -> dict:

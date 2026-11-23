@@ -11,6 +11,7 @@ import pytest
 
 matplotlib.use("Agg")  # Headless backend for CI
 
+from q2m3._lazy import extra_available
 from q2m3.solvation.config import QPEConfig, SolvationConfig
 from q2m3.solvation.statistics import TimingData, create_timing_data_from_result
 
@@ -205,6 +206,8 @@ class TestPublicAPIExports:
             "analyze_energy_phases",
             "EnergyPhaseResult",
         }
+        if extra_available("sqd"):
+            expected |= {"run_sqd_solvation", "SQDSolvationConfig"}
         assert set(solvation.__all__) == expected
 
     def test_run_solvation_importable(self):

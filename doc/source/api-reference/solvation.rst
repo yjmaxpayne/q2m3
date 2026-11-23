@@ -36,6 +36,13 @@ Monte Carlo Loop
    :members:
    :show-inheritance:
 
+SQD Monte Carlo
+---------------
+
+.. automodule:: q2m3.solvation.sqd_mc
+   :members:
+   :show-inheritance:
+
 Phase Extraction
 ----------------
 

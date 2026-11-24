@@ -13,6 +13,12 @@ import os
 # lightning.gpu tests still exercise the PennyLane GPU backend.
 os.environ.setdefault("JAX_PLATFORMS", "cpu")
 
+# Bitwise (atol=0) integral checks hold only for a fixed BLAS reduction order.
+# Match CI's single-thread setting before numpy loads BLAS; explicit values win.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 import numpy as np
 import pennylane as qml
 import pytest

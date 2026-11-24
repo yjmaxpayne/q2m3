@@ -163,7 +163,7 @@ def test_vacuum_matches_independent_casci(water, vacuum, record_property):
     assert vacuum.context.hf_reference_kind == "canonical_rhf"
     assert vacuum.context.delta_core_constant == 0
     record_property("vacuum_h2_maxabs", float(np.max(np.abs(vacuum.h2 - h2))))
-    record_property("vacuum_core_abs_error", abs(vacuum.e_core - core))
+    record_property("vacuum_core_abs_error", float(abs(vacuum.e_core - core)))
     mf = _mean_field(water)
     dm = 2 * vacuum.mo_coeff[:, :5] @ vacuum.mo_coeff[:, :5].T
     assert abs(vacuum.hf_energy - mf.energy_tot(dm=dm)) <= 1e-10
@@ -195,9 +195,11 @@ def test_mm_same_frame_casci_and_energy_golden(water, mm, assembled, record_prop
     assert np.max(np.abs(h1_full - h1_vac - np.diag(np.diag(h1_full - h1_vac)))) > 1e-4
     assert np.max(np.abs(h2 - h2.transpose(0, 2, 3, 1))) > 1e-2
     record_property("mm_h2_maxabs", float(np.max(np.abs(assembled.h2 - h2))))
-    record_property("mm_reference_energy_abs_error", abs(actual_energy - expected_energy))
-    record_property("mm_core_abs_error", abs(assembled.e_core - core_full))
-    record_property("mm_hf_ao_abs_error", abs(assembled.hf_energy - embedded.energy_tot(dm=dm)))
+    record_property("mm_reference_energy_abs_error", float(abs(actual_energy - expected_energy)))
+    record_property("mm_core_abs_error", float(abs(assembled.e_core - core_full)))
+    record_property(
+        "mm_hf_ao_abs_error", float(abs(assembled.hf_energy - embedded.energy_tot(dm=dm)))
+    )
 
 
 def test_zero_mm_is_vacuum_in_identical_frame(water, mm, vacuum, integrals_module):
@@ -402,7 +404,7 @@ def test_real_rccsd_oracle_detects_amplitude_only_frame_change(vacuum, record_pr
     next_t1, next_t2 = solver.update_amps(wrong_t1, wrong_t2, eris)
     update_defect = max(np.max(np.abs(next_t1 - wrong_t1)), np.max(np.abs(next_t2 - wrong_t2)))
     assert update_defect > 1e-4
-    record_property("amplitude_only_frame_energy_error_ha", mismatch)
+    record_property("amplitude_only_frame_energy_error_ha", float(mismatch))
     record_property("amplitude_only_frame_update_defect", float(update_defect))
 
 

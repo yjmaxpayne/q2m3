@@ -168,6 +168,25 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="lightning.gpu not available"))
 
 
+def _plain(value):
+    """Return value with numpy scalars and arrays replaced by builtin types."""
+    if isinstance(value, np.generic | np.ndarray):
+        return value.tolist()
+    if isinstance(value, list):
+        return [_plain(entry) for entry in value]
+    if isinstance(value, tuple):
+        return tuple(_plain(entry) for entry in value)
+    if isinstance(value, dict):
+        return {key: _plain(entry) for key, entry in value.items()}
+    return value
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    """Keep user_properties serializable: xdist ships reports through execnet."""
+    item.user_properties[:] = [(name, _plain(value)) for name, value in item.user_properties]
+
+
 # ============================================================================
 # Molecule Data Fixtures
 # ============================================================================

@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.4.0 (2026-11-25)
+
+### Feat
+
+- **solvation**: add H3O+ SQD-MC example and 500-step test
+- **solvation**: add SQD-driven MC solvation loop
+- **sqd**: add MM-embedding static benchmark on TIP3P fixtures
+- **solvation**: decouple MC loop from QPE energy engine
+- **solvation**: add MM geometry gate and QM-MM LJ repulsion
+
+### Fix
+
+- **tests**: convert numpy values in user_properties before xdist ships reports
+- **tests**: pin BLAS threads to one by default for bitwise checks
+- **tests**: record plain floats so xdist can ship integral test reports
+- **core**: use TIP3P geometry for QMMMSystem placeholder waters
+- **interfaces**: stop solving the MM-embedded RHF in the fixed-MO helper
+- **docs**: prefer the release tag version for published docs
+
+### Refactor
+
+- **constants**: move BANNED_TERMS to q2m3.constants
+
+### Build
+
+- **deps**: refresh dev tooling for security advisories
+
+### Docs
+
+- align citation metadata with the v0.4.0 release
+- **sqd**: document explicit TIP3P benchmark and SQD Monte Carlo
+- record the v0.3.0 Zenodo DOI
+
+### CI
+
+- run the sqd-catalyst profile under two BLAS kernels
+
+### Test
+
+- **solvation**: make MM energy bitwise check independent of BLAS kernel
+
 ## v0.3.0 (2026-10-26)
 
 ### Feat

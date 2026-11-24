@@ -13,6 +13,12 @@ import os
 # lightning.gpu tests still exercise the PennyLane GPU backend.
 os.environ.setdefault("JAX_PLATFORMS", "cpu")
 
+# Bitwise (atol=0) integral checks hold only for a fixed BLAS reduction order.
+# Match CI's single-thread setting before numpy loads BLAS; explicit values win.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 import numpy as np
 import pennylane as qml
 import pytest
@@ -160,6 +166,25 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="pennylane-catalyst not installed"))
         if "gpu" in item.keywords and not has_lightning_gpu:
             item.add_marker(pytest.mark.skip(reason="lightning.gpu not available"))
+
+
+def _plain(value):
+    """Return value with numpy scalars and arrays replaced by builtin types."""
+    if isinstance(value, np.generic | np.ndarray):
+        return value.tolist()
+    if isinstance(value, list):
+        return [_plain(entry) for entry in value]
+    if isinstance(value, tuple):
+        return tuple(_plain(entry) for entry in value)
+    if isinstance(value, dict):
+        return {key: _plain(entry) for key, entry in value.items()}
+    return value
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    """Keep user_properties serializable: xdist ships reports through execnet."""
+    item.user_properties[:] = [(name, _plain(value)) for name, value in item.user_properties]
 
 
 # ============================================================================

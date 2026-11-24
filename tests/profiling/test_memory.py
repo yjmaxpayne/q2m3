@@ -171,10 +171,10 @@ def test_measure_command_cleans_group_after_leader_exit(tmp_path):
     try:
         deadline = time.monotonic() + 2.0
         while time.monotonic() < deadline:
-            status_path = Path(f"/proc/{child_pid}/status")
-            if not status_path.exists():
+            try:
+                state = Path(f"/proc/{child_pid}/status").read_text()
+            except (FileNotFoundError, ProcessLookupError):
                 break
-            state = status_path.read_text()
             if "State:\tZ" in state or "State:\tX" in state:
                 break
             time.sleep(0.01)
@@ -185,6 +185,22 @@ def test_measure_command_cleans_group_after_leader_exit(tmp_path):
             os.kill(child_pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
+
+
+@pytest.mark.skipif(not LINUX, reason="requires Linux /proc filesystem")
+def test_measure_command_survives_process_vanishing_during_tree_scan(tmp_path, monkeypatch):
+    # procfs can raise ESRCH while a descendant is being reaped; Python 3.12
+    # pathlib does not treat ESRCH as "missing", so the scan must absorb it.
+    def vanished_glob(self, pattern):
+        raise ProcessLookupError(3, "No such process", str(self))
+
+    monkeypatch.setattr(Path, "glob", vanished_glob)
+    record = measure_command(
+        [sys.executable, "-c", "import time; time.sleep(0.1)"], tmp_path / "vanish"
+    )
+
+    assert record["exit_code"] == 0
+    assert record["reason"] is None
 
 
 @pytest.mark.skipif(not LINUX, reason="requires Linux /proc filesystem")

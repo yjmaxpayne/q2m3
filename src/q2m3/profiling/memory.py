@@ -276,7 +276,12 @@ def _process_tree_pids(pid: int) -> set[int]:
     pending = [pid]
     while pending:
         current = pending.pop()
-        for path in Path(f"/proc/{current}/task").glob("*/children"):
+        try:
+            # A reaped process can make procfs raise ESRCH, which pathlib does not ignore.
+            paths = list(Path(f"/proc/{current}/task").glob("*/children"))
+        except OSError:
+            continue
+        for path in paths:
             try:
                 children = {int(child) for child in path.read_text().split()} - found
             except (OSError, ValueError):

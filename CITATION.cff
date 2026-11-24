@@ -22,8 +22,9 @@ abstract: >-
   Quantum Computers (EFTQC) and provides compile-once / run-many
   solvation experiments, fixed-MO one-electron embedding, sample-based
   quantum diagonalization, fragment interaction-energy workflows with
-  counterpoise and active-space selection, and EFTQC resource estimation
-  for active-space Hamiltonians.
+  counterpoise and active-space selection, SQD-driven Monte Carlo
+  solvation in explicit TIP3P water, and EFTQC resource estimation for
+  active-space Hamiltonians.
 keywords:
   - quantum computing
   - quantum chemistry
@@ -32,16 +33,15 @@ keywords:
   - sample-based quantum diagonalization
   - fragment interaction energy
   - counterpoise
+  - explicit solvent
+  - Monte Carlo solvation
   - PySCF
   - PennyLane
   - EFTQC
 license: MIT
-version: 0.3.0
-date-released: "2026-10-26"
+version: 0.4.0
+date-released: "2026-11-25"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.20114945
     description: Concept DOI for all q2m3 versions on Zenodo
-  - type: doi
-    value: 10.5281/zenodo.23657624
-    description: Version-specific DOI for q2m3 v0.3.0

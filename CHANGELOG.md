@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.4.1 (2026-11-25)
+
+### Fix
+
+- **profiling**: tolerate ESRCH from procfs while scanning process trees
+
+### Docs
+
+- align citation metadata with the v0.4.1 release
+
 ## v0.4.0 (2026-11-25)
 
 ### Feat

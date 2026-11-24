@@ -21,6 +21,7 @@ from __future__ import annotations
 import time as _time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from pyscf import gto, qmmm, scf
@@ -31,6 +32,9 @@ from .config import MoleculeConfig, SolvationConfig
 from .phase_extraction import extract_energy_from_probs, extract_energy_from_shots
 from .solvent import SolventMolecule, compute_mm_energy, get_mm_embedding_data
 
+if TYPE_CHECKING:
+    from q2m3.sqd.result import SQDResult
+
 _MIN_QMMM_DISTANCE_ANGSTROM = 1e-12
 
 
@@ -38,11 +42,26 @@ _MIN_QMMM_DISTANCE_ANGSTROM = 1e-12
 class StepResult:
     """Result from one MC step's energy computation."""
 
-    e_qpe: float  # QPE energy estimate (NaN if not evaluated)
+    e_qpe: float  # Quantum energy (QPE or SQD, see quantum_method); NaN if not evaluated
     e_mm_sol_sol: float  # Solvent-solvent MM energy
     e_hf_ref: float  # HF reference energy (diagnostic)
     callback_time: float  # PySCF computation time (seconds)
     qpe_time: float  # QPE circuit execution time (seconds)
+    quantum_method: Literal["qpe", "sqd"] = "qpe"  # Solver that produced e_qpe
+    e_qmmm_vdw: float = 0.0  # QM-MM van der Waals energy (Hartree)
+    sqd_result: SQDResult | None = None  # Full SQD result when quantum_method is "sqd"
+
+    def acceptance_energy(self, uses_hf_reference: bool) -> float:
+        """Return the energy that the Metropolis acceptance test uses.
+
+        Args:
+            uses_hf_reference: If True, use e_hf_ref as the quantum term. If False, use e_qpe.
+
+        Returns:
+            The quantum term plus e_mm_sol_sol plus e_qmmm_vdw, added from left to right.
+        """
+        quantum = self.e_hf_ref if uses_hf_reference else self.e_qpe
+        return quantum + self.e_mm_sol_sol + self.e_qmmm_vdw
 
 
 # =============================================================================

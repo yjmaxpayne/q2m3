@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-24 05:30+0800\n"
+"PO-Revision-Date: 2026-11-23 21:30+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -42,9 +42,9 @@ msgstr "溶剂化模拟的分子体系配置。"
 #: ../../source/api-reference/solvation.rst of q2m3.solvation.analysis.DeltaCorrPolResult
 #: q2m3.solvation.analysis.EnergyPhaseResult q2m3.solvation.analysis.EquilibrationResult
 #: q2m3.solvation.analysis.ModeComparisonResult q2m3.solvation.analysis.QPEHFConsistencyResult
-#: q2m3.solvation.energy.StepResult q2m3.solvation.ir_cache.cache_path_for_config
-#: q2m3.solvation.ir_cache.compute_cache_key q2m3.solvation.ir_cache.is_cache_available
-#: q2m3.solvation.mc_loop.MCResult q2m3.solvation.orchestrator.replay_quantum_trajectory
+#: q2m3.solvation.ir_cache.cache_path_for_config q2m3.solvation.ir_cache.compute_cache_key
+#: q2m3.solvation.ir_cache.is_cache_available q2m3.solvation.mc_loop.MCResult
+#: q2m3.solvation.orchestrator.replay_quantum_trajectory
 #: q2m3.solvation.solvent.SolventModel.get_lj_params
 #: q2m3.solvation.solvent.SolventMolecule.from_state_vector
 #: q2m3.solvation.solvent.molecules_to_state_array q2m3.solvation.solvent.state_array_to_molecules
@@ -73,8 +73,10 @@ msgstr "便于阅读的标识符"
 
 #: of q2m3.solvation.circuit_builder.QPECircuitBundle q2m3.solvation.config.MoleculeConfig
 #: q2m3.solvation.config.QPEConfig q2m3.solvation.config.SolvationConfig
-#: q2m3.solvation.solvent.SolventAtom q2m3.solvation.solvent.SolventModel
-#: q2m3.solvation.solvent.SolventMolecule
+#: q2m3.solvation.solvent.MMGeometryReport q2m3.solvation.solvent.SolventAtom
+#: q2m3.solvation.solvent.SolventModel q2m3.solvation.solvent.SolventMolecule
+#: q2m3.solvation.sqd_mc.SQDMCResult q2m3.solvation.sqd_mc.SQDSolvationConfig
+#: q2m3.solvation.sqd_mc.SQDSolvationConfig.acceptance_uses_hf_reference
 msgid "type"
 msgstr "类型"
 
@@ -113,7 +115,9 @@ msgstr "分子总电荷（必填，无默认值）"
 #: q2m3.solvation.config.QPEConfig:7 q2m3.solvation.config.QPEConfig:13
 #: q2m3.solvation.config.QPEConfig:19 q2m3.solvation.config.QPEConfig:43
 #: q2m3.solvation.config.SolvationConfig:41 q2m3.solvation.config.SolvationConfig:47
-#: q2m3.solvation.config.SolvationConfig:77
+#: q2m3.solvation.config.SolvationConfig:77 q2m3.solvation.sqd_mc.SQDSolvationConfig:16
+#: q2m3.solvation.sqd_mc.SQDSolvationConfig:22 q2m3.solvation.sqd_mc.SQDSolvationConfig:52
+#: q2m3.solvation.sqd_mc.SQDSolvationConfig:64
 msgid "int"
 msgstr "int"
 
@@ -197,8 +201,12 @@ msgstr "目标能量分辨率，单位为 Hartree"
 #: q2m3.solvation.circuit_builder.QPECircuitBundle:37 q2m3.solvation.config.QPEConfig:31
 #: q2m3.solvation.config.QPEConfig:37 q2m3.solvation.config.SolvationConfig:53
 #: q2m3.solvation.config.SolvationConfig:59 q2m3.solvation.config.SolvationConfig:65
-#: q2m3.solvation.config.SolvationConfig:71 q2m3.solvation.solvent.SolventAtom:19
-#: q2m3.solvation.solvent.SolventAtom:25 q2m3.solvation.solvent.SolventAtom:31
+#: q2m3.solvation.config.SolvationConfig:71 q2m3.solvation.solvent.MMGeometryReport:8
+#: q2m3.solvation.solvent.MMGeometryReport:15 q2m3.solvation.solvent.MMGeometryReport:22
+#: q2m3.solvation.solvent.SolventAtom:19 q2m3.solvation.solvent.SolventAtom:25
+#: q2m3.solvation.solvent.SolventAtom:31 q2m3.solvation.sqd_mc.SQDSolvationConfig:28
+#: q2m3.solvation.sqd_mc.SQDSolvationConfig:34 q2m3.solvation.sqd_mc.SQDSolvationConfig:40
+#: q2m3.solvation.sqd_mc.SQDSolvationConfig:46
 msgid "float"
 msgstr "float"
 
@@ -272,7 +280,7 @@ msgstr "Literal['hf_corrected', 'fixed', 'dynamic']"
 msgid "MM embedding mode for QPE Hamiltonian construction"
 msgstr "构建 QPE 哈密顿量时使用的 MM 嵌入模式"
 
-#: of q2m3.solvation.config.SolvationConfig:35
+#: of q2m3.solvation.config.SolvationConfig:35 q2m3.solvation.sqd_mc.SQDSolvationConfig:58
 msgid "Literal['diagonal', 'full_oneelectron']"
 msgstr "Literal['diagonal', 'full_oneelectron']"
 
@@ -310,6 +318,7 @@ msgstr "打印进度信息"
 
 #: of q2m3.solvation.circuit_builder.QPECircuitBundle:73 q2m3.solvation.config.SolvationConfig:83
 #: q2m3.solvation.config.SolvationConfig:95 q2m3.solvation.config.SolvationConfig:101
+#: q2m3.solvation.solvent.MMGeometryReport:28 q2m3.solvation.sqd_mc.SQDSolvationConfig:84
 msgid "bool"
 msgstr "bool"
 
@@ -333,9 +342,13 @@ msgstr "忽略缓存的 IR 并强制重新编译"
 msgid "Compute expected QPE evaluation count based on mode."
 msgstr "根据模式计算预期的 QPE 评估次数。"
 
-#: of q2m3.solvation.config.SolvationConfig.kt:1
+#: of q2m3.solvation.config.SolvationConfig.kt:1 q2m3.solvation.mc_loop.MCLoopSettings:21
 msgid "Thermal energy kT in Hartree."
 msgstr "热能 kT，单位为 Hartree。"
+
+#: of q2m3.solvation.config.SolvationConfig.acceptance_uses_hf_reference:1
+msgid "Whether MC acceptance uses the HF reference energy instead of the QPE energy."
+msgstr "MC 接受判据是否用 HF 参考能量代替 QPE 能量。"
 
 #: of q2m3.solvation.config.SolvationConfig.validate:3
 msgid "Returns self to support chaining: config.validate()"
@@ -450,7 +463,8 @@ msgid "Initial vacuum + shift coefficients"
 msgstr "初始真空系数加平移系数"
 
 #: of q2m3.solvation.circuit_builder.QPECircuitBundle:13 q2m3.solvation.solvent.SolventMolecule:13
-#: q2m3.solvation.solvent.SolventMolecule:19
+#: q2m3.solvation.solvent.SolventMolecule:19 q2m3.solvation.sqd_mc.SQDMCResult:25
+#: q2m3.solvation.sqd_mc.SQDMCResult:32
 msgid "numpy.ndarray"
 msgstr "numpy.ndarray"
 
@@ -640,6 +654,18 @@ msgstr "所有步回调均为纯 Python 函数（未使用 @qjit）；它们在�
 msgid "Result from one MC step's energy computation."
 msgstr "一次 MC 步的能量计算结果。"
 
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:1
+msgid "Return the energy that the Metropolis acceptance test uses."
+msgstr "返回 Metropolis 接受判据所用的能量。"
+
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:3
+msgid "If True, use e_hf_ref as the quantum term. If False, use e_qpe."
+msgstr "为 True 时，量子项取 e_hf_ref。为 False 时，量子项取 e_qpe。"
+
+#: of q2m3.solvation.energy.StepResult.acceptance_energy:5
+msgid "The quantum term plus e_mm_sol_sol plus e_qmmm_vdw, added from left to right."
+msgstr "量子项加 e_mm_sol_sol，再加 e_qmmm_vdw，按从左到右的顺序相加。"
+
 #: of q2m3.solvation.energy.precompute_vacuum_cache:1
 msgid "Run vacuum SCF once and cache results for MC loop."
 msgstr "运行一次真空 SCF，并缓存结果供 MC 循环使用。"
@@ -784,16 +810,40 @@ msgid ""
 msgstr "实现纯 Python 的 Metropolis MC 循环（ADR-003：不使用 @qjit），将能量评估交给预编译的步回调。"
 
 #: of q2m3.solvation.mc_loop:6
-msgid "Three Hamiltonian modes determine acceptance energy:"
-msgstr "三种哈密顿量模式决定接受判据所用的能量："
+msgid "StepResult.acceptance_energy(uses_hf_reference) gives the acceptance energy:"
+msgstr "StepResult.acceptance_energy(uses_hf_reference) 给出接受判据所用的能量："
 
 #: of q2m3.solvation.mc_loop:7
-msgid "hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)"
-msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol)（快速，近似）"
+msgid "hf_corrected: E_HF_ref + E_MM(sol-sol) + E_QM-MM(vdW)  (fast, approximate)"
+msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol) + E_QM-MM(vdW)（快速，近似）"
 
 #: of q2m3.solvation.mc_loop:8
-msgid "fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)"
-msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol)（完整量子计算）"
+msgid "fixed / dynamic: E_QPE + E_MM(sol-sol) + E_QM-MM(vdW)   (full quantum)"
+msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol) + E_QM-MM(vdW)（完整量子计算）"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:1
+msgid "Settings that the MC loop reads from its configuration object."
+msgstr "MC 循环从配置对象读取的设置。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:5
+msgid "Number of solvent molecules."
+msgstr "溶剂分子数。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:9
+msgid "Number of MC steps."
+msgstr "MC 步数。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:13
+msgid "Max displacement per axis in Angstrom."
+msgstr "每个轴向的最大平移量，单位为埃。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:17
+msgid "Max rotation per axis in radians."
+msgstr "每个轴向的最大旋转角，单位为弧度。"
+
+#: of q2m3.solvation.mc_loop.MCLoopSettings:25
+msgid "Use the HF reference energy as the quantum term of the acceptance energy."
+msgstr "用 HF 参考能量作为接受能量的量子项。"
 
 #: of q2m3.solvation.mc_loop.MCResult:1
 msgid "Complete MC simulation result."
@@ -808,8 +858,8 @@ msgid "Returns a closure that runs the MC simulation with Metropolis acceptance.
 msgstr "返回使用 Metropolis 接受准则运行 MC 模拟的闭包。"
 
 #: of q2m3.solvation.mc_loop.create_mc_loop:5
-msgid "Solvation simulation configuration."
-msgstr "溶剂化模拟配置。"
+msgid "MC loop settings. The factory reads all attributes at creation time."
+msgstr "MC 循环设置。工厂函数在创建时读取全部属性。"
 
 #: of q2m3.solvation.mc_loop.create_mc_loop:6
 msgid "Energy evaluator for each MC trial. Signature: (solvent_states, qm_coords) -> StepResult"
@@ -819,7 +869,291 @@ msgstr "每次 MC 尝试的能量评估函数。签名：(solvent_states, qm_coo
 msgid "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
 msgstr "mc_loop(initial_solvents, qm_coords, seed, initial_energy) -> MCResult"
 
+#: ../../source/api-reference/solvation.rst
+msgid "Raises"
+msgstr "异常"
+
+#: of q2m3.solvation.mc_loop.create_mc_loop:11
+msgid "If settings does not have one of the MCLoopSettings attributes."
+msgstr "settings 缺少 MCLoopSettings 的任一属性时。"
+
 #: ../../source/api-reference/solvation.rst:40
+msgid "SQD Monte Carlo"
+msgstr "SQD 蒙特卡洛"
+
+#: of q2m3.solvation.sqd_mc:1
+msgid "Monte Carlo solvation driven by sample-based quantum diagonalization (SQD)."
+msgstr "由基于采样的量子对角化（SQD）驱动的蒙特卡洛溶剂化。"
+
+#: of q2m3.solvation.sqd_mc:3
+msgid ""
+"Each Monte Carlo trial calls the SQD solver with the current MM point charges. The Metropolis "
+"acceptance energy is ``E_sqd + E_mm(sol-sol) + E_LJ(QM-MM)``. This entry point is independent of "
+"the QPE workflow in ``run_solvation``. The SQD backend loads only when a step runs, so importing "
+"this module needs no optional extra."
+msgstr ""
+"每次蒙特卡洛试探都用当前的 MM 点电荷调用 SQD 求解器。Metropolis 接受能量为 ``E_sqd + E_mm(sol-sol) + E_LJ(QM-MM)``。本入口独立于 "
+"``run_solvation`` 中的 QPE 工作流。SQD 后端只在某一步运行时才加载，因此导入本模块不需要任何可选 extra。"
+
+#: of q2m3.solvation.sqd_mc.FULL_SUBSPACE_STATEMENT:1
+msgid "Summary statement for runs where every SQD subspace spans the full CI space."
+msgstr "摘要声明，用于每个 SQD 子空间都覆盖完整 CI 空间的运行。"
+
+#: of q2m3.solvation.sqd_mc.THREAD_VARIABLES:1
+msgid "Environment variables that must equal ``\"1\"`` before an SQD run."
+msgstr "SQD 运行前必须等于 ``\"1\"`` 的环境变量。"
+
+#: of q2m3.solvation.sqd_mc.SubspaceDomainError:1
+msgid "Raised when the SQD subspace is smaller than the full CI space."
+msgstr "SQD 子空间小于完整 CI 空间时抛出。"
+
+#: of q2m3.solvation.sqd_mc.SubspaceDomainError:3
+msgid "A Monte Carlo step raises this error unless ``SQDSolvationConfig.allow_partial_subspace`` is True."
+msgstr "除非 ``SQDSolvationConfig.allow_partial_subspace`` 为 True，否则蒙特卡洛步会抛出此错误。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:1
+msgid "Settings for an SQD-driven Monte Carlo solvation run."
+msgstr "由 SQD 驱动的蒙特卡洛溶剂化运行的设置。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:3
+msgid ""
+"The step and temperature defaults match ``SolvationConfig``. The object satisfies the settings "
+"protocol of ``create_mc_loop``."
+msgstr "步数与温度的默认值与 ``SolvationConfig`` 一致。该对象满足 ``create_mc_loop`` 的设置协议。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:8
+msgid "QM solute (``q2m3.molecule.MoleculeConfig``). Coordinates in Angstrom."
+msgstr "QM 溶质（``q2m3.molecule.MoleculeConfig``）。坐标单位为埃。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:10
+msgid "q2m3.molecule.MoleculeConfig"
+msgstr "q2m3.molecule.MoleculeConfig"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:14
+msgid "Number of TIP3P water molecules."
+msgstr "TIP3P 水分子数。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:20
+msgid "Number of Monte Carlo steps after the initial evaluation."
+msgstr "初始评估之后的蒙特卡洛步数。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:26
+msgid "Temperature in Kelvin."
+msgstr "温度，单位为开尔文。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:32
+msgid "Maximum water translation per step in Angstrom."
+msgstr "每步水分子的最大平移量，单位为埃。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:38
+msgid "Maximum water rotation per step in radians."
+msgstr "每步水分子的最大旋转角，单位为弧度。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:44
+msgid "Radius of the initial water ring in Angstrom."
+msgstr "初始水分子环的半径，单位为埃。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:50
+msgid "Seed for the initial ring orientations and the Monte Carlo RNG."
+msgstr "用于初始环取向与蒙特卡洛随机数生成器的种子。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:56
+msgid "MM embedding passed to the SQD solver."
+msgstr "传给 SQD 求解器的 MM 嵌入模式。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:62
+msgid "SQD sampling seed. Every step uses the same value."
+msgstr "SQD 采样种子。每一步都使用同一个值。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:68
+msgid "LUCJ ansatz settings (``q2m3.sqd.LUCJConfig``), or None for defaults."
+msgstr "LUCJ 拟设设置（``q2m3.sqd.LUCJConfig``）；设为 None 时使用默认值。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:70
+msgid "LUCJConfig | None"
+msgstr "LUCJConfig | None"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:74
+msgid "Classical reference settings (``q2m3.sqd.ReferenceConfig``), or None for defaults."
+msgstr "经典参考设置（``q2m3.sqd.ReferenceConfig``）；设为 None 时使用默认值。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:77
+msgid "ReferenceConfig | None"
+msgstr "ReferenceConfig | None"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig:81
+msgid ""
+"If False, a step whose SQD subspace is smaller than the full CI space raises "
+"``SubspaceDomainError``."
+msgstr "为 False 时，SQD 子空间小于完整 CI 空间的步会抛出 ``SubspaceDomainError``。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.kt:1
+msgid "Thermal energy k_B * T in Hartree."
+msgstr "热能 k_B * T，单位为 Hartree。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.acceptance_uses_hf_reference:1
+msgid "the acceptance energy uses the SQD energy."
+msgstr "接受能量使用 SQD 能量。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.acceptance_uses_hf_reference:3
+msgid "Always False"
+msgstr "Always False"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.validate:1
+msgid "Check the settings and the runtime environment."
+msgstr "检查设置与运行环境。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.validate:3
+msgid "This configuration."
+msgstr "本配置对象。"
+
+#: of q2m3.solvation.sqd_mc.SQDSolvationConfig.validate:5
+msgid ""
+"If a count, step, distance or temperature is not positive,     if ``embedding_mode`` is unknown, "
+"if an element has no QM-MM     Lennard-Jones parameters, if no solute atom has epsilon > 0,     "
+"if the platform is not Linux x86_64,     or if a thread variable in ``THREAD_VARIABLES`` is not "
+"``\"1\"``."
+msgstr ""
+"计数、步长、距离或温度不为正时；``embedding_mode`` 未知时；某元素没有 QM-MM Lennard-Jones 参数时；没有溶质原子的 epsilon > 0 时；平台不是 "
+"Linux x86_64 时；或 ``THREAD_VARIABLES`` 中某个线程变量不为 ``\"1\"`` 时。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:1
+msgid "Result of ``run_sqd_solvation``."
+msgstr "``run_sqd_solvation`` 的结果。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:5
+msgid "Monte Carlo result with the per-step decisions and step results."
+msgstr "蒙特卡洛结果，含每步的判定与步结果。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:7
+msgid "q2m3.solvation.mc_loop.MCResult"
+msgstr "q2m3.solvation.mc_loop.MCResult"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:11
+msgid "Step result of the initial solvent configuration."
+msgstr "初始溶剂构型的步结果。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:13
+msgid "q2m3.solvation.energy.StepResult"
+msgstr "q2m3.solvation.energy.StepResult"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:17
+msgid "SQD result (``q2m3.sqd.SQDResult``) of every Monte Carlo trial."
+msgstr "每次蒙特卡洛试探的 SQD 结果（``q2m3.sqd.SQDResult``）。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:19
+msgid "tuple[Any, ...]"
+msgstr "tuple[Any, ...]"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:23
+msgid "Metropolis decision of every step, shape (n_mc_steps,)."
+msgstr "每一步的 Metropolis 判定，形状为 (n_mc_steps,)。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:29
+msgid ""
+"Nearest QM-MM atom distance in Angstrom of the configuration after each step's decision, shape "
+"(n_mc_steps,)."
+msgstr "每步判定后构型中 QM-MM 原子的最近距离，单位为埃，形状为 (n_mc_steps,)。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:36
+msgid ""
+"One entry per pair of adjacent accepted states whose gap ``sqd_energy - baseline_energy`` changes"
+" by more than kT. Filled only when partial subspaces are allowed."
+msgstr "相邻两个被接受状态的差值 ``sqd_energy - baseline_energy`` 变化超过 kT 时，每对记录一项。只在允许部分子空间时填充。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:40
+msgid "tuple[dict[str, float], ...]"
+msgstr "tuple[dict[str, float], ...]"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:44
+msgid "Domain, energy model, seeds, embedding mode and thread settings."
+msgstr "域、能量模型、种子、嵌入模式与线程设置。"
+
+#: of q2m3.solvation.sqd_mc.SQDMCResult:46
+msgid "dict[str, Any]"
+msgstr "dict[str, Any]"
+
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:1
+msgid "Create a Monte Carlo step callback that evaluates the QM energy with SQD."
+msgstr "创建用 SQD 计算 QM 能量的蒙特卡洛步回调。"
+
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:3 q2m3.solvation.sqd_mc.run_sqd_solvation:6
+msgid "Run settings."
+msgstr "运行设置。"
+
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:4 q2m3.solvation.sqd_mc.run_sqd_solvation:7
+msgid ""
+"Callable with the signature of ``q2m3.sqd.run_sqd``. None loads ``run_sqd`` from the ``sqd`` "
+"extra."
+msgstr "签名与 ``q2m3.sqd.run_sqd`` 相同的可调用对象。设为 None 时从 ``sqd`` extra 加载 ``run_sqd``。"
+
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:7
+msgid ""
+"Callback ``(solvent_states, qm_coords) -> StepResult``. ``qm_coords`` can be flat or of shape "
+"(n_qm, 3), in Angstrom. Exceptions from the solver propagate unchanged. The kept SQD result has "
+"its ``unique_dets_vs_shots`` curve reduced to at most 256 log-spaced points, including the first "
+"and last points. All other fields are unchanged."
+msgstr ""
+"回调 ``(solvent_states, qm_coords) -> StepResult``。``qm_coords`` 可以是一维数组，也可以是形状为 (n_qm, 3) "
+"的数组，单位为埃。求解器抛出的异常原样向上传播。保留的 SQD 结果中，``unique_dets_vs_shots`` "
+"曲线按对数间隔降采样到最多 256 点，保留首点与末点。其他字段不变。"
+
+#: of q2m3.solvation.sqd_mc.create_sqd_step_callback:13 q2m3.solvation.sqd_mc.run_sqd_solvation:15
+msgid "If ``solver`` is None and the ``sqd`` extra is not installed."
+msgstr "``solver`` 为 None 且未安装 ``sqd`` extra 时。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:1
+msgid "Run Monte Carlo solvation with SQD energies of the QM region."
+msgstr "用 QM 区域的 SQD 能量运行蒙特卡洛溶剂化。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:3
+msgid ""
+"The initial water ring reseeds the global ``np.random`` state with ``config.random_seed``. The "
+"Monte Carlo loop uses its own generator."
+msgstr "初始水分子环用 ``config.random_seed`` 重设全局 ``np.random`` 状态的种子。蒙特卡洛循环使用自己的随机数生成器。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:10
+msgid "Per-step SQD results, Monte Carlo decisions and run provenance."
+msgstr "每步的 SQD 结果、蒙特卡洛判定与运行来源记录。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:12
+msgid "If ``config.validate()`` fails."
+msgstr "``config.validate()`` 失败时。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:13
+msgid ""
+"If a step has a partial subspace that is not allowed.     The initial configuration is checked "
+"before the first Monte Carlo step."
+msgstr "某一步出现不被允许的部分子空间时。初始构型在第一个蒙特卡洛步之前检查。"
+
+#: of q2m3.solvation.sqd_mc.run_sqd_solvation:14
+msgid "If an SQD step does not complete with a finite energy."
+msgstr "某个 SQD 步没有以有限能量完成时。"
+
+#: of q2m3.solvation.sqd_mc.render_sqd_mc_summary:1
+msgid "Render a Markdown summary of an SQD Monte Carlo run."
+msgstr "渲染 SQD 蒙特卡洛运行的 Markdown 摘要。"
+
+#: of q2m3.solvation.sqd_mc.render_sqd_mc_summary:3
+msgid ""
+"The summary lists the acceptance rate, the step count, the smallest nearest QM-MM distance of the"
+" configurations kept after each step, and per step the SQD error against the classical baseline "
+"with the baseline tier and method."
+msgstr "摘要列出接受率、步数、每步后保留构型的 QM-MM 最近距离的最小值，以及每一步相对经典基线的 SQD 误差及该基线的层级与方法。"
+
+#: of q2m3.solvation.sqd_mc.render_sqd_mc_summary:7
+msgid "Output of ``run_sqd_solvation``."
+msgstr "``run_sqd_solvation`` 的输出。"
+
+#: of q2m3.solvation.sqd_mc.render_sqd_mc_summary:9
+msgid "Markdown text."
+msgstr "Markdown 文本。"
+
+#: of q2m3.solvation.sqd_mc.render_sqd_mc_summary:11
+msgid "If the text contains a term from ``q2m3.constants.BANNED_TERMS``     (case-insensitive)."
+msgstr "文本含有 ``q2m3.constants.BANNED_TERMS`` 中的词语（不区分大小写）时。"
+
+#: ../../source/api-reference/solvation.rst:47
 msgid "Phase Extraction"
 msgstr "相位提取"
 
@@ -908,15 +1242,11 @@ msgstr "如果为 True，则返回包含 mean、std、sem 和 n_shots 的字典�
 msgid "Mean energy (float) or statistics dict."
 msgstr "平均能量（float）或统计字典。"
 
-#: ../../source/api-reference/solvation.rst
-msgid "Raises"
-msgstr "异常"
-
 #: of q2m3.solvation.phase_extraction.extract_energy_from_shots:15
 msgid "If samples is empty."
 msgstr "samples 为空时。"
 
-#: ../../source/api-reference/solvation.rst:46
+#: ../../source/api-reference/solvation.rst:53
 msgid "Solvent Models"
 msgstr "溶剂模型"
 
@@ -1142,6 +1472,118 @@ msgid ""
 "configuration and returns +inf."
 msgstr "总 MM 能量，单位为 Hartree。不同分子的原子完全重合时，将该构型视为违反硬核约束的无效构型，并返回 +inf。"
 
+#: of q2m3.solvation.solvent.MMGeometryReport:1
+msgid "Result of the MM geometry gate."
+msgstr "MM 几何门的检查结果。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:5
+msgid ""
+"Largest absolute O-H bond deviation from TIP3P (Angstrom), over water molecules only. NaN when "
+"there is no water molecule."
+msgstr "O-H 键长相对 TIP3P 的最大绝对偏差，单位为埃，只统计水分子。没有水分子时为 NaN。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:12
+msgid ""
+"Largest absolute H-O-H angle deviation from TIP3P (degrees), over water molecules only. NaN when "
+"there is no water molecule."
+msgstr "H-O-H 键角相对 TIP3P 的最大绝对偏差，单位为度，只统计水分子。没有水分子时为 NaN。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:19
+msgid ""
+"Measured minimum distance between any QM atom and any MM atom (Angstrom). NaN when a coordinate "
+"is not finite."
+msgstr "任一 QM 原子与任一 MM 原子之间的实测最小距离，单位为埃。坐标含非有限值时为 NaN。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:26
+msgid "True only when ``violations`` is empty."
+msgstr "仅当 ``violations`` 为空时为 True。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:32
+msgid ""
+"Violated rules in the fixed order ``\"non_water_model\"``, ``\"oh_bond\"``, ``\"hoh_angle\"``, "
+"``\"qm_mm_distance\"``."
+msgstr "违反的规则，按固定顺序 ``\"non_water_model\"``、``\"oh_bond\"``、``\"hoh_angle\"``、``\"qm_mm_distance\"`` 排列。"
+
+#: of q2m3.solvation.solvent.MMGeometryReport:35
+msgid "tuple[str, ...]"
+msgstr "tuple[str, ...]"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:1
+msgid "Check MM water geometry and QM-MM separation without raising."
+msgstr "检查 MM 水分子几何与 QM-MM 间距，不抛出异常。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:3
+msgid ""
+"A rule passes only when its measured value lies within its tolerance, so a NaN value (for example"
+" from a non-finite coordinate) counts as a violation. Molecules whose atom symbols are not "
+"``(\"O\", \"H\", \"H\")`` are flagged as ``\"non_water_model\"`` and are left out of the bond and"
+" angle deviations."
+msgstr ""
+"仅当实测值在容差范围内时，规则才通过。因此 NaN 值（例如来自非有限坐标）计为违规。原子符号不是 ``(\"O\", \"H\", \"H\")`` 的分子标记为 "
+"``\"non_water_model\"``，不计入键长与键角偏差。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:8 q2m3.solvation.solvent.qm_mm_lj_energy:8
+msgid "MM solvent molecules."
+msgstr "MM 溶剂分子。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:9 q2m3.solvation.solvent.qm_mm_lj_energy:7
+msgid "QM atom coordinates of shape (n_qm, 3) in Angstrom."
+msgstr "QM 原子坐标，单位为埃，形状为 (n_qm, 3)。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:10
+msgid ""
+"Threshold (Angstrom). The measured minimum QM-MM distance must be strictly greater than this "
+"value. The report field of the same name holds the measured distance, not this threshold."
+msgstr "阈值，单位为埃。实测的 QM-MM 最小距离必须严格大于该值。报告中的同名字段保存实测距离，不保存该阈值。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:13
+msgid "Largest allowed absolute O-H deviation from TIP3P (Angstrom)."
+msgstr "O-H 键长相对 TIP3P 允许的最大绝对偏差，单位为埃。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:14
+msgid "Largest allowed absolute H-O-H deviation from TIP3P (degrees)."
+msgstr "H-O-H 键角相对 TIP3P 允许的最大绝对偏差，单位为度。"
+
+#: of q2m3.solvation.solvent.check_mm_geometry:16
+msgid "MMGeometryReport with the measured values and the violated rules."
+msgstr "MMGeometryReport，含实测值与违反的规则。"
+
+#: of q2m3.solvation.solvent.validate_qm_mm_lj_elements:1
+msgid "Check that QM-MM Lennard-Jones parameters cover the solute."
+msgstr "检查 QM-MM Lennard-Jones 参数是否覆盖溶质。"
+
+#: of q2m3.solvation.solvent.qm_mm_lj_energy:6 q2m3.solvation.solvent.validate_qm_mm_lj_elements:3
+msgid "Element symbols of the QM atoms."
+msgstr "QM 原子的元素符号。"
+
+#: of q2m3.solvation.solvent.validate_qm_mm_lj_elements:5
+msgid ""
+"If an element is not in ``QM_MM_LJ_PARAMETERS``, or if no QM     atom has epsilon > 0 (for "
+"example H2)."
+msgstr "某个元素不在 ``QM_MM_LJ_PARAMETERS`` 中时，或没有 epsilon > 0 的 QM 原子时（例如 H2）。"
+
+#: of q2m3.solvation.solvent.qm_mm_lj_energy:1
+msgid "Compute the QM-MM Lennard-Jones energy with Lorentz-Berthelot rules."
+msgstr "按 Lorentz-Berthelot 组合规则计算 QM-MM Lennard-Jones 能量。"
+
+#: of q2m3.solvation.solvent.qm_mm_lj_energy:3
+msgid ""
+"Only atom pairs with epsilon > 0 on both the QM and the MM side contribute. QM parameters come "
+"from ``QM_MM_LJ_PARAMETERS``."
+msgstr "只有 QM 侧与 MM 侧的 epsilon 都大于 0 的原子对参与计算。QM 参数取自 ``QM_MM_LJ_PARAMETERS``。"
+
+#: of q2m3.solvation.solvent.qm_mm_lj_energy:10
+msgid "QM-MM Lennard-Jones energy in Hartree. Exact overlap of a contributing atom pair returns +inf."
+msgstr "QM-MM Lennard-Jones 能量，单位为 Hartree。参与计算的原子对完全重合时返回 +inf。"
+
+#: of q2m3.solvation.solvent.qm_mm_lj_energy:13
+msgid ""
+"If ``validate_qm_mm_lj_elements`` rejects ``qm_symbols``, if     the shape of ``qm_coords`` does "
+"not match ``qm_symbols``, or if a QM     or MM coordinate is not finite."
+msgstr ""
+"``validate_qm_mm_lj_elements`` 拒绝 ``qm_symbols`` 时、``qm_coords`` 的形状与 ``qm_symbols`` 不匹配时，或 QM 或 "
+"MM 坐标含非有限值时。"
+
 #: of q2m3.solvation.solvent.initialize_solvent_ring:1
 msgid "Initialize solvent molecules in a ring arrangement."
 msgstr "将溶剂分子初始化为环形排列。"
@@ -1182,7 +1624,7 @@ msgstr "将分子列表转换为形状为 (n_mol, 6) 的状态数组。"
 msgid "Convert state array to list of molecules."
 msgstr "将状态数组转换为分子列表。"
 
-#: ../../source/api-reference/solvation.rst:53
+#: ../../source/api-reference/solvation.rst:60
 msgid "IR Cache"
 msgstr "IR 缓存"
 
@@ -1266,7 +1708,7 @@ msgstr "来自 build_qpe_circuit() 的 QPECircuitBundle"
 msgid "(bundle, cache_stats) — bundle is the same object (replace_ir modifies in-place)"
 msgstr "(bundle, cache_stats)；bundle 仍为同一个对象（replace_ir 原位修改）"
 
-#: ../../source/api-reference/solvation.rst:59
+#: ../../source/api-reference/solvation.rst:66
 msgid "Analysis"
 msgstr "分析"
 
@@ -1432,7 +1874,7 @@ msgstr "所有分析字段均已填充的 ModeComparisonResult。"
 msgid "If any result dict is missing required keys."
 msgstr "任一结果字典缺少必需键时。"
 
-#: ../../source/api-reference/solvation.rst:66
+#: ../../source/api-reference/solvation.rst:73
 msgid "Structure Analysis"
 msgstr "结构分析"
 
@@ -1523,7 +1965,7 @@ msgstr "返回 XYZ 文件声明的原子数。"
 msgid "Convert a radial profile to CSV-ready dictionaries."
 msgstr "将径向分布转换为可写入 CSV 的字典。"
 
-#: ../../source/api-reference/solvation.rst:73
+#: ../../source/api-reference/solvation.rst:80
 msgid "Statistics And Plotting"
 msgstr "统计与绘图"
 
@@ -1632,3 +2074,24 @@ msgstr "图像保存路径"
 #: of q2m3.solvation.plotting.plot_acceptance_rate:8
 msgid "Whether to display"
 msgstr "是否显示"
+
+#~ msgid "Three Hamiltonian modes determine acceptance energy:"
+#~ msgstr "三种哈密顿量模式决定接受判据所用的能量："
+
+#~ msgid "hf_corrected: E_HF_ref + E_MM(sol-sol)  (fast, approximate)"
+#~ msgstr "hf_corrected：E_HF_ref + E_MM(sol-sol)（快速，近似）"
+
+#~ msgid "fixed / dynamic: E_QPE + E_MM(sol-sol)   (full quantum)"
+#~ msgstr "fixed / dynamic：E_QPE + E_MM(sol-sol)（完整量子计算）"
+
+#~ msgid "Solvation simulation configuration."
+#~ msgstr "溶剂化模拟配置。"
+
+#~ msgid ""
+#~ "Callback ``(solvent_states, qm_coords) -> StepResult``. "
+#~ "``qm_coords`` can be flat or of shape (n_qm, "
+#~ "3), in Angstrom. Exceptions from the solver "
+#~ "propagate unchanged."
+#~ msgstr ""
+#~ "回调 ``(solvent_states, qm_coords) -> StepResult``。``qm_coords`` "
+#~ "可以是一维数组，也可以是形状为 (n_qm, 3) 的数组，单位为埃。求解器抛出的异常原样向上传播。"

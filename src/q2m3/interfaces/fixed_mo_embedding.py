@@ -109,7 +109,7 @@ def build_fixed_mo_embedding_integrals(
 
     Raises:
         ValueError: If coordinates, MM arrays, or active-space parameters are invalid.
-        RuntimeError: If the vacuum or MM-embedded RHF calculation does not converge.
+        RuntimeError: If the vacuum RHF calculation does not converge.
     """
     from pyscf import ao2mo, gto, qmmm, scf
 
@@ -131,8 +131,7 @@ def build_fixed_mo_embedding_integrals(
     mf_mm = scf.RHF(mol)
     mf_mm.verbose = 0
     mf_mm = qmmm.mm_charge(mf_mm, mm_coords_arr, mm_charges_arr, unit="Angstrom")
-    mf_mm.run()
-    _ensure_converged(mf_mm, "MM-embedded")
+    # The MM wrapper only supplies hcore and the nuclear energy; neither depends on an SCF solution.
 
     mo_coeff = _canonicalize_mo_signs(np.asarray(mf_vac.mo_coeff, dtype=float))
     n_orbitals = mo_coeff.shape[1]

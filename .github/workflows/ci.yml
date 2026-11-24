@@ -96,6 +96,31 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  blas-kernel-matrix:
+    # Bitwise and golden checks must not depend on the BLAS kernel of the runner CPU.
+    name: BLAS kernel matrix (3.12, sqd-catalyst)
+    needs: select_runner
+    runs-on: ${{ fromJSON(needs.select_runner.outputs.runner) }}
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src
+      JAX_PLATFORMS: cpu
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      VECLIB_MAXIMUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv python install 3.12
+      - run: uv sync --frozen --python 3.12 --extra dev --extra sqd --extra catalyst --extra solvation
+      - name: Run the sqd-catalyst profile under Sandybridge and Haswell
+        run: uv run --no-sync python .github/scripts/blas_kernel_matrix.py -- python -m pytest -n 0 --q2m3-profile sqd-catalyst --no-cov
+
   slow-science:
     name: manual slow science and public tutorial acceptance
     if: github.event_name == 'workflow_dispatch' && inputs.run_benchmarks

@@ -11,7 +11,7 @@ SQD 和片段示例使用 `python -m examples.…` 入口。
 | 功能 | 起点 | 后续内容 |
 | --- | --- | --- |
 | [QPE](qpe/README.md) | H₂ 检查 | H₂ 和 H₃O⁺ 分辨率基准 |
-| [SQD](sqd/README.md) | H₂ 基态 | 甘氨酸活性空间、五个种子、积分入口 |
+| [SQD](sqd/README.md) | H₂ 基态 | 甘氨酸活性空间、五个种子、积分入口、TIP3P 显式 MM 对标、H₃O⁺ SQD 蒙特卡洛 |
 | [QM/MM](qmmm/README.md) | 固定分子轨道嵌入 | 水和甘氨酸 SQD、现有 QPE–MC 流程 |
 | [片段相互作用能](fragments/README_CN.md) | 水二聚体 HF/MP2 | 完整计算、CIF 准备、晶体能量、汇总报告 |
 | [资源估计](resources/README.md) | H₂ 资源估计 | 多分子比较 |

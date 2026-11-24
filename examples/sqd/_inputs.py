@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 
 # The repository's original neutral NH2-CH2-COOH Z matrix, in Angstrom/degrees.
@@ -39,3 +42,13 @@ def fixed_waters() -> tuple[np.ndarray, np.ndarray]:
     )
     coordinates = np.vstack((water + [4.0, 2.0, 1.0], -water + [-3.5, -2.0, 1.0]))
     return np.tile([-0.834, 0.417, 0.417], 2), coordinates
+
+
+def load_mm_tip3p_fixtures() -> list[dict]:
+    """Return the registered TIP3P water fixtures from ``mm_tip3p_fixtures.json``.
+
+    Each fixture holds ``qm_coords``, ``water_states`` (position in Angstrom and
+    Euler angles in radians) and ``water_coords`` (Angstrom) for cross-checks.
+    """
+    path = Path(__file__).with_name("mm_tip3p_fixtures.json")
+    return json.loads(path.read_text(encoding="utf-8"))["fixtures"]

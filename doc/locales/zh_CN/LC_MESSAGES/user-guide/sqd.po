@@ -4,10 +4,10 @@
 # Ye Jun <yjmaxpayne@hotmail.com>, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: q2m3 0.2.2.dev39+g9ebd08ba9.d20261025\n"
+"Project-Id-Version: q2m3 0.3.1.dev4+g562f6c352\n"
 "Report-Msgid-Bugs-To: yjmaxpayne@hotmail.com\n"
-"POT-Creation-Date: 2026-10-25 22:37+0800\n"
-"PO-Revision-Date: 2026-10-25 14:38+0000\n"
+"POT-Creation-Date: 2026-11-24 06:32+0800\n"
+"PO-Revision-Date: 2026-11-23 22:32+0000\n"
 "Last-Translator: Ye Jun <yjmaxpayne@hotmail.com>\n"
 "Language: zh_CN\n"
 "Language-Team: Simplified Chinese\n"
@@ -172,12 +172,12 @@ msgid ""
 "already includes the MM nuclear contribution: do not add it again at the low-level entry. The "
 "low-level ``h2`` is chemist ordered and is not transposed again. In an embedded fixed frame, "
 "``hf_energy`` is the reference determinant expectation, not a relaxed embedded SCF minimum. Tests"
-" cover static MM and the H₂O adapter. SQD MC integration, correlated RDM feedback and polarizable"
-" MM are outside this delivery."
+" cover static MM and the H₂O adapter. Correlated RDM feedback and polarizable MM are outside this"
+" delivery."
 msgstr ""
 "各求解分支共享活性空间、哈密顿量、框架和芯常数。``e_core`` 已包含 MM 核贡献，底层入口不得再次添加。底层 ``h2`` "
-"使用化学家顺序，不再次转置。在嵌入的固定框架中，``hf_energy`` 表示参考行列式期望值，不是弛豫嵌入 SCF 最小值。测试覆盖静态 MM 和 H₂O 适配器。此实现不包含 SQD MC"
-" 集成、关联 RDM 反馈或可极化 MM。"
+"使用化学家顺序，不再次转置。在嵌入的固定框架中，``hf_energy`` 表示参考行列式期望值，不是弛豫嵌入 SCF 最小值。测试覆盖静态 MM 和 H₂O 适配器。此实现不包含关联 RDM "
+"反馈或可极化 MM。"
 
 #: ../../source/user-guide/sqd.rst:147
 msgid "Reference ladder and result consumers"
@@ -352,3 +352,147 @@ msgid ""
 "See :doc:`sqd-validation` for measured results and research status. See :doc:`/api-reference/sqd-"
 "results` for all result fields."
 msgstr "实测结果和研究状态见 :doc:`sqd-validation`。全部结果字段见 :doc:`/api-reference/sqd-results`。"
+
+#: ../../source/user-guide/sqd.rst:229
+msgid "Explicit TIP3P water: static benchmark and Monte Carlo"
+msgstr "显式 TIP3P 水：静态对标与蒙特卡洛"
+
+#: ../../source/user-guide/sqd.rst:231
+msgid ""
+"This section uses SQD with explicit TIP3P water point charges. A static benchmark compares the "
+"two embedding modes on fixed water configurations. A Monte Carlo driver moves the waters and "
+"calls SQD at every step."
+msgstr "本节使用带显式 TIP3P 水点电荷的 SQD。静态对标在固定的水构型上比较两种嵌入模式。蒙特卡洛驱动器移动水分子，并在每一步调用 SQD。"
+
+#: ../../source/user-guide/sqd.rst:236
+msgid "Static embedding benchmark"
+msgstr "静态嵌入对标"
+
+#: ../../source/user-guide/sqd.rst:238
+msgid ""
+"``examples/sqd/mm_tip3p_fixtures.json`` holds six registered TIP3P water fixtures. Before each "
+"fixture runs, a geometry gate checks the TIP3P water model:"
+msgstr "``examples/sqd/mm_tip3p_fixtures.json`` 包含六个已登记的 TIP3P 水夹具。每个夹具运行前，几何门检查 TIP3P 水模型："
+
+#: ../../source/user-guide/sqd.rst:241
+msgid "Each O–H bond length is within 0.01 Å of the TIP3P value."
+msgstr "每个 O–H 键长与 TIP3P 值之差不超过 0.01 Å。"
+
+#: ../../source/user-guide/sqd.rst:242
+msgid "Each H–O–H angle is within 0.5° of the TIP3P value."
+msgstr "每个 H–O–H 键角与 TIP3P 值之差不超过 0.5°。"
+
+#: ../../source/user-guide/sqd.rst:243
+msgid "The minimum QM–MM distance is greater than 1.5 Å."
+msgstr "最小 QM–MM 距离大于 1.5 Å。"
+
+#: ../../source/user-guide/sqd.rst:245
+msgid ""
+"A fixture that fails the gate stops the run with ``ValueError``. Each fixture runs in the "
+"``\"diagonal\"`` and ``\"full_oneelectron\"`` embedding modes. Run the benchmark from the "
+"checkout root:"
+msgstr ""
+"未通过几何门的夹具以 ``ValueError`` 终止运行。每个夹具分别以 ``\"diagonal\"`` 和 ``\"full_oneelectron\"`` "
+"两种嵌入模式运行。从仓库根目录运行对标："
+
+#: ../../source/user-guide/sqd.rst:254
+msgid "The run writes ``report.json`` and ``summary.md`` to the new directory."
+msgstr "运行把 ``report.json`` 和 ``summary.md`` 写入新目录。"
+
+#: ../../source/user-guide/sqd.rst:256
+msgid ""
+"The full-vs-diagonal energy shift reaches 1 mHa or more only for near-contact configurations. A "
+"separate set of typical solvation-shell configurations gave median shifts of 0.31–0.37 mHa."
+msgstr "完整与对角两种模式的能量差只在近接触构型中达到 1 mHa 或更高。另一组典型溶剂化壳构型的能量差中位数为 0.31–0.37 mHa。"
+
+#: ../../source/user-guide/sqd.rst:261
+msgid "SQD Monte Carlo solvation"
+msgstr "SQD 蒙特卡洛溶剂化"
+
+#: ../../source/user-guide/sqd.rst:263
+msgid ""
+"``q2m3.solvation.run_sqd_solvation`` runs Metropolis Monte Carlo with TIP3P waters. Every step "
+"calls SQD for the QM region with the current MM point charges. ``SQDSolvationConfig`` holds the "
+"settings. The defaults are 8 waters, 500 steps, 300 K and "
+"``embedding_mode=\"full_oneelectron\"``. The ``sqd`` extra provides the solver. See :doc:`/api-"
+"reference/solvation` for signatures."
+msgstr ""
+"``q2m3.solvation.run_sqd_solvation`` 用 TIP3P 水运行 Metropolis 蒙特卡洛。每一步用当前 MM 点电荷对 QM 区调用 "
+"SQD。``SQDSolvationConfig`` 保存设置。默认值为 8 个水分子、500 步、300 K 和 "
+"``embedding_mode=\"full_oneelectron\"``。``sqd`` extra 提供求解器。签名见 :doc:`/api-reference/solvation`。"
+
+#: ../../source/user-guide/sqd.rst:269
+msgid "The acceptance energy is ``E_sqd + E_mm(sol-sol) + E_LJ(QM-MM)``:"
+msgstr "接受能量为 ``E_sqd + E_mm(sol-sol) + E_LJ(QM-MM)``："
+
+#: ../../source/user-guide/sqd.rst:271
+msgid "``E_sqd`` is the SQD energy of the QM region in the MM point-charge field."
+msgstr "``E_sqd`` 是 QM 区在 MM 点电荷场中的 SQD 能量。"
+
+#: ../../source/user-guide/sqd.rst:272
+msgid "``E_mm(sol-sol)`` is the MM energy between the waters."
+msgstr "``E_mm(sol-sol)`` 是水分子之间的 MM 能量。"
+
+#: ../../source/user-guide/sqd.rst:273
+msgid "``E_LJ(QM-MM)`` is a QM–MM Lennard-Jones term with Lorentz–Berthelot rules."
+msgstr "``E_LJ(QM-MM)`` 是采用 Lorentz–Berthelot 组合规则的 QM–MM Lennard-Jones 项。"
+
+#: ../../source/user-guide/sqd.rst:275
+msgid ""
+"The QM–MM Lennard-Jones term reuses the TIP3P water parameters. A QM oxygen atom gets the TIP3P "
+"oxygen parameters. QM hydrogen atoms have no Lennard-Jones site. These parameters are not fitted "
+"to the solute. Structural results therefore describe this model only. A solute without a Lennard-"
+"Jones site, such as H₂, fails ``SQDSolvationConfig.validate()``."
+msgstr ""
+"QM–MM Lennard-Jones 项沿用 TIP3P 水的参数。QM 氧原子使用 TIP3P 氧参数。QM 氢原子没有 Lennard-Jones "
+"位点。这些参数未针对溶质拟合。因此结构结果只描述此模型。没有 Lennard-Jones 位点的溶质（如 H₂）无法通过 ``SQDSolvationConfig.validate()``。"
+
+#: ../../source/user-guide/sqd.rst:281
+msgid ""
+"By default, every step must sample the full CI space of the active space. In this domain SQD is "
+"equivalent to exact diagonalization. A step with a smaller subspace raises "
+"``SubspaceDomainError``. Set ``allow_partial_subspace=True`` to accept such steps. The result "
+"field ``provenance[\"domain\"]`` records ``full_subspace_exact_diagonalization`` or "
+"``partial_subspace``."
+msgstr ""
+"默认情况下，每一步都必须采样到活性空间的完整 CI 空间。在此域内，SQD 等价于精确对角化。子空间较小的步骤抛出 ``SubspaceDomainError``。设置 "
+"``allow_partial_subspace=True`` 可接受这类步骤。结果字段 ``provenance[\"domain\"]`` 记录 "
+"``full_subspace_exact_diagonalization`` 或 ``partial_subspace``。"
+
+#: ../../source/user-guide/sqd.rst:288
+msgid ""
+"SQD Monte Carlo runs only on Linux x86_64. ``SQDSolvationConfig.validate()`` rejects the run "
+"unless ``OMP_NUM_THREADS``, ``MKL_NUM_THREADS`` and ``OPENBLAS_NUM_THREADS`` are all 1. Set them "
+"before Python starts. The H₃O⁺ example uses a (4e, 4o) STO-3G active space with 8 waters at 300 "
+"K:"
+msgstr ""
+"SQD 蒙特卡洛只在 Linux x86_64 上运行。除非 ``OMP_NUM_THREADS``、``MKL_NUM_THREADS`` 和 ``OPENBLAS_NUM_THREADS``"
+" 都为 1，否则 ``SQDSolvationConfig.validate()`` 拒绝运行。在 Python 启动前设置它们。H₃O⁺ 示例使用 (4e, 4o) STO-3G 活性空间，含"
+" 8 个水分子，温度 300 K："
+
+#: ../../source/user-guide/sqd.rst:298
+msgid ""
+"The default 500 steps take about 20 minutes on a single core. The peak memory of the process tree"
+" was about 1.2 GB. Use ``--steps`` and ``--seed`` to change the run. The run writes "
+"``summary.md`` and ``result.json``."
+msgstr ""
+"默认 500 步在单核上约需 20 分钟。进程树峰值内存约 1.2 GB。用 ``--steps`` 和 ``--seed`` 修改运行设置。运行写出 ``summary.md`` 和 "
+"``result.json``。"
+
+#~ msgid ""
+#~ "All solver arms share the same active span, "
+#~ "Hamiltonian, frame and core constant. ``e_core`` already"
+#~ " includes the MM nuclear contribution: do not add"
+#~ " it again at the low-level entry. The "
+#~ "low-level ``h2`` is chemist ordered and is not"
+#~ " transposed again. In an embedded fixed frame, "
+#~ "``hf_energy`` is the reference determinant expectation, "
+#~ "not a relaxed embedded SCF minimum. Tests cover "
+#~ "static MM and the H₂O adapter. SQD MC "
+#~ "integration, correlated RDM feedback and polarizable MM"
+#~ " are outside this delivery."
+#~ msgstr ""
+#~ "各求解分支共享活性空间、哈密顿量、框架和芯常数。``e_core`` 已包含 MM 核贡献，底层入口不得再次添加。底层 ``h2`` "
+#~ "使用化学家顺序，不再次转置。在嵌入的固定框架中，``hf_energy`` 表示参考行列式期望值，不是弛豫嵌入 SCF 最小值。测试覆盖静态 "
+#~ "MM 和 H₂O 适配器。此实现不包含 SQD MC 集成、关联 RDM 反馈或可极化"
+#~ " MM。"

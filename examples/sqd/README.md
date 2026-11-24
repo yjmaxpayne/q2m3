@@ -44,7 +44,13 @@ export NUMEXPR_NUM_THREADS=1 JAX_PLATFORMS=cpu
    `run_sqd_from_integrals` needs no tensor transpose. `e_core` is added once. A
    second geometry run checks adapter agreement within 1e-8 Ha. Both entries share
    a solver, so this check is not an independent oracle.
-5. Continue to [fixed-environment glycine](../qmmm/README.md).
+5. **MM embedding benchmark**: run `uv run --no-sync python -m examples.sqd.mm_tip3p_benchmark --output <new-dir>`. Six registered TIP3P water fixtures run in the `diagonal` and `full_oneelectron` embedding modes and write `report.json` and `summary.md`.
+6. **SQD Monte Carlo solvation**: run `uv run --no-sync python -m examples.sqd.h3o_sqd_mc --output <new-dir>`.
+   Eight TIP3P waters move around H3O+ (4e,4o) STO-3G at 300 K. Every step calls SQD with the
+   MM point charges in `full_oneelectron` mode. The run writes `summary.md` and
+   `result.json`. The default 500 steps take about 20 min. Use `--steps` and `--seed`
+   to change the run.
+7. Continue to [fixed-environment glycine](../qmmm/README.md).
 
 ## Read the result
 

@@ -10,6 +10,8 @@ from typing import Any
 
 import numpy as np
 
+from q2m3.constants import TIP3P_HOH_ANGLE, TIP3P_OH_BOND_LENGTH
+
 
 @dataclass
 class Atom:
@@ -64,8 +66,7 @@ class QMMMSystem:
         if self.num_waters == 0:
             return
 
-        # TIP3P water geometry constants (Angstrom)
-        OH_BOND_LENGTH = 0.9572
+        # Solvation shell radius (Angstrom)
         SOLVATION_RADIUS = 3.0
 
         # Calculate center of QM region
@@ -73,7 +74,7 @@ class QMMMSystem:
 
         for i in range(self.num_waters):
             water_atoms = self._create_water_molecule(
-                i, qm_center, SOLVATION_RADIUS, OH_BOND_LENGTH
+                i, qm_center, SOLVATION_RADIUS, TIP3P_OH_BOND_LENGTH
             )
             self.mm_atoms.extend(water_atoms)
 
@@ -81,13 +82,20 @@ class QMMMSystem:
         self, index: int, center: np.ndarray, radius: float, bond_length: float
     ) -> list[Atom]:
         """
-        Create a single water molecule at spherical position.
+        Create a single TIP3P water molecule at spherical position.
+
+        The oxygen sits on a sphere of ``radius`` around ``center``. Both hydrogens
+        are ``bond_length`` from the oxygen, with the TIP3P H-O-H angle. The H-O-H
+        bisector points radially outward, so both hydrogens face away from
+        ``center``. The H-H axis lies along ``cross(r_hat, z_hat)``, where
+        ``r_hat`` is the unit vector from ``center`` to the oxygen. When ``r_hat``
+        is parallel to z, the x axis replaces z.
 
         Args:
             index: Water molecule index
-            center: Center point for placement
-            radius: Distance from center
-            bond_length: O-H bond length
+            center: Center point for placement (Angstrom)
+            radius: Distance from center to the oxygen (Angstrom)
+            bond_length: O-H bond length (Angstrom)
 
         Returns:
             List of three atoms (O, H, H)
@@ -104,10 +112,17 @@ class QMMMSystem:
             [np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)]
         )
 
-        # Create water atoms (simplified orientation)
+        # Hydrogens: bisector along r_hat (outward), spread along p_hat
+        r_hat = (o_pos - center) / np.linalg.norm(o_pos - center)
+        perp = np.cross(r_hat, np.array([0.0, 0.0, 1.0]))
+        if np.linalg.norm(perp) < 1e-8:
+            perp = np.cross(r_hat, np.array([1.0, 0.0, 0.0]))
+        p_hat = perp / np.linalg.norm(perp)
+        half = np.radians(TIP3P_HOH_ANGLE / 2)
+
         o_atom = Atom("O", o_pos, charge=OXYGEN_CHARGE, is_qm=False)
-        h1_pos = o_pos + np.array([bond_length, 0, 0])
-        h2_pos = o_pos + np.array([-bond_length, 0, 0])
+        h1_pos = o_pos + bond_length * (np.cos(half) * r_hat + np.sin(half) * p_hat)
+        h2_pos = o_pos + bond_length * (np.cos(half) * r_hat - np.sin(half) * p_hat)
 
         h1_atom = Atom("H", h1_pos, charge=HYDROGEN_CHARGE, is_qm=False)
         h2_atom = Atom("H", h2_pos, charge=HYDROGEN_CHARGE, is_qm=False)

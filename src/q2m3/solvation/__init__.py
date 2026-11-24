@@ -4,7 +4,7 @@
 """MC Solvation module for q2m3.
 
 Analysis functions (pure NumPy) are always available.
-MC simulation requires Catalyst and JAX and is loaded on first access.
+QPE-driven MC simulation requires Catalyst and JAX and is loaded on first access.
 Check membership in __all__ to discover available optional exports.
 """
 
@@ -50,6 +50,8 @@ _LAZY_EXPORTS = {
     "SolventModel": ("q2m3.solvation.solvent", "catalyst"),
     "TIP3P_WATER": ("q2m3.solvation.solvent", "catalyst"),
     "SPC_E_WATER": ("q2m3.solvation.solvent", "catalyst"),
+    "run_sqd_solvation": ("q2m3.solvation.sqd_mc", "sqd"),
+    "SQDSolvationConfig": ("q2m3.solvation.sqd_mc", "sqd"),
 }
 __all__ += _available_exports(_LAZY_EXPORTS)
 

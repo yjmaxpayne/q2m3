@@ -37,6 +37,7 @@
     "_modules/q2m3/solvation/phase_extraction.html",
     "_modules/q2m3/solvation/plotting.html",
     "_modules/q2m3/solvation/solvent.html",
+    "_modules/q2m3/solvation/sqd_mc.html",
     "_modules/q2m3/solvation/statistics.html",
     "_modules/q2m3/solvation/structure_analysis.html",
     "_modules/q2m3/sqd/ansatz.html",
